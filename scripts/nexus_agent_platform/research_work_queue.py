@@ -254,16 +254,21 @@ class ResearchWorkQueue:
                     desired_outcome: str, source_refs: list[str],
                     where_customers_congregate: list[str], demand_signals: list[str],
                     evidence_gaps: list[str], commercial_intent: str = "UNKNOWN",
-                    existing_solutions: list[str] | None = None) -> dict[str, Any]:
+                    existing_solutions: list[str] | None = None,
+                    pain_points: list[str] | None = None,
+                    terminology: list[str] | None = None,
+                    competitor_promises: list[str] | None = None,
+                    competitor_complaints: list[str] | None = None,
+                    confidence: str = "PRELIMINARY") -> dict[str, Any]:
         """Create one deduplicated customer-need projection, not one row/comment."""
         need_id = stable_id("need", (audience.strip().lower(), problem.strip().lower()))
         record = {"schema_version": "nexus.research-need.v1", "need_id": need_id,
                   "audience": audience, "problem": problem, "question": question,
-                  "desired_outcome": desired_outcome, "pain_points": [], "terminology": [],
+                  "desired_outcome": desired_outcome, "pain_points": pain_points or [], "terminology": terminology or [],
                   "demand_signals": demand_signals, "commercial_intent": commercial_intent,
                   "source_refs": source_refs, "where_customers_congregate": where_customers_congregate,
-                  "existing_solutions": existing_solutions or [], "competitor_promises": [],
-                  "competitor_complaints": [], "confidence": "PRELIMINARY",
+                  "existing_solutions": existing_solutions or [], "competitor_promises": competitor_promises or [],
+                  "competitor_complaints": competitor_complaints or [], "confidence": confidence,
                   "evidence_gaps": evidence_gaps, "status": "OPEN", "alpha_review_required": True,
                   "created_at": iso(), "updated_at": iso()}
         existing = []

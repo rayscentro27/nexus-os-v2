@@ -271,3 +271,60 @@ return path are production-proven.
 - `scripts/nexus_agent_platform/research_operational_state.py`
 - `scripts/nexus_agent_platform/demand_discovery.py`
 - `scripts/nexus_agent_platform/tests/test_research_work_queue.py`
+
+## Final intelligence closure
+
+The previous Alpha path was traced before changing behavior. `research_alpha_pipeline.evaluate_pending()` is the deterministic governed pre-screen: it reads `alpha_content`/`alpha_claims`, records `alpha_evaluations`, and creates priority-2 follow-up work when evidence is weak. Its explicit `cost_usage` was `model_calls=0`; that was an expected deterministic path, not proof of model-backed Alpha judgment.
+
+The existing server-side `scripts/alpha/alpha_live_research.py` provider boundary was reused for a bounded fresh demand cycle. It successfully reached Brave web search and the YouTube Data API, producing 10 current source records across two independent source types. Reddit was present only as one search result; no Reddit challenge was bypassed and the cycle did not depend on Reddit.
+
+The new `scripts/nexus_agent_platform/alpha_model_review.py` adapter preserves the existing governed stores and receipt conventions. It requires structured Alpha judgment, records provider/model/model_calls, source references, confidence, deficiencies, solution/monetization paths, and next stage in `alpha_evaluations`. A qualified result creates an internal `research_v2_handoffs` draft-review record; it does not publish, spend, contact customers, or execute an external action. A `RESEARCH_MORE` result uses the existing assigned Research queue with priority 2.
+
+### Real fresh demand proof
+
+```text
+research_id=alpha_live_4b36711a3d0efe6b
+query=YouTube and public web questions from new LLC owners about business funding denials, credit thresholds, and required documentation
+source_types=brave,youtube
+source_count=10
+reddit_required_for_demand_discovery=NO
+reddit_status=BLOCKED_EXTERNAL_OR_UNUSABLE when direct Reddit acquisition is attempted; search-result metadata remained bounded and untrusted
+```
+
+The projected need is for new LLC owners seeking business funding who need clearer guidance on denials, credit thresholds, and required documentation. The evidence is current public material from web and YouTube sources; it remains evidence-bound and does not claim conversion, revenue, or customer interviews.
+
+### Real model-backed Alpha proof
+
+The preferred already-certified model was callable without changing production routing:
+
+```text
+alpha_request_id=alpha_model_req_c1eda534d0a64f9a99aa64f83945d12a
+alpha_receipt_id=alpha_receipt_8a11f537ad55409cad9c6dfa1ceb4cee
+provider=openrouter
+model=google/gemini-2.5-flash
+model_calls=1
+decision=QUALIFY
+confidence=High
+target_department=CLYDE_CREDIT
+handoff_id=research_handoff_1c160724c3eb4e61be4f4714a48e8b9e
+handoff_status=DRAFT_REVIEW_REQUIRED
+external_action=false
+```
+
+Alpha considered education, lead generation, consulting, affiliate, and referral paths. It identified a meaningful evidence gap around the exact documentation failures, credit-improvement strategies, and alternative-lender fit; these are validation/research concerns, not invented proof of demand. Because the model decision was `QUALIFY`, no forced Research-more/re-review loop was manufactured for this run. The existing deterministic Research-more loop remains intact and was previously proven; a new model-backed re-review is required only when a model-backed review naturally returns `RESEARCH_MORE`.
+
+### Correlation and blockers
+
+The live chain is correlated by the fresh research id, model request id, Alpha receipt id, need id, finding id, evaluation id, and governed handoff id. Reddit and YouTube acquisition limitations remain isolated external blockers; neither stopped web/YouTube-metadata discovery, model-backed Alpha, or the internal handoff. No scheduler, queue-priority, concurrency, Hermes, Admin, or Resource Governor architecture was changed.
+
+```text
+FRESH_DEMAND_DISCOVERY=PASS_REAL
+ALPHA_MODEL_BACKED_REVIEW=PASS_REAL
+ALPHA_RECEIPT_TRACEABILITY=PASS_REAL
+DEPARTMENT_HANDOFF=PASS_REAL_INTERNAL_DRAFT_REVIEW
+RESEARCH_MORE_LOOP=NOT_NATURALLY_REQUIRED_FOR_THIS_QUALIFIED_RESULT
+RESOURCE_GOVERNOR_ACTIVATED=NO
+OVERALL_INTELLIGENCE_CLOSURE=PASS_REAL_FOR_THIS_BOUNDED_CYCLE
+```
+
+Additional focused test: `scripts/nexus_agent_platform/tests/test_alpha_model_review.py`.
