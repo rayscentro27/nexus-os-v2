@@ -210,7 +210,7 @@ class KaggleAdapter:
 
 def provider_registry() -> dict[str, dict[str, Any]]:
     mac = MacAdapter().probe(); kaggle = KaggleAdapter().probe()
-    return {"mac": mac, "oracle": {"provider_id": "oracle", "available": "UNKNOWN", "configured": False, "authorization_state": "NOT_PROVEN"}, "modal": {"provider_id": "modal", "available": True, "configured": True, "authorization_state": "DEPLOYED_EXISTING_REMOTE_WORKER", "adapter": "remote_worker.HttpRemoteWorkerProvider"}, "kaggle": kaggle}
+    return {"mac": mac, "oracle": {"provider_id": "oracle", "available": "UNKNOWN", "configured": False, "authorization_state": "NOT_PROVEN"}, "modal": {"provider_id": "modal", "available": True, "configured": True, "authorization_state": "DEPLOYED_EXISTING_REMOTE_WORKER", "adapter": "remote_worker.HttpRemoteWorkerProvider", "quota_known": False, "cost_state": "UNKNOWN"}, "kaggle": kaggle}
 
 
 def batch_compatible(left: WorkerJob, right: WorkerJob) -> bool:
