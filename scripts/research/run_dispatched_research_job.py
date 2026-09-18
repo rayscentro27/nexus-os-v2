@@ -95,7 +95,8 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 "title": video.get("title", video["video_id"]), "author": channel["name"],
                 "channel_id": channel.get("channel_id"), "channel_url": channel["url"],
                 "discovery_method": video.get("discovery_method", "YOUTUBE_RSS"),
-                "category": "YOUTUBE_CONTENT", "selection_reason": "approved_channel_watchlist"}
+                "category": "YOUTUBE_CONTENT", "selection_reason": "approved_channel_watchlist",
+                "lifecycle": "ONE_TIME" if os.environ.get("NEXUS_MISSION_ITEM_ID") else "MONITORED"}
     pool = SOURCE_POOLS.get(lane_id) or SOURCE_POOLS["BUSINESS_MARKET"]
     index = int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(pool)
     source_type, source_id, source_url, title = pool[index]
