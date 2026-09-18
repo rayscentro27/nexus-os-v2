@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from nexus_agent_platform.governed import persistence
+from nexus_agent_platform.research_work_queue import default_queue
 
 
 def _now() -> str:
@@ -96,6 +97,17 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
             evaluation["next_route"] = route
             evaluation["status"] = "ROUTED"
         persistence.append_record("alpha_evaluations", evaluation)
+        if decision in {"MORE_RESEARCH_USEFUL", "MATERIAL_CONTRADICTION"}:
+            default_queue().enqueue(
+                work_id=f"alpha-followup:{evaluation['evaluation_id']}",
+                work_class="ASSIGNED", priority=2,
+                source_type="WEB_PAGE", source_id=claim.get("source_id") or content.get("source_id") or item_id,
+                source_url=claim.get("source_url") or content.get("source_url") or content.get("url"),
+                requested_by="alpha", parent_request_id=evaluation["evaluation_id"],
+                objective_id=research.get("research_id") or item_id,
+                alpha_followup_required=True, selection_reason="alpha_followup",
+                evidence_refs=[claim.get("claim_id")] if claim.get("claim_id") else [],
+            )
         evaluated.add(item_id)
         created.append(evaluation)
     return {"evaluations_created": created, "evaluated_count": len(created), "skipped_already_evaluated": skipped, "read_only_external": True}

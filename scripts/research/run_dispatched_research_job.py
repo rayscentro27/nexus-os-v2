@@ -18,6 +18,8 @@ sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
 from youtube_full_pipeline import _http_caption_tracks, select_channel_videos  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark_source_result  # noqa: E402
+from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
+from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
 
@@ -41,9 +43,27 @@ SOURCE_POOLS = {
     "GITHUB_TECHNOLOGY": [("GITHUB_REPO", "mvanhorn/last30days-skill", "https://github.com/mvanhorn/last30days-skill", "last30days-skill repository")],
     "PLATFORM_CAPABILITY_INTELLIGENCE": [("GITHUB_REPO", "sushantkarn/SEO-engine", "https://github.com/sushantkarn/SEO-engine", "SEO-engine repository")],
 }
+SOURCE_CATALOG = {source_id: (source_type, source_url, title)
+                  for values in SOURCE_POOLS.values() for source_type, source_id, source_url, title in values}
 
 
 def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
+    queued_payload = os.environ.get("NEXUS_WORK_ITEM_JSON", "")
+    if queued_payload and not (lane_id == "YOUTUBE_CONTENT" and "mission_item_id" in json.loads(queued_payload)):
+        queued = json.loads(queued_payload)
+        known = SOURCE_CATALOG.get(str(queued.get("source_id")), (None, None, None))
+        return {"source_type": queued.get("source_type") or "WEB_PAGE",
+                "source_id": queued.get("source_id") or queued.get("work_id"),
+                "source_url": queued.get("source_url") or queued.get("url") or known[1] or "",
+                "title": queued.get("title") or queued.get("question") or known[2] or queued.get("source_id") or queued.get("work_id"),
+                "author": queued.get("requested_by", "Nexus Research"),
+                "category": lane_id, "selection_reason": queued.get("selection_reason") or "assigned_request",
+                "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
+                "objective_id": queued.get("objective_id"), "mission_id": queued.get("mission_id"),
+                "mission_item_id": queued.get("mission_item_id"), "parent_request_id": queued.get("parent_request_id"),
+                "alpha_followup_required": queued.get("alpha_followup_required", False),
+                "department_target": queued.get("department_target"),
+                "lifecycle": queued.get("lifecycle", "MONITORED")}
     if lane_id == "YOUTUBE_CONTENT":
         config = json.loads((ROOT / "configs/youtube_research_channels.json").read_text(encoding="utf-8"))
         channels = [row for row in config.get("channels", []) if row.get("enabled") and row.get("approved_by_ray")]
@@ -100,6 +120,8 @@ def main() -> int:
     event(execution_id, "CLAIMED", worker_id="research_operator_worker", attempt_count=1)
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
     lane_id = os.environ.get("NEXUS_SELECTED_LANE_ID", "BUSINESS_MARKET")
+    work_id = os.environ.get("NEXUS_WORK_ID", "")
+    selected_work_class = os.environ.get("NEXUS_SELECTED_WORK_CLASS", "GENERAL_DISCOVERY")
     mission_item_id = os.environ.get("NEXUS_MISSION_ITEM_ID", "")
     mission_item = None
     if mission_item_id:
@@ -110,12 +132,36 @@ def main() -> int:
         os.environ["NEXUS_MISSION_TARGET_ID"] = str(mission_item.get("target_id", ""))
     # Selection is part of the bounded mission attempt.  A discovery timeout
     # must settle the claimed item instead of leaving it IN_PROGRESS forever.
+    def settle_queue(status: str, *, result=None, blocker_type=None):
+        if work_id:
+            try:
+                default_queue().settle(work_id, status, result=result, blocker_type=blocker_type)
+            except Exception as exc:
+                event(execution_id, "QUEUE_SETTLE_DEGRADED", worker_id="research_operator_worker", error=str(exc)[:300])
+
+    if work_id and selected_work_class == "DEMAND_DISCOVERY":
+        try:
+            needs = discover_from_governed_questions(queue=default_queue())
+            result = {"needs_created": len(needs), "selection_reason": "customer_demand_discovery"}
+            event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker",
+                  result_status="PASS", demand_needs_created=len(needs), selected_work_class=selected_work_class)
+            settle_queue("COMPLETE", result=result)
+            event(execution_id, "COMPLETED", worker_id="research_operator_worker", alpha_status="PENDING_REVIEW",
+                  next_action="Alpha review of structured customer need")
+            return 0
+        except Exception as exc:
+            event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
+                  error=str(exc)[:500], failure_class="DEMAND_DISCOVERY_FAILURE")
+            settle_queue("FAILED_RETRYABLE", result={"error": str(exc)[:500]}, blocker_type="DEMAND_DISCOVERY_FAILURE")
+            return 1
+
     try:
         item = select_scheduled_item(lane_id, execution_id)
     except TimeoutError as exc:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=str(exc)[:500], failure_class="SOURCE_SELECTION_TIMEOUT",
               retry_after="next scheduled wake")
+        settle_queue("FAILED_RETRYABLE", result={"error": str(exc)[:500]}, blocker_type="SOURCE_SELECTION_TIMEOUT")
         if mission_item:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE",
                                result={"error": str(exc)[:500], "failure_class": "SOURCE_SELECTION_TIMEOUT"},
@@ -125,6 +171,7 @@ def main() -> int:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=str(exc)[:500], failure_class="SOURCE_SELECTION_FAILURE",
               retry_after="next scheduled wake")
+        settle_queue("FAILED_RETRYABLE", result={"error": str(exc)[:500]}, blocker_type="SOURCE_SELECTION_FAILURE")
         if mission_item:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE",
                                result={"error": str(exc)[:500], "failure_class": "SOURCE_SELECTION_FAILURE"},
@@ -152,10 +199,12 @@ def main() -> int:
     except TimeoutError as exc:
         signal.alarm(0)
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error=str(exc), failure_class="PROVIDER_OR_ALPHA_TIMEOUT", retry_after="next scheduled wake")
+        settle_queue("FAILED_RETRYABLE", result={"error": str(exc)}, blocker_type="PROVIDER_OR_ALPHA_TIMEOUT")
         return 124
     except Exception as exc:
         signal.alarm(0)
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error=str(exc)[:500], failure_class="RESEARCH_WORKER_FAILURE", retry_after="next scheduled wake")
+        settle_queue("FAILED_RETRYABLE", result={"error": str(exc)[:500]}, blocker_type="RESEARCH_WORKER_FAILURE")
         if mission_item:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE", result={"error": str(exc)[:500]}, next_action="retry bounded mission item")
         return 1
@@ -168,7 +217,8 @@ def main() -> int:
     # dead worker; the next selector wake can recover the state from this
     # execution ledger.
     try:
-        mark_source_result(lane_id, item.get("source_id", ""), final_status, source_class=item.get("source_type", ""))
+        mark_source_result(lane_id, item.get("source_id", ""), final_status,
+                           source_class=item.get("lifecycle") or item.get("source_type", ""))
     except Exception as exc:
         event(execution_id, "SOURCE_REFRESH_STATE_DEGRADED", worker_id="research_operator_worker",
               error=str(exc)[:500], next_action="continue; hydrate refresh state from execution history")
@@ -184,7 +234,11 @@ def main() -> int:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=result.get("error", "scheduled processor failed"), failure_class="SCHEDULED_PROCESSOR_FAILURE",
               retry_after="next scheduled wake")
+        settle_queue("FAILED_RETRYABLE", result=result, blocker_type="SCHEDULED_PROCESSOR_FAILURE")
         return 1
+    queue_status = "COMPLETE" if final_status == "FULLY_PROCESSED" else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
+    settle_queue(queue_status, result={"final_status": final_status, "source_id": item.get("source_id"),
+                                       "research_package_id": (result.get("v2") or {}).get("research_package_id")})
     event(execution_id, "COMPLETED", worker_id="research_operator_worker", alpha_status="NOT_INVOKED",
           next_action="continue next scheduled research wake")
     return 0

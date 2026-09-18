@@ -24,6 +24,7 @@ from nexus_agent_platform.continuous_operating_kernel import (build_program_regi
 from nexus_agent_platform.knowledge_freshness import refresh_due, refresh_once  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import evaluate_pending  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import select_lane  # noqa: E402
+from nexus_agent_platform.research_work_queue import concurrency_limits, default_queue, worker_bucket  # noqa: E402
 
 WAKE_TIMEOUT_SECONDS = int(os.environ.get("NEXUS_WAKE_TIMEOUT_SECONDS", "45"))
 PROGRESS_PATH = ROOT / "reports/runtime/nexus_research_wake_progress.json"
@@ -171,7 +172,14 @@ def main() -> int:
     receipts = []
     limit = args.max_cycles if args.daemon and args.max_cycles > 0 else (args.cycles if not args.daemon else None)
     index = 0
+    batch_started = 0
+    batch_counts = {"youtube": 0, "web": 0, "discovery": 0}
+    limits = concurrency_limits()
     while limit is None or index < limit:
+        if args.daemon and batch_started >= limits["total"]:
+            time.sleep(args.interval_seconds)
+            batch_started = 0
+            batch_counts = {"youtube": 0, "web": 0, "discovery": 0}
         # Do not scan the append-only Alpha content ledger on every unattended
         # wake.  It is an optional maintenance input and can grow independently
         # of the Research heartbeat; a full-file read here previously held the
@@ -226,7 +234,39 @@ def main() -> int:
                     "content_count": result.get("content_count", 0), "alpha_evaluations_created": alpha_result.get("evaluated_count", 0), "stale_refresh": refresh, "no_external_action": True}
         execution_id = f"research_exec_{uuid.uuid4().hex[:20]}"
         operator_command = [sys.executable, str(ROOT / "scripts/research/run_dispatched_research_job.py"), "--execution-id", execution_id, "--timeout-seconds", str(int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")))]
-        lane = select_lane(reason="due_fairness_rotation")
+        lane = select_lane(reason="priority_work_class")
+        if lane.get("work_id"):
+            bucket = worker_bucket(lane)
+            if batch_counts[bucket] >= limits[bucket]:
+                # The claim is durable; return it rather than letting a full
+                # class slot turn into an accidental duplicate execution.
+                default_queue().release(str(lane["work_id"]), reason=f"{bucket}_concurrency_cap")
+                receipt = run_cycle(lambda: {"status": "NO_ACTION_REQUIRED", "execution_mode": "SUPERVISED",
+                                             "selection_reason": f"{bucket}_concurrency_cap",
+                                             "selected_work_class": lane.get("selected_work_class")},
+                                    cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
+                                    incomplete_objectives=1, interval_seconds=args.interval_seconds,
+                                    scheduler="ACTIVE_DAEMON" if args.daemon else "ACTIVE_IN_PROCESS_CYCLE")
+                receipts.append(receipt)
+                index += 1
+                batch_started += 1
+                continue
+        if lane.get("no_source_selected"):
+            receipt = run_cycle(lambda: {"status": "NO_ACTION_REQUIRED", "execution_mode": "REAL",
+                                         "task_processing": "SUPERVISED", "selection_reason": lane.get("selection_reason"),
+                                         "selected_work_class": lane.get("selected_work_class")},
+                                cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
+                                incomplete_objectives=0, interval_seconds=args.interval_seconds,
+                                scheduler="ACTIVE_DAEMON" if args.daemon else "ACTIVE_IN_PROCESS_CYCLE")
+            receipts.append(receipt)
+            index += 1
+            batch_started += 1
+            if args.daemon and (limit is None or index < limit):
+                if batch_started >= limits["total"]:
+                    time.sleep(args.interval_seconds)
+                    batch_started = 0
+                    batch_counts = {"youtube": 0, "web": 0, "discovery": 0}
+            continue
         operator_env = {**os.environ, "NEXUS_SELECTED_LANE_ID": lane["lane_id"],
                         "NEXUS_SELECTED_LANE_NAME": lane["name"],
                         "NEXUS_SELECTED_LANE_REASON": lane["selection_reason"],
@@ -240,7 +280,9 @@ def main() -> int:
                             "fairness": lane.get("fairness_basis", {}),
                             "alternatives": lane.get("alternatives_considered", []),
                         }, sort_keys=True),
-                        "NEXUS_EXECUTION_ID": execution_id}
+                        "NEXUS_EXECUTION_ID": execution_id,
+                        "NEXUS_WORK_ID": str(lane.get("work_id", "")),
+                        "NEXUS_WORK_ITEM_JSON": json.dumps(lane, sort_keys=True, default=str) if lane.get("work_id") else ""}
         _write_wake_progress("WORK_SELECTED", cycle_id=f"kernel_cycle_{index + 1}", selected_lane_id=lane["lane_id"])
         receipt = run_cycle(lambda: bounded_wake(real_research, command=operator_command, timeout_seconds=int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")), env=operator_env), cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
                                   incomplete_objectives=1, stale_claims=len(stale_records), interval_seconds=args.interval_seconds,
@@ -248,8 +290,13 @@ def main() -> int:
         _write_wake_progress("WAKE_FINALIZING", cycle_id=f"kernel_cycle_{index + 1}", result_status=receipt["result"].get("status"))
         receipts.append(receipt)
         index += 1
+        batch_started += 1
+        batch_counts[worker_bucket(lane)] += 1
         if args.daemon and (limit is None or index < limit):
-            time.sleep(args.interval_seconds)
+            if batch_started >= limits["total"]:
+                time.sleep(args.interval_seconds)
+                batch_started = 0
+                batch_counts = {"youtube": 0, "web": 0, "discovery": 0}
         # Non-daemon invocations intentionally honor --cycles. The previous
         # unconditional break made a requested second wake unreachable.
     successful_statuses = {"PASS", "COMPLETED", "COMPLETED_WITH_FINDINGS", "NO_ACTION_REQUIRED"}

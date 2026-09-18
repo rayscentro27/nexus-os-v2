@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+from nexus_agent_platform.research_work_queue import WORK_CLASSES, default_queue
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
@@ -144,7 +147,8 @@ def _source_refresh_snapshot(lane_id: str, source_id: str, now: datetime) -> dic
     state = _read_source_refresh_state().get(_source_state_key(lane_id, source_id), {})
     next_at = state.get("next_eligible_refresh_at")
     cooling = bool(next_at and _parse_age(next_at, now) == 0.0)
-    return {**state, "cooling_down": cooling}
+    return {**state, "cooling_down": cooling,
+            "terminal": state.get("last_status") in {"COMPLETE", "PARKED"} or bool(state.get("parked"))}
 
 
 def _latest_source_for_lane(lane_id: str) -> str:
@@ -170,15 +174,18 @@ def mark_source_result(lane_id: str, source_id: str, status: str, *, source_clas
     key = _source_state_key(lane_id, source_id)
     prior = state.get(key, {})
     duplicate = str(status).upper() == "DUPLICATE_UNCHANGED"
+    lifecycle = str(prior.get("lifecycle") or ("ONE_TIME" if source_class in {"ONE_TIME", "YOUTUBE_VIDEO_ONE_TIME"} else "MONITORED"))
     if duplicate:
         consecutive = int(prior.get("consecutive_duplicate_count", 0) or 0) + 1
         # Escalate only within a bounded ceiling so a source can return after
         # a meaningful refresh window or an explicit investigation override.
         cooldown = min(_refresh_seconds(lane_id, source_id) * max(1, min(consecutive, 4)), 86400)
+        parked = consecutive >= int(os.environ.get("NEXUS_SOURCE_PARK_AFTER_DUPLICATES", "4"))
         updated = {**prior, "lane_id": lane_id, "source_id": source_id,
                    "last_duplicate_at": now, "consecutive_duplicate_count": consecutive,
-                   "next_eligible_refresh_at": (datetime.now(timezone.utc) + timedelta(seconds=cooldown)).isoformat(),
-                   "last_status": "DUPLICATE_UNCHANGED", "source_class": source_class or prior.get("source_class", "")}
+                   "next_eligible_refresh_at": None if parked else (datetime.now(timezone.utc) + timedelta(seconds=cooldown)).isoformat(),
+                   "last_status": "PARKED" if parked else "DUPLICATE_UNCHANGED", "source_class": source_class or prior.get("source_class", ""),
+                   "lifecycle": lifecycle, "parked": parked}
     else:
         # A successful refresh also establishes a quiet period.  Some
         # processors return FULLY_PROCESSED for an idempotent web read rather
@@ -186,12 +193,14 @@ def mark_source_result(lane_id: str, source_id: str, status: str, *, source_clas
         # label alone is insufficient to prevent rapid replay.  This is a
         # refresh cooldown, not a rejection and it never removes history.
         refresh_due = None
-        if str(status).upper() == "FULLY_PROCESSED":
+        if str(status).upper() == "FULLY_PROCESSED" and lifecycle != "ONE_TIME":
             refresh_due = (datetime.now(timezone.utc) + timedelta(seconds=_refresh_seconds(lane_id, source_id))).isoformat()
         updated = {**prior, "lane_id": lane_id, "source_id": source_id,
                    "last_changed_at": now, "consecutive_duplicate_count": 0,
                    "next_eligible_refresh_at": refresh_due, "last_status": str(status),
-                   "source_class": source_class or prior.get("source_class", "")}
+                   "source_class": source_class or prior.get("source_class", ""),
+                   "lifecycle": lifecycle, "parked": lifecycle == "ONE_TIME",
+                   "source_status": "COMPLETE" if lifecycle == "ONE_TIME" and str(status).upper() == "FULLY_PROCESSED" else "MONITORING"}
     state[key] = updated
     _write_source_refresh_state(state)
     # Keep the lane registry explainable: the next selector wake can identify
@@ -205,6 +214,49 @@ def mark_source_result(lane_id: str, source_id: str, status: str, *, source_clas
             row["last_source_result_at"] = now
     REGISTRY_PATH.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return updated
+
+
+def select_priority_work(*, worker_id: str = "research_scheduler", lease_seconds: int = 900) -> dict[str, Any] | None:
+    """Claim durable assigned/follow-up work before legacy lane scoring."""
+    queue = default_queue()
+    _sync_governed_priority_work(queue)
+    return queue.claim_next(worker_id=worker_id, allowed_classes=WORK_CLASSES, lease_seconds=lease_seconds)
+
+
+def _sync_governed_priority_work(queue) -> None:
+    """Project unfinished V2 assignments into the operational queue.
+
+    Governed ledgers remain authoritative; this projection only gives the
+    scheduler a durable work item and lease.  It intentionally excludes broad
+    OPEN questions, which remain lower-priority monitoring/discovery material.
+    """
+    existing = {str(item.get("work_id")) for item in queue.load().get("items", [])}
+    investigations = _read_governed("research_v2_investigations")
+    for row in investigations:
+        if str(row.get("status", "")).upper() != "RESEARCH_MORE":
+            continue
+        work_id = f"investigation:{row.get('investigation_id')}"
+        if work_id in existing:
+            continue
+        source_id = row.get("source_id")
+        queue.enqueue(work_id=work_id, work_class="ASSIGNED", priority=3,
+                      lane_id="YOUTUBE_CONTENT" if str(source_id or "").startswith(("PVd", "Tl", "Ld", "z_", "Nps")) else "BUSINESS_MARKET",
+                      source_type="YOUTUBE_VIDEO" if str(source_id or "").startswith(("PVd", "Tl", "Ld", "z_", "Nps")) else "WEB_PAGE",
+                      source_id=source_id, source_url=row.get("source_url") or row.get("canonical_url") or row.get("source_ref"),
+                      title=row.get("title") or row.get("question") or row.get("investigation_id"),
+                      question=row.get("question"), objective_id=row.get("investigation_id"), lifecycle="ONE_TIME",
+                      requested_by="research_v2_investigation", selection_reason="unfinished_high_value_investigation",
+                      alpha_followup_required=True, evidence_refs=[row.get("last_evidence_package_id")] if row.get("last_evidence_package_id") else [])
+    for row in _read_governed("research_v2_mission_items"):
+        if str(row.get("status", "")).upper() in {"ALREADY_COMPLETED", "COMPLETED", "BLOCKED_EXTERNAL_FINAL"}:
+            continue
+        work_id = f"mission-item:{row.get('item_id')}"
+        if work_id in existing:
+            continue
+        queue.enqueue(work_id=work_id, work_class="ASSIGNED", priority=1, lane_id="YOUTUBE_CONTENT",
+                      source_type="YOUTUBE_VIDEO", source_id=row.get("target_id"), source_url=row.get("canonical_url_or_reference"),
+                      title=row.get("display_name"), mission_id=row.get("mission_id"), mission_item_id=row.get("item_id"),
+                      requested_by="bounded_research_mission", selection_reason="assigned_request", lifecycle="ONE_TIME")
 
 
 def _read_governed(name: str) -> list[dict[str, Any]]:
@@ -293,6 +345,15 @@ def ensure_registry() -> list[dict[str, Any]]:
 
 def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
     _hydrate_refresh_state_from_history()
+    priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}")
+    if priority_work:
+        lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
+        lane = next((row for row in ensure_registry() if row.get("lane_id") == lane_id), None)
+        priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
+                              "selection_reason": priority_work.get("selection_reason") or "assigned_work_priority",
+                              "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
+                              "selected_at": _now().isoformat()})
+        return priority_work
     rows = [row for row in ensure_registry() if row.get("enabled")]
     now = _now()
 
@@ -327,6 +388,8 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
         # bypass the source cooldown when the lane has only one fixed source.
         source_id = str(row.get("last_source_id") or _latest_source_for_lane(str(row["lane_id"])))
         refresh = _source_refresh_snapshot(str(row["lane_id"]), source_id, now) if source_id else {}
+        if refresh.get("terminal") and not (context["high"] or context["followups"]):
+            continue
         progression_override = bool(context["high"] or context["followups"])
         duplicate_penalty = 0.0
         if refresh.get("cooling_down") and not progression_override:
@@ -335,7 +398,24 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
                            materiality_signal + monitored_source_signal + progression_signal + age_signal - duplicate_penalty,
                            materiality_signal + monitored_source_signal, progression_signal, age_signal, duplicate_penalty))
     if not candidates:
-        candidates = [(row, _lane_context(str(row["lane_id"]), now), "", {}, 0.0, 0.0, 0.0, 0.0, 0.0) for row in rows]
+        candidates = [(row, _lane_context(str(row["lane_id"]), now), "", {}, 0.0, 0.0, 0.0, 0.0, 0.0)
+                      for row in rows if not _source_refresh_snapshot(str(row["lane_id"]), str(row.get("last_source_id", "")), now).get("terminal")]
+    if not candidates:
+        demand_work = _seed_demand_discovery_work(default_queue())
+        if demand_work:
+            claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"DEMAND_DISCOVERY"})
+            if claimed:
+                claimed.update({"lane_id": "GENERAL_DISCOVERY", "name": "Customer Demand Discovery",
+                                "selection_reason": "customer_demand_discovery", "selected_work_class": "DEMAND_DISCOVERY",
+                                "priority_contract_rank": 6, "selected_at": now.isoformat()})
+                return claimed
+        # All one-time/parked sources are terminal. Keep the supervisor alive
+        # without inventing another processing attempt; the next wake can be
+        # driven by a durable assignment or a material-change override.
+        return {"lane_id": "GENERAL_DISCOVERY", "name": "General Discovery", "priority": "P4",
+                "enabled": True, "selection_reason": "queue_empty_no_nonterminal_source",
+                "selected_work_class": "GENERAL_DISCOVERY", "no_source_selected": True,
+                "selected_at": now.isoformat()}
     max_count = max(int(row.get("selection_count", 0)) for row, *_ in candidates)
     scored = []
     for row, context, source_id, refresh, base_score, materiality_signal, progression_signal, age_signal, duplicate_penalty in candidates:
@@ -346,8 +426,8 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
     score, selected_row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty = max(
         scored, key=lambda x: (x[0], -int(x[1].get("selection_count", 0)), str(x[1]["lane_id"])))
     selected = dict(selected_row)
-    selected["selection_reason"] = reason
-    selected["selected_work_class"] = "BOUNDED_MISSION" if context.get("mission_pending") else "ACTIVE_FOLLOWUP" if context["followups"] else "THESIS_MATURATION" if context["theses"] else "EVIDENCE_GAP" if context["high"] or context["medium"] or context["questions"] else "MONITORED_SOURCE" if context.get("watched_sources") else "DISCOVERY"
+    selected["selection_reason"] = "due_monitored_source" if context.get("watched_sources") or source_id else "general_discovery"
+    selected["selected_work_class"] = "MONITORED"
     if context.get("mission_pending"):
         try:
             from bounded_research_missions import next_mission_item
@@ -375,6 +455,25 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
     selected["last_selection_reason"] = reason
     REGISTRY_PATH.write_text(json.dumps([selected if row["lane_id"] == selected["lane_id"] else row for row in rows], indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return selected
+
+
+def _seed_demand_discovery_work(queue) -> bool:
+    """Seed one bounded demand pass only when no higher-class work is due."""
+    work_id = "demand-discovery:governed-question-clusters"
+    items = queue.load().get("items", [])
+    if any(str(item.get("work_id")) == work_id for item in items):
+        return False
+    rows = _read_governed("research_v2_questions")
+    demand_rows = [row for row in rows if any(term in str(row.get("question") or row.get("question_or_task") or "").lower()
+                                              for term in ("customer", "demand", "funding", "credit", "lender", "loan", "revenue", "bankability"))]
+    if len(demand_rows) < 2:
+        return False
+    queue.enqueue(work_id=work_id, work_class="DEMAND_DISCOVERY", priority=10,
+                  source_type="DEMAND_QUERY", source_id="governed-question-clusters",
+                  title="Bounded customer-demand discovery", question="Aggregate repeated governed demand questions",
+                  requested_by="research_scheduler", selection_reason="customer_demand_discovery", lifecycle="ONE_TIME",
+                  evidence_refs=[str(row.get("question_id") or row.get("source_id")) for row in demand_rows[:10]])
+    return True
 
 
 def mark_lane_backoff(lane_id: str, reason: str, *, seconds: int = 1200) -> None:

@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from nexus_agent_platform.research_work_queue import default_queue
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -38,11 +40,37 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _queue_projection() -> dict[str, Any]:
+    """Expose scheduler truth without making operational state a second queue."""
+    try:
+        queue = default_queue()
+        queue.recover_expired_leases()
+        summary = queue.summary()
+        active = summary.get("active", [])
+        return {
+            "queue": summary,
+            "active_work_by_class": {
+                work_class: [item for item in active if item.get("work_class") == work_class]
+                for work_class in ("ASSIGNED", "MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY")
+            },
+            "queue_depth_by_class": summary.get("by_class", {}),
+            "alpha_followups": [item for item in summary.get("next_queued", []) if item.get("alpha_followup_required")],
+            "blocked_items": summary.get("blocked", []),
+            "recent_completed_work": summary.get("recent_completed", []),
+            "next_scheduled_work": (summary.get("next_queued") or [None])[0],
+        }
+    except Exception as exc:
+        return {"queue": {"error": str(exc)[:200]}, "active_work_by_class": {},
+                "queue_depth_by_class": {}, "alpha_followups": [], "blocked_items": [],
+                "recent_completed_work": [], "next_scheduled_work": None}
+
+
 def build_research_operational_state() -> dict[str, Any]:
     """Return the current bounded Research/Alpha operational contract."""
     now = datetime.now(timezone.utc).isoformat()
     local_zone = ZoneInfo("America/Phoenix")
     local_today = datetime.now(local_zone).date().isoformat()
+    queue_projection = _queue_projection()
     alpha_status_path = ROOT / "data/runtime/alpha_telegram_status.json"
     metadata_path = ROOT / "reports/runtime/supabase_ready/youtube_video_metadata_latest.json"
     transcript_path = ROOT / "reports/runtime/supabase_ready/youtube_transcript_imports_latest.json"
@@ -211,6 +239,33 @@ def build_research_operational_state() -> dict[str, Any]:
             "research_v2_processed_sources": sum(1 for row in v2_today_sources if row.get("processing_status") == "FULLY_PROCESSED"),
         },
         "current_work": current_work,
+        "work_queue": queue_projection,
+        "active_assigned_work": queue_projection["active_work_by_class"].get("ASSIGNED", []),
+        "active_monitored_work": queue_projection["active_work_by_class"].get("MONITORED", []),
+        "active_discovery_work": queue_projection["active_work_by_class"].get("DEMAND_DISCOVERY", []) + queue_projection["active_work_by_class"].get("GENERAL_DISCOVERY", []),
+        "queue_depth_by_class": queue_projection["queue_depth_by_class"],
+        "current_youtube_monitor_state": [
+            item for item in queue_projection["queue"].get("next_queued", [])
+            if str(item.get("source_type") or "").upper().startswith("YOUTUBE")
+        ],
+        "alpha_followups": queue_projection["alpha_followups"],
+        "blocked_work_items": queue_projection["blocked_items"],
+        "recent_completed_work": queue_projection["recent_completed_work"],
+        "next_scheduled_work": queue_projection["next_scheduled_work"],
+        "productivity_metrics": {
+            "ASSIGNED_QUEUE_DEPTH": queue_projection["queue_depth_by_class"].get("ASSIGNED", 0),
+            "ASSIGNED_COMPLETED_24H": sum(1 for item in queue_projection["recent_completed_work"] if item.get("work_class") == "ASSIGNED"),
+            "MONITOR_CHECKS_24H": sum(1 for row in v2_today_sources if row.get("source_type") in {"MONITORED", "YOUTUBE_VIDEO"}),
+            "NEW_CONTENT_DETECTED_24H": sum(1 for row in v2_today_sources if row.get("processing_status") == "FULLY_PROCESSED"),
+            "DEMAND_DISCOVERIES_24H": sum(1 for item in queue_projection["recent_completed_work"] if item.get("work_class") == "DEMAND_DISCOVERY"),
+            "INVESTIGATIONS_ADVANCED_24H": len(v2_today_questions),
+            "ALPHA_HANDOFFS_24H": len(v2_today_reviews),
+            "QUALIFIED_FINDINGS_24H": sum(1 for row in v2_today_reviews if str(row.get("alpha_assessment", "")).upper() in {"QUALIFY", "QUALIFIED"}),
+            "DEPARTMENT_HANDOFFS_24H": sum(1 for row in v2_handoffs if local_date_for(row) == local_today),
+            "DUPLICATE_UNCHANGED_24H": sum(1 for row in v2_today_sources if str(row.get("processing_status", "")).upper() == "DUPLICATE_UNCHANGED"),
+            "PARKED_SOURCES": queue_projection["queue"].get("by_status", {}).get("PARKED", 0),
+            "BLOCKED_EXTERNAL": len(queue_projection["blocked_items"]),
+        },
         "recent_findings": v2_findings,
         "mission_state": {
             "active_count": len(mission_state["active"]),
