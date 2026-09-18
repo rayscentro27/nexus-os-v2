@@ -234,12 +234,13 @@ def main() -> int:
                     "content_count": result.get("content_count", 0), "alpha_evaluations_created": alpha_result.get("evaluated_count", 0), "stale_refresh": refresh, "no_external_action": True}
         execution_id = f"research_exec_{uuid.uuid4().hex[:20]}"
         operator_command = [sys.executable, str(ROOT / "scripts/research/run_dispatched_research_job.py"), "--execution-id", execution_id, "--timeout-seconds", str(int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")))]
-        lane = select_lane(reason="priority_work_class")
+        blocked_buckets = {bucket for bucket, count in batch_counts.items() if count >= limits[bucket]}
+        lane = select_lane(reason="priority_work_class", blocked_buckets=blocked_buckets)
         if lane.get("work_id"):
             bucket = worker_bucket(lane)
             if batch_counts[bucket] >= limits[bucket]:
-                # The claim is durable; return it rather than letting a full
-                # class slot turn into an accidental duplicate execution.
+                # This is a defensive guard for a race between selector and
+                # parent bookkeeping. Normal selection excludes full buckets.
                 default_queue().release(str(lane["work_id"]), reason=f"{bucket}_concurrency_cap")
                 receipt = run_cycle(lambda: {"status": "NO_ACTION_REQUIRED", "execution_mode": "SUPERVISED",
                                              "selection_reason": f"{bucket}_concurrency_cap",

@@ -56,6 +56,14 @@ def test_worker_caps_are_bounded_and_classified():
     assert worker_bucket({"source_type": "WEB_PAGE", "work_class": "ASSIGNED"}) == "web"
 
 
+def test_claim_skips_full_worker_bucket(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="youtube", work_class="ASSIGNED", source_type="YOUTUBE_VIDEO", priority=1)
+    queue.enqueue(work_id="web", work_class="ASSIGNED", source_type="WEB_PAGE", priority=2)
+    claimed = queue.claim_next(worker_id="worker", blocked_buckets={"youtube"})
+    assert claimed["work_id"] == "web"
+
+
 def test_one_time_completion_is_not_requeued(tmp_path):
     queue = ResearchWorkQueue(tmp_path / "queue.json")
     queue.enqueue(work_id="one-time", work_class="ASSIGNED", source_type="YOUTUBE_VIDEO",

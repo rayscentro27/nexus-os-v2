@@ -216,11 +216,13 @@ def mark_source_result(lane_id: str, source_id: str, status: str, *, source_clas
     return updated
 
 
-def select_priority_work(*, worker_id: str = "research_scheduler", lease_seconds: int = 900) -> dict[str, Any] | None:
+def select_priority_work(*, worker_id: str = "research_scheduler", blocked_buckets: set[str] | None = None,
+                         lease_seconds: int = 900) -> dict[str, Any] | None:
     """Claim durable assigned/follow-up work before legacy lane scoring."""
     queue = default_queue()
     _sync_governed_priority_work(queue)
-    return queue.claim_next(worker_id=worker_id, allowed_classes=WORK_CLASSES, lease_seconds=lease_seconds)
+    return queue.claim_next(worker_id=worker_id, allowed_classes=WORK_CLASSES,
+                            blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
 
 
 def _sync_governed_priority_work(queue) -> None:
@@ -343,9 +345,9 @@ def ensure_registry() -> list[dict[str, Any]]:
     return rows
 
 
-def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
+def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[str] | None = None) -> dict[str, Any]:
     _hydrate_refresh_state_from_history()
-    priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}")
+    priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
     if priority_work:
         lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
         lane = next((row for row in ensure_registry() if row.get("lane_id") == lane_id), None)

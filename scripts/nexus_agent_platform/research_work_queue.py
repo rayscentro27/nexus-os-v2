@@ -175,14 +175,17 @@ class ResearchWorkQueue:
         return recovered
 
     def claim_next(self, *, worker_id: str, allowed_classes: Iterable[str] | None = None,
-                   lease_seconds: int = 900) -> dict[str, Any] | None:
+                   blocked_buckets: Iterable[str] | None = None, lease_seconds: int = 900) -> dict[str, Any] | None:
         self.recover_expired_leases()
         store = self.load()
         now = self._now()
         allowed = {str(value).upper() for value in allowed_classes} if allowed_classes else set(WORK_CLASSES)
+        blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
         candidates = []
         for item in store["items"]:
             if item.get("status") not in {"QUEUED", "WAITING"} or item.get("work_class") not in allowed:
+                continue
+            if blocked and worker_bucket(item) in blocked:
                 continue
             due = parse_time(item.get("next_eligible_at"))
             if due and due > now:
