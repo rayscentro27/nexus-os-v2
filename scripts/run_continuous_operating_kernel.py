@@ -25,6 +25,7 @@ from nexus_agent_platform.knowledge_freshness import refresh_due, refresh_once  
 from nexus_agent_platform.research_alpha_pipeline import evaluate_pending  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import select_lane  # noqa: E402
 from nexus_agent_platform.research_work_queue import concurrency_limits, default_queue, worker_bucket  # noqa: E402
+from nexus_agent_platform.productivity_audit import run_productivity_audit  # noqa: E402
 
 WAKE_TIMEOUT_SECONDS = int(os.environ.get("NEXUS_WAKE_TIMEOUT_SECONDS", "45"))
 PROGRESS_PATH = ROOT / "reports/runtime/nexus_research_wake_progress.json"
@@ -174,8 +175,12 @@ def main() -> int:
     index = 0
     batch_started = 0
     batch_counts = {"youtube": 0, "web": 0, "discovery": 0}
+    audit_results = []
     limits = concurrency_limits()
     while limit is None or index < limit:
+        audit = run_productivity_audit(startup=(index == 0), force=False)
+        if audit.get("status") != "SKIPPED_INTERVAL":
+            audit_results.append(audit)
         if args.daemon and batch_started >= limits["total"]:
             time.sleep(args.interval_seconds)
             batch_started = 0
@@ -303,6 +308,7 @@ def main() -> int:
     successful_statuses = {"PASS", "COMPLETED", "COMPLETED_WITH_FINDINGS", "NO_ACTION_REQUIRED"}
     output = {"ok": bool(receipts) and all(r["result"].get("status") in successful_statuses for r in receipts), "cycles": len(receipts),
               "programs": len(programs), "sources": len(sources), "receipts": receipts,
+              "productivity_audits": audit_results,
               "no_external_action": True}
     print(json.dumps(output, indent=2) if args.json else f"Continuous kernel {'PASS' if output['ok'] else 'DEGRADED'}: {len(receipts)} cycles")
     return 0 if output["ok"] else 1
