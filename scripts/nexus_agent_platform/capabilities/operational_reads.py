@@ -224,7 +224,10 @@ def _blockers() -> Dict[str, Any]:
 
     latest: dict[str, dict[str, Any]] = {}
     for record in persistence.read_records("work_orders"):
-        latest[record["work_order_id"]] = record
+        work_order_id = record.get("work_order_id")
+        if not work_order_id:
+            continue
+        latest[work_order_id] = record
     for order in latest.values():
         if order.get("status") != "blocked":
             continue

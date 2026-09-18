@@ -40,7 +40,7 @@ def _conversation_chat_id(conversation_id):
     return int(digest, 16)
 
 
-def _hermes_context(message, recent_history):
+def _hermes_context(message, recent_history, conversation_id=""):
     """Build bounded Nexus pre-context for Hermes without becoming an agent.
 
     Hermes remains the execution owner. These projections are read-only
@@ -72,6 +72,14 @@ def _hermes_context(message, recent_history):
         "- Google MCP: not configured in nova_nexus and unavailable to this turn.\n"
         "- Gmail, Calendar, Drive: unavailable unless a separately proven Google tool appears in this turn.\n"
         "- Never infer active access from repository documentation or historical Hermes reports.\n"
+        f"- ADMIN_CONVERSATION_ID for delegation correlation: {str(conversation_id)[:120]}\n"
+        "DEPARTMENT DELEGATION CONTRACT (authoritative):\n"
+        "- If the user explicitly says Ask Systems Engineering, call nexus_delegate_specialist with specialist SYSTEM.\n"
+        "- If the user explicitly says Ask Research, call nexus_delegate_specialist with specialist RESEARCH.\n"
+        "- If the user explicitly says Ask Alpha, call nexus_delegate_specialist with specialist ALPHA.\n"
+        "- Do not substitute a generic business-state read or historical report for an explicit delegation.\n"
+        "- A delegated result is valid only with its delegation_receipt, freshness, status, and evidence references.\n"
+        "- If the receipt is BLOCKED or unavailable, say so; do not present a historical artifact as fresh execution.\n"
     )
     return (
         "[NEXUS HERMES ADMIN CONTEXT]\n"
@@ -112,7 +120,7 @@ def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
         message,
         str(conversation_id),
         timeout_seconds=180.0,
-        pre_context=_hermes_context(message, recent_history),
+        pre_context=_hermes_context(message, recent_history, conversation_id),
     )
     if result.status != "SUCCEEDED" or not result.response:
         raise RuntimeError(result.error or "hermes-nova-unavailable")

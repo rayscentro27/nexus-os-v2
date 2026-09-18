@@ -12,6 +12,8 @@ TOOL_NAMES = (
     "nexus_get_opportunities",
     "nexus_get_business_state",
     "nexus_get_system_health",
+    "nexus_get_research_state",
+    "nexus_get_alpha_review",
     "nexus_delegate_specialist",
 )
 

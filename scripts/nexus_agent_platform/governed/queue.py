@@ -96,9 +96,16 @@ def get_queue(limit: int = 50, status: Optional[str] = None) -> Dict[str, Any]:
     eligible: List[Dict[str, Any]] = []
     seen: set = set()
     for record in persistence.read_records("work_orders"):
-        if record["work_order_id"] in seen:
+        # The append-only collection also contains older research/handoff
+        # records.  They are not executable work orders and may not carry the
+        # work_order_id field.  Ignore them at this queue boundary instead of
+        # turning a harmless historical row into a current-state error.
+        work_order_id = record.get("work_order_id")
+        if not work_order_id:
             continue
-        seen.add(record["work_order_id"])
+        if work_order_id in seen:
+            continue
+        seen.add(work_order_id)
         if status and record.get("status") != status:
             continue
         if record.get("status") in QUEUEABLE_STATUSES:

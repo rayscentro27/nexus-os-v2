@@ -16,6 +16,8 @@ CAPABILITY_MAP = {
     "nexus_get_business_state": "get_operational_summary",
     # Use the live composite resolver, not the historical report alias.
     "nexus_get_system_health": "get_system_health",
+    "nexus_get_research_state": "get_research_operational_state",
+    "nexus_get_alpha_review": "get_alpha_review_latest",
 }
 
 

@@ -129,3 +129,28 @@ def test_specialist_request_is_allowlisted_and_read_only(monkeypatch, tmp_path):
     assert result["specialist"] == "SYSTEM"
     assert result["result"]["status"] == "ok"
     assert json.loads(next(tmp_path.glob("nexus-delegation-*.json")).read_text())["read_only"] is True
+
+
+def test_department_receipt_contract_is_correlated_and_bounded(monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "RECEIPT_DIR", tmp_path)
+    monkeypatch.setattr(
+        server,
+        "_call",
+        lambda name: {
+            "status": "ok",
+            "request_id": "read-2",
+            "source": "live-system-health",
+            "currentness": "CURRENT",
+            "metadata": {"freshness": "live", "started_at": "2026-09-18T00:00:00+00:00", "completed_at": "2026-09-18T00:00:01+00:00"},
+            "data": {"overall_status": "HEALTHY"},
+        },
+    )
+    result = server._delegate_specialist("SYSTEM", "check current health", conversation_id="conv-123")
+    receipt = result["delegation_receipt"]
+    assert receipt["department"] == "SYSTEMS_ENGINEERING"
+    assert receipt["conversation_id"] == "conv-123"
+    assert receipt["execution_type"] == "FRESH_EXECUTION"
+    assert receipt["source_type"] == "LIVE_RUNTIME"
+    assert receipt["freshness"] == "FRESH"
+    assert receipt["status"] == "COMPLETED"
+    assert receipt["underlying_request_id"] == "read-2"

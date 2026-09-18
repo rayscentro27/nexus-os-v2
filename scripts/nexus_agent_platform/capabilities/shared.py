@@ -17,6 +17,7 @@ import time
 import uuid
 import ssl
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
@@ -73,6 +74,8 @@ NOVA_ALLOWED_READS = frozenset({
     "get_system_health",
     "get_pending_approvals",
     "get_recent_research",
+    "get_research_operational_state",
+    "get_alpha_review_latest",
     "get_opportunities",
     "get_client_profile",
     "get_funding_readiness",
@@ -1052,6 +1055,46 @@ def _handle_system_health_inner(
         health_data["source_statuses"]["process_failures"] = "error"
         source_errors.append(f"process_failures: {exc}")
 
+    # Source 4: bounded live transport probes.  The process registry's
+    # last_run fields are historical telemetry and cannot satisfy a request
+    # for current Systems Engineering health by themselves.  Probe the
+    # already-authorized local Hermes tunnel and MCP listener on every call.
+    live_probe: Dict[str, Any] = {"probed_at": datetime.now(timezone.utc).isoformat(), "checks": {}}
+    for name, url, accepted in (
+        ("oracle_hermes_health", "http://127.0.0.1:18642/health", {200}),
+    ):
+        try:
+            request = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=4) as response:
+                status_code = int(getattr(response, "status", 200))
+                body = response.read(512).decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            status_code = int(exc.code)
+            body = ""
+        except Exception as exc:
+            status_code = None
+            body = type(exc).__name__
+        live_probe["checks"][name] = {
+            "status": "reachable" if status_code in accepted else "unavailable",
+            "http_status": status_code,
+            "endpoint": url.rsplit("/", 1)[-1],
+            "response_summary": body[:120] if name == "oracle_hermes_health" else None,
+        }
+        health_data["source_statuses"][name] = "success" if status_code in accepted else "unavailable"
+        if status_code in accepted:
+            health_data["sources_checked"].append(name)
+    # The current request is executing inside the authenticated MCP server;
+    # probing this same listener recursively would deadlock the synchronous
+    # tool boundary.  The successful tool invocation is the live listener
+    # proof, so record it directly rather than making a self-request.
+    live_probe["checks"]["nexus_mcp_listener"] = {
+        "status": "active",
+        "evidence": "current_authenticated_MCP_tool_invocation",
+    }
+    health_data["source_statuses"]["nexus_mcp_listener"] = "success"
+    health_data["sources_checked"].append("nexus_mcp_listener")
+    health_data["fresh_runtime_probe"] = live_probe
+
     # Determine overall status using canonical rules:
     # - healthy: all sources OK, no failures, services active
     # - degraded: positive evidence of degradation (failures > 0 OR degraded > 0)
@@ -1338,6 +1381,135 @@ def _handle_recent_research(
             "trace_id": trace_id,
             "handler": "hermes._get_research_history",
             "access_boundary": "approved read capability only",
+        },
+    }
+
+
+def _handle_research_operational_state(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return bounded current Research state for a department delegation."""
+    from nexus_agent_platform.research_operational_state import build_research_operational_state
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+    state = build_research_operational_state()
+    bounded = {
+        "generated_at": state.get("generated_at", generated_at),
+        "department": state.get("department", "RESEARCH"),
+        "research_health": state.get("research_health"),
+        "research_work_state": state.get("research_work_state"),
+        "research_effective_readiness": state.get("research_effective_readiness"),
+        "current_research_objective": state.get("current_research_objective"),
+        "current_work": state.get("current_work", {}),
+        "today_activity": state.get("today_activity", {}),
+        "mission_state": state.get("mission_state", {}),
+        "recent_findings": (state.get("recent_findings") or [])[:8],
+        "scheduler": state.get("scheduler", {}),
+        "source": "research_operational_state.build_research_operational_state",
+    }
+    return {
+        "status": "success",
+        "capability": "get_research_operational_state",
+        "source": "research_operational_state",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": bounded,
+        "error": None,
+        "provenance": {
+            "capability": "get_research_operational_state",
+            "status": "success",
+            "source": "research_operational_state",
+            "source_type": "live_governed_read",
+            "retrieved_at": generated_at,
+            "generated_at": state.get("generated_at", generated_at),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "handler": "research_operational_state.build_research_operational_state",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
+def _handle_alpha_review_latest(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Run the existing bounded Alpha evaluator against the latest finding."""
+    from nexus_agent_platform.alpha_research import build_research_job, run_alpha_research
+    from nexus_agent_platform.research_operational_state import build_research_operational_state
+
+    state = build_research_operational_state()
+    finding = (state.get("recent_findings") or [None])[0]
+    if not isinstance(finding, dict) or not finding.get("finding"):
+        return {
+            "status": "blocked",
+            "capability": "get_alpha_review_latest",
+            "source": "research_operational_state",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "data": {"finding": None, "reason": "no-current-research-finding"},
+            "error": "No current Research finding is available for Alpha review.",
+            "provenance": {"capability": "get_alpha_review_latest", "trace_id": trace_id, "freshness": "live"},
+        }
+
+    finding_ref = f"{finding.get('source', 'research')}:{finding.get('recorded_at', 'unknown')}"
+    objective = "Review the most recent Research finding for evidence quality, limitations, and follow-up."
+    job = build_research_job(objective=objective, research_type="BUSINESS_OPPORTUNITY_RESEARCH", requested_by="hermes_nova")
+    evidence_id = f"research-finding-{abs(hash(finding_ref))}"
+    evidence = [{
+        "schema_version": "nexus.evidence.v1",
+        "evidence_id": evidence_id,
+        "job_id": job["research_job_id"],
+        "status": "SUCCESS",
+        "source": {"source_type": "GOVERNED_RESEARCH_FINDING", "original_reference": finding_ref, "retrieved_at": state.get("generated_at")},
+        "integrity": {"material_hash": finding_ref},
+        "content": {"normalized_text_or_markdown": json.dumps(finding, sort_keys=True)},
+    }]
+    result = run_alpha_research(
+        job,
+        evidence,
+        claim_specs=[{
+            "claim": finding.get("finding"),
+            "claim_type": "RESEARCH_FINDING_REVIEW",
+            "confidence": "MEDIUM",
+            "evidence_refs": [evidence_id],
+            "source_quality": "INTERNAL_OR_PUBLIC",
+        }],
+        runtime_root=None,
+    )
+    pack = result.get("pack", {})
+    receipt = result.get("receipt", {})
+    return {
+        "status": "success",
+        "capability": "get_alpha_review_latest",
+        "source": "alpha_research.run_alpha_research",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "bounded read-only Alpha analysis",
+        "data": {
+            "finding": finding,
+            "finding_reference": finding_ref,
+            "evaluation": {
+                "status": pack.get("status"),
+                "supported_findings": pack.get("findings", [])[:4],
+                "unknowns": pack.get("unknowns", [])[:6],
+                "contradictions": pack.get("contradictions", [])[:6],
+                "next_action": "Resolve evidence gaps before consequential action." if pack.get("status") != "COMPLETE" else "Use the supported finding for bounded follow-up.",
+            },
+            "alpha_receipt_id": receipt.get("receipt_id"),
+            "research_job_id": result.get("job", {}).get("research_job_id"),
+        },
+        "error": None,
+        "provenance": {
+            "capability": "get_alpha_review_latest",
+            "trace_id": trace_id,
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": state.get("generated_at"),
+            "freshness": "live",
+            "handler": "alpha_research.run_alpha_research",
+            "finding_reference": finding_ref,
         },
     }
 
@@ -3217,6 +3389,8 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_system_health": lambda args, tid: _handle_system_health(args, tid),
     "get_pending_approvals": lambda args, tid: _handle_pending_approvals(args, tid),
     "get_recent_research": lambda args, tid: _handle_recent_research(args, tid),
+    "get_research_operational_state": lambda args, tid: _handle_research_operational_state(args, tid),
+    "get_alpha_review_latest": lambda args, tid: _handle_alpha_review_latest(args, tid),
     "get_opportunities": lambda args, tid: _handle_opportunities(args, tid),
     "get_client_profile": lambda args, tid: _handle_client_profile(args, tid),
     "get_funding_readiness": lambda args, tid: _handle_funding_readiness(args, tid),

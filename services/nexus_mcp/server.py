@@ -151,6 +151,8 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
     payload["turn_id"] = turn_id
     payload["update_id"] = update_id
     payload["trace_id"] = trace_id
+    payload.setdefault("metadata", {})["started_at"] = started
+    payload["metadata"]["completed_at"] = receipt["completed_at"]
     return payload
 
 
@@ -179,6 +181,14 @@ def _register() -> None:
     def nexus_get_system_health() -> dict[str, Any]:
         return _call("nexus_get_system_health")
 
+    @mcp.tool(name="nexus_get_research_state", description="VOLATILE current Research read: return the current Research objective, active work, mission state, today activity, and bounded recent findings. Use for current/delegated Research questions; historical briefs do not satisfy this read.")
+    def nexus_get_research_state() -> dict[str, Any]:
+        return _call("nexus_get_research_state")
+
+    @mcp.tool(name="nexus_get_alpha_review", description="VOLATILE bounded Alpha analysis: evaluate the latest current Research finding with the existing Alpha evidence contract and return its finding reference, evaluation, and receipt.")
+    def nexus_get_alpha_review() -> dict[str, Any]:
+        return _call("nexus_get_alpha_review")
+
     @mcp.tool(
         name="nexus_delegate_specialist",
         description=(
@@ -189,18 +199,20 @@ def _register() -> None:
         ),
     )
     def nexus_delegate_specialist(
-        specialist: Literal["SYSTEM", "ALPHA", "FINANCE", "GROWTH", "CREATIVE", "JAX", "TRADING"],
+        specialist: Literal["SYSTEM", "RESEARCH", "ALPHA", "FINANCE", "GROWTH", "CREATIVE", "JAX", "TRADING"],
         objective: str,
+        conversation_id: str = "",
     ) -> dict[str, Any]:
-        return _delegate_specialist(specialist, objective)
+        return _delegate_specialist(specialist, objective, conversation_id=conversation_id)
 
 
-def _delegate_specialist(specialist: str, objective: str) -> dict[str, Any]:
+def _delegate_specialist(specialist: str, objective: str, *, conversation_id: str = "") -> dict[str, Any]:
     specialist_key = str(specialist or "").strip().upper()
     objective_text = str(objective or "").strip()[:500]
     routes = {
         "SYSTEM": "nexus_get_system_health",
-        "ALPHA": "nexus_get_opportunities",
+        "RESEARCH": "nexus_get_research_state",
+        "ALPHA": "nexus_get_alpha_review",
         "FINANCE": "nexus_get_business_state",
         "GROWTH": "nexus_get_opportunities",
         "CREATIVE": "nexus_get_business_state",
@@ -218,32 +230,76 @@ def _delegate_specialist(specialist: str, objective: str) -> dict[str, Any]:
     underlying = routes[specialist_key]
     result = _call(underlying)
     delegation_id = f"nexus-delegation-{uuid.uuid4().hex}"
+    conversation_id = str(conversation_id or os.getenv("NEXUS_MCP_CONVERSATION_ID") or "").strip()[:120] or None
+    data = result.get("data") if isinstance(result.get("data"), dict) else {}
+    successful = result.get("status") in {"ok", "success", "partial", "empty"}
+    if specialist_key == "SYSTEM":
+        execution_type = "FRESH_EXECUTION"
+        source_type = "LIVE_RUNTIME"
+        next_action = "Use the timestamped health result for the current request."
+    elif specialist_key == "RESEARCH":
+        execution_type = "CURRENT_READ"
+        source_type = "GOVERNED_STATE"
+        next_action = "Continue bounded evidence selection for open Research V2 investigations."
+    elif specialist_key == "ALPHA":
+        execution_type = "ANALYSIS"
+        source_type = "GOVERNED_STATE"
+        next_action = data.get("evaluation", {}).get("next_action") or "Resolve evidence gaps before consequential action."
+    else:
+        execution_type = "CURRENT_READ"
+        source_type = "GOVERNED_STATE"
+        next_action = "No further action is recorded by this read-only delegation."
+    alpha_receipt_id = data.get("alpha_receipt_id")
+    evidence_refs = [
+        value for value in (
+            result.get("source"),
+            result.get("request_id"),
+            data.get("finding_reference"),
+            alpha_receipt_id,
+        ) if value
+    ]
+    delegation_status = "COMPLETED" if successful else "BLOCKED"
     receipt = {
-        "schema_version": "nexus.specialist-delegation-receipt.v1",
-        "delegation_id": delegation_id,
-        "specialist": specialist_key,
-        "objective": objective_text,
-        "underlying_read": underlying,
+        "schema_version": "nexus.department-delegation-receipt.v1",
+        "department": "SYSTEMS_ENGINEERING" if specialist_key == "SYSTEM" else specialist_key,
+        "request_id": delegation_id,
+        "conversation_id": conversation_id,
+        "work_order_id": data.get("work_order_id"),
+        "objective_id": data.get("objective_id"),
+        "started_at": result.get("metadata", {}).get("started_at") or _now(),
+        "completed_at": _now(),
+        "execution_type": execution_type,
+        "source_type": source_type,
+        "freshness": "FRESH" if specialist_key in {"SYSTEM", "RESEARCH", "ALPHA"} and successful else (result.get("metadata", {}).get("freshness") or result.get("currentness") or "UNKNOWN"),
+        "status": delegation_status,
+        "result_summary": {
+            "objective": objective_text,
+            "result_status": result.get("status"),
+            "overall_status": data.get("overall_status"),
+            "research_work_state": data.get("research_work_state"),
+            "finding_reference": data.get("finding_reference"),
+            "alpha_receipt_id": alpha_receipt_id,
+            "error": result.get("error"),
+        },
+        "evidence_refs": evidence_refs,
+        "receipt_id": delegation_id,
+        "next_action": next_action,
+        "underlying_tool": underlying,
         "underlying_request_id": result.get("request_id"),
-        "result_status": result.get("status"),
-        "currentness": result.get("metadata", {}).get("currentness", "UNKNOWN"),
+        "session_id": conversation_id,
         "read_only": True,
         "authority_owner": "Nexus",
-        "created_at": _now(),
     }
-    receipt["receipt_hash"] = hashlib.sha256(
-        json.dumps(receipt, sort_keys=True).encode()
-    ).hexdigest()
+    receipt["receipt_hash"] = hashlib.sha256(json.dumps(receipt, sort_keys=True).encode()).hexdigest()
     RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
-    (RECEIPT_DIR / f"{delegation_id}.json").write_text(
-        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
-    )
+    (RECEIPT_DIR / f"{delegation_id}.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     return {
         "status": "delegated",
         "delegation_id": delegation_id,
         "specialist": specialist_key,
         "objective": objective_text,
         "result": result,
+        "delegation_receipt": json.loads((RECEIPT_DIR / f"{delegation_id}.json").read_text(encoding="utf-8")),
         "provenance": {"source": "nexus_canonical_read_layer", "read_only": True},
     }
 

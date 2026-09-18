@@ -49,7 +49,7 @@ def _remote_command(toolset: str = ORACLE_TOOLSET) -> str:
     # This is intentionally constant: only the prompt travels over stdin.
     return (
         "podman exec -i nexus-hermes-0206 sh -lc "
-        "'IFS= read -r session; prompt=$(cat); exec env HERMES_HOME=/opt/data/profiles/nova_nexus "
+        "'IFS= read -r session; prompt=$(cat); exec env NEXUS_MCP_CONVERSATION_ID=\"$session\" HERMES_HOME=/opt/data/profiles/nova_nexus "
         "HERMES_PROFILE=nova_nexus /opt/hermes/.venv/bin/hermes "
         f"-z \"$prompt\" -m openai/gpt-4o-mini -t {toolset} "
         "--resume \"$session\" --pass-session-id --no-restore-cwd'"
@@ -65,10 +65,11 @@ def _executive_prompt(message: str) -> str:
         from executive_intelligence import is_casual_conversation, is_executive_attention_request, is_monetization_decision, is_opinion_request, is_priority_request
     opinion = is_opinion_request(lowered)
     current_research = bool("research" in lowered and re.search(r"\b(still|running|active|heartbeat|scheduler|processing|status|doing)\b", lowered))
+    explicit_delegation = bool(re.search(r"\bask\s+(systems?|systems engineering|research|alpha)\b", lowered))
     priority = is_priority_request(lowered)
     attention = is_executive_attention_request(lowered)
     monetization = is_monetization_decision(lowered)
-    strategic = opinion or current_research or priority or attention or monetization or any(term in lowered for term in ("should", "recommend", "opportunity", "what next", "what should happen", "compare"))
+    strategic = explicit_delegation or opinion or current_research or priority or attention or monetization or any(term in lowered for term in ("should", "recommend", "opportunity", "what next", "what should happen", "compare"))
     if not strategic:
         # Keep casual conversation lightweight while carrying Nova's identity.
         if is_casual_conversation(lowered):
@@ -137,6 +138,17 @@ def _executive_prompt(message: str) -> str:
             "and recent activity. Do not collapse these states into a single running/not-running claim; use "
             "a fresh authoritative Nexus read and state unknowns plainly."
         )
+    delegation_rules = ""
+    if explicit_delegation:
+        specialist = "SYSTEM" if "system" in lowered else "RESEARCH" if "research" in lowered else "ALPHA"
+        delegation_rules = (
+            f" This is an EXPLICIT_DEPARTMENT_DELEGATION. You MUST call the Nexus MCP tool "
+            f"nexus_delegate_specialist with specialist={specialist}, conversation_id from the supplied ADMIN_CONVERSATION_ID, "
+            "and a concrete objective derived from the user's request "
+            "before answering. Do not substitute nexus_get_business_state, a historical report, or your own context. "
+            "Return the department result with its delegation receipt, freshness, status, and evidence references. "
+            "If the call fails, report the exact bounded failure and do not claim the department executed."
+        )
     return (
         "[NOVA EXECUTIVE REQUEST CONTRACT]\n"
         "Answer the user's parent question directly. For a strategic request, identify the parent decision, "
@@ -144,7 +156,7 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
-        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + "\n"
+        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + delegation_rules + "\n"
         "USER REQUEST:\n" + message[:7000]
     )
 
