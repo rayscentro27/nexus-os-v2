@@ -216,11 +216,13 @@ def run_demand_radar(request: dict[str, Any], *, timeout_seconds: int | None = N
     command = [sys.executable, str(script), query, "--emit=json", "--json-profile=agent", "--no-browser-cookies", "--quick", "--days", str(days), "--max-results", str(min(int(request.get("max_results", 20)), 50)), "--max-per-source", str(min(int(request.get("max_per_source", 8)), 20)), "--save-dir", str(cache_dir)]
     requested_sources = [str(item) for item in (request.get("requested_sources") or []) if item]
     plan_sources = requested_sources or ["reddit", "youtube", "hackernews", "github", "grounding"]
+    configured_weights = request.get("source_weights") or {}
+    source_weights = {source: float(configured_weights.get(source, 1)) for source in plan_sources}
     plan_path = cache_dir / f"{run_id}.plan.json"
     plan_path.write_text(json.dumps({
         "intent": "product", "freshness_mode": "strict_recent", "cluster_mode": "market",
         "raw_topic": query, "subqueries": [{"label": "demand", "search_query": query, "ranking_query": query, "sources": plan_sources, "weight": 1}],
-        "source_weights": {source: 1 for source in plan_sources}, "notes": ["Nexus Demand Radar bounded plan"],
+        "source_weights": source_weights, "notes": ["Nexus Demand Radar bounded plan"],
     }), encoding="utf-8")
     command.extend(["--plan", str(plan_path)])
     if request.get("mock") is True:

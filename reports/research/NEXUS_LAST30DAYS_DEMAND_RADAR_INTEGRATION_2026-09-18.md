@@ -350,3 +350,50 @@ The integration is therefore `PASS_REAL` for bounded source acquisition and
 partial-result preservation, while remaining `PARTIAL` for the broader Demand
 Radar business objective because the live candidate did not meet the quality
 threshold for existing-need enrichment, Alpha review, or department handoff.
+
+## Business-relevance closure attempt
+
+Focused customer-demand variants were run against the higher-signal Reddit and
+YouTube sources, with source weighting supported by the adapter at request time:
+
+```text
+CUSTOMER_DEMAND_PRIMARY_SOURCES=REDDIT,YOUTUBE
+CUSTOMER_DEMAND_SECONDARY_SOURCES=HACKERNEWS,GITHUB
+SOURCE_WEIGHTING_IMPLEMENTED=YES_REQUEST_LEVEL_PLAN_WEIGHTS
+```
+
+Variants included:
+
+```text
+new LLC denied business funding
+business funding new LLC no revenue
+new business funding documentation requirements
+new LLC business bank account
+startup business funding denied
+business credit approval new business
+How to get business funding for a new LLC
+```
+
+The runs were real and bounded, but they did not pass the coherence gate. The
+ranker returned unrelated Reddit material for two narrow funding queries, one
+relevant new-LLC banking thread for another, and a relevant lender-document
+YouTube metadata result without a second corroborating source. One Reddit run
+was rate-limited and YouTube frequently returned no result for the narrow
+phrasing.
+
+```text
+FOCUSED_QUERY_EXPANSION=PASS_REAL_BOUNDED
+COHERENCE_GATE=FAIL_NO_STABLE_TWO_SOURCE_AUDIENCE_PROBLEM_OUTCOME_CLUSTER
+COHERENT_CLUSTER_FOUND=NO
+EXISTING_NEED_MATCH=NOT_PROMOTED
+EXISTING_NEED_ENRICHED=NO
+ALPHA_HANDOFF=NOT_RUN
+DEPARTMENT_HANDOFF=NOT_RUN
+TOPICLESS_DISCOVERY_TEST=TIMEOUT_NO_CANDIDATES
+```
+
+The existing need `need_f527d1db8c4d1e5de721` remains unchanged. This is a
+business-relevance limitation in upstream query/ranking quality, not a source
+plumbing failure. The next safe improvement is a bounded semantic coherence
+filter over audience, problem, desired outcome, and source relevance before
+promotion; no threshold was lowered and no Alpha review was fabricated.
