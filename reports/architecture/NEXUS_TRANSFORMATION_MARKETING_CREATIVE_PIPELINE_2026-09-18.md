@@ -48,6 +48,16 @@ Durable contract IDs:
 Every downstream object preserves the Research evidence references, Alpha
 decision reference, transformation ID, campaign ID, and preceding contract ID.
 
+CreativePackage is not the production handoff by itself. The completed chain
+continues through:
+
+`CreativePackage -> ProductionPlanning -> ScriptCritique -> Storyboard ->
+ContinuityPlan -> PromptPackage (image/video) -> ProductionReadiness -> WorkerJob`.
+
+The restaurant proof produced a passing script critique, a four-scene ready
+storyboard, continuity rules for the owner, environments, and props, bounded
+image/video prompts, and readiness receipt `readiness_71528a69`.
+
 ## Governance
 
 Claims are classified as observed fact, supported claim, hypothesis, possible
@@ -93,7 +103,8 @@ correlation.
 `WorkerJobInput` and `WorkerJobOutput` are host/provider-neutral. The proof
 creates a queued `MEDIA_RENDER` contract with bounded runtime, resource
 requirements, artifact hashes, tool versions, logs, errors, and resource-use
-fields. No Kaggle, Oracle, Mac, or external media worker is built or run.
+fields, plus a required `production_readiness_id`. No Kaggle, Oracle, Mac, or
+external media worker is built or run.
 
 ## Visibility and next step
 
