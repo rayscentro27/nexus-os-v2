@@ -1,4 +1,4 @@
-"""Local stdio MCP server for read-only Gmail and Google Calendar access.
+"""Local stdio MCP server for read-only Gmail, Calendar, and Drive access.
 
 MCP is an interface only. OAuth credentials remain in the existing Nexus
 keychain control plane, and no write-capability method is registered here.
@@ -32,6 +32,7 @@ RECEIPT_DIR = Path(os.getenv("GOOGLE_MCP_RECEIPT_DIR", str(ROOT / "data/runtime/
 TOOL_NAMES = (
     "gmail_search", "gmail_read_message", "gmail_read_thread",
     "calendar_search_events", "calendar_read_event", "calendar_get_availability",
+    "drive_search", "drive_read_file",
 )
 
 
@@ -93,7 +94,9 @@ def _event_summary(event: dict[str, Any]) -> dict[str, Any]:
 def _result(tool: str, *, query: dict[str, Any], items: list[dict[str, Any]], source: str, warnings: list[str] | None = None, error: str | None = None) -> dict[str, Any]:
     payload = {
         "status": "error" if error else "ok",
-        "resource": "GMAIL" if tool.startswith("gmail_") else "GOOGLE_CALENDAR",
+        "resource": ("GMAIL" if tool.startswith("gmail_") else
+                     "GOOGLE_CALENDAR" if tool.startswith("calendar_") else
+                     "GOOGLE_DRIVE"),
         "tool": tool,
         "source": source,
         "fetched_at": _now(),
@@ -198,6 +201,61 @@ def calendar_get_availability(start_time: str, end_time: str, calendar_ids: list
             result.append({"calendar_id": calendar_id, "busy": busy, "errors": [], "source": "calendar.events.list", "availability_method": "event_read_projection"})
         return result
     return _call("calendar_get_availability", {"start_time": start_time, "end_time": end_time, "calendar_ids": calendar_ids or ["primary"], "timezone": os.getenv("NOVA_TIMEZONE", "system")}, run, "calendar.events.list")
+
+
+def _file_summary(file: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": file.get("id"),
+        "name": str(file.get("name") or "")[:500],
+        "mime_type": file.get("mimeType"),
+        "modified_time": file.get("modifiedTime"),
+        "created_time": file.get("createdTime"),
+        "web_view_link": file.get("webViewLink"),
+        "size": file.get("size"),
+        "owners": [{"display_name": row.get("displayName"), "email": row.get("emailAddress")}
+                   for row in (file.get("owners") or []) if isinstance(row, dict)][:5],
+        "source": "drive.files",
+    }
+
+
+@mcp.tool(description="VOLATILE Drive read: search accessible file metadata. Never uploads, edits, moves, shares, or deletes files.")
+def drive_search(query: str | None = None, max_results: int = 25) -> dict[str, Any]:
+    max_results = max(1, min(int(max_results), 50))
+    def run(creds: Any) -> list[dict[str, Any]]:
+        from googleapiclient.discovery import build
+        api = build("drive", "v3", credentials=creds, cache_discovery=False)
+        q = str(query or "").strip()[:500]
+        if q and "'" not in q:
+            escaped = q.replace("\\", "\\\\").replace("'", "\\'")
+            q = f"name contains '{escaped}' and trashed = false"
+        else:
+            q = "trashed = false"
+        response = api.files().list(
+            q=q, pageSize=max_results,
+            fields="files(id,name,mimeType,modifiedTime,createdTime,webViewLink,size,owners(displayName,emailAddress))",
+            orderBy="modifiedTime desc",
+        ).execute()
+        return [_file_summary(row) for row in response.get("files", [])]
+    return _call("drive_search", {"query": str(query or "")[:500], "max_results": max_results}, run, "drive.files.list")
+
+
+@mcp.tool(description="VOLATILE Drive read: read bounded metadata and text content for one accessible file when the current grant permits it. Never mutates files.")
+def drive_read_file(file_id: str, include_text: bool = False) -> dict[str, Any]:
+    def run(creds: Any) -> list[dict[str, Any]]:
+        from googleapiclient.discovery import build
+        api = build("drive", "v3", credentials=creds, cache_discovery=False)
+        file = api.files().get(fileId=str(file_id)[:200], fields="id,name,mimeType,modifiedTime,createdTime,webViewLink,size,owners(displayName,emailAddress)").execute()
+        item = _file_summary(file)
+        # Content is opt-in and bounded.  Export is restricted to text-like
+        # Google documents; binary downloads are never attempted here.
+        if include_text and file.get("mimeType") in {"application/vnd.google-apps.document", "text/plain", "text/markdown", "text/csv"}:
+            if file.get("mimeType") == "application/vnd.google-apps.document":
+                response = api.files().export(fileId=str(file_id)[:200], mimeType="text/plain").execute()
+            else:
+                response = api.files().get_media(fileId=str(file_id)[:200]).execute()
+            item["text_excerpt"] = (response.decode("utf-8", errors="replace") if isinstance(response, bytes) else str(response))[:2000]
+        return [item]
+    return _call("drive_read_file", {"file_id": str(file_id)[:200], "include_text": bool(include_text)}, run, "drive.files.get/export")
 
 
 if __name__ == "__main__":

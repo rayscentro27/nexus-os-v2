@@ -227,6 +227,7 @@ def _delegate_specialist(specialist: str, objective: str, *, conversation_id: st
             "authority": "Nexus",
             "read_only": True,
         }
+
     underlying = routes[specialist_key]
     result = _call(underlying)
     delegation_id = f"nexus-delegation-{uuid.uuid4().hex}"
@@ -304,7 +305,51 @@ def _delegate_specialist(specialist: str, objective: str, *, conversation_id: st
     }
 
 
+def _register_google_read_tools() -> None:
+    """Expose the existing Google read bridge through the canonical MCP tunnel."""
+    @mcp.tool(name="gmail_search", description="READ ONLY Gmail search through the governed Google bridge; never sends or mutates mail.")
+    def gmail_search(query: str, max_results: int = 10) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.gmail_search(query, max_results)
+
+    @mcp.tool(name="gmail_read_message", description="READ ONLY Gmail message metadata/snippet through the governed Google bridge.")
+    def gmail_read_message(message_id: str) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.gmail_read_message(message_id)
+
+    @mcp.tool(name="gmail_read_thread", description="READ ONLY Gmail thread metadata/snippets through the governed Google bridge.")
+    def gmail_read_thread(thread_id: str) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.gmail_read_thread(thread_id)
+
+    @mcp.tool(name="calendar_search_events", description="READ ONLY Calendar event search through the governed Google bridge.")
+    def calendar_search_events(start_time: str, end_time: str, query: str | None = None, max_results: int = 50) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.calendar_search_events(start_time, end_time, query, max_results)
+
+    @mcp.tool(name="calendar_read_event", description="READ ONLY Calendar event lookup through the governed Google bridge.")
+    def calendar_read_event(event_id: str, calendar_id: str = "primary") -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.calendar_read_event(event_id, calendar_id)
+
+    @mcp.tool(name="calendar_get_availability", description="READ ONLY Calendar availability projection through the governed Google bridge.")
+    def calendar_get_availability(start_time: str, end_time: str, calendar_ids: list[str] | None = None) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.calendar_get_availability(start_time, end_time, calendar_ids)
+
+    @mcp.tool(name="drive_search", description="READ ONLY Drive metadata search through the governed Google bridge; never uploads, edits, moves, shares, or deletes.")
+    def drive_search(query: str | None = None, max_results: int = 25) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.drive_search(query, max_results)
+
+    @mcp.tool(name="drive_read_file", description="READ ONLY Drive metadata and bounded text read through the governed Google bridge.")
+    def drive_read_file(file_id: str, include_text: bool = False) -> dict[str, Any]:
+        from services.google_mcp import server as google_server
+        return google_server.drive_read_file(file_id, include_text)
+
+
 _register()
+_register_google_read_tools()
 
 
 if __name__ == "__main__":

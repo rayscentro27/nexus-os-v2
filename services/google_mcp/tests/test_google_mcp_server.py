@@ -4,7 +4,7 @@ from services.google_mcp import server
 def test_google_surface_is_granular_and_read_only():
     names = {tool.name for tool in server.mcp._tool_manager.list_tools()}
     assert names == set(server.TOOL_NAMES)
-    assert not names & {"gmail_send", "gmail_reply", "calendar_create_event", "calendar_update_event", "calendar_delete_event"}
+    assert not names & {"gmail_send", "gmail_reply", "calendar_create_event", "calendar_update_event", "calendar_delete_event", "drive_upload", "drive_update", "drive_delete", "drive_share"}
 
 
 def test_message_summary_is_bounded_and_header_only():
@@ -29,6 +29,18 @@ def test_event_summary_excludes_unnecessary_description():
     })
     assert value["summary"] == "Meeting"
     assert "description" not in value
+
+
+def test_drive_summary_is_metadata_bounded():
+    value = server._file_summary({
+        "id": "f1", "name": "Notes", "mimeType": "text/plain",
+        "modifiedTime": "2026-09-18T00:00:00Z", "owners": [{"displayName": "Ray", "emailAddress": "redacted@example.com"}],
+        "description": "not exposed", "permissions": [{"id": "secret"}],
+    })
+    assert value["id"] == "f1"
+    assert value["mime_type"] == "text/plain"
+    assert "description" not in value
+    assert "permissions" not in value
 
 
 def test_google_failure_is_truthful_and_read_only(monkeypatch, tmp_path):

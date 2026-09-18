@@ -4,5 +4,11 @@ from __future__ import annotations
 
 
 def authorize_read(tool_name: str) -> None:
-    if not tool_name.startswith("nexus_get_") and tool_name != "nexus_delegate_specialist":
+    if (not tool_name.startswith("nexus_get_")
+            and tool_name != "nexus_delegate_specialist"
+            and tool_name not in {
+                "gmail_search", "gmail_read_message", "gmail_read_thread",
+                "calendar_search_events", "calendar_read_event", "calendar_get_availability",
+                "drive_search", "drive_read_file",
+            }):
         raise PermissionError("only read-only Nexus MCP tools are exposed")

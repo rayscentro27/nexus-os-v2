@@ -55,13 +55,17 @@ def _hermes_context(message, recent_history, conversation_id=""):
             content = str(item.get("content", "")).strip()[:1800]
             if content:
                 history.append({"role": item["role"], "content": content})
+    try:
+        from nexus_agent_platform.nova_capability_truth import capability_truth_for_prompt
+        runtime_capability = capability_truth_for_prompt()
+    except Exception as exc:
+        runtime_capability = f"Google capability truth unavailable: {type(exc).__name__}; do not claim Google access."
     capability = (
         "CURRENT HERMES NOVA RUNTIME CAPABILITY TRUTH (authoritative):\n"
         "- Hermes Agent: 0.20.6 on Oracle, profile nova_nexus.\n"
         "- Nexus MCP: active through the configured nexus_mcp_remote profile toolset; "
         "read-only Nexus checks are available to this Hermes turn.\n"
-        "- Google MCP: not configured in nova_nexus and unavailable to this turn.\n"
-        "- Gmail, Calendar, Drive: unavailable unless a separately proven Google tool appears in this turn.\n"
+        + runtime_capability + "\n"
         "- Never infer active access from repository documentation or historical Hermes reports.\n"
         f"- ADMIN_CONVERSATION_ID for delegation correlation: {str(conversation_id)[:120]}\n"
         "DEPARTMENT DELEGATION CONTRACT (authoritative):\n"
