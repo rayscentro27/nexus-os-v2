@@ -64,6 +64,14 @@ and existing-solution evidence. The existing queue path created an assigned
 follow-up with priority 2:
 `alpha-model-followup:alpha_eval_820c24e80bcd434aa85f171f60831e91`.
 
+The follow-up was then executed as a bounded evidence update and re-reviewed
+by Gemini. Re-review receipt:
+`alpha_receipt_ffd3970b64e14581a9f857b4b7ddab30`; model calls: 1; decision:
+`QUALIFY`. Alpha still recorded explicit limitations: no verified conversion or
+outcome evidence, Reddit-only population coverage, and incomplete detail about
+the desired “better” guidance. The qualification therefore remains an
+internal, no-external-action handoff rather than a revenue claim.
+
 ### REJECT
 
 A GitHub repository/stars package with no customer problem, audience, demand,
