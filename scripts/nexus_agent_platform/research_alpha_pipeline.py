@@ -44,10 +44,14 @@ def _score(claim: dict[str, Any]) -> tuple[int, str, str, str]:
     if verification == "CONTRADICTED":
         return score, "MATERIAL_CONTRADICTION", "Preserve the claim and evidence, identify the contradiction, and ask Research to resolve it before relying on the claim.", "HIGH"
     if verification in {"SUPPORTED", "PARTIALLY_SUPPORTED"}:
-        return score, "SUFFICIENT_FOR_PRELIMINARY_PLAN", "The available evidence is sufficient for a preliminary plan; Alpha should still record assumptions and missing information.", "MEDIUM"
-    # Weak or unverified evidence is a reason to design the next investigation,
-    # not an Alpha veto. Ray remains the final business rejection authority.
-    return score, "MORE_RESEARCH_USEFUL", "Evidence is weak or unverified; preserve the candidate, select the best next source class, and design the cheapest useful test.", "HIGH"
+        # Preserve the governed Alpha decision vocabulary used by existing
+        # consumers.  The explanatory reasoning still makes clear that this
+        # is preliminary and assumptions remain explicit.
+        return score, "QUALIFIED", "The available evidence is sufficient for a preliminary plan; Alpha should still record assumptions and missing information.", "MEDIUM"
+    # Preserve the legacy deterministic evaluator's explicit non-route state.
+    # The model-backed Alpha path uses the governed RESEARCH_MORE/REJECT/PARK
+    # vocabulary for decision-grade packages.
+    return score, "REJECTED", "Evidence is weak or unverified; no department route is created until a decision-grade package exists.", "HIGH"
 
 
 def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
@@ -91,7 +95,7 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
         # Normal business routing requires the durable provenance validator to
         # have completed successfully.  A score alone cannot turn an
         # unvalidated transcript claim into a department handoff.
-        if decision == "SUFFICIENT_FOR_PRELIMINARY_PLAN" and claim.get("validation_result") == "VALIDATED" and research.get("research_id"):
+        if decision == "QUALIFIED" and claim.get("validation_result") == "VALIDATED" and research.get("research_id"):
             from alpha.alpha_discovery import route_finding
             route = route_finding(str(research.get("theme") or "AI_NEXUS"), str(research["research_id"]), str(claim.get("claim") or content.get("title") or "Research output"))
             evaluation["next_route"] = route

@@ -51,10 +51,10 @@ def _source_rows(package: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(source, dict):
             continue
         rows.append({
-            "title": source.get("title") or source.get("name") or "Untitled source",
-            "url": source.get("url") or source.get("canonical_url") or source.get("source_ref"),
+            "title": source.get("title") or source.get("source_title") or source.get("name") or "Untitled source",
+            "url": source.get("url") or source.get("source_url") or source.get("canonical_url") or source.get("source_ref"),
             "source_type": source.get("provider") or source.get("source_type") or source.get("source_name"),
-            "snippet": (source.get("snippet") or source.get("summary") or source.get("description") or "")[:700],
+            "snippet": (source.get("snippet") or source.get("excerpt") or source.get("summary") or source.get("description") or "")[:700],
             "retrieved_at": source.get("retrieved_at") or package.get("retrieved_at"),
         })
     return rows
@@ -159,16 +159,22 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
     need = _normalize_need(judgment, package, source_refs)
     need_id = str(need.get("need_id") or persistence.new_id("need"))
     from nexus_agent_platform.research_work_queue import ResearchWorkQueue
-    need_record = ResearchWorkQueue().create_need(
-        audience=str(need.get("audience") or "unknown"), problem=str(need.get("problem") or query),
-        question=str(need.get("question") or query), desired_outcome=str(need.get("desired_outcome") or "unknown"),
-        pain_points=list(need.get("pain_points") or []), terminology=list(need.get("terminology_used_by_customers") or []),
-        demand_signals=list(need.get("demand_signals") or []), commercial_intent=str(need.get("commercial_intent") or "UNKNOWN"),
-        source_refs=source_refs, where_customers_congregate=list(need.get("where_customers_congregate") or []),
-        existing_solutions=list(need.get("current_solutions") or []), competitor_promises=list(need.get("competitor_promises") or []),
-        competitor_complaints=list(need.get("complaint_signals") or []), evidence_gaps=list(need.get("evidence_gaps") or []),
-        confidence=str(need.get("confidence") or "PRELIMINARY"),
-    )
+    # A semantic Research cluster may already map to a governed need.  Preserve
+    # that identity and enrich through the existing record path rather than
+    # creating a duplicate need merely because Alpha is reviewing it.
+    if package.get("need_id"):
+        need_record = {"need_id": str(package["need_id"]), "status": "ALPHA_REVIEWED", "updated_at": _now()}
+    else:
+        need_record = ResearchWorkQueue().create_need(
+            audience=str(need.get("audience") or "unknown"), problem=str(need.get("problem") or query),
+            question=str(need.get("question") or query), desired_outcome=str(need.get("desired_outcome") or "unknown"),
+            pain_points=list(need.get("pain_points") or []), terminology=list(need.get("terminology_used_by_customers") or []),
+            demand_signals=list(need.get("demand_signals") or []), commercial_intent=str(need.get("commercial_intent") or "UNKNOWN"),
+            source_refs=source_refs, where_customers_congregate=list(need.get("where_customers_congregate") or []),
+            existing_solutions=list(need.get("current_solutions") or []), competitor_promises=list(need.get("competitor_promises") or []),
+            competitor_complaints=list(need.get("complaint_signals") or []), evidence_gaps=list(need.get("evidence_gaps") or []),
+            confidence=str(need.get("confidence") or "PRELIMINARY"),
+        )
     need.update(need_record)
     need_id = str(need_record.get("need_id") or need_id)
     finding_id = str(package.get("finding_id") or package.get("research_id") or persistence.new_id("finding"))

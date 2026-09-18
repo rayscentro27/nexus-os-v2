@@ -92,6 +92,8 @@ def build_research_operational_state() -> dict[str, Any]:
     v2_handoffs = _jsonl(ROOT / "data/governed/research_v2_handoffs.jsonl")
     v2_reputations = _jsonl(ROOT / "data/governed/research_v2_reputations.jsonl")
     v2_review_queue = _jsonl(ROOT / "data/governed/research_v2_review_queue.jsonl")
+    alpha_evaluations = _jsonl(ROOT / "data/governed/alpha_evaluations.jsonl")
+    result_feedback = _jsonl(ROOT / "data/governed/result_feedback.jsonl")
     scheduler_plist = Path.home() / "Library/LaunchAgents/com.nexus.continuous-loop.plist"
     scheduler_loaded = False
     try:
@@ -243,6 +245,15 @@ def build_research_operational_state() -> dict[str, Any]:
             "research_v2_processed_sources": sum(1 for row in v2_today_sources if row.get("processing_status") == "FULLY_PROCESSED"),
         },
         "current_work": current_work,
+        "intelligence_pipeline": {
+            "alpha_decisions": [{"decision": row.get("decision"), "confidence": row.get("confidence"), "evaluated_at": row.get("evaluated_at"), "receipt_id": row.get("receipt_id")} for row in alpha_evaluations[-8:]],
+            "alpha_qualify_count": sum(1 for row in alpha_evaluations if str(row.get("decision", "")).upper() == "QUALIFY"),
+            "alpha_research_more_count": sum(1 for row in alpha_evaluations if str(row.get("decision", "")).upper() == "RESEARCH_MORE"),
+            "alpha_reject_or_park_count": sum(1 for row in alpha_evaluations if str(row.get("decision", "")).upper() in {"REJECT", "PARK"}),
+            "handoffs": [{"handoff_id": row.get("handoff_id"), "target_department": row.get("target_department"), "status": row.get("status") or row.get("department_handoff_status"), "finding_id": row.get("finding_id")} for row in v2_handoffs[-8:]],
+            "result_feedback": [{"result_id": row.get("result_id"), "department": row.get("department"), "status": row.get("status"), "research_review_state": row.get("research_review_state")} for row in result_feedback[-8:]],
+            "source": "alpha_evaluations.jsonl + research_v2_handoffs.jsonl + result_feedback.jsonl",
+        },
         "work_queue": queue_projection,
         "active_assigned_work": queue_projection["active_work_by_class"].get("ASSIGNED", []),
         "active_monitored_work": queue_projection["active_work_by_class"].get("MONITORED", []),
