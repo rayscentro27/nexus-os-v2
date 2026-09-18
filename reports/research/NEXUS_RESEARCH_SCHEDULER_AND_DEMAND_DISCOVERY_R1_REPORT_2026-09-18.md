@@ -328,3 +328,15 @@ OVERALL_INTELLIGENCE_CLOSURE=PASS_REAL_FOR_THIS_BOUNDED_CYCLE
 ```
 
 Additional focused test: `scripts/nexus_agent_platform/tests/test_alpha_model_review.py`.
+
+## Demand Radar role boundary
+
+Last30Days is integrated as a bounded `DEMAND_DISCOVERY` acquisition tool only.
+It discovers recent human signals; it does not replace Brave/Web evidence
+acquisition, the approved Nexus YouTube monitor, Research V2 governance, Alpha,
+or department handoffs. Versioned JSON is normalized by
+`research/last30days_adapter.py` and new evidence enters the existing
+`research_v2_sources` store. A multi-source cluster must clear the existing
+promotion threshold before it can enrich/create a need or call the existing
+model-backed Alpha path. The scheduler priority contract and discovery
+concurrency cap are unchanged.

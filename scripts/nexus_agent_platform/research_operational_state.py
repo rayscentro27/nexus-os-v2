@@ -72,8 +72,10 @@ def build_research_operational_state() -> dict[str, Any]:
     local_today = datetime.now(local_zone).date().isoformat()
     queue_projection = _queue_projection()
     alpha_status_path = ROOT / "data/runtime/alpha_telegram_status.json"
+    last30days_path = ROOT / "data/runtime/last30days_demand_radar_latest.json"
     metadata_path = ROOT / "reports/runtime/supabase_ready/youtube_video_metadata_latest.json"
     transcript_path = ROOT / "reports/runtime/supabase_ready/youtube_transcript_imports_latest.json"
+    last30days = _json(last30days_path, {})
     alpha_records = _jsonl(ROOT / "data/governed/alpha_research.jsonl")
     queue_records = _jsonl(ROOT / "data/governed/alpha_discovery_queue.jsonl")
     work_orders = _jsonl(ROOT / "data/governed/work_orders.jsonl")
@@ -278,6 +280,19 @@ def build_research_operational_state() -> dict[str, Any]:
             "source": mission_state["source"],
         },
         "current_research_objective": latest.get("question") or latest.get("theme") or (v2_today_sources[0].get("source_title") if v2_today_sources else "Continue bounded Research V2 evidence selection"),
+        "demand_radar": {
+            "status": last30days.get("status", "NOT_RUN"),
+            "last_run": last30days.get("completed_at"),
+            "query": last30days.get("query"),
+            "source_status": last30days.get("source_status", {}),
+            "source_coverage": last30days.get("sources_successful", []),
+            "clusters_discovered": last30days.get("cluster_count", 0),
+            "signals_discovered": last30days.get("result_count", 0),
+            "new_evidence_count": last30days.get("new_evidence_count", 0),
+            "existing_source_links": last30days.get("existing_source_links", 0),
+            "next_action": "Promote only evidence-supported clusters through the existing customer-need and Alpha paths.",
+            "source": "data/runtime/last30days_demand_radar_latest.json",
+        },
         "research_needs_ray": False,
         "human_review_queue_count": human_review_count,
         "global_machine_work_remains": machine_work_remains,
