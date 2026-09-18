@@ -9,42 +9,55 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import nova.nova_admin_server as server  # noqa: E402
-from nexus_agent_platform.adapters.state_adapter import AgentState  # noqa: E402
 
 
-class FakeGraph:
-    def __init__(self):
-        self.calls = []
+class FakeHermesResult:
+    status = "SUCCEEDED"
+    response = "A strategic response."
+    provider = "openrouter"
+    model = "configured-test-model"
+    runtime_host = "ORACLE"
+    profile = "nova_nexus"
+    toolset = "nexus_mcp_remote"
+    latency_ms = 12.0
+    hermes_session_id = "20260918_000000_ab12cd"
+    error = None
 
-    def invoke(self, state):
-        self.calls.append(state)
-        state.assistant_response = "A strategic response."
-        state.metadata = {**state.metadata, "model_provider": "openrouter", "model_used": "configured-test-model"}
-        return state
 
-
-def test_browser_adapter_reuses_canonical_graph_and_declares_no_authority(monkeypatch):
-    graph = FakeGraph()
-    monkeypatch.setattr(server, "get_nova_graph", lambda: graph)
+def test_browser_adapter_uses_canonical_hermes_and_declares_no_authority(monkeypatch):
+    calls = []
+    def fake_hermes(message, session_id, **kwargs):
+        calls.append((message, session_id, kwargs))
+        return FakeHermesResult()
+    monkeypatch.setattr(server, "run_oracle_hermes", fake_hermes)
     payload = server.invoke_nova("Challenge this plan.")
-    assert len(graph.calls) == 1
-    assert graph.calls[0].agent_id == "hermes_nova"
-    metadata = graph.calls[0].metadata if hasattr(graph.calls[0], "metadata") else graph.calls[0]["metadata"]
-    assert metadata["channel"] == "admin_browser"
+    assert len(calls) == 1
+    assert calls[0][1] == "admin-browser"
     assert payload["provider"] == "openrouter"
     assert payload["model"] == "configured-test-model"
     assert payload["execution_authority"] == "NONE"
     assert payload["memory_scope"] == "nova_admin_channel"
+    assert payload["hermes_session_id"] == "20260918_000000_ab12cd"
 
 
 def test_browser_adapter_rejects_client_sensitive_input(monkeypatch):
-    monkeypatch.setattr(server, "get_nova_graph", lambda: (_ for _ in ()).throw(AssertionError("graph must not run")))
+    monkeypatch.setattr(server, "run_oracle_hermes", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Hermes must not run")))
     try:
         server.invoke_nova("Review the credit report for person@example.com")
     except ValueError as exc:
         assert str(exc) == "client-sensitive-input-not-available-in-nova-browser"
     else:
         raise AssertionError("sensitive input was accepted")
+
+
+def test_browser_adapter_rejects_legacy_direct_runtime(monkeypatch):
+    monkeypatch.setenv("NEXUS_ADMIN_NOVA_RUNTIME", "direct")
+    try:
+        server.invoke_nova("Hello Nova", "admin-thread-123")
+    except RuntimeError as exc:
+        assert str(exc) == "legacy_direct_nova_disabled"
+    else:
+        raise AssertionError("legacy direct runtime was accepted")
 
 
 def test_local_handler_requires_exact_origin_and_is_bounded():

@@ -1,4 +1,4 @@
-"""Current capability truth for the direct Admin Nova runtime.
+"""Current capability truth for the canonical Admin Hermes runtime.
 
 Documentation, installed packages, and the separate Hermes profile are not
 evidence that a capability is callable from this HTTP runtime.
@@ -10,12 +10,12 @@ from typing import Any
 
 def build_admin_runtime_capability_truth() -> dict[str, Any]:
     return {
-        "runtime": "direct_nova_admin",
-        "executor": "get_nova_graph -> LlmGatewayAdapter",
+        "runtime": "hermes_agent_0.20.6",
+        "executor": "Oracle Hermes 0.20.6 -> nova_nexus -> nexus_mcp_remote",
         "nexus_mcp": {
             "documented": True, "installed": True, "configured": True,
-            "active_connected": False, "proven_this_runtime": False,
-            "available_to_admin_nova": False, "reason": "No MCP adapter is called by nova_admin_server.py or the direct Nova graph.",
+            "active_connected": True, "proven_this_runtime": True,
+            "available_to_admin_nova": True, "reason": "Current Admin transport invokes Hermes profile nova_nexus with nexus_mcp_remote.",
         },
         "google_mcp": {
             "documented": True, "installed": True, "configured": True,

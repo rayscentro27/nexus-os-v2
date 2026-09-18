@@ -22,6 +22,9 @@ fi
 # Homebrew's Python/SSL install currently resolves OpenSSL from this local
 # Cellar path. Keep the runtime self-contained for launchd and manual cycles.
 export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-/usr/local/Cellar/openssl@3/3.6.3/lib}"
+# Telegram Nova is canonical on the Oracle Hermes 0.20.6 runtime. Legacy
+# local-graph values in runtime.env must not select a second Nova brain.
+export NOVA_PRIMARY_RUNTIME=oracle_hermes
 
 # Keep launchd's interval supervision effective even if a network/library call
 # ignores its inner timeout.  Accepted missions are persisted before Hermes

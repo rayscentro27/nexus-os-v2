@@ -43,16 +43,23 @@ class OracleHermesResult:
     model: str = ORACLE_MODEL
     toolset: str = ORACLE_TOOLSET
     recovery: str = "NONE"
+    # Native Hermes session ID.  The caller's stable interface key remains
+    # the correlation/session identity exposed by Nexus; this is the durable
+    # SQLite-backed Hermes row created/resolved by --continue.
+    hermes_session_id: str | None = None
 
 
 def _remote_command(toolset: str = ORACLE_TOOLSET) -> str:
-    # This is intentionally constant: only the prompt travels over stdin.
+    # This is intentionally constant: only the session title and prompt travel
+    # over stdin.  ``--resume`` only accepts an already-existing native ID;
+    # interface sessions are durable names, so ``chat --continue
+    # --create-if-missing`` is the native create-or-resume contract.
     return (
         "podman exec -i nexus-hermes-0206 sh -lc "
-        "'IFS= read -r session; prompt=$(cat); exec env NEXUS_MCP_CONVERSATION_ID=\"$session\" HERMES_HOME=/opt/data/profiles/nova_nexus "
+        "'IFS= read -r session; prompt=$(cat); printf \"%s\" \"$prompt\" | exec env NEXUS_MCP_CONVERSATION_ID=\"$session\" HERMES_HOME=/opt/data/profiles/nova_nexus "
         "HERMES_PROFILE=nova_nexus /opt/hermes/.venv/bin/hermes "
-        f"-z \"$prompt\" -m openai/gpt-4o-mini -t {toolset} "
-        "--resume \"$session\" --pass-session-id --no-restore-cwd'"
+        f"chat -Q --query-file - -m openai/gpt-4o-mini -t {toolset} "
+        "--continue \"$session\" --create-if-missing --pass-session-id --no-restore-cwd'"
     )
 
 
@@ -328,6 +335,8 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
     response = completed.stdout.strip()
     if not response:
         return OracleHermesResult(None, "UNAVAILABLE", "empty_oracle_response", elapsed)
+    native_session_match = re.search(r"session_id:\s*([A-Za-z0-9_.:-]+)", completed.stderr or "")
+    native_session_id = native_session_match.group(1) if native_session_match else None
     halt = any(marker in response.lower() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts"))
     if halt:
         recovery_prompt = (
@@ -343,7 +352,7 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         if recovered.returncode == 0 and recovered.stdout.strip():
             recovered_text = recovered.stdout.strip()
             if not any(marker in recovered_text.lower() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
-                return OracleHermesResult(recovered_text, "SUCCEEDED", None, round(elapsed + recovery_elapsed, 1), recovery="SYNTHESIS_AFTER_TOOL_HALT")
+                return OracleHermesResult(recovered_text, "SUCCEEDED", None, round(elapsed + recovery_elapsed, 1), recovery="SYNTHESIS_AFTER_TOOL_HALT", hermes_session_id=native_session_id)
         return OracleHermesResult(response, "SUCCEEDED", None, round(elapsed + recovery_elapsed, 1), recovery="RECOVERY_UNUSABLE")
     if _judgment_needs_correction(message, response):
         try:
@@ -353,7 +362,7 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         if corrected.returncode == 0 and corrected.stdout.strip():
             corrected_text = corrected.stdout.strip()
             if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
-                return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="JUDGMENT_CORRECTION")
+                return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="JUDGMENT_CORRECTION", hermes_session_id=native_session_id)
     if _conversation_needs_correction(message, response):
         try:
             corrected, correction_elapsed = invoke(_conversation_correction_prompt(message, response), "skills")
@@ -362,5 +371,5 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         if corrected.returncode == 0 and corrected.stdout.strip():
             corrected_text = corrected.stdout.strip()
             if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
-                return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="CONVERSATION_CORRECTION")
-    return OracleHermesResult(response, "SUCCEEDED", None, elapsed)
+                return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="CONVERSATION_CORRECTION", hermes_session_id=native_session_id)
+    return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id)

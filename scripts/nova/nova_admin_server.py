@@ -2,15 +2,12 @@
 
 The Admin server owns HTTP validation and the browser contract. Hermes Agent
 0.20.6 owns Nova execution, sessions, tool routing, and model orchestration.
-The old direct graph remains available only through the explicit
-NEXUS_ADMIN_NOVA_RUNTIME=direct rollback switch.
+The former local graph is intentionally disabled; it is not a rollback runtime.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, re, threading, time, uuid
+import argparse, json, os, re, threading, time
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from nexus_agent_platform.adapters.state_adapter import AgentState
-from nexus_agent_platform.agents.nova import get_nova_graph
 from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
 
 ALLOWED_ORIGIN = "https://goclearonline.cc"
@@ -33,12 +30,6 @@ class NovaAdminLimiter:
             history.append(now); self.active += 1; return True
     def release(self):
         with self.lock: self.active = max(0, self.active - 1)
-
-def _conversation_chat_id(conversation_id):
-    """Return a stable non-identifying runtime key for this Admin thread."""
-    digest = hashlib.sha256(str(conversation_id).encode("utf-8")).hexdigest()[:15]
-    return int(digest, 16)
-
 
 def _hermes_context(message, recent_history, conversation_id=""):
     """Build bounded Nexus pre-context for Hermes without becoming an agent.
@@ -94,28 +85,13 @@ def _hermes_context(message, recent_history, conversation_id=""):
     )
 
 
-def _invoke_direct_nova(message, conversation_id="admin-browser", recent_history=None):
-    if SENSITIVE_CLIENT_INPUT.search(message): raise ValueError("client-sensitive-input-not-available-in-nova-browser")
-    recent_history = recent_history if isinstance(recent_history, list) else []
-    runtime_chat_id = _conversation_chat_id(conversation_id)
-    result = get_nova_graph().invoke(AgentState(agent_id="hermes_nova", mission_id=f"nova_admin_{uuid.uuid4().hex}", thread_id=str(conversation_id), user_message=message, metadata={"chat_id": runtime_chat_id, "conversation_id": str(conversation_id), "conversation_history": recent_history, "channel": "admin_browser", "execution_authority": "NONE"}))
-    state = result if isinstance(result, AgentState) else AgentState.from_dict(result)
-    metadata = state.metadata or {}
-    return {"schema_version": "nexus.nova-response.v1", "text": state.assistant_response, "provider": metadata.get("model_provider", "openrouter"), "model": metadata.get("model_used") or os.environ.get("HERMES_NOVA_MODEL", "unknown"), "role": "strategic_adviser", "execution_authority": "NONE", "conversation_scope": "admin_browser", "memory_scope": "nova_admin_channel", "session_id": str(conversation_id)}
-
-
 def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
-    """Invoke canonical Hermes by default; retain direct graph as rollback only."""
+    """Invoke the one canonical Hermes runtime; reject legacy graph mode."""
     if SENSITIVE_CLIENT_INPUT.search(message):
         raise ValueError("client-sensitive-input-not-available-in-nova-browser")
     runtime = os.environ.get("NEXUS_ADMIN_NOVA_RUNTIME", "hermes").strip().lower()
-    if runtime == "direct":
-        result = _invoke_direct_nova(message, conversation_id, recent_history)
-        result["executor"] = "legacy_direct_nova_graph"
-        result["runtime"] = "direct"
-        return result
     if runtime != "hermes":
-        raise RuntimeError("unsupported-admin-nova-runtime")
+        raise RuntimeError("legacy_direct_nova_disabled")
     result = run_oracle_hermes(
         message,
         str(conversation_id),
@@ -139,6 +115,7 @@ def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
         "conversation_scope": "admin_browser",
         "memory_scope": "nova_admin_channel",
         "session_id": str(conversation_id),
+        "hermes_session_id": result.hermes_session_id,
     }
 
 class NovaAdminHandler(BaseHTTPRequestHandler):
@@ -189,10 +166,6 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8790); args = parser.parse_args()
     if args.host != "127.0.0.1": raise SystemExit("Nova Admin server must remain bound to 127.0.0.1")
-    # Only initialize the legacy graph when the explicit rollback runtime is
-    # selected. Hermes is the canonical Admin execution runtime by default.
-    if os.environ.get("NEXUS_ADMIN_NOVA_RUNTIME", "hermes").strip().lower() == "direct":
-        get_nova_graph()
     server = ThreadingHTTPServer((args.host, args.port), NovaAdminHandler); server.limiter = NovaAdminLimiter(); server.serve_forever(); return 0
 
 if __name__ == "__main__": raise SystemExit(main())

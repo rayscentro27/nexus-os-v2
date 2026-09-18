@@ -8,4 +8,7 @@ if [ ! -x "$PYTHON" ]; then PYTHON="$(command -v python3)"; fi
 if [ -f "$RUNTIME_ENV" ]; then set -a; source "$RUNTIME_ENV"; set +a; fi
 export PYTHONPATH="$REPO_ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}"
 export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-/usr/local/Cellar/openssl@3/3.6.3/lib}"
+# The former direct graph is permanently disabled for the Admin service.  Do
+# not allow a stale runtime.env value to create a second Nova brain.
+export NEXUS_ADMIN_NOVA_RUNTIME=hermes
 exec "$PYTHON" "$REPO_ROOT/scripts/nova/nova_admin_server.py" --host 127.0.0.1 --port 8790

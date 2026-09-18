@@ -119,10 +119,10 @@ def get_env():
 
 
 def _primary_runtime():
-    """Return the explicitly selected primary runtime, failing closed."""
+    """Return the one production runtime, failing closed on legacy values."""
     value = get_env().get(PRIMARY_RUNTIME_FLAG, PRIMARY_RUNTIME_CUSTOM).strip().lower()
-    if value not in {PRIMARY_RUNTIME_CUSTOM, PRIMARY_RUNTIME_HERMES, PRIMARY_RUNTIME_ORACLE}:
-        raise RuntimeError(f"invalid {PRIMARY_RUNTIME_FLAG}={value!r}")
+    if value != PRIMARY_RUNTIME_ORACLE:
+        raise RuntimeError(f"legacy_nova_runtime_disabled:{PRIMARY_RUNTIME_FLAG}={value!r}")
     return value
 
 # ─── Logging ────────────────────────────────────────────
@@ -851,6 +851,7 @@ def _run_oracle_primary(update_id, message, chat_id, text, primary_run_id=None):
         "runtime": "oracle_hermes", "runtime_host": result.runtime_host,
         "hermes_version": result.hermes_version, "profile": result.profile,
         "provider": result.provider, "model": result.model,
+        "hermes_session_id": result.hermes_session_id,
         "telegram_send_count": 0, "error": result.error,
         "response": result.response, "tools_executed": [],
         "runtime_init": result.status == "SUCCEEDED", "model_init": result.status == "SUCCEEDED",
@@ -1611,13 +1612,13 @@ def run_test():
     print(f"Ray chat ID: 1288928049")
     print(f"Authorized: {is_authorized(1288928049, 1288928049, 'rayscentro')}")
 
-    # Check graph
+    # Check canonical Hermes transport. The former local Nova graph is not a
+    # Telegram runtime and must never be used as a fallback brain.
     try:
-        from nexus_agent_platform.agents.nova import get_nova_graph
-        graph = get_nova_graph()
-        print(f"Nova graph: compiled={graph._compiled} enabled={graph.is_enabled}")
+        from nexus_agent_platform.bridge.oracle_hermes_cli import ORACLE_PROFILE, ORACLE_TOOLSET, ORACLE_HOST
+        print(f"Hermes transport: Oracle host={ORACLE_HOST} profile={ORACLE_PROFILE} toolset={ORACLE_TOOLSET}")
     except Exception as e:
-        print(f"Nova graph: FAILED ({e})")
+        print(f"Hermes transport: FAILED ({e})")
 
     print("\nTest PASSED — Nova worker is ready to run.")
     return True
