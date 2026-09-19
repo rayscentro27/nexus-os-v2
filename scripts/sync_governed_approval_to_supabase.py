@@ -58,8 +58,8 @@ def main() -> None:
         "external_action_if_approved": "Resume the existing company cycle; external publication remains receipt-gated.",
         "idempotency_key": f"approval-sync:{APPROVAL_ID}",
     }
-    query = urllib.parse.quote(f"payload->>canonical_approval_id.eq.{APPROVAL_ID}", safe="->.=")
-    existing = request(f"approvals?select=id,status,payload&{query}&limit=1")
+    all_rows = request("approvals?select=id,status,payload&limit=500") or []
+    existing = [row for row in all_rows if (row.get("payload") or {}).get("canonical_approval_id") == APPROVAL_ID]
     record = {"lane": "system", "item_type": "CAMPAIGN_APPROVAL", "status": current.get("status", "pending"), "title": current.get("action_summary", "Campaign approval"), "summary": current.get("action_summary", "Ray approval required"), "payload": payload}
     if existing:
         remote_id = existing[0]["id"]

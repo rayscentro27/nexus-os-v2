@@ -82,8 +82,8 @@ def sync_approval(approval: dict[str, Any]) -> dict[str, Any] | None:
         "idempotency_key": f"approval-sync:{approval.get('id')}",
     }
     try:
-        encoded = urllib.parse.quote(str(approval.get("id")), safe="")
-        existing = _request(f"approvals?select=id&payload->>canonical_approval_id=eq.{encoded}&limit=1") or []
+        all_rows = _request("approvals?select=id,payload&limit=500") or []
+        existing = [row for row in all_rows if (row.get("payload") or {}).get("canonical_approval_id") == approval.get("id")]
         record = {"lane": "system", "item_type": payload["type"], "status": approval.get("status", "pending"), "title": approval.get("action_summary", "Governed approval"), "summary": approval.get("action_summary", "Ray approval required"), "payload": payload}
         if existing:
             return _request(f"approvals?id=eq.{existing[0]['id']}", "PATCH", record)
