@@ -20,6 +20,7 @@ from youtube_full_pipeline import _http_caption_tracks, select_channel_videos  #
 from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark_source_result  # noqa: E402
 from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
 from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
+from nexus_agent_platform.research_alpha_pipeline import review_assigned_research_output  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
 
@@ -255,7 +256,25 @@ def main() -> int:
     queue_status = "COMPLETE" if final_status == "FULLY_PROCESSED" else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
     settle_queue(queue_status, result={"final_status": final_status, "source_id": item.get("source_id"),
                                        "research_package_id": (result.get("v2") or {}).get("research_package_id")})
-    event(execution_id, "COMPLETED", worker_id="research_operator_worker", alpha_status="NOT_INVOKED",
+    alpha_result = {"status": "SKIPPED", "reason": "monitoring_or_duplicate"}
+    # Assigned objective/follow-up work is an Alpha-eligible handoff.  Keep
+    # routine monitoring cheap, but do not let evidence-ready assigned work
+    # disappear after persistence.  The bridge is bounded and restart-safe.
+    if final_status == "FULLY_PROCESSED" and selected_work_class in {"ASSIGNED", "DEMAND_DISCOVERY"}:
+        source_row = ((result.get("v2") or {}).get("source") or {})
+        try:
+            alpha_result = review_assigned_research_output(
+                source_id=item.get("source_id", ""), source_title=item.get("title", ""),
+                source_url=item.get("source_url", ""),
+                source_text=source_row.get("text", "") if isinstance(source_row, dict) else "",
+                objective_id=item.get("objective_id"),
+            )
+        except Exception as exc:
+            alpha_result = {"status": "FAILED_RETRYABLE", "error": str(exc)[:500]}
+    event(execution_id, "COMPLETED", worker_id="research_operator_worker",
+          alpha_status=alpha_result.get("decision") or alpha_result.get("status", "SKIPPED"),
+          alpha_receipt_id=alpha_result.get("receipt_id"), alpha_evaluation_id=alpha_result.get("evaluation_id"),
+          alpha_followup_work_id=alpha_result.get("followup_work_id"), alpha_handoff_id=alpha_result.get("handoff_id"),
           next_action="continue next scheduled research wake")
     return 0
 

@@ -115,3 +115,47 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
         evaluated.add(item_id)
         created.append(evaluation)
     return {"evaluations_created": created, "evaluated_count": len(created), "skipped_already_evaluated": skipped, "read_only_external": True}
+
+
+def review_assigned_research_output(*, source_id: str, source_title: str,
+                                    source_url: str, source_text: str,
+                                    objective_id: str | None = None) -> dict[str, Any]:
+    """Send one newly completed assigned source through the existing Alpha path.
+
+    The scheduled Research router remains responsible for acquisition and V2
+    evidence persistence.  This bounded bridge only consumes a completed,
+    assigned source; it does not create a queue or bypass Alpha's model-backed
+    decision/receipt contract.  Existing evaluations make the operation
+    restart-safe.
+    """
+    source_id = str(source_id or "").strip()
+    if not source_id or not source_url:
+        return {"status": "SKIPPED", "reason": "missing_source_identity_or_url"}
+    existing = [row for row in persistence.read_records("alpha_evaluations")
+                if str(row.get("research_id") or "") == source_id
+                or str(row.get("research_item_id") or "") == source_id]
+    if existing:
+        return {"status": "ALREADY_REVIEWED", "decision": existing[-1].get("decision"),
+                "evaluation_id": existing[-1].get("evaluation_id")}
+    from nexus_agent_platform.alpha_model_review import review_demand_package
+    source_record = next((row for row in persistence.read_records("research_v2_sources")
+                          if str(row.get("source_id") or "") == source_id), {})
+    package = {
+        "research_id": source_id,
+        "objective_id": objective_id,
+        "query": source_title or source_id,
+        "title": source_title or source_id,
+        "summary": (source_text or source_record.get("text") or "")[:5000],
+        "sources": [{"title": source_title or source_id, "url": source_url,
+                     "source_type": "PUBLIC_WEB", "snippet": (source_text or source_record.get("text") or "")[:1200]}],
+        "analysis": {"summary": "Completed assigned Research evidence requires Alpha review.",
+                     "recommended_next_action": "preserve evidence boundaries and select a bounded next step"},
+    }
+    result = review_demand_package(package)
+    return {"status": result.get("status"),
+            "decision": (result.get("evaluation") or {}).get("decision"),
+            "evaluation_id": (result.get("evaluation") or {}).get("evaluation_id"),
+            "receipt_id": (result.get("receipt") or {}).get("receipt_id"),
+            "followup_work_id": (result.get("receipt") or {}).get("followup_work_id"),
+            "handoff_id": (result.get("receipt") or {}).get("handoff_id"),
+            "error": result.get("error")}

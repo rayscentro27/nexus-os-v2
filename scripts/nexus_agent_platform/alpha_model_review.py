@@ -231,6 +231,10 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             source_id=finding_id, requested_by="alpha", parent_request_id=request_id,
             objective_id=investigation_id or finding_id, alpha_followup_required=True,
             selection_reason="alpha_followup", evidence_refs=source_refs,
+            # Queue fields are scalar transport fields.  The prior code put
+            # the entire source_refs list into source_url, which serialized
+            # as unusable/empty input and caused a retryable URL failure.
+            source_url=source_refs[0] if source_refs else None,
         )
         receipt["followup_work_id"] = followup.get("work_id")
         receipt["followup_priority"] = 2
