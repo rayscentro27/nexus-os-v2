@@ -12,6 +12,7 @@ import AdminSurfacePage from './AdminSurfacePage'
 import { AutomationPage, AnalyticsPage, DepartmentsPage, KnowledgePage, SettingsPage, SupportPage, TasksPage } from './CanonicalAdminPages'
 import NexusAgentConversation from '../components/NexusAgentConversation'
 import { tradingLabData } from '../data/tradingLabData'
+import { normalizeAdminState } from './adminStateBoundary'
 import './liveCompanyIntelligence.css'
 
 const iconMap = {
@@ -101,7 +102,12 @@ function AiCommandSurface({ state }) {
 
 /** @param {{ surface?: string | null }} props */
 export default function LiveCompanyIntelligence({ surface = null }) {
-  const fallbackState = { ...snapshot, review_data_source: 'LOCAL_DEV_FALLBACK', ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewQueue.length, items: reviewQueue }, research_v2: { human_review_queue_count: reviewQueue.length, machine_work_remains: true, global_stop_required: false } }
+  const fallbackState = normalizeAdminState({
+    ...snapshot,
+    review_data_source: 'LOCAL_DEV_FALLBACK',
+    ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewQueue.length, items: reviewQueue },
+    research_v2: { human_review_queue_count: reviewQueue.length, machine_work_remains: true, global_stop_required: false },
+  }, {})
   const [state, setState] = useState(fallbackState)
   const [refreshed, setRefreshed] = useState(snapshot.generated_at)
   const [activeSurface, setActiveSurface] = useState(surface || canonicalSurfaceFromHash())
@@ -112,7 +118,7 @@ export default function LiveCompanyIntelligence({ surface = null }) {
       const token = data.session?.access_token
       return token ? fetch('/.netlify/functions/admin-live-state', { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }) : null
     }).then(response => response?.ok ? response.json() : null).then(next => {
-      if (!cancelled && next?.provenance) { setState(next); setRefreshed(next.generated_at) }
+      if (!cancelled && next?.provenance) { setState(normalizeAdminState(fallbackState, next)); setRefreshed(next.generated_at) }
     }).catch(() => {})
     load()
     const timer = window.setInterval(load, 30000)
