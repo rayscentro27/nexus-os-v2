@@ -6,7 +6,9 @@ import { supabase } from './supabaseClient'
 export type VoiceAgent = 'hermes' | 'nova' | 'alpha'
 export const AGENT_THREAD_PREFIX = 'nexus-experience-chat:'
 const ACTIVE_THREAD_PREFIX = 'nexus-experience-active-thread:'
-const NOVA_ENDPOINT = '/.netlify/functions/admin-nova-chat'
+// Use the existing Mac control-plane bridge. It invokes the same Oracle SSH
+// -> Hermes 0.20.6 / nova_nexus runtime used by Telegram.
+const NOVA_ENDPOINT = import.meta.env.VITE_NEXUS_NOVA_LOCAL_ENDPOINT || 'http://127.0.0.1:8790/v1/nova/chat'
 
 export function threadStorageKey(agent: VoiceAgent, id: string) { return `${AGENT_THREAD_PREFIX}${agent}:${id}` }
 export function activeThreadKey(agent: VoiceAgent) { return `${ACTIVE_THREAD_PREFIX}${agent}` }

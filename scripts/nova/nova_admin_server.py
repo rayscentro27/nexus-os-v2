@@ -5,7 +5,7 @@ The Admin server owns HTTP validation and the browser contract. Hermes Agent
 The former local graph is intentionally disabled; it is not a rollback runtime.
 """
 from __future__ import annotations
-import argparse, json, os, re, threading, time
+import argparse, json, os, re, threading, time, urllib.error, urllib.parse, urllib.request
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
@@ -17,6 +17,57 @@ MAX_HISTORY_MESSAGES = 12
 MAX_HISTORY_CHARS = 14000
 ADMIN_CHAT_ID = 0  # Browser memory is deliberately separate from Telegram.
 SENSITIVE_CLIENT_INPUT = re.compile(r"(?:\b\d{3}-\d{2}-\d{4}\b|\b(?:ssn|social security|bank account|routing number|date of birth|credit report)\b|\b[^\s@]+@[^\s@]+\.[^\s@]+\b)", re.I)
+BEARER_RE = re.compile(r"^Bearer\s+\S+$", re.I)
+
+def _runtime_env():
+    values = {}
+    path = os.path.expanduser(os.environ.get("NEXUS_RUNTIME_ENV_PATH", "~/.config/nexus/runtime.env"))
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                values[key.strip().removeprefix("export ")] = value.strip().strip("'\"")
+    except OSError:
+        pass
+    return values
+
+def _env_value(*names):
+    runtime = _runtime_env()
+    for name in names:
+        value = os.environ.get(name) or runtime.get(name)
+        if value:
+            return value
+    return ""
+
+def _require_admin(headers):
+    authorization = headers.get("Authorization", "")
+    if not BEARER_RE.fullmatch(authorization):
+        return False
+    base = _env_value("SUPABASE_URL", "VITE_SUPABASE_URL").rstrip("/")
+    anon = _env_value("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY")
+    if not base or not anon:
+        return False
+    request_headers = {"apikey": anon, "authorization": authorization}
+    def get(path):
+        try:
+            request = urllib.request.Request(f"{base}{path}", headers=request_headers)
+            with urllib.request.urlopen(request, timeout=8) as response:
+                return response.getcode(), json.loads(response.read().decode("utf-8"))
+        except (OSError, ValueError, urllib.error.URLError):
+            return 0, None
+    user_status, user = get("/auth/v1/user")
+    if user_status != 200 or not isinstance(user, dict) or not user.get("id"):
+        return False
+    user_id = urllib.parse.quote(str(user["id"]), safe="")
+    admin_status, admins = get(f"/rest/v1/admin_users?id=eq.{user_id}&active=neq.false&select=role&limit=1")
+    role = admins[0].get("role") if admin_status == 200 and isinstance(admins, list) and admins else None
+    if not role:
+        membership_status, memberships = get(f"/rest/v1/tenant_memberships?user_id=eq.{user_id}&role=in.(super_admin,admin,operator)&select=role&limit=1")
+        role = memberships[0].get("role") if membership_status == 200 and isinstance(memberships, list) and memberships else None
+    return bool(role)
 
 class NovaAdminLimiter:
     def __init__(self, requests_per_minute=12):
@@ -131,7 +182,7 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload, separators=(",", ":")).encode(); self.send_response(status); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body))); self._cors(); self.end_headers(); self.wfile.write(body)
     def do_OPTIONS(self):
         if self.headers.get("Origin") != ALLOWED_ORIGIN: self._send(403, {"error": "origin-not-allowed"}); return
-        self.send_response(204); self._cors(); self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS"); self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Nexus-Nova-Session"); self.send_header("Access-Control-Max-Age", "300"); self.end_headers()
+        self.send_response(204); self._cors(); self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS"); self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Nexus-Nova-Session"); self.send_header("Access-Control-Max-Age", "300"); self.end_headers()
     def do_GET(self):
         if self.path not in ("/", "/health"):
             self._send(404, {"error": "not-found"}); return
@@ -139,6 +190,7 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/v1/nova/chat": self._send(404, {"error": "not-found"}); return
         if self.headers.get("Origin") != ALLOWED_ORIGIN: self._send(403, {"error": "origin-not-allowed"}); return
+        if not _require_admin(self.headers): self._send(401, {"error": "admin_authentication_required"}); return
         try: length = int(self.headers.get("Content-Length", "0"))
         except ValueError: self._send(400, {"error": "invalid-content-length"}); return
         if length <= 0 or length > MAX_BODY_BYTES: self._send(413, {"error": "request-size-bounded"}); return
