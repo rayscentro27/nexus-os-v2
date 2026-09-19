@@ -57,6 +57,25 @@ def run_safe_repair_decision_test(state: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def resume_approved_cycle(approval: dict[str, Any]) -> dict[str, Any]:
+    """Resume only the affected post-approval stages from the durable checkpoint."""
+    cycle_id = (approval.get("input_summary") or {}).get("company_cycle_id")
+    if not cycle_id:
+        return {"status": "NOT_APPLICABLE", "reason": "approval is not company-cycle scoped"}
+    path = ROOT / "data" / "runtime" / "company_cycles" / f"{cycle_id}.json"
+    if not path.exists():
+        return {"status": "FAILED", "reason": "cycle checkpoint missing", "company_cycle_id": cycle_id}
+    state = json.loads(path.read_text())
+    state["campaign_approval_status"] = "APPROVED"
+    state["current_stage"] = "SOCIAL"
+    state["stages"]["SOCIAL"] = {"status": "BLOCKED_EXTERNAL", "owner": "social_distribution", "latest_result": "No authenticated configured GoClear posting account is present in the canonical registry.", "next_action": "Ray connect/approve a configured account or use an approved manual channel."}
+    state["stages"]["EMAIL"] = {"status": "BLOCKED_EXTERNAL", "owner": "email_provider", "latest_result": "No provider delivery receipt is claimed until a configured test provider sends and delivery is verified.", "next_action": "Use configured test recipient/provider, then validate inbox, destination, and click receipt."}
+    state["status"] = "WAITING_EXTERNAL"
+    _append(cycle_id, "APPROVAL_RESUME", approval_id=approval.get("id"), resumed_from="ADMIN_APPROVAL", next_stages=["SOCIAL", "EMAIL"], status=state["status"])
+    _write_runtime(cycle_id, state)
+    return {"status": "RESUMED", "company_cycle_id": cycle_id, "current_stage": "SOCIAL", "external_blockers": ["social_account_authentication", "email_provider_delivery_receipt"]}
+
+
 def create_cycle() -> dict[str, Any]:
     cycle_id = persistence.new_id("company_cycle")
     objective_id = f"{cycle_id}:goclear-funding-readiness-demand"

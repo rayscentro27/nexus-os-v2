@@ -174,6 +174,15 @@ def resolve_approval(
     new_status = {"approve": "approved", "reject": "rejected", "cancel": "cancelled"}[decision]
     updated = _transition_approval(approval_id, new_status, resolved_by, feedback)
     if new_status == "approved":
+        # Company-cycle approvals resume their existing checkpoint.  The hook
+        # only advances state; publication and delivery remain separately
+        # gated by configured accounts/providers and their receipts.
+        if updated.get("action_id") == "client.sends" and (updated.get("input_summary") or {}).get("company_cycle_id"):
+            try:
+                from nexus_agent_platform.company_cycle import resume_approved_cycle
+                resume_approved_cycle(updated)
+            except Exception as exc:  # approval must remain recorded even if resume projection fails
+                persistence.emit_audit_event({"type": "company_cycle_resume_failed", "approval_id": approval_id, "error": str(exc)[:300]})
         persistence.emit_audit_event({
             "type": "approval_granted",
             "approval_id": approval_id,
