@@ -25,8 +25,6 @@ LANES = (
     ("YOUTUBE_CONTENT", "YouTube Content", "P2"),
     ("COMPETITOR_INTELLIGENCE", "Competitor Intelligence", "P2"),
     ("TRADING_MARKETS", "Trading Markets", "P1"),
-    ("GITHUB_TECHNOLOGY", "GitHub Technology", "P2"),
-    ("PLATFORM_CAPABILITY_INTELLIGENCE", "Platform Capability Intelligence", "P1"),
 )
 PRIORITY = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 GOVERNED = ROOT / "data/governed"

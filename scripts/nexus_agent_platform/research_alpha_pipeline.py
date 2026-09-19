@@ -1,6 +1,6 @@
 """Restart-safe autonomous Research-output -> Alpha evaluation bridge.
 
-The bridge consumes only already-persisted, governed Research evidence.  Its
+    The bridge consumes only already-persisted, governed Research evidence.  Its
 score is a deterministic conversion of the existing Alpha evidence score; it
 does not claim profitability or invent support.  Qualification routes through
 the existing Alpha work-order path, while rejected/weak items remain durable
@@ -42,16 +42,13 @@ def _score(claim: dict[str, Any]) -> tuple[int, str, str, str]:
         score = 0
     verification = str(claim.get("verification_status") or claim.get("evidence_status") or "UNKNOWN").upper()
     if verification == "CONTRADICTED":
-        return score, "MATERIAL_CONTRADICTION", "Preserve the claim and evidence, identify the contradiction, and ask Research to resolve it before relying on the claim.", "HIGH"
+        return score, "RESEARCH_MORE", "Evidence contradicts the claim; preserve both sides and ask Research to resolve the contradiction before relying on it.", "HIGH"
     if verification in {"SUPPORTED", "PARTIALLY_SUPPORTED"}:
         # Preserve the governed Alpha decision vocabulary used by existing
         # consumers.  The explanatory reasoning still makes clear that this
         # is preliminary and assumptions remain explicit.
         return score, "QUALIFIED", "The available evidence is sufficient for a preliminary plan; Alpha should still record assumptions and missing information.", "MEDIUM"
-    # Preserve the legacy deterministic evaluator's explicit non-route state.
-    # The model-backed Alpha path uses the governed RESEARCH_MORE/REJECT/PARK
-    # vocabulary for decision-grade packages.
-    return score, "REJECTED", "Evidence is weak or unverified; no department route is created until a decision-grade package exists.", "HIGH"
+    return score, "RESEARCH_MORE", "Evidence is incomplete or unverified; preserve the intelligence and create a bounded follow-up instead of rejecting it.", "MEDIUM"
 
 
 def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
@@ -101,7 +98,7 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
             evaluation["next_route"] = route
             evaluation["status"] = "ROUTED"
         persistence.append_record("alpha_evaluations", evaluation)
-        if decision in {"MORE_RESEARCH_USEFUL", "MATERIAL_CONTRADICTION"}:
+        if decision == "RESEARCH_MORE":
             default_queue().enqueue(
                 work_id=f"alpha-followup:{evaluation['evaluation_id']}",
                 work_class="ASSIGNED", priority=2,

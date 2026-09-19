@@ -21,6 +21,7 @@ from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark
 from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
 from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import review_assigned_research_output  # noqa: E402
+from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
 
@@ -31,18 +32,17 @@ from bounded_research_missions import claim_item, record_item_result  # noqa: E4
 SOURCE_POOLS = {
     "BUSINESS_MARKET": [
         ("WEB_PAGE", "sba-business-guide", "https://www.sba.gov/business-guide", "SBA business guide"),
-        ("WEB_PAGE", "mobile-detailing-academy-phoenix", "https://mobiledetailingacademy.com/mobile-detailing/phoenix-az", "Phoenix mobile detailing market example"),
     ],
     "FUNDING_LENDER": [("WEB_PAGE", "sba-loans", "https://www.sba.gov/loans", "SBA loans and funding")],
     "GRANTS_GOVERNMENT": [("WEB_PAGE", "sba-grants", "https://www.sba.gov/funding-programs/grants", "SBA grants")],
-    "AFFILIATE_REVENUE": [("WEB_PAGE", "hubspot-affiliate", "https://www.hubspot.com/partners/affiliates", "HubSpot affiliate program")],
+    "AFFILIATE_REVENUE": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Current small-business customer signals")],
     "SEO_SEARCH_DEMAND": [("SEO_RESEARCH", "google-seo-starter", "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "Google SEO Starter Guide")],
     "SOCIAL_CONTENT": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Small business community signals")],
     "YOUTUBE_CONTENT": [("YOUTUBE_VIDEO", "zbAmmnMh5ew", "https://www.youtube.com/watch?v=zbAmmnMh5ew", "Ray-approved YouTube research video")],
-    "COMPETITOR_INTELLIGENCE": [("WEB_PAGE", "shopify-partners", "https://www.shopify.com/partners", "Shopify partner ecosystem")],
+    "COMPETITOR_INTELLIGENCE": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Current small-business customer signals")],
     "TRADING_MARKETS": [("WEB_PAGE", "investor-investing-basics", "https://www.investor.gov/introduction-investing", "Investor.gov investing basics")],
-    "GITHUB_TECHNOLOGY": [("GITHUB_REPO", "mvanhorn/last30days-skill", "https://github.com/mvanhorn/last30days-skill", "last30days-skill repository")],
-    "PLATFORM_CAPABILITY_INTELLIGENCE": [("GITHUB_REPO", "sushantkarn/SEO-engine", "https://github.com/sushantkarn/SEO-engine", "SEO-engine repository")],
+    # Installed capabilities are invoked through their adapters, never
+    # scheduled as GitHub source material.
 }
 SOURCE_CATALOG = {source_id: (source_type, source_url, title)
                   for values in SOURCE_POOLS.values() for source_type, source_id, source_url, title in values}
@@ -66,6 +66,7 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                     "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
                     "objective_id": queued.get("objective_id"), "mission_id": queued.get("mission_id"),
                     "mission_item_id": queued.get("mission_item_id"), "parent_request_id": queued.get("parent_request_id"),
+                    "source_candidates": candidates,
                     "alpha_followup_required": queued.get("alpha_followup_required", False),
                     "department_target": queued.get("department_target"), "lifecycle": queued.get("lifecycle", "MONITORED")}
         return {"source_type": queued.get("source_type") or "WEB_PAGE",
@@ -77,6 +78,7 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
                 "objective_id": queued.get("objective_id"), "mission_id": queued.get("mission_id"),
                 "mission_item_id": queued.get("mission_item_id"), "parent_request_id": queued.get("parent_request_id"),
+                "source_candidates": candidates,
                 "alpha_followup_required": queued.get("alpha_followup_required", False),
                 "department_target": queued.get("department_target"),
                 "lifecycle": queued.get("lifecycle", "MONITORED")}
@@ -107,17 +109,18 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 break
             except Exception:
                 continue
-        return {"source_type": "YOUTUBE_VIDEO", "source_id": video["video_id"], "source_url": video["url"],
+        return annotate({"source_type": "YOUTUBE_VIDEO", "source_id": video["video_id"], "source_url": video["url"],
                 "title": video.get("title", video["video_id"]), "author": channel["name"],
                 "channel_id": channel.get("channel_id"), "channel_url": channel["url"],
                 "discovery_method": video.get("discovery_method", "YOUTUBE_RSS"),
                 "category": "YOUTUBE_CONTENT", "selection_reason": "approved_channel_watchlist",
-                "lifecycle": "ONE_TIME" if os.environ.get("NEXUS_MISSION_ITEM_ID") else "MONITORED"}
+                "lifecycle": "ONE_TIME" if os.environ.get("NEXUS_MISSION_ITEM_ID") else "MONITORED"})
     pool = SOURCE_POOLS.get(lane_id) or SOURCE_POOLS["BUSINESS_MARKET"]
     index = int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(pool)
     source_type, source_id, source_url, title = pool[index]
-    return {"source_type": source_type, "source_id": source_id, "source_url": source_url,
+    return annotate({"source_type": source_type, "source_id": source_id, "source_url": source_url,
             "title": title, "category": lane_id, "selection_reason": "scheduled_lane_source_pool"}
+            )
 
 
 def event(execution_id: str, status: str, **values) -> None:
@@ -126,6 +129,30 @@ def event(execution_id: str, status: str, **values) -> None:
     with JOBS.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
         handle.flush()
+
+
+def strategy_changing_fallback(item: dict, *, failure_class: str, error: str, attempt: int = 1) -> dict | None:
+    """Queue the next evidence source instead of repeating a failed strategy."""
+    candidates = [row for row in (item.get("source_candidates") or [])
+                  if isinstance(row, dict) and row.get("source_url")
+                  and str(row.get("source_id")) != str(item.get("source_id"))]
+    if not candidates or not item.get("work_id"):
+        return None
+    alternate = candidates[0]
+    fallback = default_queue().enqueue(
+        work_id=f"{item['work_id']}:strategy-change:{attempt}",
+        work_class=item.get("work_class") or "ASSIGNED", priority=max(0, int(item.get("priority", 50)) - 1),
+        lane_id=item.get("lane_id") or item.get("category") or "GENERAL_DISCOVERY",
+        source_type=alternate.get("source_type") or "WEB_PAGE", source_id=alternate.get("source_id"),
+        source_url=alternate.get("source_url"), title=alternate.get("title") or item.get("title"),
+        source_candidates=candidates[1:], requested_by="research_failure_router",
+        objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
+        alpha_followup_required=item.get("alpha_followup_required", False), lifecycle="ONE_TIME",
+        selection_reason=f"strategy_change_after_{failure_class}", evidence_refs=item.get("evidence_refs") or [],
+    )
+    return {"work_id": fallback.get("work_id"), "source_id": alternate.get("source_id"),
+            "source_url": alternate.get("source_url"), "failure_class": failure_class,
+            "objective_continues": True, "strategy_changed": True, "prior_error": str(error)[:500]}
 
 
 def main() -> int:
@@ -188,13 +215,18 @@ def main() -> int:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=str(exc)[:500], failure_class="SOURCE_SELECTION_FAILURE",
               retry_after="next scheduled wake")
-        settle_queue("FAILED_RETRYABLE", result={"error": str(exc)[:500]}, blocker_type="SOURCE_SELECTION_FAILURE")
+        queued = json.loads(queued_payload) if queued_payload else {}
+        fallback = strategy_changing_fallback(queued, failure_class="SOURCE_SELECTION_FAILURE", error=str(exc))
+        if fallback:
+            event(execution_id, "STRATEGY_CHANGED", worker_id="research_operator_worker", **fallback)
+        settle_queue("WAITING" if fallback else "FAILED_RETRYABLE", result={"error": str(exc)[:500], "fallback": fallback}, blocker_type="SOURCE_SELECTION_FAILURE")
         if mission_item:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE",
                                result={"error": str(exc)[:500], "failure_class": "SOURCE_SELECTION_FAILURE"},
                                next_action="retry after bounded source backoff")
         return 1
     item["v2_parent_links"] = parent_links_for_item(item)
+    item = annotate(item)
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
           channel_id=item.get("channel_id"), channel_url=item.get("channel_url"),
@@ -208,6 +240,25 @@ def main() -> int:
     try:
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(args.timeout_seconds)
+        # A known unchanged source is settled before any network fetch or
+        # expensive processor. Assigned work may explicitly override this.
+        refresh_state = {}
+        try:
+            from nexus_agent_platform.research_lane_scheduler import _source_refresh_snapshot
+            from datetime import datetime, timezone
+            refresh_state = _source_refresh_snapshot(item.get("lane_id") or lane_id, item.get("source_id", ""), datetime.now(timezone.utc))
+        except Exception:
+            refresh_state = {}
+        if (refresh_state.get("cooling_down") or refresh_state.get("terminal")) and selected_work_class not in {"ASSIGNED", "DEMAND_DISCOVERY"} and not item.get("alpha_followup_required"):
+            final_status = "DUPLICATE_UNCHANGED"
+            event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker", result_status="PASS",
+                  content_count=0, final_status=final_status, processor="pre_process_duplicate_check",
+                  summary_created=False, extraction_created=False, scored=False, provenance_created=True,
+                  stored=True, disposition="DUPLICATE", source_purpose=item.get("source_purpose"))
+            settle_queue("MONITORING", result={"final_status": final_status, "source_id": item.get("source_id")})
+            event(execution_id, "COMPLETED", worker_id="research_operator_worker", alpha_status="SKIPPED_DUPLICATE",
+                  next_action="select new work after pre-process duplicate check")
+            return 0
         # The normal worker must use the same unified source router as the
         # proven scheduled Research path. Alpha is intentionally not part of
         # base acquisition; it is reserved for mature packages/requested review.
@@ -227,7 +278,7 @@ def main() -> int:
         return 1
     final_status = result.get("final_status", "FAILED_RETRYABLE")
     if mission_item:
-        mission_status = "COMPLETED" if final_status in {"FULLY_PROCESSED", "DUPLICATE_UNCHANGED"} else "FAILED_RETRYABLE"
+        mission_status = "COMPLETED" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE", "DUPLICATE_UNCHANGED"} else "FAILED_RETRYABLE"
         record_item_result(mission_item_id, status=mission_status, result={"final_status": final_status, "source_id": item.get("source_id"), "research_package_id": (result.get("v2") or {}).get("research_package_id")}, next_action="continue next mission item" if mission_status == "COMPLETED" else "retry after backoff")
     # Refresh bookkeeping is advisory scheduling state.  A serialization or
     # filesystem fault here must never turn a completed Research result into a
@@ -248,19 +299,22 @@ def main() -> int:
           disposition=result.get("disposition"), research_id=(result.get("result") or {}).get("research_item_id"))
     if final_status.startswith("FAILED"):
         mark_lane_backoff(lane_id, result.get("error", "scheduled processor failed"))
+        fallback = strategy_changing_fallback(item, failure_class="SCHEDULED_PROCESSOR_FAILURE", error=result.get("error", "scheduled processor failed"), attempt=int(os.environ.get("NEXUS_ATTEMPT_COUNT", "1")))
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=result.get("error", "scheduled processor failed"), failure_class="SCHEDULED_PROCESSOR_FAILURE",
               retry_after="next scheduled wake")
-        settle_queue("FAILED_RETRYABLE", result=result, blocker_type="SCHEDULED_PROCESSOR_FAILURE")
+        if fallback:
+            event(execution_id, "STRATEGY_CHANGED", worker_id="research_operator_worker", **fallback)
+        settle_queue("WAITING" if fallback else "FAILED_RETRYABLE", result={**result, "fallback": fallback}, blocker_type="SCHEDULED_PROCESSOR_FAILURE")
         return 1
-    queue_status = "COMPLETE" if final_status == "FULLY_PROCESSED" else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
+    queue_status = "COMPLETE" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
     settle_queue(queue_status, result={"final_status": final_status, "source_id": item.get("source_id"),
                                        "research_package_id": (result.get("v2") or {}).get("research_package_id")})
     alpha_result = {"status": "SKIPPED", "reason": "monitoring_or_duplicate"}
     # Assigned objective/follow-up work is an Alpha-eligible handoff.  Keep
     # routine monitoring cheap, but do not let evidence-ready assigned work
     # disappear after persistence.  The bridge is bounded and restart-safe.
-    if final_status == "FULLY_PROCESSED" and selected_work_class in {"ASSIGNED", "DEMAND_DISCOVERY"}:
+    if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} and selected_work_class in {"ASSIGNED", "DEMAND_DISCOVERY"}:
         source_row = ((result.get("v2") or {}).get("source") or {})
         try:
             alpha_result = review_assigned_research_output(

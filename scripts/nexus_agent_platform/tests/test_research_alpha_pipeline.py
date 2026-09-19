@@ -31,7 +31,7 @@ def test_weak_candidate_is_persisted_but_not_routed(tmp_path, monkeypatch):
     persistence.append_record("alpha_research", {"research_id": "research-2", "claims": ["claim-2"], "theme": "BUSINESS"})
     result = pipeline.evaluate_pending()
     evaluation = result["evaluations_created"][0]
-    assert evaluation["decision"] == "REJECTED"
+    assert evaluation["decision"] == "RESEARCH_MORE"
     assert evaluation["next_route"] is None
     assert not persistence.read_records("work_orders")
 

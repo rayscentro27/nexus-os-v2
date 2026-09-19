@@ -143,6 +143,7 @@ class ResearchWorkQueue:
             "lease_expires_at": item.get("lease_expires_at"),
             "attempt_id": item.get("attempt_id"),
             "lifecycle": item.get("lifecycle", "MONITORED"),
+            "source_purpose": item.get("source_purpose"),
             "unchanged_count": int(item.get("unchanged_count", 0) or 0),
         }
         return result

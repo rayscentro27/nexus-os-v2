@@ -329,9 +329,34 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
             audio_acquired = True
             ffmpeg_normalized = True
         except Exception as asr_error:
-            failure = {"video_id": video_id, "url": url, "title": title, "channel": channel, "content_hash": content_hash, "transcript_status": "FAILED_RETRYABLE", "failure_reason": str(asr_error), "caption_failure_reason": str(caption_error), "processing_status": "FAILED_RETRYABLE", "last_processed_at": _now(), "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
-            _write_json(existing, failure)
-            return failure
+            # Preserve bounded, truthful metadata evidence instead of
+            # discarding the objective when both transcript methods fail.
+            # This is explicitly incomplete: no transcript or video claim is
+            # inferred from the description alone.
+            description = re.sub(r"\s+", " ", html.unescape(str(metadata.get("description") or video.get("description") or ""))).strip()
+            partial_path = base.with_suffix(".partial-evidence.json")
+            partial = {
+                "video_id": video_id, "url": url, "title": title, "channel": channel,
+                "content_hash": content_hash, "transcript_status": "UNAVAILABLE",
+                "caption_failure_reason": str(caption_error), "asr_failure_reason": str(asr_error),
+                "processing_status": "PARTIAL_EVIDENCE", "evidence_status": "EVIDENCE_INCOMPLETE",
+                "fallback_ladder": ["public captions", "local ASR", "video metadata/description", "independent text source"],
+                "fallback_used": "video_metadata_description",
+                "description": description[:5000], "claims_from_description": [],
+                "key_findings": ["Transcript unavailable; only public metadata/description was preserved."],
+                "follow_up_questions": ["Can the material video claims be verified from an independent text source?", "What customer problem or desired outcome is evidenced outside the video?"],
+                "research_disposition": "EVIDENCE_INCOMPLETE", "last_processed_at": _now(),
+                "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0,
+            }
+            _write_json(partial_path, partial)
+            _write_json(existing, partial)
+            return {**partial, "new_artifact_set_created": True,
+                    "artifact_root": str(artifact_root.relative_to(ROOT)),
+                    "partial_evidence_path": str(partial_path.relative_to(ROOT)),
+                    "executive_summary": partial["key_findings"][0],
+                    "structured_data": {"description": description[:5000], "transcript_available": False},
+                    "summary_created": True, "extraction_created": True,
+                    "scored": False, "provenance_created": True, "stored": True}
     if not transcript:
         raise RuntimeError("caption acquisition returned empty transcript")
     transcript_hash = hashlib.sha256(transcript.encode()).hexdigest()
