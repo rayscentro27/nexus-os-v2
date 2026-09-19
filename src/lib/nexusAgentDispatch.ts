@@ -6,9 +6,23 @@ import { supabase } from './supabaseClient'
 export type VoiceAgent = 'hermes' | 'nova' | 'alpha'
 export const AGENT_THREAD_PREFIX = 'nexus-experience-chat:'
 const ACTIVE_THREAD_PREFIX = 'nexus-experience-active-thread:'
-// Use the existing Mac control-plane bridge. It invokes the same Oracle SSH
-// -> Hermes 0.20.6 / nova_nexus runtime used by Telegram.
-const NOVA_ENDPOINT = import.meta.env.VITE_NEXUS_NOVA_LOCAL_ENDPOINT || 'http://127.0.0.1:8790/v1/nova/chat'
+const NOVA_POLL_INTERVAL_MS = 1000
+const NOVA_POLL_TIMEOUT_MS = 190000
+
+async function sendRemoteNovaCommand({ conversationId, text }: { conversationId: string, text: string }) {
+  if (!supabase) throw new Error('Remote Nova transport is not configured.')
+  const userMessage = await supabase.from('admin_ai_messages').select('id,created_at').eq('conversation_id', conversationId).eq('role', 'user').eq('content', text).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  if (userMessage.error || !userMessage.data) throw new Error(userMessage.error?.message || 'Nova command receipt could not be found.')
+  const deadline = Date.now() + NOVA_POLL_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    await new Promise(resolve => window.setTimeout(resolve, NOVA_POLL_INTERVAL_MS))
+    const current = await supabase.from('admin_ai_messages').select('role,content,created_at').eq('conversation_id', conversationId).gt('created_at', userMessage.data.created_at).order('created_at', { ascending: true }).limit(1).maybeSingle()
+    if (current.error) throw new Error(`Nova response status unavailable: ${current.error.message}`)
+    if (current.data?.role === 'error') throw new Error(current.data.content || 'Nova command failed.')
+    if (current.data?.content) return { response: current.data.content, profile: 'nova_nexus', runtime: 'hermes' }
+  }
+  throw new Error('Nova command timed out while waiting for canonical Hermes.')
+}
 
 export function threadStorageKey(agent: VoiceAgent, id: string) { return `${AGENT_THREAD_PREFIX}${agent}:${id}` }
 export function activeThreadKey(agent: VoiceAgent) { return `${ACTIVE_THREAD_PREFIX}${agent}` }
@@ -29,13 +43,8 @@ export async function sendAgentMessage({ agent, conversationId, text, recentHist
     return { role: 'assistant', text: result.text, meta: `${result.evidenceState || 'UNKNOWN'} · canonical Hermes`, response: result }
   }
   if (agent === 'nova') {
-    const session = await supabase?.auth.getSession()
-    const accessToken = session?.data.session?.access_token
-    if (!accessToken) throw new Error('Authenticated Admin session is required.')
-    const result = await fetch(NOVA_ENDPOINT, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, 'X-Nexus-Nova-Session': conversationId }, body: JSON.stringify({ message: text, conversation_id: conversationId, channel: 'admin_browser', recent_history: recentHistory.slice(-12) }) })
-    let payload: any = {}; try { payload = await result.json() } catch { /* handled below */ }
-    if (!result.ok) throw new Error(payload.error || (result.status === 302 ? 'Nova Access authentication required' : 'Nova browser transport unavailable'))
-    return { role: 'assistant', text: payload.text || 'Nova returned no response.', meta: `${payload.model || 'configured model'} · canonical Nova graph` }
+    const payload = await sendRemoteNovaCommand({ conversationId, text })
+    return { role: 'assistant', text: payload.response || 'Nova returned no response.', meta: `${payload.profile || 'nova_nexus'} · canonical Hermes`, response: payload }
   }
   const result = respondAsAlpha(text, 'General Conversation', Date.now())
   return { role: 'assistant', text: result.text, meta: `${result.provider || 'deterministic_local'} · canonical Alpha route` }

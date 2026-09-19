@@ -5,10 +5,9 @@ import { describe, expect, it } from 'vitest'
 const source = readFileSync(resolve(process.cwd(), 'src/components/NovaWorkspace.jsx'), 'utf8')
 
 describe('Nova Admin workspace transport', () => {
-  it('uses the browser-only Nova endpoint and canonical response presentation', () => {
-    expect(source).toContain('VITE_NEXUS_NOVA_LOCAL_ENDPOINT')
-    expect(source).toContain('http://127.0.0.1:8790/v1/nova/chat')
-    expect(source).toContain('Authorization: `Bearer ${accessToken}`')
+  it('uses the governed remote command path and canonical response presentation', () => {
+    expect(source).toContain('sendAgentMessage')
+    expect(source).toContain('createAdminAiConversation')
     expect(source).not.toContain('nova.goclearonline.cc/v1/nova/chat')
     expect(source).toContain('<SafeMarkdown>')
     expect(source).not.toContain('runHermesConversation')

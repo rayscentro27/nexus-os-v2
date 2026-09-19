@@ -3,11 +3,12 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 describe('Admin canonical Nova transport', () => {
-  it('uses the existing local Hermes bridge instead of the protected Nova origin', () => {
+  it('uses existing authenticated Admin conversation tables instead of a public Nova origin', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/lib/nexusAgentDispatch.ts'), 'utf8')
-    expect(source).toContain("http://127.0.0.1:8790/v1/nova/chat")
-    expect(source).toContain('Authorization: `Bearer ${accessToken}`')
-    expect(source).not.toContain('https://nova.goclearonline.cc/v1/nova/chat')
+    expect(source).toContain("from('admin_ai_messages')")
+    expect(source).toContain('Remote Nova transport is not configured.')
+    expect(source).not.toContain('nova.goclearonline.cc')
+    expect(source).not.toContain('127.0.0.1:8790')
   })
 
   it('keeps the local bridge on canonical Hermes and requires Admin auth', () => {

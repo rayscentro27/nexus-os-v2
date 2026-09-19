@@ -5,7 +5,7 @@ The Admin server owns HTTP validation and the browser contract. Hermes Agent
 The former local graph is intentionally disabled; it is not a rollback runtime.
 """
 from __future__ import annotations
-import argparse, json, os, re, threading, time, urllib.error, urllib.parse, urllib.request
+import argparse, json, os, re, ssl, threading, time, urllib.error, urllib.parse, urllib.request
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
@@ -68,6 +68,57 @@ def _require_admin(headers):
         membership_status, memberships = get(f"/rest/v1/tenant_memberships?user_id=eq.{user_id}&role=in.(super_admin,admin,operator)&select=role&limit=1")
         role = memberships[0].get("role") if membership_status == 200 and isinstance(memberships, list) and memberships else None
     return bool(role)
+
+def _supabase_request(method, path, payload=None):
+    base = _env_value("SUPABASE_URL", "VITE_SUPABASE_URL").rstrip("/")
+    service_key = _env_value("SUPABASE_SERVICE_ROLE_KEY")
+    if not base or not service_key:
+        return 0, None
+    headers = {"apikey": service_key, "authorization": f"Bearer {service_key}", "content-type": "application/json"}
+    data = None if payload is None else json.dumps(payload).encode("utf-8")
+    try:
+        request = urllib.request.Request(f"{base}{path}", data=data, headers=headers, method=method)
+        try:
+            import certifi
+            context = ssl.create_default_context(cafile=certifi.where())
+        except ImportError:
+            context = ssl.create_default_context()
+        with urllib.request.urlopen(request, timeout=10, context=context) as response:
+            raw = response.read().decode("utf-8")
+            return response.getcode(), json.loads(raw) if raw else None
+    except (OSError, ValueError, urllib.error.URLError):
+        return 0, None
+
+def _remote_command_worker():
+    """Consume new Admin user messages and return replies through existing tables."""
+    started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    while True:
+        try:
+            status, rows = _supabase_request("GET", f"/rest/v1/admin_ai_messages?role=eq.user&created_at=gte.{urllib.parse.quote(started_at, safe='')}&select=id,conversation_id,user_id,content,created_at&order=created_at.asc&limit=20")
+            pending = None
+            for row in rows if status == 200 and isinstance(rows, list) else []:
+                conversation_id = urllib.parse.quote(str(row.get("conversation_id", "")), safe="")
+                c_status, conversations = _supabase_request("GET", f"/rest/v1/admin_ai_conversations?id=eq.{conversation_id}&agent=eq.nova&select=id&limit=1")
+                if c_status != 200 or not conversations:
+                    continue
+                a_status, assistants = _supabase_request("GET", f"/rest/v1/admin_ai_messages?conversation_id=eq.{conversation_id}&role=eq.assistant&created_at=gt.{urllib.parse.quote(str(row.get('created_at')), safe='')}&select=id&limit=1")
+                if a_status == 200 and not assistants:
+                    pending = row
+                    break
+            if not pending:
+                time.sleep(2)
+                continue
+            try:
+                result = invoke_nova(str(pending.get("content", "")), str(pending.get("conversation_id", "")), [])
+                completed = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                _supabase_request("POST", "/rest/v1/admin_ai_messages", {"conversation_id": pending.get("conversation_id"), "user_id": pending.get("user_id"), "role": "assistant", "content": result.get("text", "")})
+                _supabase_request("PATCH", f"/rest/v1/admin_ai_conversations?id=eq.{urllib.parse.quote(str(pending.get('conversation_id')), safe='')}", {"updated_at": completed})
+            except Exception as exc:
+                # Persist an auditable bounded failure in the existing Admin
+                # conversation rather than silently dropping the request.
+                _supabase_request("POST", "/rest/v1/admin_ai_messages", {"conversation_id": pending.get("conversation_id"), "user_id": pending.get("user_id"), "role": "error", "content": f"Nova unavailable: {type(exc).__name__}"})
+        except Exception:
+            time.sleep(2)
 
 class NovaAdminLimiter:
     def __init__(self, requests_per_minute=12):
@@ -222,6 +273,8 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8790); args = parser.parse_args()
     if args.host != "127.0.0.1": raise SystemExit("Nova Admin server must remain bound to 127.0.0.1")
-    server = ThreadingHTTPServer((args.host, args.port), NovaAdminHandler); server.limiter = NovaAdminLimiter(); server.serve_forever(); return 0
+    server = ThreadingHTTPServer((args.host, args.port), NovaAdminHandler); server.limiter = NovaAdminLimiter()
+    threading.Thread(target=_remote_command_worker, name="admin-nova-remote-queue", daemon=True).start()
+    server.serve_forever(); return 0
 
 if __name__ == "__main__": raise SystemExit(main())
