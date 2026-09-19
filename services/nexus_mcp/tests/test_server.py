@@ -105,11 +105,14 @@ def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_pat
 
 
 @pytest.mark.parametrize("name", server.TOOL_NAMES)
-def test_each_tool_has_empty_object_input_schema(name):
+def test_each_tool_has_expected_input_schema(name):
     if name == "nexus_delegate_specialist":
         return
     tool = next(tool for tool in server.mcp._tool_manager.list_tools() if tool.name == name)
-    assert tool.parameters == {} or tool.parameters.get("properties", {}) == {}
+    if name in {"nexus_get_research_state", "nexus_get_alpha_review"}:
+        assert "objective_id" in tool.parameters.get("properties", {})
+    else:
+        assert tool.parameters == {} or tool.parameters.get("properties", {}) == {}
 
 
 def test_specialist_request_rejects_unknown_specialist():

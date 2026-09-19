@@ -197,6 +197,7 @@ def persist_v2_records(records: dict[str, list[dict[str, Any]]]) -> dict[str, in
         "investigations": "investigation_id", "follow_ups": "follow_up_id",
         "alpha_reviews": "alpha_review_id", "plans": "plan_id",
         "reputations": "source_id", "handoffs": "handoff_id",
+        "packages": "research_package_id",
     }
     counts = {}
     for kind, rows in records.items():
@@ -337,9 +338,13 @@ def integrate_scheduled_result(item: dict[str, Any], result: dict[str, Any]) -> 
     for intent in intents[:3]:
         requirements = select_source_requirements("Which material claims or unknowns require additional evidence?", intent)
         questions.append({"question_id": _id("question", (source["source_id"], intent)), "source_id": source["source_id"], "question": requirements["question"], "intent": intent, "source_class": requirements["source_class"], "query": requirements["query"], "status": "OPEN"})
-    records = {"sources": [{**source, "research_intents": intents}], "claims": claims, "questions": questions, "investigations": [{"investigation_id": _id("investigation", source["source_id"]), "source_id": source["source_id"], "status": "ACTIVE" if substantive else "ENOUGH_FOR_KNOWLEDGE", "decision": "KNOWLEDGE_CAPTURE" if not substantive else "RESEARCH_MORE", "materiality": "MEDIUM" if substantive else "LOW", "last_activity": _now(), "next_action": "answer_source_requirements" if substantive else "retain_knowledge", "research_intents": intents, "source_requirements": [select_source_requirements(q["question"], q["intent"]) for q in questions], "research_continues": bool(substantive)}], "follow_ups": []}
+    investigation_id = str(item.get("objective_id") or _id("investigation", source["source_id"]))
+    records = {"sources": [{**source, "research_intents": intents, "objective_id": item.get("objective_id"), "investigation_id": investigation_id}], "claims": claims, "questions": questions, "investigations": [{"investigation_id": investigation_id, "objective_id": item.get("objective_id"), "source_id": source["source_id"], "status": "ACTIVE" if substantive else "ENOUGH_FOR_KNOWLEDGE", "decision": "KNOWLEDGE_CAPTURE" if not substantive else "RESEARCH_MORE", "materiality": "MEDIUM" if substantive else "LOW", "last_activity": _now(), "next_action": "answer_source_requirements" if substantive else "retain_knowledge", "research_intents": intents, "source_requirements": [select_source_requirements(q["question"], q["intent"]) for q in questions], "research_continues": bool(substantive)}], "follow_ups": []}
     counts = persist_v2_records(records)
     package = research_package(source=source, claims=claims, evidence=[{"source_id": source.get("source_id"), "text": evidence_text, "status": result.get("processing_status")}], questions=questions)
-    links = item.get("v2_parent_links") or parent_links_for_item(item)
+    package["objective_id"] = item.get("objective_id")
+    package["investigation_id"] = investigation_id
+    persist_v2_records({"packages": [package]})
+    links = item.get("v2_parent_links") or {"question_ids": [], "followup_ids": [], "investigation_ids": [investigation_id], "thesis_ids": []}
     progression = progress_after_package(item, package, result, links) if not bool(result.get("duplicate_unchanged")) else {"package_id": package["research_package_id"], "linked": links, "state_changes": {}}
     return {"v2_integrated": True, "substantive_intelligence": bool(substantive), "research_intents": intents, "claims_created": len(claims), "questions_created": len(questions), "record_counts": counts, "research_package_id": package["research_package_id"], "progression": progression, "comparison_created": progression["state_changes"].get("comparisons", 0)}

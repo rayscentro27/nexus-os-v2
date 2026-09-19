@@ -156,6 +156,18 @@ def _executive_prompt(message: str) -> str:
             "Return the department result with its delegation receipt, freshness, status, and evidence references. "
             "If the call fails, report the exact bounded failure and do not claim the department executed."
         )
+    objective_match = re.search(r"(?:objective_id|objective)\s*[=:]\s*([A-Za-z0-9_.:-]{3,160})", message, re.I)
+    objective_contract = ""
+    if objective_match:
+        objective_id = objective_match.group(1)
+        objective_contract = (
+            " This is an OBJECTIVE_SCOPED_RESEARCH_REQUEST. Resolve objective_id=" + objective_id +
+            " first. Call nexus_get_research_state with that exact objective_id, then call "
+            "nexus_get_alpha_review with the same objective_id. Do not use a global latest Research read, "
+            "historical CRJ/affiliate summaries, or fuzzy text matching. Your answer must explicitly state "
+            "RESOLVED_OBJECTIVE_ID, LATEST_RESEARCH_PACKAGE, LATEST_ALPHA_RECEIPT, MISSING_EVIDENCE, and "
+            "CURRENT_NEXT_ACTION. If any are unavailable, say exactly which field is unavailable."
+        )
     return (
         "[NOVA EXECUTIVE REQUEST CONTRACT]\n"
         "Answer the user's parent question directly. For a strategic request, identify the parent decision, "
@@ -163,7 +175,7 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
-        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + delegation_rules + "\n"
+        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + delegation_rules + objective_contract + "\n"
         "USER REQUEST:\n" + message[:7000]
     )
 
@@ -209,6 +221,46 @@ def _bounded_priority_context() -> str:
         return json.dumps(payload, ensure_ascii=False, default=str)[:7000]
     except Exception as exc:
         return json.dumps({"status": "UNAVAILABLE", "reason": type(exc).__name__})
+
+
+def _objective_grounding_context(message: str) -> str:
+    """Resolve exact objective evidence before the remote model turn.
+
+    The remote MCP remains the interactive read surface. This compact
+    transport context is a safety bridge for Hermes tool calls that omit the
+    newly supported objective argument; it is a projection of canonical
+    records, not an LLM-generated summary.
+    """
+    match = re.search(r"(?:objective_id|objective)\s*[=:]\s*([A-Za-z0-9_.:-]{3,160})", message, re.I)
+    if not match:
+        return ""
+    try:
+        from nexus_agent_platform.research_evidence_bridge import resolve_objective
+        state = resolve_objective(match.group(1))
+        package = state.get("research_package") or {}
+        source = package.get("source") or {}
+        alpha = state.get("alpha_evaluation") or {}
+        receipt = state.get("alpha_receipt") or {}
+        payload = {
+            "authority": "Nexus canonical objective-scoped evidence bridge",
+            "objective_id": state.get("objective_id"),
+            "status": state.get("status"),
+            "research_package_id": package.get("research_package_id"),
+            "research_status": package.get("status"),
+            "source": {k: source.get(k) for k in ("source_id", "source_title", "source_type", "source_url", "processing_status")},
+            "research_next_action": state.get("current_next_action"),
+            "open_questions": [q.get("question") for q in (package.get("questions") or [])[:5]],
+            "alpha_receipt_id": receipt.get("receipt_id"),
+            "alpha_decision": alpha.get("decision"),
+            "alpha_evaluation_id": alpha.get("evaluation_id"),
+            "alpha_followup_work_id": receipt.get("followup_work_id"),
+            "alpha_required_followup": alpha.get("required_followup"),
+            "missing_evidence": state.get("missing_evidence", []),
+        }
+        return json.dumps(payload, ensure_ascii=False, default=str)[:10000]
+    except Exception as exc:
+        return json.dumps({"authority": "Nexus canonical objective-scoped evidence bridge",
+                           "status": "UNAVAILABLE", "reason": type(exc).__name__})
 
 
 def _judgment_correction_prompt(message: str, response: str) -> str:
@@ -323,6 +375,14 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         return completed, round((time.monotonic() - started) * 1000, 1)
     try:
         prompt = _executive_prompt(message)
+        objective_context = _objective_grounding_context(message)
+        if objective_context:
+            prompt += (
+                "\n\nAUTHORITATIVE OBJECTIVE-SCOPED EVIDENCE (read before answering; do not replace "
+                "with global latest Research/Alpha state):\n" + objective_context +
+                "\nUse only this objective lineage for the requested answer. If the interactive MCP result "
+                "disagrees, report the disagreement and prefer this exact objective-scoped canonical bridge."
+            )
         if pre_context:
             prompt += "\n\n" + pre_context[:26000]
         completed, elapsed = invoke(prompt, ORACLE_TOOLSET)

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -106,7 +107,11 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
     turn_id = os.getenv("NEXUS_MCP_TURN_ID") or None
     update_id = os.getenv("NEXUS_MCP_UPDATE_ID") or None
     trace_id = os.getenv("NOVA_LANGFUSE_TRACE_ID") or None
-    cached = _TURN_RESULTS.get(turn_id, {}).get(tool_name) if turn_id else None
+    # Objective-scoped reads must not collide with an earlier global read in
+    # the same Hermes turn.  The argument fingerprint is part of the cache
+    # key; successful reads remain deduplicated only for the exact request.
+    cache_key = tool_name + (":" + json.dumps(arguments or {}, sort_keys=True) if arguments else "")
+    cached = _TURN_RESULTS.get(turn_id, {}).get(cache_key) if turn_id else None
     deduplicated = cached is not None
     try:
         if cached is not None:
@@ -119,7 +124,7 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
                     if len(_TURN_RESULTS) >= _MAX_TURN_SCOPES:
                         _TURN_RESULTS.pop(next(iter(_TURN_RESULTS)))
                     _TURN_RESULTS[turn_id] = {}
-                _TURN_RESULTS[turn_id][tool_name] = payload
+                _TURN_RESULTS[turn_id][cache_key] = payload
     except Exception as exc:  # explicit unavailable result; never fabricate state
         payload = unavailable(tool_name, f"canonical read failed: {type(exc).__name__}")
     receipt = {
@@ -181,13 +186,13 @@ def _register() -> None:
     def nexus_get_system_health() -> dict[str, Any]:
         return _call("nexus_get_system_health")
 
-    @mcp.tool(name="nexus_get_research_state", description="VOLATILE current Research read: return the current Research objective, active work, mission state, today activity, and bounded recent findings. Use for current/delegated Research questions; historical briefs do not satisfy this read.")
-    def nexus_get_research_state() -> dict[str, Any]:
-        return _call("nexus_get_research_state")
+    @mcp.tool(name="nexus_get_research_state", description="VOLATILE current Research read. Supply objective_id for objective-first lineage resolution; without it returns bounded global operational state. Historical briefs never satisfy an objective-scoped read.")
+    def nexus_get_research_state(objective_id: str = "") -> dict[str, Any]:
+        return _call("nexus_get_research_state", {"objective_id": objective_id} if objective_id else {})
 
-    @mcp.tool(name="nexus_get_alpha_review", description="VOLATILE bounded Alpha analysis: evaluate the latest current Research finding with the existing Alpha evidence contract and return its finding reference, evaluation, and receipt.")
-    def nexus_get_alpha_review() -> dict[str, Any]:
-        return _call("nexus_get_alpha_review")
+    @mcp.tool(name="nexus_get_alpha_review", description="VOLATILE bounded Alpha read. Supply objective_id to resolve the latest Alpha evaluation/receipt tied to that objective lineage; never substitute unrelated historical records.")
+    def nexus_get_alpha_review(objective_id: str = "") -> dict[str, Any]:
+        return _call("nexus_get_alpha_review", {"objective_id": objective_id} if objective_id else {})
 
     @mcp.tool(
         name="nexus_delegate_specialist",
@@ -229,7 +234,10 @@ def _delegate_specialist(specialist: str, objective: str, *, conversation_id: st
         }
 
     underlying = routes[specialist_key]
-    result = _call(underlying)
+    objective_match = re.search(r"(?:objective_id|objective)\s*[=:]\s*([A-Za-z0-9_.:-]{3,160})", objective_text, re.I)
+    result = (_call(underlying, {"objective_id": objective_match.group(1)}
+                    if objective_match else {}) if objective_match
+              else _call(underlying))
     delegation_id = f"nexus-delegation-{uuid.uuid4().hex}"
     conversation_id = str(conversation_id or os.getenv("NEXUS_MCP_CONVERSATION_ID") or "").strip()[:120] or None
     data = result.get("data") if isinstance(result.get("data"), dict) else {}

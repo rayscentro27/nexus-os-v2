@@ -140,6 +140,9 @@ def review_assigned_research_output(*, source_id: str, source_title: str,
     package = {
         "research_id": source_id,
         "objective_id": objective_id,
+        # Alpha's parent-chain key is the assigned objective, not the source
+        # URL.  The source remains the evidence identity below.
+        "investigation_id": objective_id or source_id,
         "query": source_title or source_id,
         "title": source_title or source_id,
         "summary": (source_text or source_record.get("text") or "")[:5000],
