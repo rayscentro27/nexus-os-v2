@@ -1,10 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { requireAdmin } from './_admin-auth.mjs'
 
 const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify(body) })
 const env = (key) => process.env[key] || ''
 const root = process.cwd()
-const snapshot = JSON.parse(fs.readFileSync(path.join(root, 'src/data/adminCompanyState.json'), 'utf8'))
+const fallbackSnapshot = { generated_at: null, system_health: 'DEGRADED', research: {}, youtube: {}, departments: {}, campaigns: {}, opportunities: {}, handoffs: {}, next_machine_action: 'Continue canonical runtime', ray_decisions: { count: 0, items: [] }, campaign_list: [], recent_findings: [] }
+const snapshot = (() => { try { return JSON.parse(fs.readFileSync(path.join(root, 'src/data/adminCompanyState.json'), 'utf8')) } catch { return fallbackSnapshot } })()
 
 const readJson = (relative) => { try { return JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8')) } catch { return null } }
 const readJsonl = (relative) => { try { return fs.readFileSync(path.join(root, relative), 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)) } catch { return [] } }
@@ -71,28 +73,12 @@ export function liveProjection() {
 
 export async function handler(event) {
   try {
-    const authorization = event.headers?.authorization || event.headers?.Authorization
-    if (!authorization?.startsWith('Bearer ')) return json(401, { error: 'admin_authentication_required' })
-    const url = (env('VITE_SUPABASE_URL') || env('SUPABASE_URL')).replace(/\/$/, '')
-    const anon = env('VITE_SUPABASE_ANON_KEY') || env('SUPABASE_ANON_KEY')
-    if (!url || !anon) return json(503, { error: 'admin_read_model_unavailable' })
-    const userResponse = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anon, authorization } })
-    const user = await userResponse.json().catch(() => null)
-    if (!userResponse.ok || !user?.id) return json(401, { error: 'authenticated_nexus_session_required' })
-    const headers = { apikey: anon, authorization, 'content-type': 'application/json' }
-    const adminResponse = await fetch(`${url}/rest/v1/admin_users?id=eq.${encodeURIComponent(user.id)}&active=neq.false&select=role&limit=1`, { headers })
-    const admins = await adminResponse.json().catch(() => [])
-    let role = Array.isArray(admins) && admins[0]?.role
-    if (!role) {
-      const membershipResponse = await fetch(`${url}/rest/v1/tenant_memberships?user_id=eq.${encodeURIComponent(user.id)}&role=in.(super_admin,admin,operator)&select=role&limit=1`, { headers })
-      const memberships = await membershipResponse.json().catch(() => [])
-      role = Array.isArray(memberships) && memberships[0]?.role
-    }
-    if (!role) return json(403, { error: 'admin_access_required' })
+    const auth = await requireAdmin(event)
+    if (!auth.ok) return json(auth.statusCode, { error: auth.error })
     return json(200, {
       ...liveProjection(),
       read_model: 'authenticated_admin_live_runtime_projection',
-      authorization: { allowed: true, role: String(role) },
+      authorization: { allowed: true, role: auth.role },
       sensitive_fields_excluded: true,
     })
   } catch {

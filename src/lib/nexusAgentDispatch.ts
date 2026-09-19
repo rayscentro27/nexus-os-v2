@@ -1,11 +1,12 @@
 import { respondAsAlpha } from '../hermes/alpha/hermesAlphaConversationEngine'
 import { sendThroughCanonicalHermes } from './hermes/hermesAdminConversationAdapter'
 import { containsSensitive } from './dataScopes'
+import { supabase } from './supabaseClient'
 
 export type VoiceAgent = 'hermes' | 'nova' | 'alpha'
 export const AGENT_THREAD_PREFIX = 'nexus-experience-chat:'
 const ACTIVE_THREAD_PREFIX = 'nexus-experience-active-thread:'
-const NOVA_ENDPOINT = import.meta.env.VITE_NEXUS_NOVA_ENDPOINT || 'https://nova.goclearonline.cc/v1/nova/chat'
+const NOVA_ENDPOINT = '/.netlify/functions/admin-nova-chat'
 
 export function threadStorageKey(agent: VoiceAgent, id: string) { return `${AGENT_THREAD_PREFIX}${agent}:${id}` }
 export function activeThreadKey(agent: VoiceAgent) { return `${ACTIVE_THREAD_PREFIX}${agent}` }
@@ -26,8 +27,10 @@ export async function sendAgentMessage({ agent, conversationId, text, recentHist
     return { role: 'assistant', text: result.text, meta: `${result.evidenceState || 'UNKNOWN'} · canonical Hermes`, response: result }
   }
   if (agent === 'nova') {
-    const result = await fetch(NOVA_ENDPOINT, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Nexus-Nova-Session': conversationId }, body: JSON.stringify({ message: text, conversation_id: conversationId, channel: 'admin_browser', recent_history: recentHistory.slice(-12) }) })
-    if (result.redirected || result.url.includes('cloudflareaccess.com')) throw new Error('Nova Access authentication required. Open nova.goclearonline.cc once, complete Ray Admin sign-in, then retry.')
+    const session = await supabase?.auth.getSession()
+    const accessToken = session?.data.session?.access_token
+    if (!accessToken) throw new Error('Authenticated Admin session is required.')
+    const result = await fetch(NOVA_ENDPOINT, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, 'X-Nexus-Nova-Session': conversationId }, body: JSON.stringify({ message: text, conversation_id: conversationId, channel: 'admin_browser', recent_history: recentHistory.slice(-12) }) })
     let payload: any = {}; try { payload = await result.json() } catch { /* handled below */ }
     if (!result.ok) throw new Error(payload.error || (result.status === 302 ? 'Nova Access authentication required' : 'Nova browser transport unavailable'))
     return { role: 'assistant', text: payload.text || 'Nova returned no response.', meta: `${payload.model || 'configured model'} · canonical Nova graph` }
