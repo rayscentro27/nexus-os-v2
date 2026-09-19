@@ -19,7 +19,10 @@ def discover_from_questions(rows: list[dict[str, Any]], *, queue: ResearchWorkQu
     """Project repeated demand-shaped questions into governed need objects.
 
     A question is eligible only when it is marked as search-demand/customer
-    oriented and appears from at least two distinct records or source refs.
+    oriented, appears from at least two distinct records or source refs, and
+    retains source provenance.  Internal planning questions without a source
+    are not customer evidence; leaving them out prevents the demand lane from
+    manufacturing needs from scheduler metadata.
     """
     queue = queue or ResearchWorkQueue()
     grouped: dict[str, list[dict[str, Any]]] = {}
@@ -34,8 +37,8 @@ def discover_from_questions(rows: list[dict[str, Any]], *, queue: ResearchWorkQu
         grouped.setdefault(key, []).append(row)
     needs = []
     for question, evidence in grouped.items():
-        refs = sorted({str(row.get("source_or_finding_origin") or row.get("source_id") or row.get("source_ref")) for row in evidence if row.get("source_or_finding_origin") or row.get("source_id") or row.get("source_ref")})
-        if len(evidence) < 2 and len(refs) < 2:
+        refs = sorted({str(row.get("source_or_finding_origin") or row.get("source_ref") or row.get("source_url") or row.get("source_id")) for row in evidence if row.get("source_or_finding_origin") or row.get("source_ref") or row.get("source_url") or row.get("source_id")})
+        if len(refs) < 2:
             continue
         audience = "small-business owners seeking funding or credit readiness"
         problem = question
