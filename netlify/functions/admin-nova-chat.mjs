@@ -43,11 +43,11 @@ function boundedPayload(event) {
 }
 
 function accessHeaders() {
-  // NOVA_* names allow a separately scoped Access service token. The legacy
-  // names are accepted for the existing governed server-side deployment where
-  // the same Access application protects the canonical Nova origin.
-  const clientId = process.env.NOVA_CF_ACCESS_CLIENT_ID || process.env.CF_ACCESS_CLIENT_ID
-  const clientSecret = process.env.NOVA_CF_ACCESS_CLIENT_SECRET || process.env.CF_ACCESS_CLIENT_SECRET
+  // Nova must use a separately scoped Access service token. The existing
+  // generic CF_ACCESS_* names are registered for another protected service
+  // and must not be assumed to authorize the canonical Nova origin.
+  const clientId = process.env.NOVA_CF_ACCESS_CLIENT_ID
+  const clientSecret = process.env.NOVA_CF_ACCESS_CLIENT_SECRET
   if (!clientId || !clientSecret) return null
   return { 'cf-access-client-id': clientId, 'cf-access-client-secret': clientSecret }
 }
