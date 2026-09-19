@@ -23,6 +23,7 @@ import TesterTasksPage from '../pages/tester/TesterTasksPage';
 import GuestAcceptPage from '../pages/guest/GuestAcceptPage';
 import OperatorConsole from '../operator/OperatorConsole';
 import NexusSocialPublisher from '../pages/public/NexusSocialPublisher';
+import CompanyCycleOperations from '../admin/CompanyCycleOperations';
 
 const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/funding-readiness', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
 const CANONICAL_ADMIN_SURFACES = ['live-intelligence', 'ai-command', 'projects', 'tasks', 'research', 'knowledge', 'analytics', 'automation', 'campaigns', 'decisions', 'departments', 'trading', 'settings', 'support'];
@@ -100,6 +101,9 @@ export function App() {
   }
   if (path === '/admin/login') {
     return <AdminLoginPage />;
+  }
+  if (path === '/admin/operations') {
+    return <AdminGuard>{() => <AuthGate>{() => <CompanyCycleOperations />}</AuthGate>}</AdminGuard>;
   }
   if (isOperator) {
     return (

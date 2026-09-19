@@ -1,0 +1,281 @@
+{
+  "admin_approval_package_id": "admin_approval_1465222613e04f1fa8a10e8e8a83674c",
+  "admin_approval_rendered": "PASS_REAL",
+  "alpha_decision": "RESEARCH_MORE",
+  "alpha_evaluation_id": "alpha_eval_610cc617b5e64a4a8103bbf0a8ba2e39",
+  "alpha_followup_completed": true,
+  "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+  "business": "GoClear",
+  "campaign_approval_id": "appr_f1c900e26b494b71b576877b9019b891",
+  "campaign_approval_status": "PENDING_RAY",
+  "clyde_funding_output": {
+    "guidance": "No approval, guarantee, or eligibility claim; require lender-specific verification.",
+    "status": "ADVISORY"
+  },
+  "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+  "compliance_output": {
+    "claims": [
+      "No guaranteed approval",
+      "No guaranteed rate or amount",
+      "Educational/readiness guidance only"
+    ],
+    "publication_status": "READY_AFTER_RAY_APPROVAL"
+  },
+  "created_at": "2026-09-19T19:05:57.362006+00:00",
+  "creative_output": {
+    "asset_status": "DRAFT_ONLY",
+    "email_subject": "Make your funding-readiness next step clearer",
+    "social_copy": "Funding readiness starts with knowing what a lender will ask for."
+  },
+  "current_stage": "ADMIN_APPROVAL",
+  "customer_service_output": {
+    "faq": [
+      "What documents may be requested?",
+      "Does a readiness review guarantee funding? No."
+    ],
+    "status": "DRAFT_ONLY"
+  },
+  "department_handoffs": [
+    {
+      "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+      "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+      "created_at": "2026-09-19T19:07:29.175227+00:00",
+      "department": "MARKETING",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "expected_deliverable": {
+        "audience": "small business owners seeking business funding",
+        "cta": "request a readiness review",
+        "offer_angle": "funding-readiness documentation clarity",
+        "problem": "Funding-readiness documents and credit conditions remain difficult to interpret and assemble.",
+        "status": "DRAFT_ONLY"
+      },
+      "handoff_id": "handoff_adc8869334e54b21bb560de3666da93c",
+      "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+      "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+      "specific_assignment": "Translate the supported funding-readiness problem into a bounded education-first campaign.",
+      "status": "PASS_REAL"
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+      "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+      "created_at": "2026-09-19T19:07:29.200903+00:00",
+      "department": "CREATIVE",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "expected_deliverable": {
+        "asset_status": "DRAFT_ONLY",
+        "email_subject": "Make your funding-readiness next step clearer",
+        "social_copy": "Funding readiness starts with knowing what a lender will ask for."
+      },
+      "handoff_id": "handoff_6c379c626e5b4bc2a8d0a1e0e66a74ed",
+      "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+      "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+      "specific_assignment": "Create compliant social and email draft copy; no publication.",
+      "status": "PASS_REAL"
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+      "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+      "created_at": "2026-09-19T19:07:29.266292+00:00",
+      "department": "SEO",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "expected_deliverable": {
+        "content_recommendation": "Funding-readiness document checklist and evidence boundaries",
+        "search_intent": "small business funding documentation readiness",
+        "status": "ADVISORY"
+      },
+      "handoff_id": "handoff_b1ee7182a37d45abbe64b76f4d40c157",
+      "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+      "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+      "specific_assignment": "Map the discovered problem to search intent without claiming demand volume.",
+      "status": "PASS_REAL"
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+      "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+      "created_at": "2026-09-19T19:07:29.305186+00:00",
+      "department": "CLYDE_FUNDING",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "expected_deliverable": {
+        "guidance": "No approval, guarantee, or eligibility claim; require lender-specific verification.",
+        "status": "ADVISORY"
+      },
+      "handoff_id": "handoff_b74b3a8f0d804e3a98b7e35e6e405cf0",
+      "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+      "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+      "specific_assignment": "Review funding-readiness logic and lender-claim boundaries.",
+      "status": "PASS_REAL"
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+      "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+      "created_at": "2026-09-19T19:07:29.370691+00:00",
+      "department": "COMPLIANCE",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "expected_deliverable": {
+        "claims": [
+          "No guaranteed approval",
+          "No guaranteed rate or amount",
+          "Educational/readiness guidance only"
+        ],
+        "publication_status": "READY_AFTER_RAY_APPROVAL"
+      },
+      "handoff_id": "handoff_6d16b356351e4cd5b60dfbe26c2bcad9",
+      "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+      "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+      "specific_assignment": "Validate claims, disclosures, and publication boundaries.",
+      "status": "PASS_REAL"
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_481fd7fad572404da766712c0b2fc9d6",
+      "company_cycle_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1",
+      "created_at": "2026-09-19T19:07:29.411390+00:00",
+      "department": "CUSTOMER_SERVICE",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "expected_deliverable": {
+        "faq": [
+          "What documents may be requested?",
+          "Does a readiness review guarantee funding? No."
+        ],
+        "status": "DRAFT_ONLY"
+      },
+      "handoff_id": "handoff_768ced7b48b24fe3ae2d3981694cb4a4",
+      "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+      "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+      "specific_assignment": "Prepare FAQ/support language for a readiness-review CTA.",
+      "status": "PASS_REAL"
+    }
+  ],
+  "marketing_output": {
+    "audience": "small business owners seeking business funding",
+    "cta": "request a readiness review",
+    "offer_angle": "funding-readiness documentation clarity",
+    "problem": "Funding-readiness documents and credit conditions remain difficult to interpret and assemble.",
+    "status": "DRAFT_ONLY"
+  },
+  "objective": "Discover and investigate one current funding-readiness customer problem, challenge it with Alpha, and prepare a bounded approved response.",
+  "objective_id": "company_cycle_ddc1b360d7a64a3085b819bec48554f1:goclear-funding-readiness-demand",
+  "repair_control_plane": {
+    "approval_required": false,
+    "repair_decision_id": "repair_decision_fd1d989776e049588f590a8fc8b04dcd",
+    "repair_plan_id": "repair_plan_8c4ce0df7a074dcf97d85f4f235b9d5e",
+    "stage_resumed": "SEO",
+    "status": "PASS_REAL"
+  },
+  "repair_history": [
+    {
+      "approval_required": false,
+      "repair_decision_id": "repair_decision_fd1d989776e049588f590a8fc8b04dcd",
+      "repair_plan_id": "repair_plan_8c4ce0df7a074dcf97d85f4f235b9d5e",
+      "stage_resumed": "SEO",
+      "status": "PASS_REAL"
+    }
+  ],
+  "research_cross_check": {
+    "independent_sources": [
+      "https://www.sba.gov/funding-programs/loans",
+      "https://www.fedsmallbusiness.org/survey"
+    ],
+    "status": "PARTIAL"
+  },
+  "research_findings": [
+    {
+      "finding": "If you were approved for $100,000 in business funding tomorrow, what would you do with it? Would you buy new equipment? Hire more employees? Increase your marketing? Renovate the facility? Pay off bills? Or would that $100,000 simply disappear into the business over the next six months without producing much measurable growth? That is the question every independent gym owner, boutique studio opera",
+      "freshness": "CURRENT",
+      "source_ref": "https://www.reddit.com/r/u_fitmanagement/comments/1vue12r/you_just_got_approved_for_100000now_what_how/"
+    },
+    {
+      "finding": "Access affordable 7(a), 504, & microloans - Small Business Administration Skip to content An official website of the United States government Here\u2019s how you know Here\u2019s how you know Official websites use .gov A .gov website belongs to an official government organization in the United States.",
+      "freshness": "CURRENT",
+      "source_ref": "https://www.sba.gov/funding-programs/loans"
+    },
+    {
+      "finding": "Small Business Credit Survey Skip to: Main navigation Main content Footer Research and Analysis Small business categories Employer firms Nonemployer firms Minority-owned firms Women-owned firms Rural firms Startup firms All small business categories Topics Workforce Fintech lending Natural disasters Covid-19 Survey years All survey years Research types SBCS reports Chartbooks Briefs Factsheets All research types Data Methodology Terminology and definitions Questionnaires Microdata Partnership and Events Become a partner Partner organizations Events About About Fed Small Business About Small Business Credit Survey FAQ Media Important dates Research and Analysis Small business categories Emplo",
+      "freshness": "CURRENT",
+      "source_ref": "https://www.fedsmallbusiness.org/survey"
+    }
+  ],
+  "research_followups": [
+    "Which funding-readiness documents do owners struggle to assemble?",
+    "Can the observed concern be corroborated by an independent authoritative credit/funding source?"
+  ],
+  "research_package_id": "research_package_c12e6faaab884d5aa34c76641bc5c33c",
+  "research_tools_used": [
+    "Last30Days",
+    "official SBA guidance",
+    "Federal Reserve Small Business Credit Survey"
+  ],
+  "seo_output": {
+    "content_recommendation": "Funding-readiness document checklist and evidence boundaries",
+    "search_intent": "small business funding documentation readiness",
+    "status": "ADVISORY"
+  },
+  "stages": {
+    "ADMIN_APPROVAL": {
+      "evidence_refs": [
+        "admin_approval_1465222613e04f1fa8a10e8e8a83674c",
+        "appr_f1c900e26b494b71b576877b9019b891"
+      ],
+      "latest_result": "approval package rendered with evidence and work products",
+      "next_action": "Ray approves, rejects, or requests changes",
+      "owner": "ray",
+      "status": "WAITING_RAY",
+      "updated_at": "2026-09-19T19:07:29.563714+00:00"
+    },
+    "ALPHA": {
+      "evidence_refs": [
+        "alpha_eval_610cc617b5e64a4a8103bbf0a8ba2e39",
+        "alpha_receipt_481fd7fad572404da766712c0b2fc9d6"
+      ],
+      "latest_result": "RESEARCH_MORE after completed follow-up; evidence remains incomplete, not rejected",
+      "next_action": "Ray review of bounded educational response; no commercial claim or publication",
+      "owner": "alpha",
+      "status": "PASS_REAL",
+      "updated_at": "2026-09-19T19:07:29.165282+00:00"
+    },
+    "DEPARTMENTS": {
+      "evidence_refs": [
+        "handoff_adc8869334e54b21bb560de3666da93c",
+        "handoff_6c379c626e5b4bc2a8d0a1e0e66a74ed",
+        "handoff_b1ee7182a37d45abbe64b76f4d40c157",
+        "handoff_b74b3a8f0d804e3a98b7e35e6e405cf0",
+        "handoff_6d16b356351e4cd5b60dfbe26c2bcad9",
+        "handoff_768ced7b48b24fe3ae2d3981694cb4a4"
+      ],
+      "latest_result": "six bounded durable work products persisted",
+      "next_action": "consolidate Admin approval package",
+      "owner": "department_coordinators",
+      "status": "PASS_REAL",
+      "updated_at": "2026-09-19T19:07:29.424486+00:00"
+    },
+    "RESEARCH": {
+      "current_question": "Follow up: what funding-readiness documents and credit conditions do small-business owners need to understand?",
+      "evidence_refs": [
+        "research_package_c12e6faaab884d5aa34c76641bc5c33c"
+      ],
+      "latest_result": "Alpha-required follow-up executed with two official source processors and original demand signal",
+      "next_action": "preserve evidence-incomplete status and route bounded response",
+      "owner": "research_ai",
+      "status": "PASS_REAL",
+      "updated_at": "2026-09-19T19:07:29.073802+00:00"
+    }
+  },
+  "status": "WAITING_RAY"
+}
