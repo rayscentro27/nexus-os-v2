@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { requireAdmin } from './_admin-auth.mjs'
+import { canonicalApprovalId, companyCycleId, readLiveControlPlane } from './_supabase-control-plane.mjs'
 
 const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify(body) })
 const env = (key) => process.env[key] || ''
@@ -89,13 +90,37 @@ export async function handler(event) {
   try {
     const auth = await requireAdmin(event)
     if (!auth.ok) return json(auth.statusCode, { error: auth.error })
+    const controlPlane = await readLiveControlPlane()
+    const liveApprovals = controlPlane.approvals
+      .filter(row => ['pending', 'approved', 'rejected', 'revise'].includes(row.status))
+      .map(row => {
+        const payload = row.payload || {}
+        const approvalId = canonicalApprovalId(row) || row.id
+        return {
+          review_item_id: approvalId, approval_id: approvalId, remote_approval_id: row.id,
+          company_cycle_id: companyCycleId(row), type: payload.type || row.item_type || 'GOVERNED_APPROVAL',
+          title: row.title || 'Governed approval', status: row.status === 'pending' ? 'DRAFT_REVIEW_REQUIRED' : row.status.toUpperCase(),
+          why_human_review_required: payload.reason || row.summary || 'Ray approval is required before external action.',
+          what_ray_is_deciding: payload.what_ray_is_deciding || 'Approve, reject, or request changes to the bounded action.',
+          options: ['approve', 'reject', 'request_changes', 'ask_nova'], risk: payload.risk || 'high',
+          scope: payload.scope || payload, external_action_if_approved: payload.external_action_if_approved || 'Resume the existing company cycle.',
+          artifact_refs: payload.artifact_refs || [], source_object: payload.canonical_approval_id || row.item_type,
+          created_at: row.created_at, updated_at: row.decided_at || row.created_at,
+        }
+      })
+    const items = liveApprovals.filter(row => row.status === 'DRAFT_REVIEW_REQUIRED')
+    const base = liveProjection()
     return json(200, {
-      ...liveProjection(),
+      ...base,
+      ray_decisions: { ...(base.ray_decisions || {}), count: items.length, items },
+      ray_decision_count: items.length,
+      remote_control_plane: { source: 'supabase.approvals+nexus_events', approvals: liveApprovals.length, events: controlPlane.events.length },
+      review_data_source: 'SUPABASE_LIVE_CONTROL_PLANE',
       read_model: 'authenticated_admin_live_runtime_projection',
       authorization: { allowed: true, role: auth.role },
       sensitive_fields_excluded: true,
     })
-  } catch {
-    return json(500, { error: 'admin_read_model_failed' })
+  } catch (error) {
+    return json(503, { error: 'admin_live_control_plane_unavailable', detail: String(error.message || error).slice(0, 120) })
   }
 }

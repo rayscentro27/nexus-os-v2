@@ -39,6 +39,7 @@ from nexus_agent_platform.proof_recovery import apply_recovery
 from nexus_agent_platform.proof_watchdog import audit as proof_audit
 from nexus_agent_platform.completion_laws import enforce_cycle_laws
 from nexus_agent_platform.campaign_execution_engine import consume_completion_law_work, run_campaign_cycle
+from nexus_agent_platform.supabase_decision_consumer import consume_pending_decisions
 
 
 def _phase15_hermes_sender(brief: Dict[str, Any]) -> Dict[str, Any]:
@@ -198,6 +199,7 @@ def _write_summary(health: Dict[str, Any], live_loops: Dict[str, Any], research:
 def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
     ensure_sources_loaded()
     results: Dict[str, Any] = {"phase": "PHASE 15 — LIVE INTERNAL OPERATIONS", "generated_at": utc_now()}
+    results["remote_decision_consumer"] = consume_pending_decisions()
 
     # This is the canonical completion-campaign consumer.  It runs on the
     # existing Phase15 invocation; directives are never left as metadata.

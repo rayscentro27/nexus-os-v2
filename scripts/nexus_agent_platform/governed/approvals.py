@@ -66,6 +66,13 @@ def create_approval_request(
         "resolved_by": None,
     }
     persistence.append_record("approvals", approval)
+    try:
+        from nexus_agent_platform.supabase_decision_consumer import sync_approval
+        sync_approval(approval)
+    except Exception:
+        # Local governed state remains authoritative if the remote projection is
+        # temporarily unavailable; the next canonical cycle will retry sync.
+        pass
     persistence.emit_audit_event({
         "type": "approval_requested",
         "approval_id": approval["id"],
