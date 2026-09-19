@@ -91,10 +91,10 @@ class ResourceGovernor:
         if provider in job.provider_exclusions: outcome, reasons = "INELIGIBLE_SECURITY", ["Provider explicitly excluded"]
         elif state.get("available") is not True: outcome, reasons = ("INELIGIBLE_AUTH" if state.get("authorization_state") in {"REAUTH_REQUIRED", "NOT_PROVEN"} else "INELIGIBLE_UNAVAILABLE"), [f"Provider state: {state.get('authorization_state', 'UNAVAILABLE')}"]
         elif req["gpu_required"] and not job.parameters.get("production_ready", False): outcome, reasons = "INELIGIBLE_CAPABILITY", ["GPU gate requires production_ready=true"]
-        elif req["gpu_required"] and not state.get("capabilities", {}).get("gpu", False): outcome, reasons = "INELIGIBLE_CAPABILITY", ["GPU required but provider does not advertise GPU"]
+        elif req["gpu_required"] and state.get("capabilities", {}).get("gpu") is not True: outcome, reasons = "INELIGIBLE_CAPABILITY", ["GPU required but provider GPU capability is not verified"]
         elif req["network_required"] and not state.get("capabilities", {}).get("network", False): outcome, reasons = "INELIGIBLE_CAPABILITY", ["Network required"]
         elif provider == "oracle" and job.parameters.get("protect_hermes", True): outcome, reasons = "INELIGIBLE_CAPACITY", ["Oracle headroom reserved for Hermes/Nova"]
-        elif provider in {"modal", "kaggle"} and req["cost_tolerance"] == "FREE_ONLY": outcome, reasons = "INELIGIBLE_COST", ["Temporary remote execution is not free-authorized"]
+        elif provider in {"modal", "kaggle"} and req["cost_tolerance"] == "FREE_ONLY" and state.get("cost_state") != "FREE_QUOTA": outcome, reasons = "INELIGIBLE_COST", ["Temporary remote execution is not free-authorized"]
         elif provider in {"modal", "kaggle"} and not state.get("quota_known", True): outcome, reasons = "UNKNOWN", ["Quota is not trustworthy; not treated as unlimited"]
         else: reasons = ["Capability and configured policy match"]
         return {"provider": provider, "resource_class": RESOURCE_CLASSES.get(provider, "UNKNOWN"), "outcome": outcome, "reasons": reasons}

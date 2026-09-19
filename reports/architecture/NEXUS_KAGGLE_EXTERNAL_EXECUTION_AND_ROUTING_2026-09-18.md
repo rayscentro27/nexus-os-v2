@@ -132,3 +132,83 @@ path. This is a precise external blocker, not a Nexus-wide stop.
 
 No publication, customer contact, spend, trade, credential creation, or media
 generation occurred.
+
+## Continuation certification
+
+The existing Keychain item `nexus.kaggle.api_token` / account
+`KAGGLE_API_TOKEN` was recovered into the current subprocess environment
+without printing its value. The official Kaggle CLI `2.2.4` was installed in
+an isolated `/tmp` target because Homebrew Python is externally managed; no
+package or secret was added to the repository.
+
+Authenticated read-only evidence passed:
+
+* `kaggle datasets list --search nexus --page-size 1` returned public results;
+* `kaggle kernels list --mine --page-size 1` returned the authorized account's
+  existing kernel;
+* `kaggle quota` returned GPU `0.00h used / 30.00h remaining` and TPU
+  `0.00h used / 20.00h remaining`, refreshing at `2026-09-26T00:00:00`.
+
+### Real smoke canary
+
+`SMOKE_TEST_V1` executed as a private Kaggle kernel through the adapter:
+
+* WorkerJob: `kaggle-smoke-1789780653`
+* Provider job: `rayscentro/nexus-smoke-test-v1-25a50c88f0dd`
+* Status: `SUCCEEDED`
+* Runtime: approximately `19.82s`
+* `result.json`: SHA-256 `ed809762ad86efc997503969a61cbccd53e422e2d1c1efa57877bcf72a6f1707`
+* `artifact.txt`: SHA-256 `af26a6b7c78cc036eb9b72530be98c126ebd57ce7063942479b415313cc8c14d`
+* Canonical destination: `data/governed/worker_artifacts/kaggle-smoke-1789780653`
+* Remote deletion: successful
+
+### Real productive creative canary
+
+The existing GoClear restaurant production context was used without customer
+data:
+
+`creative_package_1c3c9494 → readiness_71528a69 → WorkerJob
+CREATIVE_IMAGE_CANDIDATE → Kaggle → WorkerResult → governed artifact directory`
+
+* WorkerJob: `kaggle-creative-1789780611`
+* Provider job: `rayscentro/nexus-creative-image-candida-9b5c311e0e4b`
+* Status: `SUCCEEDED`
+* Runtime: approximately `26.88s`
+* `creative_candidate.svg`: SHA-256 `4af509480aec86756e001ea531bb5caae1d0e0ae91ade03bbafd624021bb4b4d`
+* `result.json`: SHA-256 `3b4f0943eead652e6cd1a668e8501c16cd705a6975b9de0599933b7e7c360c4d`
+* Canonical destination: `data/governed/worker_artifacts/kaggle-creative-1789780611`
+* Remote deletion: successful
+
+The SVG is an internal, deterministic creative candidate carrying the approved
+readiness transformation and an explicit no-guarantee constraint. It was not
+published and was not sent to customers.
+
+### Failure isolation
+
+`FAILURE_TEST_V1` executed remotely and raised the intentional bounded failure:
+
+* WorkerJob: `kaggle-failure-1789780690`
+* Status: `FAILED`
+* Failure receipt persisted
+* Remote cleanup: successful
+* Hermes/Research/continuous runtime: unaffected
+
+Timeout behavior remains bounded by the adapter's execution deadline and CLI
+timeouts; no separate expensive timeout run was needed after the real failure
+path proved receipt and cleanup isolation.
+
+### Governor update
+
+The authenticated probe now feeds `FREE_QUOTA`, quota totals/remaining, and
+provider health into the existing registry. The Governor remains
+`SHADOW`/non-executing. It may identify Kaggle as the lowest-cost candidate for
+a GPU-ready job only when GPU capability is verified; `UNKNOWN` GPU is now
+explicitly ineligible and never treated as available.
+
+### Research continuity
+
+`crj-goclear-capability-research-v1` was not lost. The existing Research queue
+claimed it and settled it as `FAILED_RETRYABLE` because the generic objective
+processor received no source URL (`unknown url type: ''`). This is an isolated
+Research retry issue, not a Kaggle blocker; no replacement queue or manual
+Codex research was created.
