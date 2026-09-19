@@ -52,6 +52,21 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
     if queued_payload and not (lane_id == "YOUTUBE_CONTENT" and "mission_item_id" in json.loads(queued_payload)):
         queued = json.loads(queued_payload)
         known = SOURCE_CATALOG.get(str(queued.get("source_id")), (None, None, None))
+        candidates = [row for row in (queued.get("source_candidates") or []) if isinstance(row, dict) and row.get("source_url")]
+        if str(queued.get("source_type", "")).upper() == "RESEARCH_OBJECTIVE" and candidates:
+            index = int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(candidates)
+            candidate = candidates[index]
+            return {"source_type": candidate.get("source_type", "WEB_PAGE"),
+                    "source_id": candidate.get("source_id") or queued.get("objective_id") or queued.get("work_id"),
+                    "source_url": candidate["source_url"],
+                    "title": candidate.get("title") or queued.get("title") or queued.get("objective_id"),
+                    "author": queued.get("requested_by", "Nexus Research"),
+                    "category": lane_id, "selection_reason": "governed_objective_source_candidate",
+                    "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
+                    "objective_id": queued.get("objective_id"), "mission_id": queued.get("mission_id"),
+                    "mission_item_id": queued.get("mission_item_id"), "parent_request_id": queued.get("parent_request_id"),
+                    "alpha_followup_required": queued.get("alpha_followup_required", False),
+                    "department_target": queued.get("department_target"), "lifecycle": queued.get("lifecycle", "MONITORED")}
         return {"source_type": queued.get("source_type") or "WEB_PAGE",
                 "source_id": queued.get("source_id") or queued.get("work_id"),
                 "source_url": queued.get("source_url") or queued.get("url") or known[1] or "",

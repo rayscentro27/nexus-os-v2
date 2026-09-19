@@ -111,6 +111,11 @@ class ResearchWorkQueue:
             "source_type": item.get("source_type"),
             "source_id": item.get("source_id"),
             "source_url": item.get("source_url"),
+            # Topic/objective work may be expanded by the governed repair
+            # path into bounded public candidates.  The queue stores the
+            # candidates; the existing worker still owns selection and
+            # acquisition.
+            "source_candidates": list(item.get("source_candidates", []) or []),
             "lane_id": item.get("lane_id"),
             "title": item.get("title"),
             "question": item.get("question"),
