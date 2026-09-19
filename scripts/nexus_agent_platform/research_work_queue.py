@@ -215,6 +215,29 @@ class ResearchWorkQueue:
         self._save(store)
         return dict(item)
 
+    def claim_work(self, work_id: str, *, worker_id: str, lease_seconds: int = 900) -> dict[str, Any] | None:
+        """Claim one explicitly assigned item without changing queue ordering."""
+        self.recover_expired_leases()
+        store = self.load()
+        now = self._now()
+        for item in store["items"]:
+            if item.get("work_id") != work_id:
+                continue
+            if item.get("status") not in {"QUEUED", "WAITING"}:
+                return None
+            due = parse_time(item.get("next_eligible_at"))
+            if due and due > now:
+                return None
+            attempt_id = stable_id("attempt", (work_id, iso(now), worker_id))
+            item.update({"status": "IN_PROGRESS", "started_at": item.get("started_at") or iso(now),
+                         "attempt_count": int(item.get("attempt_count", 0)) + 1,
+                         "claimed_by": worker_id, "claimed_at": iso(now),
+                         "lease_expires_at": iso(now + timedelta(seconds=max(30, lease_seconds))),
+                         "attempt_id": attempt_id})
+            self._save(store)
+            return dict(item)
+        return None
+
     def settle(self, work_id: str, status: str, *, result: Any = None,
                blocker_type: str | None = None, next_eligible_at: str | None = None) -> dict[str, Any] | None:
         status = str(status).upper()

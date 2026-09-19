@@ -255,6 +255,19 @@ def build_research_operational_state() -> dict[str, Any]:
             "source": "alpha_evaluations.jsonl + research_v2_handoffs.jsonl + result_feedback.jsonl",
         },
         "work_queue": queue_projection,
+        # Keep the live queue contract prominent and compact for executive
+        # consumers. The nested projection remains canonical; this avoids
+        # forcing a model to infer queue depth from legacy Research V2 counts.
+        "research_queue": {
+            "total_nonterminal": queue_projection["queue"].get("queue_depth", 0),
+            "by_class": queue_projection.get("queue_depth_by_class", {}),
+            "by_status": queue_projection["queue"].get("by_status", {}),
+            "running": queue_projection["queue"].get("active", []),
+            "alpha_followups": queue_projection.get("alpha_followups", []),
+            "blocked": queue_projection.get("blocked_items", []),
+            "next": queue_projection.get("next_scheduled_work"),
+            "source": "data/runtime/research_work_queue.json",
+        },
         "active_assigned_work": queue_projection["active_work_by_class"].get("ASSIGNED", []),
         "active_monitored_work": queue_projection["active_work_by_class"].get("MONITORED", []),
         "active_discovery_work": queue_projection["active_work_by_class"].get("DEMAND_DISCOVERY", []) + queue_projection["active_work_by_class"].get("GENERAL_DISCOVERY", []),

@@ -22,6 +22,8 @@ from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
 from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import review_assigned_research_output  # noqa: E402
 from nexus_agent_platform.research_ai_orchestrator import investigate, route, interpret, write_monitor_snapshot  # noqa: E402
+from nexus_agent_platform.research.last30days_adapter import run_demand_radar_sources  # noqa: E402
+from nexus_agent_platform.research_v2_bridge import build_research_package  # noqa: E402
 from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
@@ -160,6 +162,61 @@ def strategy_changing_fallback(item: dict, *, failure_class: str, error: str, at
             "objective_continues": True, "strategy_changed": True, "prior_error": str(error)[:500]}
 
 
+def run_selected_capability(item: dict, route_result: dict, execution_id: str) -> dict | None:
+    """Execute the certified capability selected by the Research investigator.
+
+    Existing source processors remain the default.  Objective work without a
+    source URL must, however, be dispatched to the selected certified adapter;
+    otherwise the plan is merely metadata and the worker silently falls back
+    to deterministic source processing.
+    """
+    selected = (route_result.get("selected_executor") or {}).get("executor_id", "")
+    if "last30days" not in str(selected).lower() and "demand_radar" not in str(selected).lower():
+        return None
+    query = str(item.get("question") or item.get("title") or "").strip()
+    if not query:
+        raise ValueError("selected Last30Days capability requires an investigation question")
+    radar = run_demand_radar_sources({
+        "request_id": execution_id,
+        "work_id": item.get("work_id"),
+        "objective_id": item.get("objective_id"),
+        "query": query,
+        "work_class": "DEMAND_DISCOVERY",
+        "time_window": "LAST_30_DAYS",
+        "max_runtime_seconds": 90,
+        "requested_sources": ["reddit", "hackernews", "github", "grounding"],
+    })
+    signals = radar.get("signals") or []
+    source_rows = [{
+        "title": row.get("source_title") or row.get("topic") or row.get("source_url"),
+        "url": row.get("source_url"), "source_type": row.get("source_type") or "PUBLIC_WEB",
+        "snippet": row.get("excerpt") or row.get("problem_signal") or "",
+    } for row in signals if row.get("source_url")]
+    if source_rows:
+        item["source_id"] = str(signals[0].get("signal_id") or source_rows[0].get("url"))
+        item["source_type"] = source_rows[0].get("source_type") or "PUBLIC_WEB"
+        item["source_url"] = source_rows[0].get("url")
+        item["title"] = source_rows[0].get("title") or item.get("title")
+    package = None
+    if item.get("objective_id") and source_rows:
+        package = build_research_package(
+            objective_id=str(item["objective_id"]), query=query, sources=source_rows,
+            radar=radar, cycle_id=str(item.get("company_cycle_id") or ""),
+        )
+    return {
+        "final_status": "FULLY_PROCESSED" if signals else "PARTIAL_EVIDENCE",
+        "processor": "last30days_demand_radar",
+        "raw_acquired": bool(signals), "stored": bool(signals),
+        "summary_created": bool(package), "extraction_created": bool(signals),
+        "scored": False, "provenance_created": bool(signals),
+        "disposition": "NEW_DEMAND_EVIDENCE" if signals else "NO_NEW_SIGNAL",
+        "v2": {"research_package_id": (package or {}).get("research_package_id"),
+               "source": source_rows[0] if source_rows else {}},
+        "result": {"research_item_id": (package or {}).get("research_package_id")},
+        "radar": radar,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--execution-id", required=True)
@@ -285,7 +342,9 @@ def main() -> int:
         # The normal worker must use the same unified source router as the
         # proven scheduled Research path. Alpha is intentionally not part of
         # base acquisition; it is reserved for mature packages/requested review.
-        result = process_scheduled_item(item)
+        result = run_selected_capability(item, ai_route_result, execution_id)
+        if result is None:
+            result = process_scheduled_item(item)
         signal.alarm(0)
     except TimeoutError as exc:
         signal.alarm(0)

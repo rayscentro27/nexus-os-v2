@@ -73,10 +73,17 @@ def _executive_prompt(message: str) -> str:
     opinion = is_opinion_request(lowered)
     current_research = bool("research" in lowered and re.search(r"\b(still|running|active|heartbeat|scheduler|processing|status|doing)\b", lowered))
     explicit_delegation = bool(re.search(r"\bask\s+(systems?|systems engineering|research|alpha)\b", lowered))
+    assignment_request = bool(re.search(
+        r"\b(assign|queue|create)\s+(?:a\s+|an\s+|the\s+)?research\b"
+        r"|\bhave\s+research\b"
+        r"|\bresearch\s+(?:to\s+)?investigate\b",
+        lowered,
+    ))
+    objective_id_request = bool(re.search(r"\bobjective_id\s*[=:]\s*[A-Za-z0-9_.:-]{3,160}", message, re.I))
     priority = is_priority_request(lowered)
     attention = is_executive_attention_request(lowered)
     monetization = is_monetization_decision(lowered)
-    strategic = explicit_delegation or opinion or current_research or priority or attention or monetization or any(term in lowered for term in ("should", "recommend", "opportunity", "what next", "what should happen", "compare"))
+    strategic = assignment_request or objective_id_request or explicit_delegation or opinion or current_research or priority or attention or monetization or any(term in lowered for term in ("should", "recommend", "opportunity", "what next", "what should happen", "compare"))
     if not strategic:
         # Keep casual conversation lightweight while carrying Nova's identity.
         if is_casual_conversation(lowered):
@@ -142,8 +149,10 @@ def _executive_prompt(message: str) -> str:
         state_rules = (
             " This is a CURRENT_STATE_REQUEST. Answer the specific Research question by distinguishing "
             "heartbeat alive, scheduler enabled, process configured, dry-run mode, actual task processing, "
-            "and recent activity. Do not collapse these states into a single running/not-running claim; use "
-            "a fresh authoritative Nexus read and state unknowns plainly."
+            "and recent activity. Do not collapse these states into a single running/not-running claim. Call "
+            "nexus_get_research_state for the current Research queue and use its queue projection; do not call "
+            "the generic nexus_get_work_items tool as a substitute. Distinguish ASSIGNED, MONITORED, "
+            "DEMAND_DISCOVERY, and GENERAL_DISCOVERY counts and state unknowns plainly."
         )
     delegation_rules = ""
     if explicit_delegation:
@@ -156,7 +165,20 @@ def _executive_prompt(message: str) -> str:
             "Return the department result with its delegation receipt, freshness, status, and evidence references. "
             "If the call fails, report the exact bounded failure and do not claim the department executed."
         )
-    objective_match = re.search(r"(?:objective_id|objective)\s*[=:]\s*([A-Za-z0-9_.:-]{3,160})", message, re.I)
+    assignment_rules = ""
+    if assignment_request:
+        assignment_rules = (
+            " This is a SAFE_INTERNAL_RESEARCH_ASSIGNMENT. Call the Nexus MCP action "
+            "nexus_assign_research exactly once with the user's bounded objective and question. "
+            "Preserve the returned objective_id, work_id, queue_class, queue_status, and receipt. "
+            "Do not perform the research yourself, do not use historical evidence to satisfy the assignment, "
+            "and do not call Codex. This action is internal, non-publication, and non-spend."
+        )
+    # Only durable objective identifiers create objective-scoped read context.
+    # Natural-language assignment text often contains phrases such as
+    # "objective: investigate"; treating that verb as an ID suppresses the
+    # assignment action and sends Hermes down the read-only path.
+    objective_match = re.search(r"\bobjective_id\s*[=:]\s*([A-Za-z0-9_.:-]{3,160})", message, re.I)
     objective_contract = ""
     if objective_match:
         objective_id = objective_match.group(1)
@@ -175,7 +197,7 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
-        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + delegation_rules + objective_contract + "\n"
+        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + delegation_rules + assignment_rules + objective_contract + "\n"
         "USER REQUEST:\n" + message[:7000]
     )
 

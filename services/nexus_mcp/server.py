@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
-from .auth import authorize_read
+from .auth import authorize_action, authorize_read
 from .registry import CAPABILITY_MAP, read_canonical
 from .schemas import CAPABILITY_FRESHNESS, TOOL_NAMES, unavailable
 
@@ -161,6 +161,95 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
     return payload
 
 
+def _assign_research(objective: str, question: str = "", priority: int = 0,
+                     parent_request_id: str = "") -> dict[str, Any]:
+    """Create one idempotent, internal Nova assignment in the existing queue.
+
+    This is intentionally narrower than generic Nova writes.  Research owns
+    planning, capability selection, acquisition, and interpretation after the
+    queue item is created.  Nova only records the objective and provenance.
+    """
+    import hashlib
+    from nexus_agent_platform.research_work_queue import ResearchWorkQueue
+
+    objective_text = str(objective or "").strip()
+    question_text = str(question or objective_text).strip()
+    if len(objective_text) < 12 or len(question_text) < 12:
+        return {"status": "rejected", "error": "objective_and_question_required"}
+    if len(objective_text) > 1000 or len(question_text) > 1600:
+        return {"status": "rejected", "error": "objective_or_question_too_long"}
+    bounded_priority = max(-10, min(int(priority or 0), 20))
+    fingerprint = hashlib.sha256(
+        (objective_text + "\n" + question_text + "\nhermes_nova").encode("utf-8")
+    ).hexdigest()[:20]
+    objective_id = f"nova_research_{fingerprint}"
+    work_id = f"nova_research_work_{fingerprint}"
+    queue = ResearchWorkQueue()
+    existing = next((row for row in queue.load().get("items", []) if row.get("work_id") == work_id), None)
+    if existing:
+        return {
+            "status": "idempotent_existing",
+            "objective_id": existing.get("objective_id") or objective_id,
+            "work_id": work_id,
+            "queue_class": existing.get("work_class"),
+            "queue_status": existing.get("status"),
+            "requested_by": existing.get("requested_by"),
+            "parent_request_id": existing.get("parent_request_id"),
+        }
+    item = queue.enqueue(
+        work_id=work_id,
+        work_class="ASSIGNED",
+        source_type="NOVA_OBJECTIVE",
+        lane_id="NOVA_EXECUTIVE_RESEARCH",
+        title=objective_text[:180],
+        question=question_text,
+        objective_id=objective_id,
+        requested_by="hermes_nova",
+        priority=bounded_priority,
+        status="QUEUED",
+        parent_request_id=str(parent_request_id or "nova_mcp_assignment"),
+        selection_reason="Nova executive assignment; Research AI owns capability selection.",
+        lifecycle="ASSIGNED",
+    )
+    return {
+        "status": "queued",
+        "objective_id": objective_id,
+        "work_id": work_id,
+        "queue_class": item.get("work_class"),
+        "queue_status": item.get("status"),
+        "requested_by": item.get("requested_by"),
+        "parent_request_id": item.get("parent_request_id"),
+        "research_owner": "Research AI investigator",
+        "external_action": False,
+    }
+
+
+def _action_call(tool_name: str, operation, arguments: dict[str, Any]) -> dict[str, Any]:
+    authorize_action(tool_name)
+    request_id = f"nexus-mcp-{uuid.uuid4().hex}"
+    started = _now()
+    try:
+        result = operation(**arguments)
+    except Exception as exc:
+        result = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
+    receipt = {
+        "schema_version": "nexus.mcp-action-receipt.v1",
+        "request_id": request_id,
+        "tool_name": tool_name,
+        "started_at": started,
+        "completed_at": _now(),
+        "result_status": result.get("status"),
+        "read_only": False,
+        "authority_owner": "Nexus",
+        "requested_by": "hermes_nova",
+        "external_action": False,
+    }
+    receipt["receipt_hash"] = hashlib.sha256(json.dumps(receipt, sort_keys=True).encode()).hexdigest()
+    RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
+    (RECEIPT_DIR / f"{request_id}.json").write_text(json.dumps({**receipt, "result": result}, indent=2) + "\n", encoding="utf-8")
+    return {**result, "request_id": request_id, "receipt": receipt["receipt_hash"]}
+
+
 def _register() -> None:
     @mcp.tool(name="nexus_get_reviews", description="VOLATILE current-state read: return only active Ray approvals requiring a decision. For present/current questions, call again; prior answers are not authoritative.")
     def nexus_get_reviews() -> dict[str, Any]:
@@ -186,9 +275,13 @@ def _register() -> None:
     def nexus_get_system_health() -> dict[str, Any]:
         return _call("nexus_get_system_health")
 
-    @mcp.tool(name="nexus_get_research_state", description="VOLATILE current Research read. Supply objective_id for objective-first lineage resolution; without it returns bounded global operational state. Historical briefs never satisfy an objective-scoped read.")
+    @mcp.tool(name="nexus_get_research_state", description="VOLATILE current Research read. Supply objective_id for objective-first lineage resolution; without it returns the live research_queue counts/classes/active leases from data/runtime/research_work_queue.json plus bounded global operational state. Use this for current Research queue questions; historical briefs and generic work orders never satisfy the read.")
     def nexus_get_research_state(objective_id: str = "") -> dict[str, Any]:
         return _call("nexus_get_research_state", {"objective_id": objective_id} if objective_id else {})
+
+    @mcp.tool(name="nexus_get_research_queue", description="VOLATILE exact live Research queue read. Returns queue totals by ASSIGNED/MONITORED/DEMAND_DISCOVERY/GENERAL_DISCOVERY, status counts, active leases, Alpha follow-ups, blocked/stale items, and next work from data/runtime/research_work_queue.json. Never substitute generic governed work orders or historical Research V2 counts.")
+    def nexus_get_research_queue() -> dict[str, Any]:
+        return _call("nexus_get_research_queue")
 
     @mcp.tool(name="nexus_get_alpha_review", description="VOLATILE bounded Alpha read. Supply objective_id to resolve the latest Alpha evaluation/receipt tied to that objective lineage; never substitute unrelated historical records.")
     def nexus_get_alpha_review(objective_id: str = "") -> dict[str, Any]:
@@ -209,6 +302,21 @@ def _register() -> None:
         conversation_id: str = "",
     ) -> dict[str, Any]:
         return _delegate_specialist(specialist, objective, conversation_id=conversation_id)
+
+    @mcp.tool(
+        name="nexus_assign_research",
+        description=(
+            "Create one bounded internal Research assignment from Nova. "
+            "This queues existing Research work only; Research AI selects tools "
+            "and workers. It cannot publish, spend, approve, or create a company cycle."
+        ),
+    )
+    def nexus_assign_research(objective: str, question: str = "", priority: int = 0,
+                              parent_request_id: str = "") -> dict[str, Any]:
+        return _action_call("nexus_assign_research", _assign_research, {
+            "objective": objective, "question": question, "priority": priority,
+            "parent_request_id": parent_request_id,
+        })
 
 
 def _delegate_specialist(specialist: str, objective: str, *, conversation_id: str = "") -> dict[str, Any]:

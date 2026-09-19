@@ -1394,6 +1394,21 @@ def _handle_research_operational_state(
 
     generated_at = datetime.now(timezone.utc).isoformat()
     state = build_research_operational_state()
+    objective_id = str((arguments or {}).get("objective_id") or "").strip()
+    if objective_id:
+        from nexus_agent_platform.research_evidence_bridge import resolve_objective
+        lineage = resolve_objective(objective_id)
+        return {"status": "success" if lineage.get("status") == "OK" else "partial",
+                "capability": "get_research_operational_state", "source": "research_evidence_bridge",
+                "source_type": "objective_scoped_canonical_read", "freshness": "live",
+                "data": {"objective_id": objective_id, "objective_lineage": lineage,
+                         "current_research_objective": objective_id,
+                         "research_work_state": lineage.get("research_package", {}).get("status", "UNKNOWN"),
+                         "next_action": lineage.get("current_next_action")},
+                "error": None, "provenance": {"capability": "get_research_operational_state",
+                "handler": "research_evidence_bridge.resolve_objective", "objective_id": objective_id,
+                "freshness": "live", "historical_records_excluded": True,
+                "retrieved_at": generated_at}}
     bounded = {
         "generated_at": state.get("generated_at", generated_at),
         "department": state.get("department", "RESEARCH"),
@@ -1404,6 +1419,14 @@ def _handle_research_operational_state(
         "current_work": state.get("current_work", {}),
         "today_activity": state.get("today_activity", {}),
         "mission_state": state.get("mission_state", {}),
+        "research_queue": state.get("research_queue", {}),
+        "queue_depth_by_class": state.get("queue_depth_by_class", {}),
+        "active_assigned_work": state.get("active_assigned_work", []),
+        "active_monitored_work": state.get("active_monitored_work", []),
+        "active_discovery_work": state.get("active_discovery_work", []),
+        "alpha_followups": state.get("alpha_followups", []),
+        "blocked_work_items": state.get("blocked_work_items", []),
+        "next_scheduled_work": state.get("next_scheduled_work"),
         "recent_findings": (state.get("recent_findings") or [])[:8],
         "scheduler": state.get("scheduler", {}),
         "source": "research_operational_state.build_research_operational_state",
@@ -1440,6 +1463,22 @@ def _handle_alpha_review_latest(
     from nexus_agent_platform.alpha_research import build_research_job, run_alpha_research
     from nexus_agent_platform.research_operational_state import build_research_operational_state
 
+    objective_id = str((arguments or {}).get("objective_id") or "").strip()
+    if objective_id:
+        from nexus_agent_platform.research_evidence_bridge import resolve_objective
+        lineage = resolve_objective(objective_id)
+        return {"status": "success" if lineage.get("status") == "OK" else "partial",
+                "capability": "get_alpha_review_latest", "source": "research_evidence_bridge",
+                "source_type": "objective_scoped_canonical_read", "freshness": "live",
+                "data": {"objective_id": objective_id, "objective_lineage": lineage,
+                         "alpha_receipt": lineage.get("alpha_receipt"),
+                         "evaluation": lineage.get("alpha_evaluation"),
+                         "missing_evidence": lineage.get("missing_evidence", []),
+                         "next_action": lineage.get("current_next_action")},
+                "error": None, "provenance": {"capability": "get_alpha_review_latest",
+                "handler": "research_evidence_bridge.resolve_objective", "objective_id": objective_id,
+                "freshness": "live", "historical_records_excluded": True,
+                "retrieved_at": datetime.now(timezone.utc).isoformat()}}
     state = build_research_operational_state()
     finding = (state.get("recent_findings") or [None])[0]
     if not isinstance(finding, dict) or not finding.get("finding"):

@@ -8,10 +8,10 @@ import pytest
 from services.nexus_mcp import server
 
 
-def test_tool_surface_is_read_only_and_complete():
+def test_tool_surface_is_explicit_and_complete():
     names = {tool.name for tool in server.mcp._tool_manager.list_tools()}
-    assert names == set(server.TOOL_NAMES)
-    assert all(name.startswith("nexus_get_") or name == "nexus_delegate_specialist" for name in names)
+    assert set(server.TOOL_NAMES).issubset(names)
+    assert all(name.startswith("nexus_get_") or name in {"nexus_delegate_specialist", "nexus_assign_research", "calendar_get_availability", "calendar_read_event", "calendar_search_events", "drive_read_file", "drive_search", "gmail_read_message", "gmail_read_thread", "gmail_search"} for name in names)
 
 
 def test_public_result_preserves_canonical_state_and_metadata():
@@ -106,7 +106,7 @@ def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_pat
 
 @pytest.mark.parametrize("name", server.TOOL_NAMES)
 def test_each_tool_has_expected_input_schema(name):
-    if name == "nexus_delegate_specialist":
+    if name in {"nexus_delegate_specialist", "nexus_assign_research"}:
         return
     tool = next(tool for tool in server.mcp._tool_manager.list_tools() if tool.name == name)
     if name in {"nexus_get_research_state", "nexus_get_alpha_review"}:
@@ -118,6 +118,25 @@ def test_each_tool_has_expected_input_schema(name):
 def test_specialist_request_rejects_unknown_specialist():
     result = server._delegate_specialist("UNKNOWN", "inspect current state")
     assert result["status"] == "rejected"
+
+
+def test_nova_research_assignment_is_idempotent_and_bounded(monkeypatch, tmp_path: Path):
+    queue_path = tmp_path / "research_work_queue.json"
+    from nexus_agent_platform import research_work_queue
+    real_queue = research_work_queue.ResearchWorkQueue
+    monkeypatch.setattr(research_work_queue, "ResearchWorkQueue", lambda: real_queue(queue_path))
+    first = server._assign_research(
+        "Investigate current small-business funding readiness pain",
+        "What evidence shows a current customer need and what remains uncertain?",
+    )
+    second = server._assign_research(
+        "Investigate current small-business funding readiness pain",
+        "What evidence shows a current customer need and what remains uncertain?",
+    )
+    assert first["status"] == "queued"
+    assert second["status"] == "idempotent_existing"
+    assert first["work_id"] == second["work_id"]
+    assert json.loads(queue_path.read_text())["items"][0]["requested_by"] == "hermes_nova"
 
 
 def test_specialist_request_is_allowlisted_and_read_only(monkeypatch, tmp_path):
