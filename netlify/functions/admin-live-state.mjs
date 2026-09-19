@@ -27,6 +27,8 @@ export function liveProjection() {
   const researchV2FollowUps = readJsonl('data/governed/research_v2_follow_ups.jsonl')
   const researchV2Strategies = readJsonl('data/governed/research_v2_strategies.jsonl')
   const researchV2Reviews = readJsonl('data/governed/research_v2_review_queue.jsonl')
+  const governedApprovals = readJsonl('data/governed/approvals.jsonl')
+  const cycleState = readJson('data/runtime/company_cycles/company_cycle_ddc1b360d7a64a3085b819bec48554f1.json')
   const latest = new Map(); for (const row of [...followups].reverse()) if (row.claim_id && !latest.has(row.claim_id)) latest.set(row.claim_id, row)
   const cutoff = now - 24 * 60 * 60 * 1000
   const executions24h = executions.filter(row => Date.parse(row.completed_at || row.started_at || '') >= cutoff)
@@ -37,6 +39,17 @@ export function liveProjection() {
   const goals = readJson('data/runtime/company_goal_portfolio.json')
   const latestReviews = new Map(); for (const row of [...researchV2Reviews].reverse()) if (row.review_item_id && !latestReviews.has(row.review_item_id)) latestReviews.set(row.review_item_id, row)
   const reviewItems = [...latestReviews.values()].filter(row => row.status === 'DRAFT_REVIEW_REQUIRED')
+  const latestApprovals = new Map(); for (const row of [...governedApprovals].reverse()) if (row.id && !latestApprovals.has(row.id)) latestApprovals.set(row.id, row)
+  const approvalItems = [...latestApprovals.values()].filter(row => row.status === 'pending').map(row => ({
+    review_item_id: row.id, approval_id: row.id, company_cycle_id: row.input_summary?.company_cycle_id || cycleState?.company_cycle_id || null,
+    type: row.action_id === 'client.sends' ? 'CAMPAIGN_APPROVAL' : 'GOVERNED_APPROVAL',
+    title: row.action_summary || 'Governed approval', status: 'DRAFT_REVIEW_REQUIRED',
+    why_human_review_required: row.action_summary || 'Ray approval is required before external action.',
+    what_ray_is_deciding: 'Approve, reject, or request changes to the bounded action.',
+    options: ['approve', 'reject', 'request_changes', 'ask_nova'], risk: row.risk_level || 'high',
+    scope: row.input_summary || {}, external_action_if_approved: 'Resume the existing company cycle; publication and delivery remain separately receipt-gated.',
+    artifact_refs: row.evidence_refs || [], source_object: row.action_id, created_at: row.created_at,
+  }))
   const openQuestions = researchV2Questions.filter(row => row.status === 'OPEN').length
   const researchV2 = {
     sources: researchV2Sources.length,
@@ -65,8 +78,9 @@ export function liveProjection() {
     active_goals: { count: Array.isArray(goals) ? goals.length : (Array.isArray(goals?.goals) ? goals.goals.length : null), source: 'canonical runtime aggregate' },
     human_gated_work: states.WAITING_APPROVAL,
     blocked_work: states.BLOCKED,
-    ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewItems.length, items: reviewItems },
-    ray_decision_count: reviewItems.length,
+    ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewItems.length + approvalItems.length, items: [...approvalItems, ...reviewItems] },
+    ray_decision_count: reviewItems.length + approvalItems.length,
+    company_cycle: cycleState || null,
     review_data_source: 'GOVERNED_LIVE_READ_MODEL',
   }
 }

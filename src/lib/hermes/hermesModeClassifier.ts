@@ -130,6 +130,10 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'FACTUAL_QUESTION', intent: 'department_list', confidence: 0.94, reason: 'Question asks for active governed departments.' };
   }
 
+  if (/\bwhat (agents|engines|research tools|capabilities|services|executives) (are|does|is)\b|\bwhich (agents|engines|capabilities|tools|services)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'entity_list', confidence: 0.95, reason: 'Question asks for a typed organizational entity list.' };
+  }
+
   if (/\b(operations|engineering|research|knowledge|credit|funding|department)\b.*\b(working on|doing|need|needs|queue|inbox|status|active|risk|overdue|approval|approvals|blocked|blockers|completed|finished|incident|incidents|dependency|dependencies)\b|\b(which department has the biggest risk|what is overdue|what completed recently|what finished today|what needs my approval|what is blocked)\b/.test(text)) {
     const intent = /approval|needs my approval/.test(text) ? 'department_approvals'
       : /blocked|blockers/.test(text) ? 'department_blockers'

@@ -1,5 +1,6 @@
 import { runCapabilityPreflight } from '../capabilities/capabilityPreflight';
 import type { CapabilityDataClass } from '../capabilities/capabilityTypes';
+import { entitiesByType } from '../organizationalEntities';
 
 export type OperationMode = 'READ_ONLY' | 'ADVISORY' | 'DRAFT_ONLY' | 'APPROVAL_GATED' | 'BOUNDED_EXECUTION';
 export type DepartmentStatusState = 'ACTIVE' | 'DEGRADED' | 'PAUSED' | 'NOT_CONFIGURED';
@@ -244,8 +245,8 @@ export function prepareDepartmentRayReviewDraft(query: string): string {
 }
 
 export function formatDepartmentList(): string {
-  const snapshot = getDepartmentOperationsSnapshot();
-  return 'Department Operations is active for ' + snapshot.departments.length + ' governed departments: ' + snapshot.departments.map((department) => department.name).join(', ') + '. All departments use operation modes, Capability OS preflight, Ray Review for approvals, evidence-backed completion, and synthetic certification data only in this seed.';
+  const departments = entitiesByType('DEPARTMENT');
+  return 'Nexus has ' + departments.length + ' departments: ' + departments.map((department) => department.name).join(', ') + '. Agents, engines, capabilities, services, and the executive interface are separate operating entity classes.';
 }
 
 export function formatDepartmentStatus(query = ''): string {

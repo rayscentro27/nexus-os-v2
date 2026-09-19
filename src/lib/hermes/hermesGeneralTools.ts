@@ -17,6 +17,7 @@ import {
 import type { CapabilityDataClass, CapabilityApprovalLevel } from '../capabilities/capabilityTypes';
 import type { EvidenceState } from '../executive/executiveTypes';
 import type { HermesAdvisoryContext, HermesConversationInput } from './hermesConversationTypes';
+import { formatEntityList } from '../organizationalEntities';
 
 export type HermesToolOperationMode = 'READ_ONLY' | 'ADVISORY' | 'DRAFT_ONLY' | 'APPROVAL_GATED' | 'BOUNDED_EXECUTION';
 
@@ -130,6 +131,7 @@ export const hermesToolRegistry: HermesToolDefinition[] = [
   ['hermes.capability_status', 'Hermes Capability Status Tool', 'Capability OS status summary', 'hermes_capability_status_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
   ['hermes.explain_source', 'Hermes Provenance Tool', 'explain the source trace for the prior answer', 'hermes_provenance_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
   ['hermes.department_list', 'Hermes Department List Tool', 'list active governed departments', 'hermes_department_list_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.entity_list', 'Hermes Organizational Entity List Tool', 'list canonical agents, engines, capabilities, services, or executives by entity type', 'organizational_entity_registry', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
   ['hermes.department_status', 'Hermes Department Status Tool', 'department health and risk status', 'hermes_department_status_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
   ['hermes.department_queue', 'Hermes Department Queue Tool', 'department queue and inbox evidence', 'hermes_department_queue_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
   ['hermes.department_blockers', 'Hermes Department Blockers Tool', 'department blockers and unblocking evidence', 'hermes_department_blockers_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
@@ -226,6 +228,7 @@ export function runHermesTool(toolId: string, args: Record<string, unknown> = {}
   if (toolId === 'hermes.capability_status') return toolResult(toolId, answerExecutiveIntent('capability_status'), ['capability_os_registry'], ['Capability OS registry']);
   if (toolId === 'hermes.explain_source') return hermesExplainSource(previousProvenance);
   if (toolId === 'hermes.department_list') return toolResult(toolId, formatDepartmentList(), ['wave4.department_registry'], ['Department Operations registry']);
+  if (toolId === 'hermes.entity_list') { const query = String(args.query || input?.message || '').toLowerCase(); const type = query.includes('agent') ? 'AGENT' : query.includes('engine') ? 'ENGINE' : query.includes('capabilit') || query.includes('tool') ? 'CAPABILITY' : query.includes('service') ? 'SERVICE' : query.includes('executive') ? 'EXECUTIVE' : 'DEPARTMENT'; return toolResult(toolId, formatEntityList(type), ['organizational_entity_registry'], ['Canonical organizational entity registry']); }
   if (toolId === 'hermes.department_status') return toolResult(toolId, formatDepartmentStatus(String(args.query || input?.message || '')), ['wave4.department_health'], ['Department Operations health read model']);
   if (toolId === 'hermes.department_queue') return toolResult(toolId, formatDepartmentQueue(String(args.query || input?.message || '')), ['wave4.department_queue'], ['Department Operations queue']);
   if (toolId === 'hermes.department_blockers') return toolResult(toolId, formatDepartmentBlockers(String(args.query || input?.message || '')), ['wave4.department_blockers'], ['Department Operations blockers']);

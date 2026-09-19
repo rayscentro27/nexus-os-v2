@@ -8,6 +8,7 @@
   "business": "GoClear",
   "campaign_approval_id": "appr_f1c900e26b494b71b576877b9019b891",
   "campaign_approval_status": "PENDING_RAY",
+  "certification_correction_recorded": true,
   "clyde_funding_output": {
     "guidance": "No approval, guarantee, or eligibility claim; require lender-specific verification.",
     "status": "ADVISORY"
@@ -163,6 +164,7 @@
       "status": "PASS_REAL"
     }
   ],
+  "email_provider_state": "DRAFT_CONFIGURED_SEND_BLOCKED",
   "marketing_output": {
     "audience": "small business owners seeking business funding",
     "cta": "request a readiness review",
@@ -227,6 +229,7 @@
     "search_intent": "small business funding documentation readiness",
     "status": "ADVISORY"
   },
+  "social_auth_state": "CONFIGURED_READ_ONLY_PUBLISH_DISABLED",
   "stages": {
     "ADMIN_APPROVAL": {
       "evidence_refs": [

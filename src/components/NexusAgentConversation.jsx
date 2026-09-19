@@ -19,6 +19,7 @@ export default function NexusAgentConversation({ agent = 'nova' }) {
   const canSpeak = typeof window !== 'undefined' && Boolean(window.speechSynthesis)
   useEffect(() => { listAdminAiConversations('nova').then(setHistory).catch(caught => setError(caught.message)) }, [])
   useEffect(() => { if (logRef.current && shouldFollowRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [conversation.messages.length, status])
+  useEffect(() => { const onDecisionContext = event => { const item = event.detail || {}; setInput(`Review decision ${item.approval_id || item.review_item_id || ''} for company cycle ${item.company_cycle_id || ''}. What evidence, risks, and next action should Ray consider?`); setStatus('IDLE'); inputRef.current?.focus() }; window.addEventListener('nova-decision-context', onDecisionContext); return () => window.removeEventListener('nova-decision-context', onDecisionContext) }, [])
   useEffect(() => () => { recognitionRef.current?.stop?.(); window.speechSynthesis?.cancel?.() }, [])
   function newChat() { window.speechSynthesis?.cancel?.(); setConversation(freshConversation()); setInput(''); setError(''); setStatus('IDLE'); inputRef.current?.focus() }
   async function openConversation(item) { setError(''); setStatus('LOADING'); try { const loaded = await loadAdminAiConversation(item.id); if (loaded) setConversation(loaded) } catch (caught) { setError(caught.message) } finally { setStatus('IDLE') } }

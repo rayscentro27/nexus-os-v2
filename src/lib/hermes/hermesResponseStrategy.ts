@@ -518,6 +518,7 @@ export function generateHermesResponse(args: {
             : args.intent === 'customer_aggregate_status' ? 'hermes.customer_aggregate'
               : args.intent === 'project_status' ? 'hermes.project_status'
                 : args.intent === 'department_list' ? 'hermes.department_list'
+                  : args.intent === 'entity_list' ? 'hermes.entity_list'
                   : args.intent === 'department_status' ? 'hermes.department_status'
                     : args.intent === 'department_queue' ? 'hermes.department_queue'
                       : args.intent === 'department_blockers' ? 'hermes.department_blockers'
