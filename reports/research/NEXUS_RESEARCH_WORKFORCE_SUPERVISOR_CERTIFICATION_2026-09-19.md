@@ -72,6 +72,18 @@ ALPHA_STATUS=`PASS_REAL_BOUNDED`
 
 The model-backed Alpha path called OpenRouter with model `openai/gpt-4o-mini`, evaluated the fresh Last30Days package, challenged its weak evidence, returned `RESEARCH_MORE`, and persisted evaluation `alpha_eval_f8d6847dca0643d691b2e17fbaf4f59b` plus receipt `alpha_receipt_1f2eb7f2b072429bb429f6aa2c7ec69a2`. This is real Alpha execution, not deterministic receipt creation.
 
+### First result / retest record
+
+| Capability | FIRST_RESULT | ROOT_CAUSE_IF_FAILED | REPAIR_ATTEMPTED | RETEST_RESULT | FINAL_CERTIFICATION |
+|---|---|---|---|---|---|
+| Research Investigator | no distinct investigator call observed | missing AI investigation stage in current worker path | no repair during certification; architecture boundary recorded | not rerun because no safe existing investigator executor was found | FAILED_REAL |
+| Last30Days | real CLI returned two current public signals | none; output is discovery-only | none | same real run persisted provenance | PASS_REAL_BOUNDED |
+| SEO Engine | real GoClear crawl returned 10 findings | none; one-page coverage and zero new inserts | none | same real run persisted/linkage verified | PASS_REAL_BOUNDED |
+| YouTube | captions and audio failed; metadata fallback returned incomplete evidence | provider caption/audio limitation | fallback ladder exercised; no transcript fabricated | partial artifact persisted | PARTIAL_REAL |
+| Clyde/Funding | only synthetic readiness reconciler available | no public funding research executor | none; avoided misclassification | not rerun as a false worker | NOT_IMPLEMENTED |
+| Web processor | SBA page acquired and Research V2 package created | none | none | package and claims persisted | PASS_REAL_BOUNDED |
+| Alpha | model returned `RESEARCH_MORE` and created follow-up | follow-up consumption remains unproven | queue claim probe did not force target | target follow-up remains queued; no false re-review | PASS_REAL_BOUNDED |
+
 ## AI investigation and Alpha return loop
 
 AI_INVESTIGATION_LAYER=`FAILED_REAL`
