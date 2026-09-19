@@ -1,8 +1,10 @@
 import json
+import os
 import tempfile
 import unittest
 from dataclasses import asdict
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.nexus_agent_platform.resource_governor import ResourceGovernor
 from scripts.nexus_agent_platform.temporary_worker_framework import (
@@ -21,6 +23,16 @@ class KaggleExternalExecutionTests(unittest.TestCase):
         if not probe["available"]:
             self.assertFalse(probe["capabilities"]["artifact_download"])
         self.assertFalse(probe["quota_known"])
+
+    def test_new_api_token_file_and_legacy_env_are_supported_without_reading_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            token_path = Path(directory) / "access_token"
+            token_path.write_text("sentinel-not-a-real-token", encoding="utf-8")
+            with patch.dict(os.environ, {"KAGGLE_CONFIG_DIR": directory}, clear=False):
+                self.assertEqual(KaggleAdapter._auth_source(), "~/.kaggle/access_token")
+            with patch.dict(os.environ, {"KAGGLE_CONFIG_DIR": directory, "KAGGLE_USERNAME": "user", "KAGGLE_KEY": "key"}, clear=False):
+                token_path.unlink()
+                self.assertEqual(KaggleAdapter._auth_source(), "KAGGLE_USERNAME+KAGGLE_KEY")
 
     def test_blocked_kaggle_job_returns_receipt_shape_without_exception(self):
         with tempfile.TemporaryDirectory() as directory:

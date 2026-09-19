@@ -26,6 +26,16 @@ credential path, install or expose the approved Kaggle CLI/API transport, and
 approve a bounded CPU smoke notebook/job. No token was requested, printed,
 created, or written.
 
+The adapter now recognizes all current non-secret credential locations without
+reading their values: `KAGGLE_API_TOKEN`, `~/.kaggle/access_token`, legacy
+`KAGGLE_USERNAME` + `KAGGLE_KEY`, and legacy `~/.kaggle/kaggle.json`. A model
+token/password is supported only when it is actually the account API token
+accepted by those locations. A model-serving credential that authorizes only
+model download/inference is not sufficient for notebook/kernel submission.
+Kernel read access is distinct from kernel write/execute authorization; a
+future submit/run canary requires account API/OAuth permission equivalent to
+Kaggle's `kernels.editor` capability.
+
 ## Existing contracts reused
 
 The existing `temporary_worker_framework.py` remains canonical for

@@ -192,10 +192,31 @@ class MacAdapter:
 
 class KaggleAdapter:
     provider_id = "kaggle"
+    @staticmethod
+    def _auth_source() -> str | None:
+        """Detect supported credential locations without reading or exposing secrets."""
+        if os.environ.get("KAGGLE_API_TOKEN"):
+            return "KAGGLE_API_TOKEN"
+        config_dir = Path(os.environ.get("KAGGLE_CONFIG_DIR", str(Path.home() / ".kaggle")))
+        if config_dir.joinpath("access_token").exists():
+            return "~/.kaggle/access_token"
+        if config_dir.joinpath("kaggle.json").exists():
+            return "~/.kaggle/kaggle.json"
+        if os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY"):
+            return "KAGGLE_USERNAME+KAGGLE_KEY"
+        return None
+
+    @staticmethod
+    def _cli_path() -> str | None:
+        configured = os.environ.get("KAGGLE_CLI_PATH")
+        return configured if configured and Path(configured).exists() else shutil.which("kaggle")
+
     def probe(self) -> dict[str, Any]:
-        cli = shutil.which("kaggle") is not None
-        auth = bool(os.environ.get("KAGGLE_API_TOKEN")) or Path.home().joinpath(".kaggle/kaggle.json").exists()
-        return {"provider_id": self.provider_id, "available": cli and auth, "configured": auth, "cli_present": cli, "authorization_state": "AUTHORIZED" if auth else "REAUTH_REQUIRED", "capabilities": {"cpu": True, "gpu": "UNKNOWN", "artifact_download": cli and auth, "timeout": "UNKNOWN"}, "quota_known": False}
+        cli_path = self._cli_path(); auth_source = self._auth_source(); auth = auth_source is not None
+        return {"provider_id": self.provider_id, "available": bool(cli_path and auth), "configured": auth,
+                "cli_present": bool(cli_path), "cli_path_present": bool(cli_path), "auth_source": auth_source,
+                "authorization_state": "AUTHORIZED" if auth else "REAUTH_REQUIRED",
+                "capabilities": {"cpu": True, "gpu": "UNKNOWN", "artifact_download": bool(cli_path and auth), "timeout": "UNKNOWN"}, "quota_known": False}
     def prepare(self, job: WorkerJob) -> dict[str, Any]: return {"status": "BLOCKED_EXTERNAL", "reason": "Kaggle credentials or CLI unavailable"} if not self.probe()["available"] else {"status": "PREPARED"}
     def launch(self, job: WorkerJob) -> dict[str, Any]: return {"status": "BLOCKED_EXTERNAL", "reason": "No authorized Kaggle launch path was available during certification"}
     def stage_inputs(self, job: WorkerJob, workdir: Path) -> None: (workdir / "job_manifest.json").write_text(json.dumps(asdict(job), default=asdict, sort_keys=True), encoding="utf-8")
