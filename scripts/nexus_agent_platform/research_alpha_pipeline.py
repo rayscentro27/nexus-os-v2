@@ -116,7 +116,8 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
 
 def review_assigned_research_output(*, source_id: str, source_title: str,
                                     source_url: str, source_text: str,
-                                    objective_id: str | None = None) -> dict[str, Any]:
+                                    objective_id: str | None = None,
+                                    force_rereview: bool = False) -> dict[str, Any]:
     """Send one newly completed assigned source through the existing Alpha path.
 
     The scheduled Research router remains responsible for acquisition and V2
@@ -131,7 +132,7 @@ def review_assigned_research_output(*, source_id: str, source_title: str,
     existing = [row for row in persistence.read_records("alpha_evaluations")
                 if str(row.get("research_id") or "") == source_id
                 or str(row.get("research_item_id") or "") == source_id]
-    if existing:
+    if existing and not force_rereview:
         return {"status": "ALREADY_REVIEWED", "decision": existing[-1].get("decision"),
                 "evaluation_id": existing[-1].get("evaluation_id")}
     from nexus_agent_platform.alpha_model_review import review_demand_package

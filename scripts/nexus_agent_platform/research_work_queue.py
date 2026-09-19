@@ -145,6 +145,11 @@ class ResearchWorkQueue:
             "lifecycle": item.get("lifecycle", "MONITORED"),
             "source_purpose": item.get("source_purpose"),
             "unchanged_count": int(item.get("unchanged_count", 0) or 0),
+            "required_capabilities": list(item.get("required_capabilities", []) or []),
+            "selected_executor_id": item.get("selected_executor_id"),
+            "ai_plan_id": item.get("ai_plan_id"),
+            "ai_investigation_status": item.get("ai_investigation_status"),
+            "ai_interpretation": item.get("ai_interpretation"),
         }
         return result
 

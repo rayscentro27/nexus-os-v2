@@ -227,9 +227,11 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
     if decision == "RESEARCH_MORE":
         followup = default_queue().enqueue(
             work_id=f"alpha-model-followup:{evaluation['evaluation_id']}",
-            work_class="ASSIGNED", priority=2, source_type="PUBLIC_WEB",
+            work_class="ASSIGNED", priority=0, source_type="PUBLIC_WEB",
             source_id=finding_id, requested_by="alpha", parent_request_id=request_id,
             objective_id=investigation_id or finding_id, alpha_followup_required=True,
+            required_capabilities=["WEB_ACQUISITION"],
+            title=str(judgment.get("required_followup") or "Alpha evidence follow-up"),
             selection_reason="alpha_followup", evidence_refs=source_refs,
             # Queue fields are scalar transport fields.  The prior code put
             # the entire source_refs list into source_url, which serialized

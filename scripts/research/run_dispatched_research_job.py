@@ -21,6 +21,7 @@ from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark
 from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
 from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import review_assigned_research_output  # noqa: E402
+from nexus_agent_platform.research_ai_orchestrator import investigate, route, interpret, write_monitor_snapshot  # noqa: E402
 from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
@@ -67,6 +68,8 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                     "objective_id": queued.get("objective_id"), "mission_id": queued.get("mission_id"),
                     "mission_item_id": queued.get("mission_item_id"), "parent_request_id": queued.get("parent_request_id"),
                     "source_candidates": candidates,
+                    "required_capabilities": queued.get("required_capabilities", []),
+                    "ai_plan_id": queued.get("ai_plan_id"),
                     "alpha_followup_required": queued.get("alpha_followup_required", False),
                     "department_target": queued.get("department_target"), "lifecycle": queued.get("lifecycle", "MONITORED")}
         return {"source_type": queued.get("source_type") or "WEB_PAGE",
@@ -79,6 +82,8 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 "objective_id": queued.get("objective_id"), "mission_id": queued.get("mission_id"),
                 "mission_item_id": queued.get("mission_item_id"), "parent_request_id": queued.get("parent_request_id"),
                 "source_candidates": candidates,
+                "required_capabilities": queued.get("required_capabilities", []),
+                "ai_plan_id": queued.get("ai_plan_id"),
                 "alpha_followup_required": queued.get("alpha_followup_required", False),
                 "department_target": queued.get("department_target"),
                 "lifecycle": queued.get("lifecycle", "MONITORED")}
@@ -227,6 +232,24 @@ def main() -> int:
         return 1
     item["v2_parent_links"] = parent_links_for_item(item)
     item = annotate(item)
+    # The investigator is deliberately before acquisition. It plans against
+    # the objective and certified capability registry; processors still own
+    # all evidence acquisition and persistence.
+    ai_plan_result = investigate(item)
+    ai_route_result = route(item, ai_plan_result.get("plan", {})) if ai_plan_result.get("status") == "PASS_REAL" else {"status": "FAILED_REAL", "why_selected": ai_plan_result.get("reason")}
+    item["ai_plan_id"] = ai_plan_result.get("plan_id")
+    item["required_capabilities"] = ai_route_result.get("required_capabilities", [])
+    item["selected_executor_id"] = (ai_route_result.get("selected_executor") or {}).get("executor_id")
+    item["ai_investigation_status"] = ai_plan_result.get("status")
+    write_monitor_snapshot(item=item, stage="AI_INVESTIGATION_PLAN", plan=ai_plan_result.get("plan"), route_result=ai_route_result)
+    event(execution_id, "AI_INVESTIGATION_PLAN", worker_id="research_operator_worker",
+          ai_plan_id=item.get("ai_plan_id"), ai_model=ai_plan_result.get("model"),
+          ai_model_calls=ai_plan_result.get("model_calls", 0), ai_status=ai_plan_result.get("status"),
+          required_capabilities=item.get("required_capabilities"), selected_executor_id=item.get("selected_executor_id"),
+          routing_status=ai_route_result.get("status"), routing_reason=ai_route_result.get("why_selected"))
+    # A missing model is a bounded orchestration degradation. Preserve the
+    # established processor path so one provider outage does not erase the
+    # underlying worker's evidence opportunity.
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
           channel_id=item.get("channel_id"), channel_url=item.get("channel_url"),
@@ -277,6 +300,14 @@ def main() -> int:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE", result={"error": str(exc)[:500]}, next_action="retry bounded mission item")
         return 1
     final_status = result.get("final_status", "FAILED_RETRYABLE")
+    ai_interpretation = interpret(item, ai_plan_result.get("plan", {}), result)
+    item["ai_interpretation"] = ai_interpretation
+    write_monitor_snapshot(item=item, stage="AI_RESULT_INTERPRETATION", plan=ai_plan_result.get("plan"), route_result=ai_route_result, interpretation=ai_interpretation)
+    event(execution_id, "AI_RESULT_INTERPRETATION", worker_id="research_operator_worker",
+          ai_status=ai_interpretation.get("status"), ai_model=ai_interpretation.get("model"),
+          ai_model_calls=ai_interpretation.get("model_calls", 0), information_gain=ai_interpretation.get("information_gain"),
+          objective_progress=ai_interpretation.get("objective_progress"), remaining_gaps=ai_interpretation.get("remaining_gaps"),
+          recommended_followup=ai_interpretation.get("recommended_followup"), ready_for_alpha=ai_interpretation.get("ready_for_alpha"))
     if mission_item:
         mission_status = "COMPLETED" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE", "DUPLICATE_UNCHANGED"} else "FAILED_RETRYABLE"
         record_item_result(mission_item_id, status=mission_status, result={"final_status": final_status, "source_id": item.get("source_id"), "research_package_id": (result.get("v2") or {}).get("research_package_id")}, next_action="continue next mission item" if mission_status == "COMPLETED" else "retry after backoff")
@@ -309,7 +340,9 @@ def main() -> int:
         return 1
     queue_status = "COMPLETE" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
     settle_queue(queue_status, result={"final_status": final_status, "source_id": item.get("source_id"),
-                                       "research_package_id": (result.get("v2") or {}).get("research_package_id")})
+                                       "research_package_id": (result.get("v2") or {}).get("research_package_id"),
+                                       "ai_plan_id": item.get("ai_plan_id"), "selected_executor_id": item.get("selected_executor_id"),
+                                       "ai_interpretation": ai_interpretation})
     alpha_result = {"status": "SKIPPED", "reason": "monitoring_or_duplicate"}
     # Assigned objective/follow-up work is an Alpha-eligible handoff.  Keep
     # routine monitoring cheap, but do not let evidence-ready assigned work
@@ -322,6 +355,7 @@ def main() -> int:
                 source_url=item.get("source_url", ""),
                 source_text=source_row.get("text", "") if isinstance(source_row, dict) else "",
                 objective_id=item.get("objective_id"),
+                force_rereview=bool(item.get("alpha_followup_required")),
             )
         except Exception as exc:
             alpha_result = {"status": "FAILED_RETRYABLE", "error": str(exc)[:500]}
