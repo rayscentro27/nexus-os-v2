@@ -163,15 +163,91 @@ Every department monitor should expose the same conceptual fields:
 Nova should read this operational projection rather than reconstructing state
 from chat text or process existence.
 
-## Project status aggregation
+## Project / portfolio aggregation (Layer 2)
 
-`objective_id` is the current Research project grouping key. A project status
-must aggregate all child work, evidence, evaluator state, and handoffs; it must
-not be inferred from the last child row alone. Recommended precedence is:
+Research's canonical portfolio entity is the durable **objective**. The
+canonical aggregation key is `objective_id`; there is no second Research
+`project_id` store. A project is the executive view of one objective and all
+of its child work, follow-ups, evaluator returns, retries, blockers, and
+department dependencies.
 
-`BLOCKED` → `WAITING`/`NEEDS_MORE_RESEARCH` → `ACTIVE` → `READY_FOR_ALPHA` →
-`READY_FOR_HANDOFF` → `COMPLETE`, subject to unresolved children and required
-receipts.
+The terms map as follows:
+
+| Term | Standard meaning |
+|---|---|
+| project | Executive/portfolio view of one objective |
+| objective | Durable aggregation key and desired outcome |
+| mission | Optional source or campaign context; not a scheduling parent |
+| investigation | A research question or evidence activity |
+| work item | One schedulable child with a lease and terminal lifecycle |
+
+The read model is additive above the queue. It groups children by
+`objective_id` and derives, rather than stores last-write-wins, the following
+fields: `status`, child state counts, required work completed/remaining,
+optional work remaining, active/blocked work, outstanding follow-ups,
+department dependencies, project priority, oldest active time, and child IDs.
+
+### Project status contract
+
+The supported aggregate statuses are:
+
+`NOT_STARTED`, `ACTIVE`, `WAITING`, `NEEDS_MORE_RESEARCH`,
+`WAITING_FOR_DEPARTMENT`, `BLOCKED`, and `COMPLETE`.
+
+The reducer uses these rules in order:
+
+1. An active required child (`IN_PROGRESS`) makes the project `ACTIVE`.
+2. An unresolved Alpha/evaluator follow-up makes it `NEEDS_MORE_RESEARCH`.
+3. A required child waiting on a destination department makes it
+   `WAITING_FOR_DEPARTMENT`.
+4. Required queued, waiting, or retryable work makes it `WAITING` or `ACTIVE`.
+5. A required blocked/exhausted path makes it `BLOCKED` unless a completed
+   required path and a still-viable alternate path establish a different
+   status.
+6. The project is `COMPLETE` only when every required child is terminal and at
+   least one required child completed. Optional monitoring or background work
+   cannot prevent completion.
+
+Completed Alpha follow-ups no longer count as outstanding. Parked historical
+portfolio/test rows are retained for audit but excluded from live obligations;
+they are reported as `ignored_historical_work_count`. Superseded children are
+terminal and never reclaimable.
+
+### Required, optional, and replacement work
+
+`required_work=true|false` is the explicit contract. Until a department adds
+that field, `OPTIONAL`, `MONITORING`, and `BACKGROUND` roles, plus Research's
+`MONITORED` and `GENERAL_DISCOVERY` classes, are treated as optional. A
+replacement remains required unless explicitly marked optional. Historical
+parked/legacy rows are excluded from current aggregation without deleting
+their evidence.
+
+### Project priority and progress
+
+Execution priority remains a work-item concern and the fairness scheduler is
+authoritative. Portfolio priority is a read-only derived value: the lowest
+numeric priority among active required children, with department/evaluator
+return work represented by its child priority. It must not change claim order.
+
+Progress is factual, not an arbitrary percentage: required completed,
+required remaining, optional remaining, active count, blocked count, and
+follow-ups outstanding. Nova and Admin must explain the remaining child IDs
+and next state instead of displaying a misleading completion percentage.
+
+### Portfolio projection and executive visibility
+
+Every department implementing this layer should expose a projection with:
+
+- project count and status counts;
+- five highest-priority projects and oldest active project;
+- child states, required/optional counters, follow-ups, blockers, leases, and
+  department dependencies;
+- exact `why_still_queued` or `next action` when work is not complete.
+
+Research exposes this projection through
+`get_research_operational_state.project_portfolio`, sourced from the canonical
+Research work queue. Nova reads that same live projection; it must not infer
+portfolio state from chat text, process existence, or a single child row.
 
 An explicit `project_id` may be added later when a department needs one
 objective to participate in multiple coordinated programs. It is not required
@@ -191,4 +267,3 @@ for current Research compatibility.
 
 Adoption order: Research, Marketing, Creative, Systems, Funding/Clyde,
 Customer Service, then Trading where the governance envelope permits it.
-

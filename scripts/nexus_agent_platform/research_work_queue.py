@@ -146,6 +146,8 @@ class ResearchWorkQueue:
             "source_purpose": item.get("source_purpose"),
             "unchanged_count": int(item.get("unchanged_count", 0) or 0),
             "required_capabilities": list(item.get("required_capabilities", []) or []),
+            "required_work": item.get("required_work"),
+            "work_role": item.get("work_role"),
             "selected_executor_id": item.get("selected_executor_id"),
             "ai_plan_id": item.get("ai_plan_id"),
             "ai_investigation_status": item.get("ai_investigation_status"),

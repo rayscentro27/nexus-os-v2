@@ -1420,6 +1420,7 @@ def _handle_research_operational_state(
         "today_activity": state.get("today_activity", {}),
         "mission_state": state.get("mission_state", {}),
         "research_queue": state.get("research_queue", {}),
+        "project_portfolio": state.get("project_portfolio", {}),
         "queue_depth_by_class": state.get("queue_depth_by_class", {}),
         "active_assigned_work": state.get("active_assigned_work", []),
         "active_monitored_work": state.get("active_monitored_work", []),

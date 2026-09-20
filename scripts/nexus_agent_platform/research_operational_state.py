@@ -71,6 +71,8 @@ def build_research_operational_state() -> dict[str, Any]:
     local_zone = ZoneInfo("America/Phoenix")
     local_today = datetime.now(local_zone).date().isoformat()
     queue_projection = _queue_projection()
+    from nexus_agent_platform.research_project_portfolio import build_project_portfolio
+    project_portfolio = build_project_portfolio()
     alpha_status_path = ROOT / "data/runtime/alpha_telegram_status.json"
     last30days_path = ROOT / "data/runtime/last30days_demand_radar_latest.json"
     seo_state_path = ROOT / "data/runtime/seo_operational_state_latest.json"
@@ -255,6 +257,7 @@ def build_research_operational_state() -> dict[str, Any]:
             "source": "alpha_evaluations.jsonl + research_v2_handoffs.jsonl + result_feedback.jsonl",
         },
         "work_queue": queue_projection,
+        "project_portfolio": project_portfolio,
         # Keep the live queue contract prominent and compact for executive
         # consumers. The nested projection remains canonical; this avoids
         # forcing a model to infer queue depth from legacy Research V2 counts.
