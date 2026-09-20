@@ -231,6 +231,46 @@ def _sync_governed_priority_work(queue) -> None:
     OPEN questions, which remain lower-priority monitoring/discovery material.
     """
     existing = {str(item.get("work_id")) for item in queue.load().get("items", [])}
+    # Department evidence requests are durable Research work, not merely
+    # inbox metadata.  Project queued requests into the same canonical queue
+    # used by Alpha follow-ups and assigned objectives.  The request ledger
+    # remains authoritative; this is an idempotent scheduling projection.
+    for row in _read_governed("research_requests"):
+        if str(row.get("status", "")).upper() not in {"QUEUED", "WAITING", "ACTIVE"}:
+            continue
+        request_id = str(row.get("request_id") or "").strip()
+        objective_id = str(row.get("marketing_objective_id") or row.get("objective_id") or "").strip()
+        if not request_id or not objective_id:
+            continue
+        work_id = f"department-request:{request_id}"
+        if work_id in existing:
+            continue
+        queue.enqueue(
+            work_id=work_id,
+            work_class="ASSIGNED",
+            priority=2,
+            lane_id="BUSINESS_MARKET",
+            source_type="RESEARCH_OBJECTIVE",
+            source_id=request_id,
+            title=row.get("question") or request_id,
+            question=row.get("question"),
+            source_candidates=[
+                {"source_type": "WEB_PAGE", "source_id": "sba-loans", "source_url": "https://www.sba.gov/loans", "title": "SBA loan guidance"},
+                {"source_type": "WEB_PAGE", "source_id": "fed-small-business-survey", "source_url": "https://www.fedsmallbusiness.org/survey", "title": "Federal Reserve Small Business Credit Survey"},
+                {"source_type": "WEB_PAGE", "source_id": "cfpb-small-business", "source_url": "https://www.consumerfinance.gov/consumer-tools/small-business/", "title": "Consumer financial education for small businesses"},
+            ],
+            requested_by=row.get("requested_by", "department"),
+            objective_id=objective_id,
+            parent_request_id=request_id,
+            marketing_objective_id=objective_id,
+            department_target="MARKETING",
+            required_work=True,
+            alpha_followup_required=False,
+            lifecycle="ONE_TIME",
+            selection_reason="department_evidence_request",
+            evidence_refs=[row.get("research_package_id")] if row.get("research_package_id") else [],
+        )
+        existing.add(work_id)
     investigations = _read_governed("research_v2_investigations")
     for row in investigations:
         if str(row.get("status", "")).upper() != "RESEARCH_MORE":

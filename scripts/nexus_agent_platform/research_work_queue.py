@@ -137,6 +137,7 @@ class ResearchWorkQueue:
             "parent_request_id": item.get("parent_request_id"),
             "alpha_followup_required": bool(item.get("alpha_followup_required", False)),
             "department_target": item.get("department_target"),
+            "marketing_objective_id": item.get("marketing_objective_id"),
             "evidence_refs": list(item.get("evidence_refs", []) or []),
             "selection_reason": item.get("selection_reason"),
             "claimed_by": item.get("claimed_by"),

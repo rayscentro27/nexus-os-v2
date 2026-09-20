@@ -25,6 +25,7 @@ from nexus_agent_platform.research_ai_orchestrator import investigate, route, in
 from nexus_agent_platform.research_continuation import evaluate_goal_result  # noqa: E402
 from nexus_agent_platform.research.last30days_adapter import run_demand_radar_sources  # noqa: E402
 from nexus_agent_platform.research_v2_bridge import build_research_package  # noqa: E402
+from nexus_agent_platform.governed import persistence  # noqa: E402
 from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
@@ -144,6 +145,31 @@ def event(execution_id: str, status: str, **values) -> None:
     with JOBS.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
         handle.flush()
+
+
+def return_department_request(item: dict, *, package_id: str | None, alpha_result: dict) -> None:
+    """Close a durable department request without creating a second objective.
+
+    Research evidence is append-only; this record is the state transition that
+    lets the requesting department resume from the returned package.
+    """
+    request_id = str(item.get("parent_request_id") or "")
+    if not request_id or not item.get("department_target"):
+        return
+    if str(item.get("department_target")).upper() != "MARKETING":
+        return
+    persistence.append_record("research_requests", {
+        "schema_version": "nexus.marketing-research-request.v1",
+        "request_id": request_id,
+        "status": "RETURNED",
+        "marketing_objective_id": item.get("marketing_objective_id") or item.get("objective_id"),
+        "research_package_id": package_id,
+        "alpha_receipt_id": alpha_result.get("receipt_id"),
+        "alpha_decision": alpha_result.get("decision") or alpha_result.get("status"),
+        "returned_work_id": item.get("work_id"),
+        "returned_at": datetime.now(timezone.utc).isoformat(),
+        "return_to": "MARKETING_AI",
+    })
 
 
 def strategy_changing_fallback(item: dict, *, failure_class: str, error: str, attempt: int = 1) -> dict | None:
@@ -447,6 +473,11 @@ def main() -> int:
           alpha_receipt_id=alpha_result.get("receipt_id"), alpha_evaluation_id=alpha_result.get("evaluation_id"),
           alpha_followup_work_id=alpha_result.get("followup_work_id"), alpha_handoff_id=alpha_result.get("handoff_id"),
           next_action="continue next scheduled research wake")
+    try:
+        return_department_request(item, package_id=(result.get("v2") or {}).get("research_package_id"), alpha_result=alpha_result)
+    except Exception as exc:
+        event(execution_id, "DEPARTMENT_RETURN_DEGRADED", worker_id="research_operator_worker",
+              error=str(exc)[:300], next_action="department may re-read the completed package")
     if item.get("parent_goal_id"):
         try:
             evaluate_goal_result(
