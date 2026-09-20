@@ -19,7 +19,7 @@ NEEDS_PATH = ROOT / "data/governed/research_needs.jsonl"
 
 WORK_CLASSES = ("ASSIGNED", "MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY")
 STATUS = ("QUEUED", "IN_PROGRESS", "WAITING", "COMPLETE", "BLOCKED_EXTERNAL",
-          "FAILED_RETRYABLE", "FAILED_FINAL", "PARKED", "MONITORING")
+          "FAILED_RETRYABLE", "FAILED_FINAL", "PARKED", "MONITORING", "SUPERSEDED")
 CLASS_PRIORITY = {"ASSIGNED": 0, "MONITORED": 4, "DEMAND_DISCOVERY": 6, "GENERAL_DISCOVERY": 7}
 
 
@@ -205,13 +205,50 @@ class ResearchWorkQueue:
             candidates.append((class_rank, int(item.get("priority", 50)), parse_time(item.get("created_at")) or now, item))
         if not candidates:
             return None
-        _, _, _, item = min(candidates, key=lambda value: (value[0], value[1], value[2]))
+        # Preserve the proven class priority, but do not let a continuously
+        # replenished high-priority stream starve every other valid class.
+        # The streak is persisted in the queue envelope so a daemon restart
+        # cannot reset fairness accidentally.  Five claims is deliberately
+        # bounded: priority still wins for the first four eligible claims and
+        # item priority/age still orders work inside the selected class.
+        by_class: dict[str, list[tuple[int, int, datetime, dict[str, Any]]]] = {}
+        for candidate in candidates:
+            by_class.setdefault(candidate[3].get("work_class", ""), []).append(candidate)
+        last_class = str(store.get("last_claimed_class") or "")
+        streak = int(store.get("last_claimed_class_streak", 0) or 0)
+        eligible_classes = set(by_class)
+        if last_class in eligible_classes and streak >= 5 and len(eligible_classes) > 1:
+            # Once the priority class has had its bounded quantum, rotate
+            # through the next eligible class.  The cursor is persisted so a
+            # restart cannot repeatedly favor the first lower-priority class.
+            class_order = ["ASSIGNED", "MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY"]
+            cursor = str(store.get("fairness_cursor") or last_class)
+            start = class_order.index(cursor) if cursor in class_order else -1
+            next_class = next(
+                (class_order[(start + offset) % len(class_order)]
+                 for offset in range(1, len(class_order) + 1)
+                 if class_order[(start + offset) % len(class_order)] in eligible_classes),
+                None,
+            )
+            if next_class:
+                eligible_classes = {next_class}
+                store["fairness_cursor"] = next_class
+        chosen = [candidate for candidate in candidates if candidate[3].get("work_class") in eligible_classes]
+        _, _, _, item = min(chosen or candidates, key=lambda value: (value[0], value[1], value[2]))
         attempt_id = stable_id("attempt", (item["work_id"], iso(now), worker_id))
         item.update({"status": "IN_PROGRESS", "started_at": item.get("started_at") or iso(now),
                      "attempt_count": int(item.get("attempt_count", 0)) + 1,
                      "claimed_by": worker_id, "claimed_at": iso(now),
                      "lease_expires_at": iso(now + timedelta(seconds=max(30, lease_seconds))),
                      "attempt_id": attempt_id})
+        if item.get("work_class") == last_class:
+            store["last_claimed_class_streak"] = streak + 1
+        else:
+            store["last_claimed_class_streak"] = 1
+        store["last_claimed_class"] = item.get("work_class")
+        history = list(store.get("recent_claim_classes") or [])
+        history.append(item.get("work_class"))
+        store["recent_claim_classes"] = history[-8:]
         self._save(store)
         return dict(item)
 
@@ -253,7 +290,7 @@ class ResearchWorkQueue:
                     if field in result:
                         ai_fields[field] = result[field]
             item.update({"status": status, "last_result": result, "blocker_type": blocker_type,
-                         "next_eligible_at": next_eligible_at, "completed_at": iso(self._now()) if status in {"COMPLETE", "BLOCKED_EXTERNAL", "FAILED_FINAL", "PARKED"} else None,
+                         "next_eligible_at": next_eligible_at, "completed_at": iso(self._now()) if status in {"COMPLETE", "BLOCKED_EXTERNAL", "FAILED_FINAL", "PARKED", "SUPERSEDED"} else None,
                          "claimed_by": None, "claimed_at": None, "lease_expires_at": None, "attempt_id": None})
             item.update(ai_fields)
             self._save(store)

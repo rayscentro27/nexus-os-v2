@@ -64,6 +64,32 @@ def test_claim_skips_full_worker_bucket(tmp_path):
     assert claimed["work_id"] == "web"
 
 
+def test_priority_quantum_allows_lower_classes_to_progress(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    for index in range(6):
+        queue.enqueue(work_id=f"assigned-{index}", work_class="ASSIGNED", priority=1, source_type="WEB_PAGE")
+    queue.enqueue(work_id="monitored", work_class="MONITORED", priority=50, source_type="WEB_PAGE")
+    queue.enqueue(work_id="demand", work_class="DEMAND_DISCOVERY", priority=50, source_type="DEMAND_QUERY")
+    queue.enqueue(work_id="general", work_class="GENERAL_DISCOVERY", priority=50, source_type="WEB_PAGE")
+
+    selected = []
+    for index in range(20):
+        item = queue.claim_next(worker_id=f"fair-{index}")
+        selected.append(item["work_class"])
+        queue.release(item["work_id"], reason="fairness_test")
+
+    assert selected[:5] == ["ASSIGNED"] * 5
+    assert {"MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY"}.issubset(selected)
+
+
+def test_superseded_is_terminal_and_not_reclaimable(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="superseded", work_class="ASSIGNED")
+    queue.settle("superseded", "SUPERSEDED", result={"reason": "duplicate"})
+    assert queue.claim_next(worker_id="test") is None
+    assert queue.summary()["by_status"]["SUPERSEDED"] == 1
+
+
 def test_one_time_completion_is_not_requeued(tmp_path):
     queue = ResearchWorkQueue(tmp_path / "queue.json")
     queue.enqueue(work_id="one-time", work_class="ASSIGNED", source_type="YOUTUBE_VIDEO",
