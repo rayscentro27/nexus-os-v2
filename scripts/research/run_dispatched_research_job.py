@@ -132,7 +132,14 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
 
 def event(execution_id: str, status: str, **values) -> None:
     JOBS.parent.mkdir(parents=True, exist_ok=True)
-    row = {"execution_id": execution_id, "status": status, "at": datetime.now(timezone.utc).isoformat(), **values}
+    context = {
+        "work_id": os.environ.get("NEXUS_WORK_ID") or None,
+        "objective_id": os.environ.get("NEXUS_OBJECTIVE_ID") or None,
+        "parent_request_id": os.environ.get("NEXUS_PARENT_REQUEST_ID") or None,
+        "marketing_objective_id": os.environ.get("NEXUS_MARKETING_OBJECTIVE_ID") or None,
+    }
+    context = {key: value for key, value in context.items() if value}
+    row = {"execution_id": execution_id, "status": status, "at": datetime.now(timezone.utc).isoformat(), **context, **values}
     with JOBS.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
         handle.flush()
@@ -223,10 +230,18 @@ def main() -> int:
     parser.add_argument("--timeout-seconds", type=int, default=180)
     args = parser.parse_args()
     execution_id = args.execution_id
+    # Hydrate lineage before the first lifecycle event.  CLAIMED/RUNNING are
+    # part of the durable execution trace too; emitting them before reading
+    # the queue item made otherwise objective-backed work appear unlinked.
+    work_id = os.environ.get("NEXUS_WORK_ID", "")
+    if work_id:
+        queued_context = next((row for row in default_queue().load().get("items", []) if row.get("work_id") == work_id), {})
+        for env_key, field in (("NEXUS_OBJECTIVE_ID", "objective_id"), ("NEXUS_PARENT_REQUEST_ID", "parent_request_id"), ("NEXUS_MARKETING_OBJECTIVE_ID", "marketing_objective_id")):
+            if queued_context.get(field) and not os.environ.get(env_key):
+                os.environ[env_key] = str(queued_context[field])
     event(execution_id, "CLAIMED", worker_id="research_operator_worker", attempt_count=1)
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
     lane_id = os.environ.get("NEXUS_SELECTED_LANE_ID", "BUSINESS_MARKET")
-    work_id = os.environ.get("NEXUS_WORK_ID", "")
     selected_work_class = os.environ.get("NEXUS_SELECTED_WORK_CLASS", "GENERAL_DISCOVERY")
     mission_item_id = os.environ.get("NEXUS_MISSION_ITEM_ID", "")
     mission_item = None
@@ -289,6 +304,9 @@ def main() -> int:
         return 1
     item["v2_parent_links"] = parent_links_for_item(item)
     item = annotate(item)
+    for env_key, field in (("NEXUS_OBJECTIVE_ID", "objective_id"), ("NEXUS_PARENT_REQUEST_ID", "parent_request_id"), ("NEXUS_MARKETING_OBJECTIVE_ID", "marketing_objective_id")):
+        if item.get(field):
+            os.environ[env_key] = str(item[field])
     # The investigator is deliberately before acquisition. It plans against
     # the objective and certified capability registry; processors still own
     # all evidence acquisition and persistence.
@@ -308,6 +326,7 @@ def main() -> int:
     # established processor path so one provider outage does not erase the
     # underlying worker's evidence opportunity.
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
+          work_id=item.get("work_id"), objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
           channel_id=item.get("channel_id"), channel_url=item.get("channel_url"),
           selection_reason=item["selection_reason"], selected_work_class=os.environ.get("NEXUS_SELECTED_WORK_CLASS", "DISCOVERY"),
@@ -386,7 +405,9 @@ def main() -> int:
           processor=result.get("processor"), summary_created=result.get("summary_created", False),
           extraction_created=result.get("extraction_created", False), scored=result.get("scored", False),
           provenance_created=result.get("provenance_created", False), stored=result.get("stored", False),
-          disposition=result.get("disposition"), research_id=(result.get("result") or {}).get("research_item_id"))
+          disposition=result.get("disposition"), research_id=(result.get("result") or {}).get("research_item_id"),
+          work_id=item.get("work_id"), objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
+          research_package_id=(result.get("v2") or {}).get("research_package_id"))
     if final_status.startswith("FAILED"):
         mark_lane_backoff(lane_id, result.get("error", "scheduled processor failed"))
         fallback = strategy_changing_fallback(item, failure_class="SCHEDULED_PROCESSOR_FAILURE", error=result.get("error", "scheduled processor failed"), attempt=int(os.environ.get("NEXUS_ATTEMPT_COUNT", "1")))
@@ -419,6 +440,8 @@ def main() -> int:
         except Exception as exc:
             alpha_result = {"status": "FAILED_RETRYABLE", "error": str(exc)[:500]}
     event(execution_id, "COMPLETED", worker_id="research_operator_worker",
+          work_id=item.get("work_id"), objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
+          research_package_id=(result.get("v2") or {}).get("research_package_id"),
           alpha_status=alpha_result.get("decision") or alpha_result.get("status", "SKIPPED"),
           alpha_receipt_id=alpha_result.get("receipt_id"), alpha_evaluation_id=alpha_result.get("evaluation_id"),
           alpha_followup_work_id=alpha_result.get("followup_work_id"), alpha_handoff_id=alpha_result.get("handoff_id"),

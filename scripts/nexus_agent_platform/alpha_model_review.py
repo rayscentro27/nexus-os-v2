@@ -225,7 +225,31 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
     }
     persistence.append_record("alpha_evaluations", evaluation)
     if decision == "RESEARCH_MORE":
-        followup = default_queue().enqueue(
+        queue = default_queue()
+        # RESEARCH_MORE can be emitted again when a completed follow-up is
+        # re-read or when two scheduler paths review the same package.  Keep
+        # the append-only evaluations, but never create two active requests
+        # for the same objective/evidence gap/source set.
+        objective_key = investigation_id or finding_id
+        gap_key = str(judgment.get("required_followup") or "Alpha evidence follow-up").strip().lower()
+        source_key = tuple(sorted(str(value) for value in source_refs if value))
+        existing = None
+        for row in queue.load().get("items", []):
+            if row.get("status") not in {"QUEUED", "WAITING", "IN_PROGRESS"}:
+                continue
+            if str(row.get("objective_id") or "") != str(objective_key):
+                continue
+            if not row.get("alpha_followup_required"):
+                continue
+            row_gap = str(row.get("title") or "").strip().lower()
+            row_sources = tuple(sorted(str(value) for value in (row.get("evidence_refs") or []) if value))
+            if row_gap == gap_key and row_sources == source_key:
+                existing = row
+                break
+        if existing:
+            followup = {**existing, "deduplicated": True, "duplicate_of": existing.get("work_id")}
+        else:
+            followup = queue.enqueue(
             work_id=f"alpha-model-followup:{evaluation['evaluation_id']}",
             work_class="ASSIGNED", priority=0, source_type="PUBLIC_WEB",
             source_id=finding_id, requested_by="alpha", parent_request_id=request_id,
@@ -237,9 +261,10 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             # the entire source_refs list into source_url, which serialized
             # as unusable/empty input and caused a retryable URL failure.
             source_url=source_refs[0] if source_refs else None,
-        )
+            )
         receipt["followup_work_id"] = followup.get("work_id")
         receipt["followup_priority"] = 2
+        receipt["followup_deduplicated"] = bool(followup.get("deduplicated"))
     if decision == "QUALIFY":
         handoff_id = persistence.new_id("research_handoff")
         handoff = {
