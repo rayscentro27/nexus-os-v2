@@ -247,9 +247,15 @@ class ResearchWorkQueue:
         for item in store["items"]:
             if item.get("work_id") != work_id:
                 continue
+            ai_fields = {}
+            if isinstance(result, dict):
+                for field in ("ai_plan_id", "selected_executor_id", "ai_interpretation"):
+                    if field in result:
+                        ai_fields[field] = result[field]
             item.update({"status": status, "last_result": result, "blocker_type": blocker_type,
                          "next_eligible_at": next_eligible_at, "completed_at": iso(self._now()) if status in {"COMPLETE", "BLOCKED_EXTERNAL", "FAILED_FINAL", "PARKED"} else None,
                          "claimed_by": None, "claimed_at": None, "lease_expires_at": None, "attempt_id": None})
+            item.update(ai_fields)
             self._save(store)
             return dict(item)
         return None
