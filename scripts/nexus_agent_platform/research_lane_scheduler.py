@@ -355,6 +355,23 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
                               "selected_at": _now().isoformat()})
         return priority_work
     rows = [row for row in ensure_registry() if row.get("enabled")]
+    blocked_buckets = {str(bucket).lower() for bucket in (blocked_buckets or set())}
+
+    def lane_bucket(row: dict[str, Any]) -> str:
+        lane_id = str(row.get("lane_id") or "").upper()
+        if lane_id == "YOUTUBE_CONTENT":
+            return "youtube"
+        if str(row.get("selected_work_class") or "").upper() in {"DEMAND_DISCOVERY", "GENERAL_DISCOVERY"}:
+            return "discovery"
+        return "web"
+
+    if blocked_buckets:
+        rows = [row for row in rows if lane_bucket(row) not in blocked_buckets]
+        if not rows:
+            return {"lane_id": "GENERAL_DISCOVERY", "name": "General Discovery", "priority": "P4",
+                    "enabled": True, "selection_reason": "all_lane_buckets_at_capacity",
+                    "selected_work_class": "GENERAL_DISCOVERY", "no_source_selected": True,
+                    "selected_at": _now().isoformat()}
     now = _now()
 
     def age(row: dict[str, Any]) -> float:

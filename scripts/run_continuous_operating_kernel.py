@@ -239,7 +239,21 @@ def main() -> int:
                     "content_count": result.get("content_count", 0), "alpha_evaluations_created": alpha_result.get("evaluated_count", 0), "stale_refresh": refresh, "no_external_action": True}
         execution_id = f"research_exec_{uuid.uuid4().hex[:20]}"
         operator_command = [sys.executable, str(ROOT / "scripts/research/run_dispatched_research_job.py"), "--execution-id", execution_id, "--timeout-seconds", str(int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")))]
+        # Batch counters protect this daemon's foreground loop, but priority
+        # work is claimed before the detached worker starts and can therefore
+        # outlive/re-enter the loop boundary. Include live queue leases in the
+        # same bucket decision so a restart or detached child cannot launch a
+        # second web/discovery/youtube job past its configured cap.
         blocked_buckets = {bucket for bucket, count in batch_counts.items() if count >= limits[bucket]}
+        live_bucket_counts = {bucket: 0 for bucket in limits if bucket != "total"}
+        queue_snapshot = default_queue()
+        queue_snapshot.recover_expired_leases()
+        for active_item in queue_snapshot.load().get("items", []):
+            if active_item.get("status") == "IN_PROGRESS":
+                bucket = worker_bucket(active_item)
+                if bucket in live_bucket_counts:
+                    live_bucket_counts[bucket] += 1
+        blocked_buckets.update(bucket for bucket, count in live_bucket_counts.items() if count >= limits[bucket])
         lane = select_lane(reason="priority_work_class", blocked_buckets=blocked_buckets)
         if lane.get("work_id"):
             bucket = worker_bucket(lane)
