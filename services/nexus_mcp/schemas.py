@@ -17,6 +17,8 @@ TOOL_NAMES = (
     "nexus_get_alpha_review",
     "nexus_delegate_specialist",
     "nexus_assign_research",
+    "nexus_assign_codex",
+    "nexus_get_codex_assignment",
 )
 
 # Operational reads are volatile by capability.  This metadata describes the

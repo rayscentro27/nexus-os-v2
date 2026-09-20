@@ -224,6 +224,19 @@ def _assign_research(objective: str, question: str = "", priority: int = 0,
     }
 
 
+def _assign_codex(parent_objective_id: str, blocking_work_id: str, defect_id: str,
+                  defect_summary: str, affected_component: str,
+                  acceptance_criteria: list[str], test_requirements: list[str],
+                  allowed_scope: list[str], prohibited_actions: list[str],
+                  risk_class: str = "LOW") -> dict[str, Any]:
+    from nexus_agent_platform.nova_codex_bridge import create_assignment
+    return create_assignment(parent_objective_id=parent_objective_id, blocking_work_id=blocking_work_id,
+                             defect_id=defect_id, defect_summary=defect_summary,
+                             affected_component=affected_component, acceptance_criteria=acceptance_criteria,
+                             test_requirements=test_requirements, allowed_scope=allowed_scope,
+                             prohibited_actions=prohibited_actions, risk_class=risk_class)
+
+
 def _action_call(tool_name: str, operation, arguments: dict[str, Any]) -> dict[str, Any]:
     authorize_action(tool_name)
     request_id = f"nexus-mcp-{uuid.uuid4().hex}"
@@ -287,6 +300,11 @@ def _register() -> None:
     def nexus_get_alpha_review(objective_id: str = "") -> dict[str, Any]:
         return _call("nexus_get_alpha_review", {"objective_id": objective_id} if objective_id else {})
 
+    @mcp.tool(name="nexus_get_codex_assignment", description="VOLATILE current Nova-to-Codex assignment and completion receipt read. Returns the existing governed coding-worker handoff only; no historical substitution.")
+    def nexus_get_codex_assignment() -> dict[str, Any]:
+        from nexus_agent_platform.nova_codex_bridge import read_assignment
+        return {"status": "ok", "data": read_assignment(), "metadata": {"read_only": True, "canonical": True, "freshness": "live"}}
+
     @mcp.tool(
         name="nexus_delegate_specialist",
         description=(
@@ -317,6 +335,14 @@ def _register() -> None:
             "objective": objective, "question": question, "priority": priority,
             "parent_request_id": parent_request_id,
         })
+
+    @mcp.tool(name="nexus_assign_codex", description="Create one bounded internal Nova-to-existing-Codex assignment for a low-risk software defect. Requires scope, tests, prohibited actions, and parent objective. Does not authorize publication, spend, credentials, security weakening, or destructive production changes.")
+    def nexus_assign_codex(parent_objective_id: str, blocking_work_id: str, defect_id: str,
+                           defect_summary: str, affected_component: str,
+                           acceptance_criteria: list[str], test_requirements: list[str],
+                           allowed_scope: list[str], prohibited_actions: list[str],
+                           risk_class: str = "LOW") -> dict[str, Any]:
+        return _action_call("nexus_assign_codex", _assign_codex, locals())
 
 
 def _delegate_specialist(specialist: str, objective: str, *, conversation_id: str = "") -> dict[str, Any]:
