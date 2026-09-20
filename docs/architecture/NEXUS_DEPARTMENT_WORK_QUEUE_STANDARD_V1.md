@@ -11,6 +11,29 @@ work must use the same semantics for identity, priority, capability routing,
 leases, retries, lineage, settlement, and monitoring. This avoids both a
 single uncontrolled company queue and unrelated department-specific behavior.
 
+## Purpose layer above the queue
+
+For Research, queue state is execution state, not purpose. The standing
+hierarchy is:
+
+```text
+COMPANY GOAL
+→ RESEARCH CHARTER
+→ CURRENT KNOWLEDGE / GAPS
+→ GENERATED OBJECTIVE
+→ WORK ITEM
+→ EVIDENCE / ALPHA
+→ HANDOFF / GOAL PROGRESS
+→ NEXT OBJECTIVE
+```
+
+`QUEUE EMPTY != NO WORK`. When no eligible useful work exists, the supervisor
+reads active company goals and the durable Research charter, identifies the
+highest-value unresolved knowledge gap, generates a bounded objective, checks
+its dedup key against active/recent objective work, and enqueues it through the
+same queue contract. Goal-generated work must not outrank explicit Alpha or
+urgent department returns unless its explicit work-item priority says so.
+
 ## Common work-item contract
 
 Required for every queued item:

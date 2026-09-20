@@ -418,6 +418,20 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         candidates = [(row, _lane_context(str(row["lane_id"]), now), "", {}, 0.0, 0.0, 0.0, 0.0, 0.0)
                       for row in rows if not _source_refresh_snapshot(str(row["lane_id"]), str(row.get("last_source_id", "")), now).get("terminal")]
     if not candidates:
+        # Purpose sits above the queue.  When no eligible source or assigned
+        # item remains, inspect active company goals and the Research charter
+        # before falling back to a generic demand pass.
+        from nexus_agent_platform.research_continuation import continue_when_empty
+        continuation = continue_when_empty(queue=default_queue())
+        if continuation.get("generated"):
+            claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"ASSIGNED"})
+            if claimed:
+                claimed.update({"lane_id": "BUSINESS_MARKET", "name": "Goal-directed Research",
+                                "selection_reason": "goal_generated", "selected_work_class": "ASSIGNED",
+                                "priority_contract_rank": 3, "selected_at": now.isoformat(),
+                                "continuation": {"goal_id": continuation.get("goal", {}).get("goal_id"),
+                                                  "generation_reason": continuation.get("reason")}})
+                return claimed
         demand_work = _seed_demand_discovery_work(default_queue())
         if demand_work:
             claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"DEMAND_DISCOVERY"})

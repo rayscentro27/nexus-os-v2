@@ -120,6 +120,7 @@ class ResearchWorkQueue:
             "title": item.get("title"),
             "question": item.get("question"),
             "objective_id": item.get("objective_id"),
+            "parent_goal_id": item.get("parent_goal_id"),
             "mission_id": item.get("mission_id"),
             "mission_item_id": item.get("mission_item_id"),
             "requested_by": item.get("requested_by", "scheduler"),
@@ -152,6 +153,11 @@ class ResearchWorkQueue:
             "ai_plan_id": item.get("ai_plan_id"),
             "ai_investigation_status": item.get("ai_investigation_status"),
             "ai_interpretation": item.get("ai_interpretation"),
+            "dedup_key": item.get("dedup_key"),
+            "why_it_matters": item.get("why_it_matters"),
+            "unknown_to_resolve": item.get("unknown_to_resolve"),
+            "evidence_gaps": list(item.get("evidence_gaps", []) or []),
+            "stop_condition": item.get("stop_condition"),
         }
         return result
 

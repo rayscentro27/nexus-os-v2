@@ -22,6 +22,7 @@ from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
 from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import review_assigned_research_output  # noqa: E402
 from nexus_agent_platform.research_ai_orchestrator import investigate, route, interpret, write_monitor_snapshot  # noqa: E402
+from nexus_agent_platform.research_continuation import evaluate_goal_result  # noqa: E402
 from nexus_agent_platform.research.last30days_adapter import run_demand_radar_sources  # noqa: E402
 from nexus_agent_platform.research_v2_bridge import build_research_package  # noqa: E402
 from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
@@ -446,6 +447,14 @@ def main() -> int:
           alpha_receipt_id=alpha_result.get("receipt_id"), alpha_evaluation_id=alpha_result.get("evaluation_id"),
           alpha_followup_work_id=alpha_result.get("followup_work_id"), alpha_handoff_id=alpha_result.get("handoff_id"),
           next_action="continue next scheduled research wake")
+    if item.get("parent_goal_id"):
+        try:
+            evaluate_goal_result(
+                goal_id=str(item.get("parent_goal_id")), objective_id=str(item.get("objective_id")),
+                result={**result, "ai_interpretation": ai_interpretation}, alpha=alpha_result,
+            )
+        except Exception as exc:
+            event(execution_id, "GOAL_FEEDBACK_DEGRADED", worker_id="research_operator_worker", error=str(exc)[:300])
     return 0
 
 
