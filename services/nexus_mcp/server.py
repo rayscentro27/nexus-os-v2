@@ -237,6 +237,11 @@ def _assign_codex(parent_objective_id: str, blocking_work_id: str, defect_id: st
                              prohibited_actions=prohibited_actions, risk_class=risk_class)
 
 
+def _resume_research() -> dict[str, Any]:
+    from nexus_agent_platform.nova_codex_bridge import resume_parent_objective
+    return resume_parent_objective()
+
+
 def _action_call(tool_name: str, operation, arguments: dict[str, Any]) -> dict[str, Any]:
     authorize_action(tool_name)
     request_id = f"nexus-mcp-{uuid.uuid4().hex}"
@@ -343,6 +348,10 @@ def _register() -> None:
                            allowed_scope: list[str], prohibited_actions: list[str],
                            risk_class: str = "LOW") -> dict[str, Any]:
         return _action_call("nexus_assign_codex", _assign_codex, locals())
+
+    @mcp.tool(name="nexus_resume_research", description="Resume the same parent Research objective after a completed bounded Codex repair. Idempotently creates one existing-queue ASSIGNED checkpoint; never creates a replacement objective or publishes externally.")
+    def nexus_resume_research() -> dict[str, Any]:
+        return _action_call("nexus_resume_research", _resume_research, {})
 
 
 def _delegate_specialist(specialist: str, objective: str, *, conversation_id: str = "") -> dict[str, Any]:

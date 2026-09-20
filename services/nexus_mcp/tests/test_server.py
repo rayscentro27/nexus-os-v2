@@ -11,7 +11,7 @@ from services.nexus_mcp import server
 def test_tool_surface_is_explicit_and_complete():
     names = {tool.name for tool in server.mcp._tool_manager.list_tools()}
     assert set(server.TOOL_NAMES).issubset(names)
-    assert all(name.startswith("nexus_get_") or name in {"nexus_delegate_specialist", "nexus_assign_research", "nexus_assign_codex", "calendar_get_availability", "calendar_read_event", "calendar_search_events", "drive_read_file", "drive_search", "gmail_read_message", "gmail_read_thread", "gmail_search"} for name in names)
+    assert all(name.startswith("nexus_get_") or name in {"nexus_delegate_specialist", "nexus_assign_research", "nexus_assign_codex", "nexus_resume_research", "calendar_get_availability", "calendar_read_event", "calendar_search_events", "drive_read_file", "drive_search", "gmail_read_message", "gmail_read_thread", "gmail_search"} for name in names)
 
 
 def test_public_result_preserves_canonical_state_and_metadata():
@@ -106,7 +106,7 @@ def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_pat
 
 @pytest.mark.parametrize("name", server.TOOL_NAMES)
 def test_each_tool_has_expected_input_schema(name):
-    if name in {"nexus_delegate_specialist", "nexus_assign_research", "nexus_assign_codex"}:
+    if name in {"nexus_delegate_specialist", "nexus_assign_research", "nexus_assign_codex", "nexus_resume_research"}:
         return
     tool = next(tool for tool in server.mcp._tool_manager.list_tools() if tool.name == name)
     if name in {"nexus_get_research_state", "nexus_get_alpha_review"}:

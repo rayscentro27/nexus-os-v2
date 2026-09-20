@@ -18,6 +18,7 @@ TOOL_NAMES = (
     "nexus_delegate_specialist",
     "nexus_assign_research",
     "nexus_assign_codex",
+    "nexus_resume_research",
     "nexus_get_codex_assignment",
 )
 

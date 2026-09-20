@@ -119,4 +119,25 @@ def execute_claimed_assignment() -> dict[str, Any]:
     return {"status": assignment["status"], **assignment}
 
 
+def resume_parent_objective() -> dict[str, Any]:
+    """Create the next bounded queue checkpoint for the same objective."""
+    from nexus_agent_platform.research_work_queue import ResearchWorkQueue
+    assignment = (read_assignment().get("nova_codex_assignment") or {})
+    if assignment.get("status") != "COMPLETED" or not assignment.get("resume_objective_on_success"):
+        return {"status": "not_resumable", "assignment_id": assignment.get("assignment_id")}
+    objective_id = str(assignment.get("parent_objective_id"))
+    work_id = f"nova_resume_{assignment.get('assignment_id')}"
+    queue = ResearchWorkQueue()
+    existing = next((row for row in queue.load().get("items", []) if row.get("work_id") == work_id), None)
+    if existing:
+        return {"status": "idempotent_existing", **existing}
+    item = queue.enqueue(work_id=work_id, work_class="ASSIGNED", source_type="NOVA_RESUME",
+                         lane_id="NOVA_EXECUTIVE_RESEARCH", title="Resume parent objective after Codex repair",
+                         question="Resume the same Research objective after the verified internal repair and record the next bounded evidence action.",
+                         objective_id=objective_id, requested_by="nova", priority=-1, status="QUEUED",
+                         parent_request_id=assignment.get("assignment_id"),
+                         selection_reason="resume_same_objective_after_codex_repair", lifecycle="ASSIGNED")
+    return {"status": "resumed_checkpoint_created", "assignment_id": assignment.get("assignment_id"), **item}
+
+
 __all__ = ["create_assignment", "read_assignment", "claim_assignment", "execute_claimed_assignment", "HANDOFF_PATH"]

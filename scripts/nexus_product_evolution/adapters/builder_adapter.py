@@ -131,8 +131,26 @@ def codex_execute(task: BuildTaskSpec) -> Dict[str, Any]:
     worktree = Path(tempfile.mkdtemp(prefix=f"nexus-pe-{task.task_id}-"))
     added = False
     try:
-        subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.metadata.get("starting_commit", "HEAD")], cwd=ROOT, check=True, capture_output=True, text=True, timeout=30)
-        added = True
+        try:
+            subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.metadata.get("starting_commit", "HEAD")], cwd=ROOT, check=True, capture_output=True, text=True, timeout=30)
+            added = True
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            # Large/dirty Nexus checkouts can make worktree registration exceed
+            # the bounded handoff window. Preserve the isolated Codex contract
+            # with a minimal disposable git sandbox instead of dropping the
+            # assignment after marking it EXECUTING.
+            subprocess.run(["git", "init", "-q"], cwd=worktree, check=True, capture_output=True, text=True, timeout=10)
+            for allowed in task.allowed_paths:
+                source = ROOT / allowed
+                target = worktree / allowed
+                if source.exists() and source.is_file():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, target)
+                else:
+                    target.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["git", "add", "--", "."], cwd=worktree, check=True, capture_output=True, text=True, timeout=10)
+            subprocess.run(["git", "-c", "user.email=nexus@localhost", "-c", "user.name=Nexus", "commit", "-qm", "sandbox"], cwd=worktree, check=True, capture_output=True, text=True, timeout=10)
+            added = False
         command = ["codex", "exec", "--sandbox", "workspace-write", "--ephemeral", "--skip-git-repo-check", "--color", "never", "-C", str(worktree), _safe_prompt(task)]
         environment = _safe_worker_environment()
         try:

@@ -21,5 +21,5 @@ def authorize_action(tool_name: str) -> None:
     the tool surface explicit: no generic writes, shell, publication, spend,
     or arbitrary record mutation are exposed here.
     """
-    if tool_name not in {"nexus_assign_research", "nexus_assign_codex"}:
+    if tool_name not in {"nexus_assign_research", "nexus_assign_codex", "nexus_resume_research"}:
         raise PermissionError("only bounded internal Nexus actions are exposed")
