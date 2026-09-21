@@ -1,0 +1,240 @@
+{
+  "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+  "campaign_status": "INTERNAL_CERTIFICATION_ACCEPTED",
+  "cost": {
+    "breakdown": {
+      "creative_ai": "REMOTE_FREE",
+      "email": "NOT_SENT_BY_THIS_RUN",
+      "local_render": 0,
+      "marketing_ai": "provider route recorded; price not exposed",
+      "social": 0
+    },
+    "observed_cost_usd": 0
+  },
+  "creative_handoff_id": "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
+  "creative_parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+  "critic": {
+    "CTA_clarity": "CTA could be more direct and benefit-driven.",
+    "audience_fit": "Appropriate tone and language for small business owners.",
+    "decision": "Strong foundation; needs refined CTA clarity.",
+    "defects": "Minor refinement needed for consistent visual language.",
+    "distinctiveness": "Unique enough; differentiates with clarity focus.",
+    "message_alignment": "Well-aligned with campaign objectives & audience needs.",
+    "revision": {
+      "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+      "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
+      "why_changed": "Increased CTA urgency; refined visual hierarchy."
+    },
+    "revision_required": "CTA needs improvement for optimal engagement.",
+    "visual_coherence": "Visually sound; checklist metaphor effectively utilized."
+  },
+  "distribution": {
+    "email": {
+      "auth_status": "CONNECTED_RESEND",
+      "channel": "email",
+      "distribution_status": "PENDING_APPROVED_TEST_RECIPIENT",
+      "provider": "resend",
+      "publish_capability": "TEST_ONLY",
+      "reason": "approved Resend test configuration incomplete",
+      "status": "BLOCKED_EXTERNAL"
+    },
+    "policy": "No social publish, no paid spend, no bulk email.",
+    "social": {
+      "facebook": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "facebook",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 4:5",
+          "cadence": "2-3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "facebook",
+          "cta": "Learn more",
+          "format": "feed/link",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 80
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "instagram": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "instagram",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "4:5 or 9:16",
+          "cadence": "3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "instagram",
+          "cta": "Save and share",
+          "format": "reel/carousel",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 70
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "linkedin": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "linkedin",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 1.91:1",
+          "cadence": "2/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "linkedin",
+          "cta": "Review the checklist",
+          "format": "professional feed",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 100
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "tiktok": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "tiktok",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "9:16",
+          "cadence": "3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "tiktok",
+          "cta": "Comment your question",
+          "format": "short video",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 60
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "x": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "x",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 16:9",
+          "cadence": "3-5/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "x",
+          "cta": "Read the guide",
+          "format": "short post/thread",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 70
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "youtube": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "youtube",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "16:9 or 9:16",
+          "cadence": "1-2/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "youtube",
+          "cta": "Watch the next step",
+          "format": "short/video",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 100
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      }
+    }
+  },
+  "image": {
+    "dimensions": "1200x900",
+    "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
+    "sha256": "f6095f3e92fb3e87783226d61bc66311697093b40ffd453940ce18fcda3df012",
+    "svg_source": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.svg",
+    "visual_proof": "PASS_REAL"
+  },
+  "landing_page": {
+    "file": "public/marketing-certification/ops-checklist/index.html",
+    "status": "RENDERED_SOURCE_READY",
+    "tracking": [
+      "data-campaign-id",
+      "nexus-campaign-event",
+      "utm_source",
+      "utm_medium",
+      "utm_campaign"
+    ],
+    "url_path": "/marketing-certification/ops-checklist/"
+  },
+  "marketing_acceptance_id": "marketing_evaluations_b31ebfe129f740ee9ae55f85c9a72592",
+  "marketing_strategy": "marketing_projects_635697a911284070814f62fcc147374e",
+  "marketing_work_id": "wo_d70a6a860c7042a2bcb4017def789e3e",
+  "projection_path": "public/runtime/marketing-creative-certification-projection.json",
+  "revision_work_id": "wo_5dc6bbf474b6461e98435747c0c9dfb1",
+  "schema_version": "nexus.marketing-creative-certification-projection.v1",
+  "updated_at": "2026-09-21T21:59:43.960568+00:00",
+  "video": {
+    "duration_seconds": 12.0,
+    "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
+    "mode": "FFMPEG_RENDER_FROM_CREATIVE_APPROVED_IMAGE_AND_COPY",
+    "resolution": "1080x1920",
+    "sha256": "9b65c2c2fe41c752b89bc12996e2a816f2526dde027e1ecfb46d9125f9f520df",
+    "visual_proof": "PASS_REAL"
+  },
+  "worker_routing": {
+    "jobs": [
+      {
+        "artifact_refs": [],
+        "capability": "creative.local_render",
+        "completed_at": "2026-09-21T21:59:29.025919+00:00",
+        "content_hash": "f894daa559b5d6bdb0b4fc8588593d7b3efa205afdfa52b0fdebd883d92435ba",
+        "cost_receipt": {
+          "cost_class": "LOCAL_FREE"
+        },
+        "duration": 2.944222,
+        "error": null,
+        "evidence_refs": [],
+        "host_id": "host-mac",
+        "job_id": "job_58c036bf3e604f59882a828b73f49790",
+        "receipt_hash": "5a9e0aba316375516a8b570b9efff2d8fe9f1f4332cba8ebc21c715b6db20b1d",
+        "result": {
+          "dimensions": "1200x900",
+          "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
+          "sha256": "f6095f3e92fb3e87783226d61bc66311697093b40ffd453940ce18fcda3df012",
+          "svg_source": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.svg",
+          "visual_proof": "PASS_REAL"
+        },
+        "retry_classification": "NONE",
+        "started_at": "2026-09-21T21:59:26.081691+00:00",
+        "status": "SUCCEEDED",
+        "worker_id": "worker-mac-creative"
+      },
+      {
+        "artifact_refs": [],
+        "capability": "creative.local_render",
+        "completed_at": "2026-09-21T21:59:38.339943+00:00",
+        "content_hash": "646fbb4660bfd3bda8ce98255fc76515a4fc934ece8561281dbd7406660896d2",
+        "cost_receipt": {
+          "cost_class": "LOCAL_FREE"
+        },
+        "duration": 9.309964,
+        "error": null,
+        "evidence_refs": [],
+        "host_id": "host-mac",
+        "job_id": "job_d17c9bd89c9a441e915f37ab038ce0cd",
+        "receipt_hash": "ee291808f8f400e459901a8937f3e65ecfcd0cc67b8b8047fb35126555706413",
+        "result": {
+          "duration_seconds": 12.0,
+          "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
+          "mode": "FFMPEG_RENDER_FROM_CREATIVE_APPROVED_IMAGE_AND_COPY",
+          "resolution": "1080x1920",
+          "sha256": "9b65c2c2fe41c752b89bc12996e2a816f2526dde027e1ecfb46d9125f9f520df",
+          "visual_proof": "PASS_REAL"
+        },
+        "retry_classification": "NONE",
+        "started_at": "2026-09-21T21:59:29.029788+00:00",
+        "status": "SUCCEEDED",
+        "worker_id": "worker-mac-creative"
+      }
+    ],
+    "provider_bypass_count": 0,
+    "remote_control_plane_used": true
+  }
+}

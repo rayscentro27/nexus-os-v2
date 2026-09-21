@@ -1,0 +1,950 @@
+{
+  "acceptance": {
+    "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+    "created_at": "2026-09-21T21:59:43.956480+00:00",
+    "evaluation": {
+      "CTA": "Get Your Checklist Now.",
+      "blockers": "None identified.",
+      "channel_suitability": "All selected channels are appropriate for reaching the target audience effectively.",
+      "decision": "ACCEPT",
+      "offer_alignment": "The free checklist directly addresses the audience's need for practical solutions.",
+      "strategy_alignment": "Strong alignment with the campaign's objective to teach small-business owners about operational efficiency.",
+      "tracking_readiness": "Tracking mechanisms are in place for measuring engagement and downloads."
+    },
+    "handoff_id": "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
+    "model": "openai/gpt-4o-mini",
+    "provider": "openrouter",
+    "record_id": "marketing_evaluations_b31ebfe129f740ee9ae55f85c9a72592",
+    "revision_work_id": "wo_5dc6bbf474b6461e98435747c0c9dfb1",
+    "schema_version": "nexus.marketing-creative-certification.v1",
+    "status": "PASS_REAL"
+  },
+  "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+  "chain_receipt_id": "chain_d456a3b439c649cb9e31a6e260719046",
+  "chain_receipt_path": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/company_chain_receipt.json",
+  "control_plane": {
+    "capabilities": [
+      {
+        "allowed_statuses": [
+          "PASS_REAL",
+          "PASS_REAL_BOUNDED"
+        ],
+        "capability_id": "creative.ai_fallback",
+        "certification_source": "creative model health canary",
+        "description": "Creative AI reasoning",
+        "resource_requirements": {}
+      },
+      {
+        "allowed_statuses": [
+          "PASS_REAL",
+          "PASS_REAL_BOUNDED"
+        ],
+        "capability_id": "creative.local_render",
+        "certification_source": "FFmpeg/PIL render verification",
+        "description": "Bounded local media render",
+        "resource_requirements": {}
+      }
+    ],
+    "capability_health": [],
+    "hosts": [
+      {
+        "auth_status": "LOCAL",
+        "capabilities": [
+          "creative.local_render"
+        ],
+        "concurrency": 2,
+        "cost_class": "LOCAL_FREE",
+        "execution_method": "local process",
+        "host_id": "host-mac",
+        "host_type": "MAC",
+        "last_health_check": null,
+        "reachable": true,
+        "security_class": "NEXUS_PRIVATE",
+        "status": "ONLINE"
+      },
+      {
+        "auth_status": "SSH_AUTHORIZED",
+        "capabilities": [
+          "creative.ai_fallback"
+        ],
+        "concurrency": 1,
+        "cost_class": "REMOTE_FREE",
+        "execution_method": "SSH loopback + Ollama",
+        "host_id": "host-oracle",
+        "host_type": "ORACLE",
+        "last_health_check": null,
+        "reachable": true,
+        "security_class": "NEXUS_PRIVATE",
+        "status": "ONLINE"
+      }
+    ],
+    "leases": [
+      {
+        "claimed_at": "2026-09-21T21:59:26.081681+00:00",
+        "claimed_by": "department:creative",
+        "expires_at": "2026-09-21T22:04:26.081659+00:00",
+        "host_id": "host-mac",
+        "job_id": "job_58c036bf3e604f59882a828b73f49790",
+        "lease_id": "lease-7b704b61649a4025",
+        "status": "RELEASED",
+        "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:image",
+        "worker_id": "worker-mac-creative"
+      },
+      {
+        "claimed_at": "2026-09-21T21:59:29.029776+00:00",
+        "claimed_by": "department:creative",
+        "expires_at": "2026-09-21T22:04:29.029748+00:00",
+        "host_id": "host-mac",
+        "job_id": "job_d17c9bd89c9a441e915f37ab038ce0cd",
+        "lease_id": "lease-8391f036ffbf4171",
+        "status": "RELEASED",
+        "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:video",
+        "worker_id": "worker-mac-creative"
+      }
+    ],
+    "receipts": [
+      {
+        "artifact_refs": [],
+        "capability": "creative.local_render",
+        "completed_at": "2026-09-21T21:59:29.025919+00:00",
+        "content_hash": "f894daa559b5d6bdb0b4fc8588593d7b3efa205afdfa52b0fdebd883d92435ba",
+        "cost_receipt": {
+          "cost_class": "LOCAL_FREE"
+        },
+        "duration": 2.944222,
+        "error": null,
+        "evidence_refs": [],
+        "host_id": "host-mac",
+        "job_id": "job_58c036bf3e604f59882a828b73f49790",
+        "receipt_hash": "5a9e0aba316375516a8b570b9efff2d8fe9f1f4332cba8ebc21c715b6db20b1d",
+        "result": {
+          "dimensions": "1200x900",
+          "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
+          "sha256": "f6095f3e92fb3e87783226d61bc66311697093b40ffd453940ce18fcda3df012",
+          "svg_source": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.svg",
+          "visual_proof": "PASS_REAL"
+        },
+        "retry_classification": "NONE",
+        "started_at": "2026-09-21T21:59:26.081691+00:00",
+        "status": "SUCCEEDED",
+        "worker_id": "worker-mac-creative"
+      },
+      {
+        "artifact_refs": [],
+        "capability": "creative.local_render",
+        "completed_at": "2026-09-21T21:59:38.339943+00:00",
+        "content_hash": "646fbb4660bfd3bda8ce98255fc76515a4fc934ece8561281dbd7406660896d2",
+        "cost_receipt": {
+          "cost_class": "LOCAL_FREE"
+        },
+        "duration": 9.309964,
+        "error": null,
+        "evidence_refs": [],
+        "host_id": "host-mac",
+        "job_id": "job_d17c9bd89c9a441e915f37ab038ce0cd",
+        "receipt_hash": "ee291808f8f400e459901a8937f3e65ecfcd0cc67b8b8047fb35126555706413",
+        "result": {
+          "duration_seconds": 12.0,
+          "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
+          "mode": "FFMPEG_RENDER_FROM_CREATIVE_APPROVED_IMAGE_AND_COPY",
+          "resolution": "1080x1920",
+          "sha256": "9b65c2c2fe41c752b89bc12996e2a816f2526dde027e1ecfb46d9125f9f520df",
+          "visual_proof": "PASS_REAL"
+        },
+        "retry_classification": "NONE",
+        "started_at": "2026-09-21T21:59:29.029788+00:00",
+        "status": "SUCCEEDED",
+        "worker_id": "worker-mac-creative"
+      }
+    ],
+    "workers": [
+      {
+        "active_jobs": 0,
+        "certified_capabilities": {
+          "creative.local_render": "PASS_REAL_BOUNDED"
+        },
+        "concurrency_limit": 1,
+        "cost_class": "LOCAL_FREE",
+        "credential_requirements": [],
+        "department_allowlist": [],
+        "execution_type": "LOCAL_BOUNDED",
+        "health_state": "ONLINE",
+        "host_id": "host-mac",
+        "last_health_check": null,
+        "network_requirements": [],
+        "provider": "nexus",
+        "security_class": "NEXUS_PRIVATE",
+        "status": "READY",
+        "worker_id": "worker-mac-creative"
+      },
+      {
+        "active_jobs": 0,
+        "certified_capabilities": {
+          "creative.ai_fallback": "PASS_REAL_BOUNDED"
+        },
+        "concurrency_limit": 1,
+        "cost_class": "REMOTE_FREE",
+        "credential_requirements": [],
+        "department_allowlist": [],
+        "execution_type": "PRIVATE_OLLAMA",
+        "health_state": "ONLINE",
+        "host_id": "host-oracle",
+        "last_health_check": null,
+        "network_requirements": [],
+        "provider": "oracle_ollama_gemma",
+        "security_class": "NEXUS_PRIVATE",
+        "status": "READY",
+        "worker_id": "worker-oracle-creative-ai"
+      }
+    ]
+  },
+  "creative_children": [
+    {
+      "cost": 0,
+      "execution_receipt": "creative_media_fea0d587d95d4ad8af6751dc87bc6afa",
+      "fallback_worker": "worker-mac-creative",
+      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "required_capability": "creative.local_render",
+      "result": {
+        "dimensions": "1200x900",
+        "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
+        "sha256": "f6095f3e92fb3e87783226d61bc66311697093b40ffd453940ce18fcda3df012",
+        "svg_source": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.svg",
+        "visual_proof": "PASS_REAL"
+      },
+      "selected_host": "host-mac",
+      "selected_worker": "worker-mac-creative",
+      "selection_reason": "Mac selected for local-free deterministic render; Creative AI direction supplied the composition.",
+      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:image"
+    },
+    {
+      "cost": 0,
+      "execution_receipt": "creative_ai_7379318382844ad899bbc8fc26d2a813",
+      "fallback_worker": "worker-mac-creative",
+      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "required_capability": "creative.ai_fallback",
+      "result": {
+        "CTA": "Download the Checklist Now!",
+        "email_subject": "Clear Your Operations \u2013 Get the Checklist",
+        "headline": "Simplify Operations: Free Checklist Inside",
+        "proof_boundary": "Free resource \u2013 no obligation.",
+        "social_hooks": "Stop the chaos! Simplify your small business.",
+        "subhead": "Find disconnected processes & improve efficiency today."
+      },
+      "selected_host": "host-oracle",
+      "selected_worker": "worker-oracle-creative-ai",
+      "selection_reason": "Oracle selected as certified remote-free Creative AI lane.",
+      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:copy"
+    },
+    {
+      "cost": 0,
+      "execution_receipt": "creative_media_54f47dca4a284b15836c3810c487a53a",
+      "fallback_worker": "worker-mac-creative",
+      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "required_capability": "creative.local_render",
+      "result": {
+        "duration_seconds": 12.0,
+        "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
+        "mode": "FFMPEG_RENDER_FROM_CREATIVE_APPROVED_IMAGE_AND_COPY",
+        "resolution": "1080x1920",
+        "sha256": "9b65c2c2fe41c752b89bc12996e2a816f2526dde027e1ecfb46d9125f9f520df",
+        "visual_proof": "PASS_REAL"
+      },
+      "selected_host": "host-mac",
+      "selected_worker": "worker-mac-creative",
+      "selection_reason": "Mac selected for bounded FFmpeg render; no metered GPU was authorized.",
+      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:video"
+    },
+    {
+      "cost": 0,
+      "execution_receipt": "landing_source_receipt",
+      "fallback_worker": "worker-mac-creative",
+      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "required_capability": "creative.local_render",
+      "result": {
+        "file": "public/marketing-certification/ops-checklist/index.html",
+        "status": "RENDERED_SOURCE_READY",
+        "tracking": [
+          "data-campaign-id",
+          "nexus-campaign-event",
+          "utm_source",
+          "utm_medium",
+          "utm_campaign"
+        ],
+        "url_path": "/marketing-certification/ops-checklist/"
+      },
+      "selected_host": "host-mac",
+      "selected_worker": "worker-mac-creative",
+      "selection_reason": "Creative-owned visual direction implemented as a responsive technical artifact.",
+      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:landing_page"
+    }
+  ],
+  "creative_handoff": {
+    "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+    "created_at": "2026-09-21T21:59:38.370279+00:00",
+    "handoff_type": "CREATIVE_TO_MARKETING",
+    "payload": {
+      "asset_receipts": [
+        "creative_media_fea0d587d95d4ad8af6751dc87bc6afa",
+        "creative_media_54f47dca4a284b15836c3810c487a53a",
+        "creative_reviews_7908d6091aaf4e2c9c123d25b49fc888"
+      ],
+      "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+      "copy": {
+        "CTA": "Download the Checklist Now!",
+        "email_subject": "Clear Your Operations \u2013 Get the Checklist",
+        "headline": "Simplify Operations: Free Checklist Inside",
+        "proof_boundary": "Free resource \u2013 no obligation.",
+        "social_hooks": "Stop the chaos! Simplify your small business.",
+        "subhead": "Find disconnected processes & improve efficiency today."
+      },
+      "creative_notes": {
+        "color_system": "Neutral tones with accent color for key actions",
+        "composition": "Grid-based, clear pathways, focused elements",
+        "distinctiveness_reason": "Emphasizes organization, clarity, and actionable steps.",
+        "image_direction": "Illustrative icons, diagrams, straightforward visuals",
+        "landing_page_direction": "Process-focused, actionable, minimal distractions",
+        "visual_metaphor": "Wayfinding Checklist"
+      },
+      "critic": {
+        "CTA_clarity": "CTA could be more direct and benefit-driven.",
+        "audience_fit": "Appropriate tone and language for small business owners.",
+        "decision": "Strong foundation; needs refined CTA clarity.",
+        "defects": "Minor refinement needed for consistent visual language.",
+        "distinctiveness": "Unique enough; differentiates with clarity focus.",
+        "message_alignment": "Well-aligned with campaign objectives & audience needs.",
+        "revision": {
+          "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+          "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
+          "why_changed": "Increased CTA urgency; refined visual hierarchy."
+        },
+        "revision_required": "CTA needs improvement for optimal engagement.",
+        "visual_coherence": "Visually sound; checklist metaphor effectively utilized."
+      },
+      "image": {
+        "dimensions": "1200x900",
+        "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
+        "sha256": "f6095f3e92fb3e87783226d61bc66311697093b40ffd453940ce18fcda3df012",
+        "svg_source": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.svg",
+        "visual_proof": "PASS_REAL"
+      },
+      "landing_page": {
+        "file": "public/marketing-certification/ops-checklist/index.html",
+        "status": "RENDERED_SOURCE_READY",
+        "tracking": [
+          "data-campaign-id",
+          "nexus-campaign-event",
+          "utm_source",
+          "utm_medium",
+          "utm_campaign"
+        ],
+        "url_path": "/marketing-certification/ops-checklist/"
+      },
+      "selected_territory": {
+        "creative_direction_record": "creative_ai_2e725e7506144e3592f468be52dd8e49",
+        "name": "The Clear Path",
+        "selection_reason": "Emphasizes organization, clarity, and actionable steps.",
+        "status": "CANDIDATE",
+        "territory_id": "territory_ea20e2c8444beca8dbde"
+      },
+      "territories": [
+        {
+          "name": "The Clear Path",
+          "status": "CANDIDATE",
+          "territory_id": "territory_ea20e2c8444beca8dbde"
+        },
+        {
+          "name": "The Operations Map",
+          "status": "CANDIDATE",
+          "territory_id": "territory_30b362c7003a45c5c54e"
+        },
+        {
+          "name": "The Quiet Handoff",
+          "status": "CANDIDATE",
+          "territory_id": "territory_edf96d17e23721455e1f"
+        },
+        {
+          "name": "The One Fix",
+          "status": "CANDIDATE",
+          "territory_id": "territory_b79fab12511b1eff4d9e"
+        }
+      ],
+      "video": {
+        "duration_seconds": 12.0,
+        "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
+        "mode": "FFMPEG_RENDER_FROM_CREATIVE_APPROVED_IMAGE_AND_COPY",
+        "resolution": "1080x1920",
+        "sha256": "9b65c2c2fe41c752b89bc12996e2a816f2526dde027e1ecfb46d9125f9f520df",
+        "visual_proof": "PASS_REAL"
+      }
+    },
+    "record_id": "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
+    "schema_version": "nexus.marketing-creative-certification.v1",
+    "status": "MARKETING_INBOX_RECEIVED"
+  },
+  "creative_parent": {
+    "approval_required": false,
+    "assignment_candidates": [
+      "CREATIVE"
+    ],
+    "authority_required": "internal_read_only",
+    "completed_at": "2026-09-21T21:59:25.978691+00:00",
+    "cost_budget": {
+      "max_usd": 0
+    },
+    "created_at": "2026-09-21T21:59:25.977707+00:00",
+    "failure_reason": null,
+    "goal_id": "mkt_creative_cert_ops_checklist_20260921",
+    "idempotency_key": "cb429faab21a6a8d32857522dd543b1dae62a76c845b77e42340ac9bbf4b4e5e",
+    "initiative_id": null,
+    "inputs": {
+      "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+      "handoff_id": "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556"
+    },
+    "loop_id": null,
+    "metrics": {},
+    "next_action": null,
+    "owner_specialist": "CREATIVE",
+    "priority": "normal",
+    "receipt_refs": [
+      "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556"
+    ],
+    "required_capabilities": [
+      "creative_media"
+    ],
+    "result": {
+      "ai_authority": "CREATIVE",
+      "handoff_received": true,
+      "queue": "CREATIVE_INBOX",
+      "status": "PASS"
+    },
+    "result_refs": [],
+    "retry_budget": {
+      "max_attempts": 1
+    },
+    "return_to_nova": true,
+    "schema_version": "nexus.work-order.v1",
+    "started_at": "2026-09-21T21:59:25.977830+00:00",
+    "status": "COMPLETED",
+    "work_order_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+    "work_type": "creative_brief"
+  },
+  "critic": {
+    "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+    "created_at": "2026-09-21T21:59:38.352048+00:00",
+    "critic": {
+      "CTA_clarity": "CTA could be more direct and benefit-driven.",
+      "audience_fit": "Appropriate tone and language for small business owners.",
+      "decision": "Strong foundation; needs refined CTA clarity.",
+      "defects": "Minor refinement needed for consistent visual language.",
+      "distinctiveness": "Unique enough; differentiates with clarity focus.",
+      "message_alignment": "Well-aligned with campaign objectives & audience needs.",
+      "revision": {
+        "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+        "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
+        "why_changed": "Increased CTA urgency; refined visual hierarchy."
+      },
+      "revision_required": "CTA needs improvement for optimal engagement.",
+      "visual_coherence": "Visually sound; checklist metaphor effectively utilized."
+    },
+    "kind": "creative_critic",
+    "record_id": "creative_reviews_7908d6091aaf4e2c9c123d25b49fc888",
+    "route_receipt": {
+      "job": {
+        "correlation_ids": {},
+        "cost_budget": "REMOTE_FREE",
+        "created_at": "2026-09-21T21:56:57.346577+00:00",
+        "department": "CREATIVE",
+        "input_refs": [],
+        "job_id": "job_0e20638d6fd4494c97528d9b459a942f",
+        "limits": {
+          "max_output_bytes": 1000000,
+          "timeout_seconds": 60
+        },
+        "objective_id": "mkt_creative_cert_ops_checklist_20260921",
+        "required_capability": "creative.ai_fallback",
+        "security_policy": {},
+        "selected_host": "host-oracle",
+        "selected_worker": "worker-oracle-creative-ai",
+        "timeout": 60,
+        "work_id": "wo_88672a58bd364b619cbbb09ddad9985d:creative-ai-bundle"
+      },
+      "receipt": {
+        "artifact_refs": [],
+        "capability": "creative.ai_fallback",
+        "completed_at": "2026-09-21T21:58:18.770146+00:00",
+        "content_hash": "8b8ebeddfe0181cc18d7b03e9ca4c72768d125d85ae8ec01c3ea0df287daaa63",
+        "cost_receipt": {
+          "cost_class": "REMOTE_FREE"
+        },
+        "duration": 81.42131,
+        "error": null,
+        "evidence_refs": [],
+        "host_id": "host-oracle",
+        "job_id": "job_0e20638d6fd4494c97528d9b459a942f",
+        "receipt_hash": "59b26c2063d4a90331ed2031c4fc08694427485257b2d62bdf2f58b90cf26a1d",
+        "result": {
+          "call_number": 1,
+          "copy": {
+            "CTA": "Download the Checklist Now!",
+            "email_subject": "Clear Your Operations \u2013 Get the Checklist",
+            "headline": "Simplify Operations: Free Checklist Inside",
+            "proof_boundary": "Free resource \u2013 no obligation.",
+            "social_hooks": "Stop the chaos! Simplify your small business.",
+            "subhead": "Find disconnected processes & improve efficiency today."
+          },
+          "critic": {
+            "CTA_clarity": "CTA could be more direct and benefit-driven.",
+            "audience_fit": "Appropriate tone and language for small business owners.",
+            "decision": "Strong foundation; needs refined CTA clarity.",
+            "defects": "Minor refinement needed for consistent visual language.",
+            "distinctiveness": "Unique enough; differentiates with clarity focus.",
+            "message_alignment": "Well-aligned with campaign objectives & audience needs.",
+            "revision": {
+              "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+              "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
+              "why_changed": "Increased CTA urgency; refined visual hierarchy."
+            },
+            "revision_required": "CTA needs improvement for optimal engagement.",
+            "visual_coherence": "Visually sound; checklist metaphor effectively utilized."
+          },
+          "execution_location": "existing Oracle Ollama service",
+          "latency_ms": 81421.1,
+          "model": "gemma3:4b",
+          "provider": "oracle_ollama_gemma",
+          "purpose": "Creative Director, Copywriter, and Critic",
+          "revision": {
+            "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+            "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
+            "why_changed": "Increased CTA urgency; refined visual hierarchy."
+          },
+          "status": "PASS",
+          "visual_direction": {
+            "color_system": "Neutral tones with accent color for key actions",
+            "composition": "Grid-based, clear pathways, focused elements",
+            "distinctiveness_reason": "Emphasizes organization, clarity, and actionable steps.",
+            "image_direction": "Illustrative icons, diagrams, straightforward visuals",
+            "landing_page_direction": "Process-focused, actionable, minimal distractions",
+            "visual_metaphor": "Wayfinding Checklist"
+          }
+        },
+        "retry_classification": "NONE",
+        "started_at": "2026-09-21T21:56:57.346783+00:00",
+        "status": "SUCCEEDED",
+        "valid": true,
+        "validation": "PASS",
+        "worker_id": "worker-oracle-creative-ai"
+      },
+      "reused_prior_real_receipt": "creative_ai_4f5051dc5cc64ce6bfeb3131c802c6b4"
+    },
+    "schema_version": "nexus.marketing-creative-certification.v1",
+    "status": "PASS_REAL"
+  },
+  "distribution": {
+    "email": {
+      "auth_status": "CONNECTED_RESEND",
+      "channel": "email",
+      "distribution_status": "PENDING_APPROVED_TEST_RECIPIENT",
+      "provider": "resend",
+      "publish_capability": "TEST_ONLY",
+      "reason": "approved Resend test configuration incomplete",
+      "status": "BLOCKED_EXTERNAL"
+    },
+    "policy": "No social publish, no paid spend, no bulk email.",
+    "social": {
+      "facebook": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "facebook",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 4:5",
+          "cadence": "2-3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "facebook",
+          "cta": "Learn more",
+          "format": "feed/link",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 80
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "instagram": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "instagram",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "4:5 or 9:16",
+          "cadence": "3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "instagram",
+          "cta": "Save and share",
+          "format": "reel/carousel",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 70
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "linkedin": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "linkedin",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 1.91:1",
+          "cadence": "2/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "linkedin",
+          "cta": "Review the checklist",
+          "format": "professional feed",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 100
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "tiktok": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "tiktok",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "9:16",
+          "cadence": "3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "tiktok",
+          "cta": "Comment your question",
+          "format": "short video",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 60
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "x": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "x",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 16:9",
+          "cadence": "3-5/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "x",
+          "cta": "Read the guide",
+          "format": "short post/thread",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 70
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "youtube": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "youtube",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "16:9 or 9:16",
+          "cadence": "1-2/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "youtube",
+          "cta": "Watch the next step",
+          "format": "short/video",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 100
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      }
+    }
+  },
+  "image": {
+    "dimensions": "1200x900",
+    "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
+    "sha256": "f6095f3e92fb3e87783226d61bc66311697093b40ffd453940ce18fcda3df012",
+    "svg_source": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.svg",
+    "visual_proof": "PASS_REAL"
+  },
+  "landing": {
+    "file": "public/marketing-certification/ops-checklist/index.html",
+    "status": "RENDERED_SOURCE_READY",
+    "tracking": [
+      "data-campaign-id",
+      "nexus-campaign-event",
+      "utm_source",
+      "utm_medium",
+      "utm_campaign"
+    ],
+    "url_path": "/marketing-certification/ops-checklist/"
+  },
+  "marketing_handoff": {
+    "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+    "created_at": "2026-09-21T21:59:25.976511+00:00",
+    "handoff_type": "MARKETING_TO_CREATIVE",
+    "lineage_status": "PRESERVED",
+    "payload": {
+      "CTA": "Download the checklist now and start clarifying your processes!",
+      "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
+      "brand_constraints": [
+        "internal certification",
+        "no GoClear assets or copy",
+        "no deceptive claims",
+        "no paid media",
+        "no customer data"
+      ],
+      "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+      "channel_requirements": {
+        "email": "Targeted campaigns to existing contacts with a focus on the checklist.",
+        "facebook": "Engaging posts and community discussions around operational challenges.",
+        "instagram": "Visual stories highlighting checklist benefits and user experiences.",
+        "linkedin": "Professional articles and posts discussing operational efficiency.",
+        "tiktok": "Quick tips on identifying operational issues and using the checklist.",
+        "x": "Updates and insights on operational best practices.",
+        "youtube": "Short videos explaining how to use the checklist effectively."
+      },
+      "landing_page_requirements": {
+        "email_templates": "Design engaging and informative email templates.",
+        "landing_page": "Develop a user-friendly landing page for checklist download.",
+        "social_media_graphics": "Create eye-catching visuals for all platforms.",
+        "video_content": "Produce short, informative videos for YouTube and TikTok."
+      },
+      "marketing_work_id": "wo_d70a6a860c7042a2bcb4017def789e3e",
+      "measurement_requirements": {
+        "landing_page_CTA_event": "Monitor engagement metrics on the landing page.",
+        "measurement_receipt": "Collect data on user interactions and feedback post-download.",
+        "qualified_checklist_click": "Track the number of downloads of the checklist."
+      },
+      "message": {
+        "primary_message": "Streamline your operations with our free checklist.",
+        "secondary_message": "Identify and clarify one process to enhance your business efficiency.",
+        "supporting_message": "Take control of your operations and reduce overwhelm."
+      },
+      "objective": "Teach overwhelmed small-business owners a practical way to find disconnected operations and missed follow-up.",
+      "offer": "Free educational Small Business Operations Checklist.",
+      "required_assets": [
+        "image",
+        "short_video",
+        "landing_page"
+      ],
+      "status": "CREATIVE_QUEUE_READY"
+    },
+    "record_id": "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556",
+    "schema_version": "nexus.marketing-creative-certification.v1"
+  },
+  "marketing_order": {
+    "approval_required": false,
+    "assignment_candidates": [
+      "GROWTH"
+    ],
+    "authority_required": "internal_read_only",
+    "completed_at": "2026-09-21T21:59:25.975523+00:00",
+    "cost_budget": {
+      "max_usd": 0
+    },
+    "created_at": "2026-09-21T21:59:25.959956+00:00",
+    "failure_reason": null,
+    "goal_id": "mkt_creative_cert_ops_checklist_20260921",
+    "idempotency_key": "fce78fedc5eaa5ab011f3054a4e052f6ca9a9a304c9cae37142196d9449cd83b",
+    "initiative_id": null,
+    "inputs": {
+      "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+      "objective_path": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/campaign_objective.json"
+    },
+    "loop_id": null,
+    "metrics": {},
+    "next_action": null,
+    "owner_specialist": "GROWTH",
+    "priority": "normal",
+    "receipt_refs": [
+      "marketing_projects_635697a911284070814f62fcc147374e"
+    ],
+    "required_capabilities": [
+      "analytics"
+    ],
+    "result": {
+      "ai_model": "openai/gpt-4o-mini",
+      "artifact_id": "marketing_projects_635697a911284070814f62fcc147374e",
+      "lease": "ACQUIRED",
+      "result_persisted": true,
+      "status": "PASS"
+    },
+    "result_refs": [],
+    "retry_budget": {
+      "max_attempts": 1
+    },
+    "return_to_nova": true,
+    "schema_version": "nexus.work-order.v1",
+    "started_at": "2026-09-21T21:59:25.960130+00:00",
+    "status": "COMPLETED",
+    "work_order_id": "wo_d70a6a860c7042a2bcb4017def789e3e",
+    "work_type": "growth_analysis"
+  },
+  "marketing_strategy": {
+    "artifact_path": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/marketing_strategy.json",
+    "call": {
+      "error": null,
+      "http_status": 200,
+      "latency_ms": 6047,
+      "model": "openai/gpt-4o-mini",
+      "model_calls": 1,
+      "provider": "openrouter"
+    },
+    "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+    "created_at": "2026-09-21T21:59:25.909647+00:00",
+    "kind": "strategy",
+    "model": "openai/gpt-4o-mini",
+    "provider": "openrouter",
+    "record_id": "marketing_projects_635697a911284070814f62fcc147374e",
+    "schema_version": "nexus.marketing-creative-certification.v1",
+    "status": "PASS_REAL",
+    "strategy": {
+      "CTA": "Download the checklist now and start clarifying your processes!",
+      "acceptance_criteria": [
+        "Achieve a minimum of 500 checklist downloads within the campaign period.",
+        "Ensure at least 30% of users engage with the follow-up content.",
+        "Gather qualitative feedback from at least 50 users on the checklist's usefulness."
+      ],
+      "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
+      "channel_strategy": {
+        "email": "Targeted campaigns to existing contacts with a focus on the checklist.",
+        "facebook": "Engaging posts and community discussions around operational challenges.",
+        "instagram": "Visual stories highlighting checklist benefits and user experiences.",
+        "linkedin": "Professional articles and posts discussing operational efficiency.",
+        "tiktok": "Quick tips on identifying operational issues and using the checklist.",
+        "x": "Updates and insights on operational best practices.",
+        "youtube": "Short videos explaining how to use the checklist effectively."
+      },
+      "creative_requirements": {
+        "email_templates": "Design engaging and informative email templates.",
+        "landing_page": "Develop a user-friendly landing page for checklist download.",
+        "social_media_graphics": "Create eye-catching visuals for all platforms.",
+        "video_content": "Produce short, informative videos for YouTube and TikTok."
+      },
+      "customer_problem": "Operational friction is spread across tools and tasks, making the next improvement hard to see.",
+      "funnel_structure": {
+        "bottom_of_funnel": "Action through follow-up emails encouraging checklist usage and process identification.",
+        "middle_of_funnel": "Engagement via informative content and checklist download.",
+        "top_of_funnel": "Awareness through social media posts and email campaigns."
+      },
+      "limitations": [
+        "Internal certification constraints limit external partnerships.",
+        "No GoClear assets or copy can be used.",
+        "No deceptive claims can be made in messaging.",
+        "No paid media can be utilized for promotion.",
+        "No customer data can be accessed or used."
+      ],
+      "measurement_plan": {
+        "landing_page_CTA_event": "Monitor engagement metrics on the landing page.",
+        "measurement_receipt": "Collect data on user interactions and feedback post-download.",
+        "qualified_checklist_click": "Track the number of downloads of the checklist."
+      },
+      "message_hierarchy": {
+        "primary_message": "Streamline your operations with our free checklist.",
+        "secondary_message": "Identify and clarify one process to enhance your business efficiency.",
+        "supporting_message": "Take control of your operations and reduce overwhelm."
+      },
+      "offer_framing": "A free, actionable Small Business Operations Checklist designed to help you pinpoint and address operational disconnects.",
+      "positioning": "The go-to resource for small-business owners seeking to simplify their operations and improve follow-up processes."
+    }
+  },
+  "objective": {
+    "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
+    "budget": {
+      "max_new_spend_usd": 0,
+      "paid_media_usd": 0
+    },
+    "business_id": "nexus_internal_certification",
+    "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+    "channels": [
+      "email",
+      "facebook",
+      "instagram",
+      "linkedin",
+      "youtube",
+      "tiktok",
+      "x"
+    ],
+    "constraints": [
+      "internal certification",
+      "no GoClear assets or copy",
+      "no deceptive claims",
+      "no paid media",
+      "no customer data"
+    ],
+    "desired_action": "Open the checklist and identify one process to clarify.",
+    "objective": "Teach overwhelmed small-business owners a practical way to find disconnected operations and missed follow-up.",
+    "offer": "Free educational Small Business Operations Checklist.",
+    "problem": "Operational friction is spread across tools and tasks, making the next improvement hard to see.",
+    "status": "QUEUED",
+    "success_criteria": [
+      "qualified checklist click",
+      "landing page CTA event",
+      "measurement receipt"
+    ]
+  },
+  "objective_path": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/campaign_objective.json",
+  "projection_path": "public/runtime/marketing-creative-certification-projection.json",
+  "revision_work": {
+    "approval_required": false,
+    "assignment_candidates": [
+      "CREATIVE"
+    ],
+    "authority_required": "internal_read_only",
+    "completed_at": "2026-09-21T21:59:41.481622+00:00",
+    "cost_budget": {
+      "max_usd": 0
+    },
+    "created_at": "2026-09-21T21:59:41.258011+00:00",
+    "failure_reason": null,
+    "goal_id": "mkt_creative_cert_ops_checklist_20260921",
+    "idempotency_key": "68d72b44933f05e92ecdc29b4de248589f7a43e06ebf4040fd9b1a4000a49bc6",
+    "initiative_id": null,
+    "inputs": {
+      "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+      "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "revision_reason": "Minor refinement needed for consistent visual language and CTA clarity."
+    },
+    "loop_id": null,
+    "metrics": {},
+    "next_action": null,
+    "owner_specialist": "CREATIVE",
+    "priority": "normal",
+    "receipt_refs": [
+      "revision_wo_e8dec91a490149c8b0fb9951bf0ba808"
+    ],
+    "required_capabilities": [
+      "creative_media"
+    ],
+    "result": {
+      "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+      "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
+      "revision_executed": true,
+      "status": "PASS"
+    },
+    "result_refs": [],
+    "retry_budget": {
+      "max_attempts": 1
+    },
+    "return_to_nova": true,
+    "schema_version": "nexus.work-order.v1",
+    "started_at": "2026-09-21T21:59:41.258338+00:00",
+    "status": "COMPLETED",
+    "work_order_id": "wo_5dc6bbf474b6461e98435747c0c9dfb1",
+    "work_type": "creative_brief"
+  },
+  "selected_territory": {
+    "creative_direction_record": "creative_ai_2e725e7506144e3592f468be52dd8e49",
+    "name": "The Clear Path",
+    "selection_reason": "Emphasizes organization, clarity, and actionable steps.",
+    "status": "CANDIDATE",
+    "territory_id": "territory_ea20e2c8444beca8dbde"
+  },
+  "status": "PASS_REAL_BOUNDED",
+  "video": {
+    "duration_seconds": 12.0,
+    "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
+    "mode": "FFMPEG_RENDER_FROM_CREATIVE_APPROVED_IMAGE_AND_COPY",
+    "resolution": "1080x1920",
+    "sha256": "9b65c2c2fe41c752b89bc12996e2a816f2526dde027e1ecfb46d9125f9f520df",
+    "visual_proof": "PASS_REAL"
+  }
+}

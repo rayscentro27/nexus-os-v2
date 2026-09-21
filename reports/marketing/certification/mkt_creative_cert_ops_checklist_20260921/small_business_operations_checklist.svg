@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+      <rect width="1200" height="900" fill="#f4f0e8"/><rect x="54" y="54" width="1092" height="792" rx="38" fill="#172d3d"/>
+      <circle cx="220" cy="270" r="112" fill="#e8a45c"/><circle cx="220" cy="270" r="48" fill="#f4f0e8"/>
+      <path d="M320 270 C420 270 420 190 520 190 S640 270 740 270" fill="none" stroke="#e8a45c" stroke-width="18" stroke-linecap="round"/>
+      <path d="M740 270 L700 238 M740 270 L700 302" fill="none" stroke="#e8a45c" stroke-width="18" stroke-linecap="round"/>
+      <rect x="790" y="170" width="250" height="200" rx="24" fill="#f4f0e8"/><path d="M835 240h150M835 285h118M835 330h92" stroke="#172d3d" stroke-width="18" stroke-linecap="round"/>
+      <text x="120" y="535" fill="#f4f0e8" font-family="Arial, sans-serif" font-size="58" font-weight="700">MAKE THE WORK VISIBLE</text>
+      <text x="120" y="605" fill="#b8c9cf" font-family="Arial, sans-serif" font-size="28">A practical operations checklist for small-business owners.</text>
+      <text x="120" y="735" fill="#e8a45c" font-family="Arial, sans-serif" font-size="24" letter-spacing="3">FREE EDUCATIONAL GUIDE · NO HYPE</text>
+      <title>Wayfinding Checklist</title>
+    </svg>

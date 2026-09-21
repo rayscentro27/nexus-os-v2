@@ -1,0 +1,49 @@
+{
+  "CTA": "Download the checklist now and start clarifying your processes!",
+  "acceptance_criteria": [
+    "Achieve a minimum of 500 checklist downloads within the campaign period.",
+    "Ensure at least 30% of users engage with the follow-up content.",
+    "Gather qualitative feedback from at least 50 users on the checklist's usefulness."
+  ],
+  "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
+  "channel_strategy": {
+    "email": "Targeted campaigns to existing contacts with a focus on the checklist.",
+    "facebook": "Engaging posts and community discussions around operational challenges.",
+    "instagram": "Visual stories highlighting checklist benefits and user experiences.",
+    "linkedin": "Professional articles and posts discussing operational efficiency.",
+    "tiktok": "Quick tips on identifying operational issues and using the checklist.",
+    "x": "Updates and insights on operational best practices.",
+    "youtube": "Short videos explaining how to use the checklist effectively."
+  },
+  "creative_requirements": {
+    "email_templates": "Design engaging and informative email templates.",
+    "landing_page": "Develop a user-friendly landing page for checklist download.",
+    "social_media_graphics": "Create eye-catching visuals for all platforms.",
+    "video_content": "Produce short, informative videos for YouTube and TikTok."
+  },
+  "customer_problem": "Operational friction is spread across tools and tasks, making the next improvement hard to see.",
+  "funnel_structure": {
+    "bottom_of_funnel": "Action through follow-up emails encouraging checklist usage and process identification.",
+    "middle_of_funnel": "Engagement via informative content and checklist download.",
+    "top_of_funnel": "Awareness through social media posts and email campaigns."
+  },
+  "limitations": [
+    "Internal certification constraints limit external partnerships.",
+    "No GoClear assets or copy can be used.",
+    "No deceptive claims can be made in messaging.",
+    "No paid media can be utilized for promotion.",
+    "No customer data can be accessed or used."
+  ],
+  "measurement_plan": {
+    "landing_page_CTA_event": "Monitor engagement metrics on the landing page.",
+    "measurement_receipt": "Collect data on user interactions and feedback post-download.",
+    "qualified_checklist_click": "Track the number of downloads of the checklist."
+  },
+  "message_hierarchy": {
+    "primary_message": "Streamline your operations with our free checklist.",
+    "secondary_message": "Identify and clarify one process to enhance your business efficiency.",
+    "supporting_message": "Take control of your operations and reduce overwhelm."
+  },
+  "offer_framing": "A free, actionable Small Business Operations Checklist designed to help you pinpoint and address operational disconnects.",
+  "positioning": "The go-to resource for small-business owners seeking to simplify their operations and improve follow-up processes."
+}

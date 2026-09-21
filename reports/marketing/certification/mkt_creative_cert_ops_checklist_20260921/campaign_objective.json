@@ -1,0 +1,35 @@
+{
+  "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
+  "budget": {
+    "max_new_spend_usd": 0,
+    "paid_media_usd": 0
+  },
+  "business_id": "nexus_internal_certification",
+  "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+  "channels": [
+    "email",
+    "facebook",
+    "instagram",
+    "linkedin",
+    "youtube",
+    "tiktok",
+    "x"
+  ],
+  "constraints": [
+    "internal certification",
+    "no GoClear assets or copy",
+    "no deceptive claims",
+    "no paid media",
+    "no customer data"
+  ],
+  "desired_action": "Open the checklist and identify one process to clarify.",
+  "objective": "Teach overwhelmed small-business owners a practical way to find disconnected operations and missed follow-up.",
+  "offer": "Free educational Small Business Operations Checklist.",
+  "problem": "Operational friction is spread across tools and tasks, making the next improvement hard to see.",
+  "status": "QUEUED",
+  "success_criteria": [
+    "qualified checklist click",
+    "landing page CTA event",
+    "measurement receipt"
+  ]
+}

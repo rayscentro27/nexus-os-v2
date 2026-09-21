@@ -1,0 +1,140 @@
+{
+  "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
+  "created_at": "2026-09-21T21:59:43.961298+00:00",
+  "distribution": {
+    "email": {
+      "auth_status": "CONNECTED_RESEND",
+      "channel": "email",
+      "distribution_status": "PENDING_APPROVED_TEST_RECIPIENT",
+      "provider": "resend",
+      "publish_capability": "TEST_ONLY",
+      "reason": "approved Resend test configuration incomplete",
+      "status": "BLOCKED_EXTERNAL"
+    },
+    "policy": "No social publish, no paid spend, no bulk email.",
+    "social": {
+      "facebook": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "facebook",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 4:5",
+          "cadence": "2-3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "facebook",
+          "cta": "Learn more",
+          "format": "feed/link",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 80
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "instagram": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "instagram",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "4:5 or 9:16",
+          "cadence": "3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "instagram",
+          "cta": "Save and share",
+          "format": "reel/carousel",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 70
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "linkedin": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "linkedin",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 1.91:1",
+          "cadence": "2/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "linkedin",
+          "cta": "Review the checklist",
+          "format": "professional feed",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 100
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "tiktok": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "tiktok",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "9:16",
+          "cadence": "3/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "tiktok",
+          "cta": "Comment your question",
+          "format": "short video",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 60
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "x": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "x",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "1:1 or 16:9",
+          "cadence": "3-5/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "x",
+          "cta": "Read the guide",
+          "format": "short post/thread",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 70
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      },
+      "youtube": {
+        "auth_status": "READ_ONLY_OR_UNCONNECTED",
+        "channel": "youtube",
+        "distribution_status": "HELD_NO_APPROVED_TEST_SURFACE",
+        "draft_status": "PASS_REAL",
+        "payload": {
+          "asset": "16:9 or 9:16",
+          "cadence": "1-2/week",
+          "caption": "Find disconnected processes & improve efficiency today.",
+          "channel": "youtube",
+          "cta": "Watch the next step",
+          "format": "short/video",
+          "hook": "Simplify Operations: Free Checklist Inside",
+          "hook_max": 100
+        },
+        "publish_capability": "HELD_EXTERNAL_OR_POLICY"
+      }
+    }
+  },
+  "lineage": [
+    "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/campaign_objective.json",
+    "wo_d70a6a860c7042a2bcb4017def789e3e",
+    "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/marketing_strategy.json",
+    "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556",
+    "wo_e8dec91a490149c8b0fb9951bf0ba808",
+    "wo_e8dec91a490149c8b0fb9951bf0ba808:image",
+    "wo_e8dec91a490149c8b0fb9951bf0ba808:copy",
+    "wo_e8dec91a490149c8b0fb9951bf0ba808:video",
+    "wo_e8dec91a490149c8b0fb9951bf0ba808:landing_page",
+    "creative_media_fea0d587d95d4ad8af6751dc87bc6afa",
+    "creative_media_54f47dca4a284b15836c3810c487a53a",
+    "public/marketing-certification/ops-checklist/index.html",
+    "creative_reviews_7908d6091aaf4e2c9c123d25b49fc888",
+    "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
+    "marketing_evaluations_b31ebfe129f740ee9ae55f85c9a72592"
+  ],
+  "receipt_id": "chain_d456a3b439c649cb9e31a6e260719046",
+  "schema_version": "nexus.company-chain-receipt.marketing-creative.v1",
+  "status": "PASS_REAL_BOUNDED"
+}
