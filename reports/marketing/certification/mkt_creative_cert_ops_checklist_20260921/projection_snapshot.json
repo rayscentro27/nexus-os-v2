@@ -11,8 +11,8 @@
     },
     "observed_cost_usd": 0
   },
-  "creative_handoff_id": "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
-  "creative_parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+  "creative_handoff_id": "marketing_handoffs_a5e13037437d49a4a091f8cb79903830",
+  "creative_parent_work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
   "critic": {
     "CTA_clarity": "CTA could be more direct and benefit-driven.",
     "audience_fit": "Appropriate tone and language for small business owners.",
@@ -35,8 +35,8 @@
       "distribution_status": "PENDING_APPROVED_TEST_RECIPIENT",
       "provider": "resend",
       "publish_capability": "TEST_ONLY",
-      "reason": "approved Resend test configuration incomplete",
-      "status": "BLOCKED_EXTERNAL"
+      "reason": "explicit test-send opt-in not set",
+      "status": "HELD_APPROVAL_REQUIRED"
     },
     "policy": "No social publish, no paid spend, no bulk email.",
     "social": {
@@ -163,13 +163,13 @@
     ],
     "url_path": "/marketing-certification/ops-checklist/"
   },
-  "marketing_acceptance_id": "marketing_evaluations_b31ebfe129f740ee9ae55f85c9a72592",
-  "marketing_strategy": "marketing_projects_635697a911284070814f62fcc147374e",
-  "marketing_work_id": "wo_d70a6a860c7042a2bcb4017def789e3e",
+  "marketing_acceptance_id": "marketing_evaluations_2a880b456fc84b6995b2b0de751de55b",
+  "marketing_strategy": "marketing_projects_632f45b92d8b43a9bbf5491eb0ee658c",
+  "marketing_work_id": "wo_e51d414cda2c4315a51f7331d9bc814c",
   "projection_path": "public/runtime/marketing-creative-certification-projection.json",
-  "revision_work_id": "wo_5dc6bbf474b6461e98435747c0c9dfb1",
+  "revision_work_id": "wo_3eb06e36339c4e2e9b94c0d712be0e58",
   "schema_version": "nexus.marketing-creative-certification-projection.v1",
-  "updated_at": "2026-09-21T21:59:43.960568+00:00",
+  "updated_at": "2026-09-21T22:01:38.074279+00:00",
   "video": {
     "duration_seconds": 12.0,
     "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
@@ -183,17 +183,17 @@
       {
         "artifact_refs": [],
         "capability": "creative.local_render",
-        "completed_at": "2026-09-21T21:59:29.025919+00:00",
+        "completed_at": "2026-09-21T22:01:22.869981+00:00",
         "content_hash": "f894daa559b5d6bdb0b4fc8588593d7b3efa205afdfa52b0fdebd883d92435ba",
         "cost_receipt": {
           "cost_class": "LOCAL_FREE"
         },
-        "duration": 2.944222,
+        "duration": 2.7325,
         "error": null,
         "evidence_refs": [],
         "host_id": "host-mac",
-        "job_id": "job_58c036bf3e604f59882a828b73f49790",
-        "receipt_hash": "5a9e0aba316375516a8b570b9efff2d8fe9f1f4332cba8ebc21c715b6db20b1d",
+        "job_id": "job_78c59e72f05049798ff85b086c3b317c",
+        "receipt_hash": "4d77b6a7c0f1b32b5d3957541c74006a8b2829b8025b4fbd1890224857fe3730",
         "result": {
           "dimensions": "1200x900",
           "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
@@ -202,24 +202,24 @@
           "visual_proof": "PASS_REAL"
         },
         "retry_classification": "NONE",
-        "started_at": "2026-09-21T21:59:26.081691+00:00",
+        "started_at": "2026-09-21T22:01:20.137497+00:00",
         "status": "SUCCEEDED",
         "worker_id": "worker-mac-creative"
       },
       {
         "artifact_refs": [],
         "capability": "creative.local_render",
-        "completed_at": "2026-09-21T21:59:38.339943+00:00",
+        "completed_at": "2026-09-21T22:01:33.231988+00:00",
         "content_hash": "646fbb4660bfd3bda8ce98255fc76515a4fc934ece8561281dbd7406660896d2",
         "cost_receipt": {
           "cost_class": "LOCAL_FREE"
         },
-        "duration": 9.309964,
+        "duration": 10.318851,
         "error": null,
         "evidence_refs": [],
         "host_id": "host-mac",
-        "job_id": "job_d17c9bd89c9a441e915f37ab038ce0cd",
-        "receipt_hash": "ee291808f8f400e459901a8937f3e65ecfcd0cc67b8b8047fb35126555706413",
+        "job_id": "job_afc4e8a082e142aa9cae8280442a0c66",
+        "receipt_hash": "e9fc8a9c22006062ef2ed9ef9cca482ba3d2812eebdd207bc2d68a13796a9dfb",
         "result": {
           "duration_seconds": 12.0,
           "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
@@ -229,7 +229,7 @@
           "visual_proof": "PASS_REAL"
         },
         "retry_classification": "NONE",
-        "started_at": "2026-09-21T21:59:29.029788+00:00",
+        "started_at": "2026-09-21T22:01:22.912937+00:00",
         "status": "SUCCEEDED",
         "worker_id": "worker-mac-creative"
       }

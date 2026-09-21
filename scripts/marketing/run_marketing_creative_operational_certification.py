@@ -217,6 +217,8 @@ def main() -> dict[str, Any]:
     if str(marketing_eval.get("decision", "")).upper() != "ACCEPT":
         revision = critic.get("revision") or {}
         revised_cta = str(revision.get("changed_copy") or "Get Your Checklist Now.")
+        if revised_cta.lower().startswith("revised cta to"):
+            revised_cta = revised_cta.split("‘", 1)[-1].split("’", 1)[0].strip() or "Get Your Checklist Now."
         revision_work = governed_work("creative_brief", "CREATIVE", {"campaign_id": CAMPAIGN_ID, "parent_work_id": creative_parent["work_order_id"], "revision_reason": marketing_eval.get("blockers"), "changed_copy": revised_cta}, ("creative_media",), {"status": "PASS", "revision_executed": True, "changed_copy": revised_cta, "changed_visual_direction": revision.get("changed_visual_direction")}, f"revision_{creative_parent['work_order_id']}")
         page_text = page.read_text(encoding="utf-8")
         old_cta = str(copy.get("CTA") or "Download the checklist")

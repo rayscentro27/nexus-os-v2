@@ -1,26 +1,26 @@
 {
   "acceptance": {
     "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-    "created_at": "2026-09-21T21:59:43.956480+00:00",
+    "created_at": "2026-09-21T22:01:38.071156+00:00",
     "evaluation": {
       "CTA": "Get Your Checklist Now.",
       "blockers": "None identified.",
       "channel_suitability": "All selected channels are appropriate for reaching the target audience effectively.",
       "decision": "ACCEPT",
-      "offer_alignment": "The free checklist directly addresses the audience's need for practical solutions.",
-      "strategy_alignment": "Strong alignment with the campaign's objective to teach small-business owners about operational efficiency.",
-      "tracking_readiness": "Tracking mechanisms are in place for measuring engagement and downloads."
+      "offer_alignment": "The free checklist offer is relevant and valuable to the target audience.",
+      "strategy_alignment": "Strong alignment with the campaign's objective to assist small-business owners in improving operational efficiency.",
+      "tracking_readiness": "Tracking mechanisms are in place for measuring engagement and success."
     },
-    "handoff_id": "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
+    "handoff_id": "marketing_handoffs_a5e13037437d49a4a091f8cb79903830",
     "model": "openai/gpt-4o-mini",
     "provider": "openrouter",
-    "record_id": "marketing_evaluations_b31ebfe129f740ee9ae55f85c9a72592",
-    "revision_work_id": "wo_5dc6bbf474b6461e98435747c0c9dfb1",
+    "record_id": "marketing_evaluations_2a880b456fc84b6995b2b0de751de55b",
+    "revision_work_id": "wo_3eb06e36339c4e2e9b94c0d712be0e58",
     "schema_version": "nexus.marketing-creative-certification.v1",
     "status": "PASS_REAL"
   },
   "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-  "chain_receipt_id": "chain_d456a3b439c649cb9e31a6e260719046",
+  "chain_receipt_id": "chain_537cf82f22784259b2261e1f28931f5e",
   "chain_receipt_path": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/company_chain_receipt.json",
   "control_plane": {
     "capabilities": [
@@ -80,25 +80,25 @@
     ],
     "leases": [
       {
-        "claimed_at": "2026-09-21T21:59:26.081681+00:00",
+        "claimed_at": "2026-09-21T22:01:20.137489+00:00",
         "claimed_by": "department:creative",
-        "expires_at": "2026-09-21T22:04:26.081659+00:00",
+        "expires_at": "2026-09-21T22:06:20.137475+00:00",
         "host_id": "host-mac",
-        "job_id": "job_58c036bf3e604f59882a828b73f49790",
-        "lease_id": "lease-7b704b61649a4025",
+        "job_id": "job_78c59e72f05049798ff85b086c3b317c",
+        "lease_id": "lease-b15dfbf2801f49e8",
         "status": "RELEASED",
-        "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:image",
+        "work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2:image",
         "worker_id": "worker-mac-creative"
       },
       {
-        "claimed_at": "2026-09-21T21:59:29.029776+00:00",
+        "claimed_at": "2026-09-21T22:01:22.912922+00:00",
         "claimed_by": "department:creative",
-        "expires_at": "2026-09-21T22:04:29.029748+00:00",
+        "expires_at": "2026-09-21T22:06:22.912866+00:00",
         "host_id": "host-mac",
-        "job_id": "job_d17c9bd89c9a441e915f37ab038ce0cd",
-        "lease_id": "lease-8391f036ffbf4171",
+        "job_id": "job_afc4e8a082e142aa9cae8280442a0c66",
+        "lease_id": "lease-381bc85cab054fcb",
         "status": "RELEASED",
-        "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:video",
+        "work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2:video",
         "worker_id": "worker-mac-creative"
       }
     ],
@@ -106,17 +106,17 @@
       {
         "artifact_refs": [],
         "capability": "creative.local_render",
-        "completed_at": "2026-09-21T21:59:29.025919+00:00",
+        "completed_at": "2026-09-21T22:01:22.869981+00:00",
         "content_hash": "f894daa559b5d6bdb0b4fc8588593d7b3efa205afdfa52b0fdebd883d92435ba",
         "cost_receipt": {
           "cost_class": "LOCAL_FREE"
         },
-        "duration": 2.944222,
+        "duration": 2.7325,
         "error": null,
         "evidence_refs": [],
         "host_id": "host-mac",
-        "job_id": "job_58c036bf3e604f59882a828b73f49790",
-        "receipt_hash": "5a9e0aba316375516a8b570b9efff2d8fe9f1f4332cba8ebc21c715b6db20b1d",
+        "job_id": "job_78c59e72f05049798ff85b086c3b317c",
+        "receipt_hash": "4d77b6a7c0f1b32b5d3957541c74006a8b2829b8025b4fbd1890224857fe3730",
         "result": {
           "dimensions": "1200x900",
           "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist.png",
@@ -125,24 +125,24 @@
           "visual_proof": "PASS_REAL"
         },
         "retry_classification": "NONE",
-        "started_at": "2026-09-21T21:59:26.081691+00:00",
+        "started_at": "2026-09-21T22:01:20.137497+00:00",
         "status": "SUCCEEDED",
         "worker_id": "worker-mac-creative"
       },
       {
         "artifact_refs": [],
         "capability": "creative.local_render",
-        "completed_at": "2026-09-21T21:59:38.339943+00:00",
+        "completed_at": "2026-09-21T22:01:33.231988+00:00",
         "content_hash": "646fbb4660bfd3bda8ce98255fc76515a4fc934ece8561281dbd7406660896d2",
         "cost_receipt": {
           "cost_class": "LOCAL_FREE"
         },
-        "duration": 9.309964,
+        "duration": 10.318851,
         "error": null,
         "evidence_refs": [],
         "host_id": "host-mac",
-        "job_id": "job_d17c9bd89c9a441e915f37ab038ce0cd",
-        "receipt_hash": "ee291808f8f400e459901a8937f3e65ecfcd0cc67b8b8047fb35126555706413",
+        "job_id": "job_afc4e8a082e142aa9cae8280442a0c66",
+        "receipt_hash": "e9fc8a9c22006062ef2ed9ef9cca482ba3d2812eebdd207bc2d68a13796a9dfb",
         "result": {
           "duration_seconds": 12.0,
           "file": "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/small_business_operations_checklist_short.mp4",
@@ -152,7 +152,7 @@
           "visual_proof": "PASS_REAL"
         },
         "retry_classification": "NONE",
-        "started_at": "2026-09-21T21:59:29.029788+00:00",
+        "started_at": "2026-09-21T22:01:22.912937+00:00",
         "status": "SUCCEEDED",
         "worker_id": "worker-mac-creative"
       }
@@ -201,9 +201,9 @@
   "creative_children": [
     {
       "cost": 0,
-      "execution_receipt": "creative_media_fea0d587d95d4ad8af6751dc87bc6afa",
+      "execution_receipt": "creative_media_ae027339fc9f4a0c8698a8bde1102a94",
       "fallback_worker": "worker-mac-creative",
-      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "parent_work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
       "required_capability": "creative.local_render",
       "result": {
         "dimensions": "1200x900",
@@ -215,13 +215,13 @@
       "selected_host": "host-mac",
       "selected_worker": "worker-mac-creative",
       "selection_reason": "Mac selected for local-free deterministic render; Creative AI direction supplied the composition.",
-      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:image"
+      "work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2:image"
     },
     {
       "cost": 0,
-      "execution_receipt": "creative_ai_7379318382844ad899bbc8fc26d2a813",
+      "execution_receipt": "creative_ai_70de02678e8849a9b2e192130779584a",
       "fallback_worker": "worker-mac-creative",
-      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "parent_work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
       "required_capability": "creative.ai_fallback",
       "result": {
         "CTA": "Download the Checklist Now!",
@@ -234,13 +234,13 @@
       "selected_host": "host-oracle",
       "selected_worker": "worker-oracle-creative-ai",
       "selection_reason": "Oracle selected as certified remote-free Creative AI lane.",
-      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:copy"
+      "work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2:copy"
     },
     {
       "cost": 0,
-      "execution_receipt": "creative_media_54f47dca4a284b15836c3810c487a53a",
+      "execution_receipt": "creative_media_f40c7186fc2b44af8735d3b2ab2f6eec",
       "fallback_worker": "worker-mac-creative",
-      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "parent_work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
       "required_capability": "creative.local_render",
       "result": {
         "duration_seconds": 12.0,
@@ -253,13 +253,13 @@
       "selected_host": "host-mac",
       "selected_worker": "worker-mac-creative",
       "selection_reason": "Mac selected for bounded FFmpeg render; no metered GPU was authorized.",
-      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:video"
+      "work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2:video"
     },
     {
       "cost": 0,
       "execution_receipt": "landing_source_receipt",
       "fallback_worker": "worker-mac-creative",
-      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "parent_work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
       "required_capability": "creative.local_render",
       "result": {
         "file": "public/marketing-certification/ops-checklist/index.html",
@@ -276,18 +276,18 @@
       "selected_host": "host-mac",
       "selected_worker": "worker-mac-creative",
       "selection_reason": "Creative-owned visual direction implemented as a responsive technical artifact.",
-      "work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808:landing_page"
+      "work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2:landing_page"
     }
   ],
   "creative_handoff": {
     "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-    "created_at": "2026-09-21T21:59:38.370279+00:00",
+    "created_at": "2026-09-21T22:01:33.298166+00:00",
     "handoff_type": "CREATIVE_TO_MARKETING",
     "payload": {
       "asset_receipts": [
-        "creative_media_fea0d587d95d4ad8af6751dc87bc6afa",
-        "creative_media_54f47dca4a284b15836c3810c487a53a",
-        "creative_reviews_7908d6091aaf4e2c9c123d25b49fc888"
+        "creative_media_ae027339fc9f4a0c8698a8bde1102a94",
+        "creative_media_f40c7186fc2b44af8735d3b2ab2f6eec",
+        "creative_reviews_25b95a9688a7476f8792900b7b747199"
       ],
       "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
       "copy": {
@@ -341,7 +341,7 @@
         "url_path": "/marketing-certification/ops-checklist/"
       },
       "selected_territory": {
-        "creative_direction_record": "creative_ai_2e725e7506144e3592f468be52dd8e49",
+        "creative_direction_record": "creative_ai_a6711eb98f87429c9fe3aa5db9885854",
         "name": "The Clear Path",
         "selection_reason": "Emphasizes organization, clarity, and actionable steps.",
         "status": "CANDIDATE",
@@ -378,7 +378,7 @@
         "visual_proof": "PASS_REAL"
       }
     },
-    "record_id": "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
+    "record_id": "marketing_handoffs_a5e13037437d49a4a091f8cb79903830",
     "schema_version": "nexus.marketing-creative-certification.v1",
     "status": "MARKETING_INBOX_RECEIVED"
   },
@@ -388,18 +388,18 @@
       "CREATIVE"
     ],
     "authority_required": "internal_read_only",
-    "completed_at": "2026-09-21T21:59:25.978691+00:00",
+    "completed_at": "2026-09-21T22:01:20.024126+00:00",
     "cost_budget": {
       "max_usd": 0
     },
-    "created_at": "2026-09-21T21:59:25.977707+00:00",
+    "created_at": "2026-09-21T22:01:20.023207+00:00",
     "failure_reason": null,
     "goal_id": "mkt_creative_cert_ops_checklist_20260921",
-    "idempotency_key": "cb429faab21a6a8d32857522dd543b1dae62a76c845b77e42340ac9bbf4b4e5e",
+    "idempotency_key": "d78e89f02f9724a9f45b9ed1ec09f4012d061f2608acdfb1e469fb7f35d8d2f8",
     "initiative_id": null,
     "inputs": {
       "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-      "handoff_id": "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556"
+      "handoff_id": "marketing_handoffs_3dc1179494734511bfc1feed887da27a"
     },
     "loop_id": null,
     "metrics": {},
@@ -407,7 +407,7 @@
     "owner_specialist": "CREATIVE",
     "priority": "normal",
     "receipt_refs": [
-      "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556"
+      "marketing_handoffs_3dc1179494734511bfc1feed887da27a"
     ],
     "required_capabilities": [
       "creative_media"
@@ -424,14 +424,14 @@
     },
     "return_to_nova": true,
     "schema_version": "nexus.work-order.v1",
-    "started_at": "2026-09-21T21:59:25.977830+00:00",
+    "started_at": "2026-09-21T22:01:20.023313+00:00",
     "status": "COMPLETED",
-    "work_order_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+    "work_order_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
     "work_type": "creative_brief"
   },
   "critic": {
     "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-    "created_at": "2026-09-21T21:59:38.352048+00:00",
+    "created_at": "2026-09-21T22:01:33.280818+00:00",
     "critic": {
       "CTA_clarity": "CTA could be more direct and benefit-driven.",
       "audience_fit": "Appropriate tone and language for small business owners.",
@@ -448,7 +448,7 @@
       "visual_coherence": "Visually sound; checklist metaphor effectively utilized."
     },
     "kind": "creative_critic",
-    "record_id": "creative_reviews_7908d6091aaf4e2c9c123d25b49fc888",
+    "record_id": "creative_reviews_25b95a9688a7476f8792900b7b747199",
     "route_receipt": {
       "job": {
         "correlation_ids": {},
@@ -535,7 +535,7 @@
         "validation": "PASS",
         "worker_id": "worker-oracle-creative-ai"
       },
-      "reused_prior_real_receipt": "creative_ai_4f5051dc5cc64ce6bfeb3131c802c6b4"
+      "reused_prior_real_receipt": "creative_ai_2e725e7506144e3592f468be52dd8e49"
     },
     "schema_version": "nexus.marketing-creative-certification.v1",
     "status": "PASS_REAL"
@@ -547,8 +547,8 @@
       "distribution_status": "PENDING_APPROVED_TEST_RECIPIENT",
       "provider": "resend",
       "publish_capability": "TEST_ONLY",
-      "reason": "approved Resend test configuration incomplete",
-      "status": "BLOCKED_EXTERNAL"
+      "reason": "explicit test-send opt-in not set",
+      "status": "HELD_APPROVAL_REQUIRED"
     },
     "policy": "No social publish, no paid spend, no bulk email.",
     "social": {
@@ -677,11 +677,11 @@
   },
   "marketing_handoff": {
     "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-    "created_at": "2026-09-21T21:59:25.976511+00:00",
+    "created_at": "2026-09-21T22:01:20.022410+00:00",
     "handoff_type": "MARKETING_TO_CREATIVE",
     "lineage_status": "PRESERVED",
     "payload": {
-      "CTA": "Download the checklist now and start clarifying your processes!",
+      "CTA": "Download the checklist now and identify one process to clarify!",
       "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
       "brand_constraints": [
         "internal certification",
@@ -692,21 +692,21 @@
       ],
       "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
       "channel_requirements": {
-        "email": "Targeted campaigns to existing contacts with a focus on the checklist.",
-        "facebook": "Engaging posts and community discussions around operational challenges.",
-        "instagram": "Visual stories highlighting checklist benefits and user experiences.",
-        "linkedin": "Professional articles and posts discussing operational efficiency.",
-        "tiktok": "Quick tips on identifying operational issues and using the checklist.",
-        "x": "Updates and insights on operational best practices.",
-        "youtube": "Short videos explaining how to use the checklist effectively."
+        "email": "Send targeted emails to small-business owners with a clear CTA to download the checklist.",
+        "facebook": "Create engaging posts and stories highlighting the benefits of the checklist.",
+        "instagram": "Utilize visuals and short videos to showcase the checklist and its impact.",
+        "linkedin": "Share informative articles and posts about operational efficiency with a link to the checklist.",
+        "tiktok": "Create quick tips and tricks videos that lead to the checklist download.",
+        "x": "Engage in conversations and share insights related to operational challenges with links to the checklist.",
+        "youtube": "Produce a short explainer video on how to use the checklist effectively."
       },
       "landing_page_requirements": {
-        "email_templates": "Design engaging and informative email templates.",
-        "landing_page": "Develop a user-friendly landing page for checklist download.",
-        "social_media_graphics": "Create eye-catching visuals for all platforms.",
-        "video_content": "Produce short, informative videos for YouTube and TikTok."
+        "email_templates": "Design engaging email templates with clear CTAs.",
+        "landing_page": "Build a user-friendly landing page for checklist download with clear instructions.",
+        "social_media_graphics": "Create eye-catching graphics for all platforms promoting the checklist.",
+        "video_content": "Develop short, informative videos for YouTube and TikTok."
       },
-      "marketing_work_id": "wo_d70a6a860c7042a2bcb4017def789e3e",
+      "marketing_work_id": "wo_e51d414cda2c4315a51f7331d9bc814c",
       "measurement_requirements": {
         "landing_page_CTA_event": "Monitor engagement metrics on the landing page.",
         "measurement_receipt": "Collect data on user interactions and feedback post-download.",
@@ -715,7 +715,7 @@
       "message": {
         "primary_message": "Streamline your operations with our free checklist.",
         "secondary_message": "Identify and clarify one process to enhance your business efficiency.",
-        "supporting_message": "Take control of your operations and reduce overwhelm."
+        "supporting_message": "Overcome the chaos of disconnected tools and missed follow-ups."
       },
       "objective": "Teach overwhelmed small-business owners a practical way to find disconnected operations and missed follow-up.",
       "offer": "Free educational Small Business Operations Checklist.",
@@ -726,7 +726,7 @@
       ],
       "status": "CREATIVE_QUEUE_READY"
     },
-    "record_id": "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556",
+    "record_id": "marketing_handoffs_3dc1179494734511bfc1feed887da27a",
     "schema_version": "nexus.marketing-creative-certification.v1"
   },
   "marketing_order": {
@@ -735,11 +735,11 @@
       "GROWTH"
     ],
     "authority_required": "internal_read_only",
-    "completed_at": "2026-09-21T21:59:25.975523+00:00",
+    "completed_at": "2026-09-21T22:01:20.021592+00:00",
     "cost_budget": {
       "max_usd": 0
     },
-    "created_at": "2026-09-21T21:59:25.959956+00:00",
+    "created_at": "2026-09-21T22:01:20.020582+00:00",
     "failure_reason": null,
     "goal_id": "mkt_creative_cert_ops_checklist_20260921",
     "idempotency_key": "fce78fedc5eaa5ab011f3054a4e052f6ca9a9a304c9cae37142196d9449cd83b",
@@ -754,14 +754,14 @@
     "owner_specialist": "GROWTH",
     "priority": "normal",
     "receipt_refs": [
-      "marketing_projects_635697a911284070814f62fcc147374e"
+      "marketing_projects_632f45b92d8b43a9bbf5491eb0ee658c"
     ],
     "required_capabilities": [
       "analytics"
     ],
     "result": {
       "ai_model": "openai/gpt-4o-mini",
-      "artifact_id": "marketing_projects_635697a911284070814f62fcc147374e",
+      "artifact_id": "marketing_projects_632f45b92d8b43a9bbf5491eb0ee658c",
       "lease": "ACQUIRED",
       "result_persisted": true,
       "status": "PASS"
@@ -772,9 +772,9 @@
     },
     "return_to_nova": true,
     "schema_version": "nexus.work-order.v1",
-    "started_at": "2026-09-21T21:59:25.960130+00:00",
+    "started_at": "2026-09-21T22:01:20.020732+00:00",
     "status": "COMPLETED",
-    "work_order_id": "wo_d70a6a860c7042a2bcb4017def789e3e",
+    "work_order_id": "wo_e51d414cda2c4315a51f7331d9bc814c",
     "work_type": "growth_analysis"
   },
   "marketing_strategy": {
@@ -782,53 +782,53 @@
     "call": {
       "error": null,
       "http_status": 200,
-      "latency_ms": 6047,
+      "latency_ms": 6789,
       "model": "openai/gpt-4o-mini",
       "model_calls": 1,
       "provider": "openrouter"
     },
     "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-    "created_at": "2026-09-21T21:59:25.909647+00:00",
+    "created_at": "2026-09-21T22:01:20.019377+00:00",
     "kind": "strategy",
     "model": "openai/gpt-4o-mini",
     "provider": "openrouter",
-    "record_id": "marketing_projects_635697a911284070814f62fcc147374e",
+    "record_id": "marketing_projects_632f45b92d8b43a9bbf5491eb0ee658c",
     "schema_version": "nexus.marketing-creative-certification.v1",
     "status": "PASS_REAL",
     "strategy": {
-      "CTA": "Download the checklist now and start clarifying your processes!",
+      "CTA": "Download the checklist now and identify one process to clarify!",
       "acceptance_criteria": [
         "Achieve a minimum of 500 checklist downloads within the campaign period.",
-        "Ensure at least 30% of users engage with the follow-up content.",
-        "Gather qualitative feedback from at least 50 users on the checklist's usefulness."
+        "Ensure at least 30% of users engage with the landing page CTA.",
+        "Collect feedback from at least 100 users on the checklist's usefulness."
       ],
       "audience": "Small-business owners managing disconnected software, manual processes, and inconsistent follow-up.",
       "channel_strategy": {
-        "email": "Targeted campaigns to existing contacts with a focus on the checklist.",
-        "facebook": "Engaging posts and community discussions around operational challenges.",
-        "instagram": "Visual stories highlighting checklist benefits and user experiences.",
-        "linkedin": "Professional articles and posts discussing operational efficiency.",
-        "tiktok": "Quick tips on identifying operational issues and using the checklist.",
-        "x": "Updates and insights on operational best practices.",
-        "youtube": "Short videos explaining how to use the checklist effectively."
+        "email": "Send targeted emails to small-business owners with a clear CTA to download the checklist.",
+        "facebook": "Create engaging posts and stories highlighting the benefits of the checklist.",
+        "instagram": "Utilize visuals and short videos to showcase the checklist and its impact.",
+        "linkedin": "Share informative articles and posts about operational efficiency with a link to the checklist.",
+        "tiktok": "Create quick tips and tricks videos that lead to the checklist download.",
+        "x": "Engage in conversations and share insights related to operational challenges with links to the checklist.",
+        "youtube": "Produce a short explainer video on how to use the checklist effectively."
       },
       "creative_requirements": {
-        "email_templates": "Design engaging and informative email templates.",
-        "landing_page": "Develop a user-friendly landing page for checklist download.",
-        "social_media_graphics": "Create eye-catching visuals for all platforms.",
-        "video_content": "Produce short, informative videos for YouTube and TikTok."
+        "email_templates": "Design engaging email templates with clear CTAs.",
+        "landing_page": "Build a user-friendly landing page for checklist download with clear instructions.",
+        "social_media_graphics": "Create eye-catching graphics for all platforms promoting the checklist.",
+        "video_content": "Develop short, informative videos for YouTube and TikTok."
       },
       "customer_problem": "Operational friction is spread across tools and tasks, making the next improvement hard to see.",
       "funnel_structure": {
-        "bottom_of_funnel": "Action through follow-up emails encouraging checklist usage and process identification.",
-        "middle_of_funnel": "Engagement via informative content and checklist download.",
-        "top_of_funnel": "Awareness through social media posts and email campaigns."
+        "bottom_of_funnel": "Action through follow-up emails encouraging checklist usage.",
+        "middle_of_funnel": "Engagement via landing page with checklist download.",
+        "top_of_funnel": "Awareness through social media and email campaigns."
       },
       "limitations": [
-        "Internal certification constraints limit external partnerships.",
+        "Internal certification requirements must be adhered to.",
         "No GoClear assets or copy can be used.",
-        "No deceptive claims can be made in messaging.",
-        "No paid media can be utilized for promotion.",
+        "No deceptive claims can be made.",
+        "No paid media can be utilized.",
         "No customer data can be accessed or used."
       ],
       "measurement_plan": {
@@ -839,10 +839,10 @@
       "message_hierarchy": {
         "primary_message": "Streamline your operations with our free checklist.",
         "secondary_message": "Identify and clarify one process to enhance your business efficiency.",
-        "supporting_message": "Take control of your operations and reduce overwhelm."
+        "supporting_message": "Overcome the chaos of disconnected tools and missed follow-ups."
       },
-      "offer_framing": "A free, actionable Small Business Operations Checklist designed to help you pinpoint and address operational disconnects.",
-      "positioning": "The go-to resource for small-business owners seeking to simplify their operations and improve follow-up processes."
+      "offer_framing": "Get your free Small Business Operations Checklist today and take the first step towards a more organized and efficient business.",
+      "positioning": "The Small Business Operations Checklist is a practical, easy-to-use resource designed specifically for small-business owners seeking to improve their operational efficiency."
     }
   },
   "objective": {
@@ -888,19 +888,19 @@
       "CREATIVE"
     ],
     "authority_required": "internal_read_only",
-    "completed_at": "2026-09-21T21:59:41.481622+00:00",
+    "completed_at": "2026-09-21T22:01:35.698395+00:00",
     "cost_budget": {
       "max_usd": 0
     },
-    "created_at": "2026-09-21T21:59:41.258011+00:00",
+    "created_at": "2026-09-21T22:01:35.687364+00:00",
     "failure_reason": null,
     "goal_id": "mkt_creative_cert_ops_checklist_20260921",
-    "idempotency_key": "68d72b44933f05e92ecdc29b4de248589f7a43e06ebf4040fd9b1a4000a49bc6",
+    "idempotency_key": "1ba1da502d2d031240410364cce6462ff57009e9dfde69fadeecedfa6e4cc035",
     "initiative_id": null,
     "inputs": {
       "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-      "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
-      "parent_work_id": "wo_e8dec91a490149c8b0fb9951bf0ba808",
+      "changed_copy": "Get Your Checklist Now.",
+      "parent_work_id": "wo_16b36b7fac184b2a87590f0242a4e3d2",
       "revision_reason": "Minor refinement needed for consistent visual language and CTA clarity."
     },
     "loop_id": null,
@@ -909,13 +909,13 @@
     "owner_specialist": "CREATIVE",
     "priority": "normal",
     "receipt_refs": [
-      "revision_wo_e8dec91a490149c8b0fb9951bf0ba808"
+      "revision_wo_16b36b7fac184b2a87590f0242a4e3d2"
     ],
     "required_capabilities": [
       "creative_media"
     ],
     "result": {
-      "changed_copy": "Revised CTA to \u2018Get Your Checklist Now.\u2019",
+      "changed_copy": "Get Your Checklist Now.",
       "changed_visual_direction": "Subtle accent color adjustments for better call-to-action.",
       "revision_executed": true,
       "status": "PASS"
@@ -926,13 +926,13 @@
     },
     "return_to_nova": true,
     "schema_version": "nexus.work-order.v1",
-    "started_at": "2026-09-21T21:59:41.258338+00:00",
+    "started_at": "2026-09-21T22:01:35.687524+00:00",
     "status": "COMPLETED",
-    "work_order_id": "wo_5dc6bbf474b6461e98435747c0c9dfb1",
+    "work_order_id": "wo_3eb06e36339c4e2e9b94c0d712be0e58",
     "work_type": "creative_brief"
   },
   "selected_territory": {
-    "creative_direction_record": "creative_ai_2e725e7506144e3592f468be52dd8e49",
+    "creative_direction_record": "creative_ai_a6711eb98f87429c9fe3aa5db9885854",
     "name": "The Clear Path",
     "selection_reason": "Emphasizes organization, clarity, and actionable steps.",
     "status": "CANDIDATE",

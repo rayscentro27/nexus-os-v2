@@ -1,6 +1,6 @@
 {
   "campaign_id": "mkt_creative_cert_ops_checklist_20260921",
-  "created_at": "2026-09-21T21:59:43.961298+00:00",
+  "created_at": "2026-09-21T22:01:38.075133+00:00",
   "distribution": {
     "email": {
       "auth_status": "CONNECTED_RESEND",
@@ -8,8 +8,8 @@
       "distribution_status": "PENDING_APPROVED_TEST_RECIPIENT",
       "provider": "resend",
       "publish_capability": "TEST_ONLY",
-      "reason": "approved Resend test configuration incomplete",
-      "status": "BLOCKED_EXTERNAL"
+      "reason": "explicit test-send opt-in not set",
+      "status": "HELD_APPROVAL_REQUIRED"
     },
     "policy": "No social publish, no paid spend, no bulk email.",
     "social": {
@@ -119,22 +119,22 @@
   },
   "lineage": [
     "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/campaign_objective.json",
-    "wo_d70a6a860c7042a2bcb4017def789e3e",
+    "wo_e51d414cda2c4315a51f7331d9bc814c",
     "reports/marketing/certification/mkt_creative_cert_ops_checklist_20260921/marketing_strategy.json",
-    "marketing_handoffs_6fe66e9a4ce7441f9819d4c4c47c8556",
-    "wo_e8dec91a490149c8b0fb9951bf0ba808",
-    "wo_e8dec91a490149c8b0fb9951bf0ba808:image",
-    "wo_e8dec91a490149c8b0fb9951bf0ba808:copy",
-    "wo_e8dec91a490149c8b0fb9951bf0ba808:video",
-    "wo_e8dec91a490149c8b0fb9951bf0ba808:landing_page",
-    "creative_media_fea0d587d95d4ad8af6751dc87bc6afa",
-    "creative_media_54f47dca4a284b15836c3810c487a53a",
+    "marketing_handoffs_3dc1179494734511bfc1feed887da27a",
+    "wo_16b36b7fac184b2a87590f0242a4e3d2",
+    "wo_16b36b7fac184b2a87590f0242a4e3d2:image",
+    "wo_16b36b7fac184b2a87590f0242a4e3d2:copy",
+    "wo_16b36b7fac184b2a87590f0242a4e3d2:video",
+    "wo_16b36b7fac184b2a87590f0242a4e3d2:landing_page",
+    "creative_media_ae027339fc9f4a0c8698a8bde1102a94",
+    "creative_media_f40c7186fc2b44af8735d3b2ab2f6eec",
     "public/marketing-certification/ops-checklist/index.html",
-    "creative_reviews_7908d6091aaf4e2c9c123d25b49fc888",
-    "marketing_handoffs_efbdc92b887f4719b82ef0b90814db75",
-    "marketing_evaluations_b31ebfe129f740ee9ae55f85c9a72592"
+    "creative_reviews_25b95a9688a7476f8792900b7b747199",
+    "marketing_handoffs_a5e13037437d49a4a091f8cb79903830",
+    "marketing_evaluations_2a880b456fc84b6995b2b0de751de55b"
   ],
-  "receipt_id": "chain_d456a3b439c649cb9e31a6e260719046",
+  "receipt_id": "chain_537cf82f22784259b2261e1f28931f5e",
   "schema_version": "nexus.company-chain-receipt.marketing-creative.v1",
   "status": "PASS_REAL_BOUNDED"
 }
