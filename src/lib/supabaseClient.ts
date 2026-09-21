@@ -7,7 +7,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  * When env is not configured yet, `supabase` is null and the UI shows a setup state
  * instead of fake data (no reports-as-state, no mock numbers).
  */
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+function normalizeSupabaseUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+const url = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL as string | undefined);
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const isSupabaseConfigured = Boolean(url && anonKey);

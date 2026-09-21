@@ -28,7 +28,7 @@ const ROUTE_MAP: Array<[string, string]> = [
   ['/client/business-bankability', '/client-v2/business-foundation'],
   ['/client/business-setup', '/client-v2/business-foundation'],
   ['/client/funding-readiness', '/client-v2/funding-readiness'],
-  ['/client/request-review', '/client-v2/funding-access'],
+  ['/client/request-review', '/client-v2/review'],
   ['/client/funding-access', '/client-v2/funding-access'],
   ['/client/dashboard', '/client-v2/dashboard'],
   ['/client/documents', '/client-v2/documents'],

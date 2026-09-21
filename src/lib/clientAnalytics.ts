@@ -18,6 +18,18 @@ export type AnalyticsEvent =
   | 'invitation_sent'
   | 'invitation_revoked'
   | 'test_checkout_started'
+  | 'LANDING_PAGE_VIEW'
+  | 'PRIMARY_CTA_CLICK'
+  | 'ASSESSMENT_START'
+  | 'ASSESSMENT_COMPLETE'
+  | 'CHECKOUT_START'
+  | 'PURCHASE'
+  | 'PORTAL_ONBOARDING_START'
+  | 'PORTAL_ONBOARDING_COMPLETE'
+  | 'REFUND'
+  | 'FUNDING_APPLICATION'
+  | 'FUNDING_SUCCESS'
+  | 'AFFILIATE_CLICK'
 
 interface AnalyticsPayload {
   event: AnalyticsEvent
@@ -41,12 +53,17 @@ function getOrCreateSessionId(): string {
 }
 
 export async function trackEvent(payload: AnalyticsPayload): Promise<void> {
+  const sid = getOrCreateSessionId()
+  const eventRecord = { ...payload, session_id: sid, captured_at: new Date().toISOString() }
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('goclear-funnel-test-events') || '[]')
+    stored.push(eventRecord)
+    sessionStorage.setItem('goclear-funnel-test-events', JSON.stringify(stored.slice(-100)))
+  } catch {}
   if (!supabase) return
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-
-    const sid = getOrCreateSessionId()
 
     const insertPromise = supabase.from('nexus_events').insert({
       lane: 'client_analytics',

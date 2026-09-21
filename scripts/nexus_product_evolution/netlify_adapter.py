@@ -23,6 +23,17 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 NODE_BIN = Path.home() / ".nvm/versions/node/v22.22.3/bin"
 
 
+def _legacy_cli_deploy_gate() -> Dict[str, Any] | None:
+    """Keep historical direct-upload code emergency-only and receipt-gated."""
+    if os.environ.get("NEXUS_ALLOW_LEGACY_NETLIFY_CLI_DEPLOY", "NO").upper() != "YES":
+        return {"status": "BLOCKED", "reason": "CANONICAL_GIT_CLOUD_DEPLOY_REQUIRED", "provider": "Netlify"}
+    if not os.environ.get("NEXUS_LEGACY_NETLIFY_DEPLOY_REASON", "").strip():
+        return {"status": "BLOCKED", "reason": "EMERGENCY_REASON_REQUIRED", "provider": "Netlify"}
+    if not os.environ.get("NEXUS_LEGACY_NETLIFY_DEPLOY_RECEIPT", "").strip():
+        return {"status": "BLOCKED", "reason": "EMERGENCY_RECEIPT_REQUIRED", "provider": "Netlify"}
+    return None
+
+
 def _tool_path() -> str:
     """Return a bounded tool path suitable for launchd's minimal environment."""
     entries = [str(NODE_BIN), "/opt/homebrew/bin", "/usr/local/bin"]
@@ -296,6 +307,9 @@ def exact_sha_netlify_status() -> Dict[str, Any]:
 
 def deploy_exact_sha(commit: str, target: str) -> Dict[str, Any]:
     """Deploy only the approved SHA through the fixed Netlify CLI procedure."""
+    blocked = _legacy_cli_deploy_gate()
+    if blocked:
+        return blocked
     if not FULL_SHA.fullmatch(commit):
         return {"status": "BLOCKED", "reason": "IMMUTABLE_FULL_SHA_REQUIRED"}
     if target != TARGET:
@@ -327,6 +341,9 @@ def deploy_exact_sha_canary(commit: str, target: str) -> Dict[str, Any]:
     The absence of ``--prod`` is intentional: this path creates a candidate
     URL and cannot mutate the site's published deploy.
     """
+    blocked = _legacy_cli_deploy_gate()
+    if blocked:
+        return blocked
     if not FULL_SHA.fullmatch(commit):
         return {"status": "BLOCKED", "reason": "IMMUTABLE_FULL_SHA_REQUIRED"}
     if target != TARGET:

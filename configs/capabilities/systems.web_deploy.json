@@ -1,0 +1,31 @@
+{
+  "capability_id": "systems.web_deploy",
+  "owner": "systems",
+  "provider": "provider_independent",
+  "authority": "SYSTEMS_GOVERNED",
+  "write_model": "git_push_or_merge",
+  "contract": {
+    "deployment_id": "string",
+    "business_id": "string",
+    "repository": "string",
+    "branch": "string",
+    "commit_sha": "full_sha",
+    "provider": "string",
+    "environment": "preview|production",
+    "trigger": "git_push|merge|emergency_override",
+    "build_location": "cloud",
+    "build_status": "queued|running|passed|failed",
+    "deploy_status": "queued|running|deployed|failed|rolled_back",
+    "preview_url": "string|null",
+    "production_url": "string|null",
+    "started_at": "timestamp",
+    "completed_at": "timestamp|null",
+    "browser_status": "not_run|passed|failed",
+    "rollback_target": "string|null"
+  },
+  "governance": {
+    "normal_provider_cli_deploy": "blocked",
+    "emergency_override": "explicit_reason_and_receipt_required",
+    "paid_or_external_spend": "not_authorized"
+  }
+}

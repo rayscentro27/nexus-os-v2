@@ -88,7 +88,10 @@ serve(async (req) => {
       if (escalation.error) answer = "I can route this to a human, but the escalation record is temporarily unavailable. Please use Request human review in the portal."
     }
     await admin.from("client_ai_conversations").insert({ tenant_id: membership.tenant_id, client_id: membership.client_id, user_id: authData.user.id, session_id: sessionId || null, intent, user_message: question, assistant_message: answer, policy_decision: decision, model_tier: "TIER_0", estimated_cost_class: "NEAR_ZERO" })
+    const contextHashBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${membership.client_id}|${question}|${answer}`))
+    const inputContextHash = Array.from(new Uint8Array(contextHashBytes)).map((b) => b.toString(16).padStart(2, "0")).join("")
+    const { data: clydeReceipt } = await admin.from("goclear_clyde_receipts").insert({ client_id: membership.client_id, input_context_hash: inputContextHash, research_refs: ["readiness_rules_v1", "tenant_scoped_client_context"], guidance: answer, provider: "client-ai-gateway", model: "TIER_0", status: decision === "POLICY_DENY" ? "policy_denied" : decision === "POLICY_ESCALATE" ? "escalated" : "completed", metadata: { question, intent, synthetic_safe: true } }).select("id").single()
     await admin.from("client_ai_usage").upsert({ tenant_id: membership.tenant_id, client_id: membership.client_id, user_id: authData.user.id, request_date: today, call_count: (usage?.call_count || 0) + 1, last_request_at: new Date().toISOString() }, { onConflict: "user_id,request_date" })
-    return json({ decision, intent, answer, data_scope: "OWN_CLIENT_SUPABASE_SUMMARY", model_tier: "TIER_0", estimated_cost_class: "NEAR_ZERO", session_id: sessionId || null, current_state: { access_tier: tier, visible_document_count: docs?.length || 0, open_task_count: missing.length } })
+    return json({ decision, intent, answer, clyde_receipt_id: clydeReceipt?.id || null, data_scope: "OWN_CLIENT_SUPABASE_SUMMARY", model_tier: "TIER_0", estimated_cost_class: "NEAR_ZERO", session_id: sessionId || null, current_state: { access_tier: tier, visible_document_count: docs?.length || 0, open_task_count: missing.length } })
   } catch (error) { console.error("[client-ai-gateway]", error); return json({ error: "client_ai_unavailable" }, 500) }
 })

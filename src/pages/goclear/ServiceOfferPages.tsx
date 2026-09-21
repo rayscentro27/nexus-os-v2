@@ -29,14 +29,16 @@ export function ServiceOfferPage({ slug }: { slug: string }) {
   const [signedIn, setSignedIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  useEffect(() => { let mounted = true; supabase?.auth.getUser().then(({ data }) => mounted && setSignedIn(Boolean(data.user))); return () => { mounted = false } }, []);
+  const campaignId = new URLSearchParams(window.location.search).get('campaign_id') || 'direct';
+  const experimentVariant = new URLSearchParams(window.location.search).get('variant') === 'B' ? 'B' : 'A';
+  useEffect(() => { let mounted = true; trackEvent({ event: 'ASSESSMENT_START', route: offer?.public_route || '/readiness-review', detail: `${campaignId}:${experimentVariant}` }); supabase?.auth.getUser().then(({ data }) => mounted && setSignedIn(Boolean(data.user))); return () => { mounted = false } }, []);
   if (!offer) return <main className="gc-page"><ServiceHeader /><section className="gc-container gc-card"><h1>Service not found</h1><a href="/pricing" className="gc-btn gc-btn-primary">View pricing</a></section></main>;
   const checkout = async () => {
     setMessage('');
-    if (!signedIn) { window.location.assign(`/goclear/signup?offer=${encodeURIComponent(offer.slug)}`); return; }
+    if (!signedIn) { window.location.assign(`/goclear/signup?offer=${encodeURIComponent(offer.slug)}&campaign_id=${encodeURIComponent(campaignId)}&variant=${experimentVariant}`); return; }
     if (!termsAccepted) { setMessage('Please accept the service terms before starting checkout.'); return; }
     setBusy(true);
-    const result = await createRevenueCheckout({ offerSlug: offer.slug, termsAccepted: true, termsVersion: offer.terms_version });
+    const result = await createRevenueCheckout({ offerSlug: offer.slug, termsAccepted: true, termsVersion: offer.terms_version, referralSource: `${campaignId}:${experimentVariant}` });
     setBusy(false);
     if (!result.ok) { setMessage('Test checkout is not available in this environment. No payment was attempted.'); return; }
     trackEvent({ event: 'revenue_offer_selected', route: offer.public_route, detail: offer.slug });

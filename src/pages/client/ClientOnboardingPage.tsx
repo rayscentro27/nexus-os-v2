@@ -4,6 +4,8 @@ import { useSession } from '../../components/auth'
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient'
 import { forceAuthResetAndRedirect } from '../../lib/authSessionCleanup'
 import '../../pages/goclear/goclear-public.css'
+import { trackEvent } from '../../lib/clientAnalytics'
+import { captureGoclearLead } from '../../lib/goclearBetaClosure'
 
 const EMPTY: ProfileIntakeData = {
   legal_name: '', preferred_name: '', phone: '', mailing_address_line1: '', mailing_address_line2: '', city: '', state: '', postal_code: '',
@@ -22,6 +24,7 @@ export default function ClientOnboardingPage() {
   useEffect(() => {
     if (authLoading) return
     if (!user) { window.location.assign('/client/login'); return }
+    trackEvent({ event: 'PORTAL_ONBOARDING_START', route: '/client/onboarding', detail: 'goclear-readiness-review' })
     let cancelled = false
     loadClientProfileIntake().then(({ data, error: loadError }) => {
       if (cancelled) return
@@ -48,7 +51,17 @@ export default function ClientOnboardingPage() {
     const result = await saveClientProfileIntake(form)
     setSaving(false)
     if (!result.ok) { setError(result.error || 'Your setup could not be saved.'); return }
+    let campaignId: string | undefined
+    let variant: string | undefined
+    try {
+      const attribution = JSON.parse(sessionStorage.getItem('goclear-r20b-attribution') || '{}')
+      campaignId = attribution.campaign_id
+      variant = attribution.variant
+    } catch {}
+    const leadResult = await captureGoclearLead({ name: form.legal_name, email: user?.email || undefined, campaignId, variant, betaMode: true })
+    if (!leadResult.ok) { setError(`Your setup was saved, but lead receipt failed: ${leadResult.error}`); setSaving(false); return }
     setSaved(true)
+    trackEvent({ event: 'PORTAL_ONBOARDING_COMPLETE', route: '/client/onboarding', detail: 'goclear-readiness-review' })
     window.location.assign('/client/dashboard')
   }
 

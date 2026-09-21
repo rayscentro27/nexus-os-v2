@@ -4,7 +4,7 @@
 # GitHub main → Netlify production deploy is enabled at the site level only.
 
 [build]
-  command = "vite build"
+  command = "node scripts/deployment/cloud_build.mjs"
   publish = "dist"
   functions = "netlify/functions"
 

@@ -17,6 +17,8 @@ interface SendEmailOptions {
   template: EmailTemplate
   subject?: string
   data?: Record<string, string>
+  message_type?: 'TRANSACTIONAL' | 'MARKETING' | 'TEST'
+  tracking_id?: string
 }
 
 export async function sendClientEmail(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {

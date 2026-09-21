@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react'
 import { isSupabaseConfigured, supabase } from '../../lib/supabaseClient'
 import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
 import { trackEvent } from '../../lib/clientAnalytics'
+import { persistUploadReceipt } from '../../lib/goclearBetaClosure'
 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 const MAX_SIZE = 10 * 1024 * 1024
@@ -142,8 +143,17 @@ export default function InlineDocumentUpload({ category = '', onUploaded = () =>
       const { error: metaError } = await supabase.from('client_documents').upsert(docMeta, { onConflict: 'id' })
       if (metaError) throw metaError
 
+      const receipt = await persistUploadReceipt({
+        documentId: docMeta.id,
+        storageObject: path,
+        category: cat,
+        processingStatus: cat === 'credit_reports' ? 'queued' : 'uploaded',
+        metadata: { source: 'client_portal_upload', file_name: file.name, file_size: file.size },
+      })
+      if (!receipt.ok) throw new Error(`Upload saved but receipt failed: ${receipt.error}`)
+
       setProgress(100)
-      setResult({ ok: true, message: `Uploaded to ${CATEGORY_LABELS[cat] || cat}` })
+      setResult({ ok: true, message: `Uploaded to ${CATEGORY_LABELS[cat] || cat} · receipt saved` })
       setFile(null)
       setClassification(null)
       onUploaded?.({ documentId: docMeta.id, fileName: file.name, category: cat, requirementKey, stage: track })
@@ -172,15 +182,16 @@ export default function InlineDocumentUpload({ category = '', onUploaded = () =>
       <div className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <input ref={inputRef} type="file" accept={ALLOWED_TYPES.join(',')} onChange={handleFile} style={{ display: 'none' }} />
         <button
-          onClick={() => inputRef.current?.click()}
+          onClick={() => file ? handleUpload() : inputRef.current?.click()}
           disabled={uploading}
           style={{
             padding: '4px 10px', borderRadius: 6, border: '1px solid #334155',
             background: '#1e293b', color: '#e2e8f0', cursor: 'pointer', fontSize: 11,
           }}
         >
-          {uploading ? `Uploading ${progress}%` : (label || 'Upload')}
+          {uploading ? `Uploading ${progress}%` : file ? 'Upload' : (label || 'Upload')}
         </button>
+        {file && !uploading && <span style={{ fontSize: 11, color: '#94a3b8', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>}
         {result && (
           <span style={{ fontSize: 11, color: result.ok ? '#10b981' : '#ef4444' }}>
             {result.message}

@@ -226,13 +226,21 @@ serve(async (req) => {
       )
     }
 
-    const { to, subject, template, data = {} }: EmailRequest = await req.json()
+    const { to, subject, template, data = {}, message_type: messageType = 'TRANSACTIONAL', tracking_id: trackingId = null }: EmailRequest & { message_type?: string; tracking_id?: string | null } = await req.json()
 
     if (!to || !template) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    const recipientHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(to).trim().toLowerCase()))
+    const recipientHash = Array.from(new Uint8Array(recipientHashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('')
+    if (String(messageType).toUpperCase() === 'MARKETING') {
+      const { data: suppression, error: suppressionError } = await supabase.from('goclear_email_suppressions').select('id,reason').eq('recipient_hash', recipientHash).maybeSingle()
+      if (suppressionError) return new Response(JSON.stringify({ error: 'marketing_suppression_check_failed' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      if (suppression) return new Response(JSON.stringify({ error: 'marketing_send_blocked_unsubscribed', suppression_id: suppression.id }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const templateFn = templates[template]
@@ -269,6 +277,15 @@ serve(async (req) => {
     }
 
     const result = await response.json()
+
+    await supabase.from('goclear_email_events').insert({
+      email_message_id: trackingId,
+      provider: 'resend',
+      provider_message_id: result.id,
+      event_type: 'sent',
+      recipient_hash: recipientHash,
+      payload: { message_type: messageType, template },
+    })
 
     return new Response(
       JSON.stringify({ success: true, id: result.id }),
