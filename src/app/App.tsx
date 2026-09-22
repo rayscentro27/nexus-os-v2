@@ -24,6 +24,7 @@ import GuestAcceptPage from '../pages/guest/GuestAcceptPage';
 import OperatorConsole from '../operator/OperatorConsole';
 import NexusSocialPublisher from '../pages/public/NexusSocialPublisher';
 import CompanyCycleOperations from '../admin/CompanyCycleOperations';
+import CampaignReviewCenter from '../admin/CampaignReviewCenter';
 
 const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/funding-readiness', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
 const CANONICAL_ADMIN_SURFACES = ['live-intelligence', 'ai-command', 'projects', 'tasks', 'research', 'knowledge', 'analytics', 'automation', 'campaigns', 'decisions', 'departments', 'trading', 'settings', 'support'];
@@ -104,6 +105,11 @@ export function App() {
   }
   if (path === '/admin/operations') {
     return <AdminGuard>{() => <AuthGate>{() => <CompanyCycleOperations />}</AuthGate>}</AdminGuard>;
+  }
+  if (path === '/admin/review') {
+    const reviewCenter = <CampaignReviewCenter />;
+    if ((import.meta.env.DEV || window.location.hostname === '127.0.0.1') && new URLSearchParams(window.location.search).get('ui-smoke') === '1') return reviewCenter;
+    return <AdminGuard>{() => <AuthGate>{() => reviewCenter}</AuthGate>}</AdminGuard>;
   }
   if (isOperator) {
     return (

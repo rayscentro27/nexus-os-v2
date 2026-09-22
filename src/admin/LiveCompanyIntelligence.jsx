@@ -158,6 +158,7 @@ export default function LiveCompanyIntelligence({ surface = null }) {
       <div className="live-command-brand"><div className="live-command-brand-lockup"><img className="live-command-brand-mark" src="/brand/GoClearMark.svg" alt="" /><span className="live-command-brand-wordmark"><img src="/brand/GoClearLogo.svg" alt="GoClear" /></span></div><span>NEXUS OS</span></div>
       <nav aria-label="Admin navigation">
         {canonicalNav.map(([id, label, icon]) => <a className={(activeSurface === id || (id === 'live-intelligence' && !activeSurface)) ? 'active' : ''} href={`#/${id}`} key={id}><Icon name={icon} />{label}</a>)}
+        <a href="/admin/review"><Icon name="decisions" />Campaign Review</a>
       </nav>
       <div className="live-command-promo"><img src="/creative/admin-artifacts/mountain-promo.png" alt="Mountain landscape" /><div className="live-command-promo-overlay"><strong>A clearer<br />tomorrow.</strong><small>Smarter tools. Clearer decisions.<br />A brighter future.</small><a href="#/live-intelligence">View what&apos;s new <ChevronRight size={13} /></a></div></div>
     </aside>
