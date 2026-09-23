@@ -1,0 +1,38 @@
+{
+  "campaign_id": "goclear_meta_primary_full_cycle_20260922",
+  "source": "meta_ai_browser",
+  "source_session": "https://meta.ai/prompt/f533ad42-25a4-4e4b-8b7a-b10b9f69cff1",
+  "marketing_brief_hash": "2d3d8a60cc3d282cddead1491828440fd2b3c742c2a53a33543e0b84f28f6eb5",
+  "meta_master_prompt_hash": "6cbce79d7c821f6e68de20f54825c4dcb022be042583c534bd6026ac0b264e29",
+  "fresh_image": {
+    "artifact_type": "image",
+    "local_path": "fresh_campaign_image.png",
+    "sha256": "e94d08508cd0230c6cc7cc8546933901c38a74dd8297f9bc2d9b91d9fb42f4a3",
+    "retrieval_status": "PASS_REAL"
+  },
+  "fresh_video": {
+    "artifact_type": "video",
+    "local_path": "fresh_campaign_video.mp4",
+    "sha256": "b9e94bfac9cff6a29a6e79be6b1daaa43ea439adf24d347f758a2e6732b72427",
+    "duration_seconds": 10,
+    "resolution": "720x1280",
+    "retrieval_status": "PASS_REAL"
+  },
+  "fresh_funnel": {
+    "artifact_type": "html",
+    "meta_artifact_name": "Goclear-Landing-Review.html",
+    "evidence_capture": "funnel_meta_evidence.png",
+    "evidence_sha256": "de92c24d79722b8347f7eb90019b746795e62bb64cab490338fce09bcc3f7f1b",
+    "retrieval_status": "GENERATED_REAL_RETRIEVAL_BLOCKED",
+    "reason": "Meta Download artifact navigation returned an internal server error; no local HTML or desktop/mobile export is claimed."
+  },
+  "audio": {
+    "status": "NOT_REQUIRED_OR_UNSUPPORTED"
+  },
+  "claim_boundary": {
+    "unverified_claims_published": 0,
+    "status": "PASS"
+  },
+  "review_status": "READY_FOR_RAY_REVIEW",
+  "decision_submitted": false
+}
