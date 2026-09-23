@@ -1,3 +1,5 @@
+import { FINAL_META_PROMPT } from './metaPrimaryPrompt';
+
 export const goclearCampaignReview = {
   campaign_review_id: 'campaign-review-goclear-meta-primary-full-cycle-20260922',
   campaign_id: 'goclear_meta_primary_full_cycle_20260922',
@@ -81,6 +83,8 @@ export const goclearCampaignReview = {
     input_tokens: 'Not exposed by Meta UI',
     output_tokens: 'Not exposed by Meta UI',
     estimated_model_cost: 'No paid spend; browser session',
+    final_meta_prompt: FINAL_META_PROMPT,
+    final_meta_prompt_hash: '6cbce79d7c821f6e68de20f54825c4dcb022be042583c534bd6026ac0b264e29',
     receipts: ['marketing_campaign_brief.md', 'meta_master_prompt.txt', 'funnel_meta_evidence.png', 'fresh_campaign_image.png', 'fresh_campaign_video.mp4'],
   },
   versions: { control: 'None — Meta primary campaign', reference: 'Fresh Meta funnel artifact; export retrieval blocked', similarity: 'NOT_APPLICABLE', report: 'meta_primary_full_cycle_20260922' },

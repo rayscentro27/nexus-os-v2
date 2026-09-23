@@ -1,0 +1,49 @@
+Create the strongest coherent campaign you can from the supplied business context and source material. You are free to determine the campaign concept, story, emotional approach, visual language, headline, composition, pacing, sound direction, funnel structure, and creative treatment. The image, video, audio, and funnel should feel like parts of one campaign. Remain truthful to the verified business information and do not invent restricted claims. Return a campaign concept plus the requested deliverable directions and claim-safe copy options. This is review-only: do not publish, spend, or submit an approval decision.
+
+MINIMUM_CAMPAIGN_CONTRACT=
+{
+  "BRAND": {
+    "name": "GoClear",
+    "identity": "Premium, trustworthy, modern fintech; calm, clear, human, and preparation-oriented.",
+    "recognizable_requirements": "Use GoClear context and supplied source material without inventing a new brand identity."
+  },
+  "AUDIENCE": "First-time LLC and small-business owners who want to prepare for a possible funding conversation but are unsure what information to organize first.",
+  "OFFER": "GoClear Business & Funding Readiness education.",
+  "CUSTOMER_PROBLEM_OR_DESIRE": "Business identity documents, financial records, credit questions, and possible lender questions feel scattered; the customer lacks a safe sequence for preparation.",
+  "CAMPAIGN_OBJECTIVE": "Give the visitor one concrete, low-pressure preparation step without implying universal lender criteria or an outcome.",
+  "SOURCE_MATERIAL": {
+    "marketing_brief": "reports/marketing/NEXUS_GOCLEAR_FINAL_CAMPAIGN_BRIEF_2026-09-22.md",
+    "certified_creative_handoff": "The First File / First Folder Rehearsal",
+    "existing_customer_language": "Funding preparation can feel scattered and consequential; organize what exists, note what is missing, and prepare the next question.",
+    "existing_assets": "Existing approved GoClear image/video references are available for reference only."
+  },
+  "VERIFIED_FACTS": [
+    "GoClear provides Business & Funding Readiness education.",
+    "The audience is first-time LLC and small-business owners preparing for a possible funding conversation.",
+    "Document organization and preparation are the bounded customer value.",
+    "The work does not promise approval, acceptance, improved odds, qualification, or financial results."
+  ],
+  "PROHIBITED_OR_UNVERIFIED_CLAIMS": [
+    "Funding totals",
+    "Approval times or probabilities",
+    "Ratings or testimonials",
+    "Guarantees",
+    "Funding ranges",
+    "Universal lender requirements",
+    "Any invented customer or financial outcome"
+  ],
+  "REQUESTED_DELIVERABLES": [
+    "One coherent campaign concept",
+    "Hero/supporting image direction",
+    "10-second short-form video direction",
+    "Landing/sales funnel concept",
+    "Headlines and supporting copy",
+    "CTA/form structure",
+    "Audio or voice direction only if useful and supported"
+  ],
+  "TOOL_AND_BUDGET_BOUNDARIES": [
+    "Meta AI browser is the primary review-only production surface.",
+    "Do not publish, launch ads, spend money, or submit an approval decision.",
+    "Keep all outputs in one campaign world."
+  ]
+}
