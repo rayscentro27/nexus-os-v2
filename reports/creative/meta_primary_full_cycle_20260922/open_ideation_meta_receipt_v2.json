@@ -1,0 +1,15 @@
+{
+  "campaign_id": "goclear_meta_primary_full_cycle_20260922",
+  "mode": "OPEN_IDEATION_MODE",
+  "provider": "meta.ai_browser",
+  "execution_surface": "canonical authenticated Nexus browser tab",
+  "prompt_file": "open_ideation_prompt_v2.txt",
+  "prompt_sha256": "f24bce9f67e0711225bd1748ff50e6acf974f8c6a12fab21233d36ab187be7bc",
+  "response_file": "open_ideation_meta_raw_v2.md",
+  "concept_count": 3,
+  "final_media_created": false,
+  "source_material_access_verified": true,
+  "prior_creative_solution_supplied": false,
+  "claim_boundary": "UNVERIFIED_CLAIMS_PUBLISHED=0",
+  "review_status": "READY_FOR_RAY_CONCEPT_REVIEW"
+}

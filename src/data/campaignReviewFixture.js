@@ -1,4 +1,5 @@
 import { FINAL_META_PROMPT } from './metaPrimaryPrompt';
+import { openIdeationCanary } from './openIdeationCanary';
 
 export const goclearCampaignReview = {
   campaign_review_id: 'campaign-review-goclear-meta-primary-full-cycle-20260922',
@@ -88,4 +89,5 @@ export const goclearCampaignReview = {
     receipts: ['marketing_campaign_brief.md', 'meta_master_prompt.txt', 'funnel_meta_evidence.png', 'fresh_campaign_image.png', 'fresh_campaign_video.mp4'],
   },
   versions: { control: 'None — Meta primary campaign', reference: 'Fresh Meta funnel artifact; export retrieval blocked', similarity: 'NOT_APPLICABLE', report: 'meta_primary_full_cycle_20260922' },
+  open_ideation: openIdeationCanary,
 };

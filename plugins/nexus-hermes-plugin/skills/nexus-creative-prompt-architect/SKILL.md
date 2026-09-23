@@ -73,6 +73,21 @@ Do not convert FEEL, THINK, ACT, hook, tension, curiosity gap, objection
 handling, exact CTA copy, exact metaphor, or exact shot sequence into mandatory
 Meta instructions unless the campaign record explicitly marks them approved.
 
+Meta work has two explicit modes:
+
+- `OPEN_IDEATION_MODE`: pass business truth, accessible source material, claim
+  boundaries, and requested deliverables only. Reject prior concepts, hooks,
+  metaphors, emotional arcs, shot sequences, funnel structures, CTA treatments,
+  Creative Director solutions, and Response Strategy solutions. Meta originates
+  the concepts; the Creative Director critiques afterward.
+- `DIRECTED_PRODUCTION_MODE`: pass a concept only after Ray or an approved
+  Creative workflow explicitly selects it. Meta may then execute that direction.
+
+Open mode must reject prior-solution fields rather than accepting them as
+generic source material. When production is authorized, tell Meta to use its
+available creative capabilities to create the requested assets, not merely
+describe how another party could create them.
+
 # Generator profiles
 
 - `IMAGE_GENERATOR`: visual subject, world, composition, hierarchy, camera,

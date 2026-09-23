@@ -1,0 +1,27 @@
+{
+  "campaign_id": "goclear_meta_primary_full_cycle_20260922",
+  "mode": "OPEN_IDEATION_MODE",
+  "meta_source_material_access_verified": true,
+  "sources": [
+    {
+      "name": "goclear_brand_identity_and_business_facts",
+      "classification": "TEXT_INJECTED",
+      "access": "Included verbatim in open_ideation_prompt_v2.txt"
+    },
+    {
+      "name": "prior_creative_director_outputs",
+      "classification": "EXCLUDED_FROM_OPEN_IDEATION",
+      "access": "Not supplied to Meta"
+    },
+    {
+      "name": "prior_response_strategy_outputs",
+      "classification": "EXCLUDED_FROM_OPEN_IDEATION",
+      "access": "Not supplied to Meta"
+    },
+    {
+      "name": "local_nexus_paths",
+      "classification": "LOCAL_ONLY",
+      "access": "Not claimed as Meta-accessible"
+    }
+  ]
+}

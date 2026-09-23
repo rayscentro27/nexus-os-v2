@@ -1,0 +1,15 @@
+{
+  "campaign_id": "goclear_meta_primary_full_cycle_20260922",
+  "task_class": "creative.critic",
+  "provider": "openrouter",
+  "model": "google/gemini-2.5-flash",
+  "router_primary": "google/gemini-2.5-flash",
+  "router_fallback": "openai/gpt-4o-mini",
+  "latency_ms": 13236.4,
+  "input_tokens": 1391,
+  "output_tokens": 1327,
+  "total_tokens": 2718,
+  "provider_reported_cost": 0.0037348,
+  "raw_sha256": "ecc8a1d661a8f1ac30175cae159b2d42016b7ab9d2874a09af66268c2fa068e0",
+  "decision_policy": "Critique only; no ranking, winner, replacement concept, or production handoff"
+}

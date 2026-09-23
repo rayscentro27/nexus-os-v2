@@ -97,6 +97,12 @@ production work in this skill.
 - Confirm raw model receipts and immutable hashes exist before downstream work.
 - Do not render, write HTML/CSS, generate assets, or implement UI in this phase.
 
+In `OPEN_IDEATION_MODE`, the Creative Director does not predetermine Meta's
+initial answer. It receives Meta-originated concepts and critiques their
+distinctiveness, specificity, and brand fit. Concept selection remains a Ray
+gate. In `DIRECTED_PRODUCTION_MODE`, it may help refine an explicitly selected
+direction.
+
 # Output Format
 
 - Brief interpretation

@@ -33,6 +33,19 @@ META_MINIMUM_CONTRACT_FIELDS = (
     "tool_and_budget_boundaries",
 )
 
+OPEN_IDEATION_MODE = "OPEN_IDEATION_MODE"
+DIRECTED_PRODUCTION_MODE = "DIRECTED_PRODUCTION_MODE"
+
+# These keys represent solutions, not business/source truth. They are rejected
+# from the open contract so a prior campaign cannot leak through a generic
+# source_material dictionary.
+PRIOR_CREATIVE_SOLUTION_KEYS = frozenset({
+    "creative_direction", "creative_handoff", "selected_concept", "prior_concept",
+    "prior_campaign", "response_strategy", "art_direction", "prompt_architect",
+    "creative_territories", "hook", "visual_metaphor", "emotional_arc",
+    "shot_sequence", "funnel_structure", "cta_strategy", "campaign_world",
+})
+
 
 def sha256_json(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
@@ -76,8 +89,17 @@ def build_open_meta_prompt(
     requested_deliverables: list[str],
     tool_and_budget_boundaries: list[str],
     optional_creative_guidance: Mapping[str, Any] | None = None,
+    mode: str = OPEN_IDEATION_MODE,
 ) -> str:
-    """Build the minimum Meta production contract while preserving creativity."""
+    """Build a mode-explicit Meta contract without silently supplying creative solutions."""
+    if mode not in {OPEN_IDEATION_MODE, DIRECTED_PRODUCTION_MODE}:
+        raise ValueError(f"unsupported_meta_creative_mode:{mode}")
+    if mode == OPEN_IDEATION_MODE:
+        leaked = sorted(set(source_material).intersection(PRIOR_CREATIVE_SOLUTION_KEYS))
+        if leaked:
+            raise ValueError("open_ideation_prior_creative_solution_leak:" + ",".join(leaked))
+        if optional_creative_guidance:
+            raise ValueError("open_ideation_optional_guidance_requires_explicit_directed_mode")
     payload = {
         "BRAND": brand,
         "AUDIENCE": audience,
@@ -90,20 +112,37 @@ def build_open_meta_prompt(
         "REQUESTED_DELIVERABLES": requested_deliverables,
         "TOOL_AND_BUDGET_BOUNDARIES": tool_and_budget_boundaries,
     }
+    if mode == OPEN_IDEATION_MODE:
+        instruction = (
+            "You are the primary creative studio for this campaign. Create the strongest "
+            "original campaign concepts you can from the supplied business context and "
+            "accessible source material. You are free to determine the concept, story, "
+            "emotion, visual language, headline, composition, pacing, sound, funnel "
+            "structure, copy approach, and creative treatment. Do not inherit or preserve "
+            "any previous campaign concept, hook, metaphor, emotional arc, scene sequence, "
+            "funnel structure, or CTA treatment. Do not merely describe how assets could be "
+            "made. For this bounded ideation step, originate three materially different "
+            "concepts for review; do not create final media before a concept is selected. "
+            "Remain truthful to verified facts and do not invent restricted claims. This is "
+            "internal review only: do not publish, spend, or submit an approval decision."
+        )
+    else:
+        instruction = (
+            "You are the primary creative studio for this directed campaign. Execute the "
+            "explicitly selected creative direction supplied in the contract using your "
+            "available creative capabilities. Preserve the selected direction while making "
+            "the requested assets coherent. Remain truthful to verified facts and do not "
+            "invent restricted claims. This is internal review only: do not publish, spend, "
+            "or submit an approval decision."
+        )
     prompt = (
-        "Create the strongest coherent campaign you can from the supplied business "
-        "context and source material. You are free to determine the campaign concept, "
-        "story, emotional approach, visual language, headline, composition, pacing, "
-        "sound direction, funnel structure, and creative treatment. The image, video, "
-        "audio, and funnel should feel like parts of one campaign. Remain truthful to "
-        "the verified business information and do not invent restricted claims. "
-        "Return a campaign concept plus the requested deliverable directions and "
-        "claim-safe copy options. This is review-only: do not publish, spend, or "
-        "submit an approval decision.\n\n"
+        f"MODE={mode}\n"
+        + instruction
+        + "\n\n"
         "MINIMUM_CAMPAIGN_CONTRACT=\n"
         + json.dumps(payload, ensure_ascii=False, indent=2)
     )
-    if optional_creative_guidance:
+    if optional_creative_guidance and mode == DIRECTED_PRODUCTION_MODE:
         prompt += (
             "\n\nOPTIONAL_CREATIVE_GUIDANCE (suggestions only; do not treat as "
             "requirements and feel free to reject them):\n"
