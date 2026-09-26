@@ -126,7 +126,10 @@ class OpenCodeExecuteAdapter:
     """Bounded OpenCode repo-edit adapter; no current worktree is edited."""
 
     worker_id = "opencode"
-    model = "opencode/mimo-v2.5-free"
+    # Let OpenCode resolve the already-configured provider/model.  A stale
+    # hardcoded model alias made the governed adapter wait until timeout even
+    # when the interactive installation had a valid default route.
+    model = None
 
     def execute(self, task: CodingTask, *, runner: Optional[str] = None, timeout: int = 90) -> Dict[str, Any]:
         if runner is None:
@@ -140,15 +143,30 @@ class OpenCodeExecuteAdapter:
                   "Do not inspect secrets, runtime.env, client data, or protected paths. "
                   f"Objective: {task.prompt}\nAllowed paths: {list(task.allowed_paths)}\n"
                   f"Acceptance: {list(task.acceptance)}\nCreate the requested artifact and stop.")
-        command = [runner, "run", "--model", self.model, "--format", "json", prompt]
+        command = [runner, "run", "--format", "json", prompt]
+        configured_model = os.environ.get("NEXUS_OPENCODE_MODEL")
+        if configured_model:
+            command[2:2] = ["--model", configured_model]
         try:
-            # Large Nexus checkouts can take longer than a provider canary;
-            # keep this bounded but do not mistake checkout latency for a
-            # provider failure.
-            subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.checkpoint_sha], cwd=ROOT, capture_output=True, text=True, timeout=180, check=True)
-            added = True
+            # Large Nexus checkouts can exceed a bounded provider canary. Use
+            # a minimal disposable git sandbox for a tiny certification task;
+            # this keeps OpenCode genuinely isolated without blocking on the
+            # full repository object graph.
+            try:
+                subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.checkpoint_sha], cwd=ROOT, capture_output=True, text=True, timeout=30, check=True)
+                added = True
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                subprocess.run(["git", "init", "-q"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                package = ROOT / "package.json"
+                if package.exists():
+                    shutil.copy2(package, worktree / "package.json")
+                for allowed in task.allowed_paths:
+                    (worktree / allowed).mkdir(parents=True, exist_ok=True)
+                subprocess.run(["git", "add", "--", "."], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                subprocess.run(["git", "-c", "user.email=nexus@localhost", "-c", "user.name=Nexus", "commit", "-qm", "sandbox"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                added = True
             before = _file_fingerprints(worktree, task.allowed_paths)
-            proc = subprocess.run(command, cwd=worktree, env=_safe_env(), capture_output=True, text=True, timeout=timeout, check=False)
+            proc = subprocess.run(command + ["--pure"], cwd=worktree, env=_safe_env(), capture_output=True, text=True, timeout=timeout, check=False)
             combined = f"{proc.stdout}\n{proc.stderr}"
             changed = _changed_files(worktree, before, task.allowed_paths)
             violations = [path for path in changed if not _path_allowed(path, task.allowed_paths, task.protected_paths)]

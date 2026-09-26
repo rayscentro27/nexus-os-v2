@@ -26,6 +26,8 @@ INTENT_MAP: dict[str, dict[str, str]] = {
     "SYSTEM_HEALTH": {"department": "OPERATIONS", "loop": "NEXUS_SYSTEM_HEALTH_RECOVERY", "skill": "system-recovery", "worker": "NEXUS_OPERATIONS_WORKER", "authority": "internal_read_only"},
     "RESEARCH": {"department": "RESEARCH_ALPHA", "loop": "NEXUS_RESEARCH_INTELLIGENCE", "skill": "research-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "read_only"},
     "REPO_INTELLIGENCE": {"department": "SYSTEM_ENGINEERING", "loop": "NEXUS_REPO_INTELLIGENCE", "skill": "repo-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "internal_read_only"},
+    "OPPORTUNITY_INTAKE": {"department": "RESEARCH_ALPHA", "loop": "NEXUS_RESEARCH_INTELLIGENCE", "skill": "research-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "read_only", "specialist_target": "OPPORTUNITY_ENGINE"},
+    "TRADING_PREMARKET": {"department": "RESEARCH_ALPHA", "loop": "NEXUS_RESEARCH_INTELLIGENCE", "skill": "research-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "read_only", "specialist_target": "TRADING_ENGINE"},
     "FUNDING_READINESS": {"department": "CREDIT_BUSINESS_FUNDING", "loop": "NEXUS_CREDIT_BUSINESS_FUNDING", "skill": "funding-readiness", "worker": "NEXUS_FUNDING_WORKER", "authority": "internal_review"},
     "RAY_REVIEW": {"department": "GOVERNANCE_REVIEW", "loop": "NEXUS_RAY_REVIEW", "skill": "ray-review", "worker": "NEXUS_REVIEW_WORKER", "authority": "human_review"},
     "WORK_ORDER": {"department": "GOVERNANCE_REVIEW", "loop": "NEXUS_RAY_REVIEW", "skill": "work-order-management", "worker": "NEXUS_REVIEW_WORKER", "authority": "human_review"},
@@ -58,6 +60,10 @@ def classify_intent(text: str) -> str:
         return "REPO_INTELLIGENCE"
     if re.search(r"\b(funding readiness|funding|bankability|credit readiness)\b", value):
         return "FUNDING_READINESS"
+    if re.search(r"\b(business idea|business opportunity|opportunity|idea to test|should we test)\b", value):
+        return "OPPORTUNITY_INTAKE"
+    if re.search(r"\b(market open|pre[- ]market|premarket|trading brief|prepare me for .* market|setups? (are )?forming|signal appears?|paper trade|trading rejected|why did trading reject)\b", value):
+        return "TRADING_PREMARKET"
     if re.search(r"\b(review item|ray review|what needs my review|(?:what|which).*(?:need|require|requiring).*(?:review|approval)|prioritize.*review)\b", value):
         return "RAY_REVIEW"
     if value.startswith(("/request ", "/work ", "create a work order", "turn this into a work order")):
@@ -176,29 +182,9 @@ def _registry_valid(route: Mapping[str, str]) -> bool:
 
 def resolve(text: str) -> dict[str, Any]:
     intent = classify_intent(text)
-    # Semantic reads/advice are allowed to reach the existing Hermes front
-    # brain when deterministic command classification has no exact match.
-    # The front brain may select only catalogued reads; registry validation
-    # remains the final eligibility check.
-    if intent == "UNKNOWN":
-        try:
-            from nexus_agent_platform.agents.front_brain import classify_message
-            decision = classify_message(text, {})
-            mode = decision.get("mode")
-            capability = decision.get("capability")
-            semantic_map = {
-                "get_system_status": "STATUS",
-                "system_health": "SYSTEM_HEALTH",
-                "pending_approvals": "RAY_REVIEW",
-                "repo_intelligence": "REPO_INTELLIGENCE",
-            }
-            if mode in {"conversation", "advisory"} and not capability:
-                return {"intent_class": "SEMANTIC_ADVISORY", "status": "NO_EXECUTION", "reason": "front_brain_advisory"}
-            if mode == "operational_read" and capability in semantic_map:
-                intent = semantic_map[capability]
-        except Exception:
-            # Semantic failure is fail-closed; no arbitrary route is selected.
-            pass
+    # Unknown text remains an unknown intent.  A model fallback must not turn
+    # an unavailable/ambiguous classification into a conversational answer or
+    # an operator route; Nova can submit an explicit governed objective later.
     if intent in {"CONVERSATION", "UNKNOWN", "STATE_QUERY"}:
         return {"intent_class": intent, "status": "NO_EXECUTION" if intent == "CONVERSATION" else "READ_ONLY_STATE" if intent == "STATE_QUERY" else "UNKNOWN_INTENT"}
     if intent == "SEMANTIC_ADVISORY":
@@ -210,6 +196,13 @@ def resolve(text: str) -> dict[str, Any]:
 
 
 def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str, Any]] | None:
+    try:
+        from research.natural_language_source_intake import handle as handle_source_intake, render as render_source_intake
+        source_result = handle_source_intake(text)
+        if source_result:
+            return render_source_intake(source_result), {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"ANSWERED","intent":source_result.get("intent"),"canonical_intake_called":source_result.get("canonical_intake_called",False),"receipt_path":(source_result.get("receipt") or {}).get("receipt_path")}
+    except (ImportError, OSError, ValueError) as exc:
+        return "The source-intake request could not be safely resolved; no source state was changed.", {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"BLOCKED","error":type(exc).__name__}
     # Preserve the older, separately certified system-health process handler
     # for its exact command while natural-language health requests use WP5
     # registry routing.

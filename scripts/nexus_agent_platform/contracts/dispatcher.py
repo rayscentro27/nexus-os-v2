@@ -167,7 +167,12 @@ class CapabilityDispatcher:
             sig = inspect.signature(handler)
             params = [p for p in sig.parameters.values() if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)]
             if params:
-                raw_result = handler(taskspec, mission_id, tenant)
+                handler_input = taskspec.to_dict() if hasattr(taskspec, "to_dict") else taskspec
+                if isinstance(handler_input, dict) and "filters" in handler_input:
+                    filters = handler_input.pop("filters", {})
+                    if isinstance(filters, dict):
+                        handler_input.update(filters)
+                raw_result = handler(handler_input, mission_id, tenant)
             else:
                 raw_result = handler()
         except TypeError:
@@ -292,6 +297,10 @@ class CapabilityDispatcher:
         latency_ms: int,
     ) -> CapabilityResult:
         """Normalize raw handler output into a typed CapabilityResult."""
+
+        # Handler already returned a typed CapabilityResult
+        if isinstance(raw_result, CapabilityResult):
+            return raw_result
 
         # Handler returns a dict (from _get_client_count, etc.)
         if isinstance(raw_result, dict):

@@ -19,6 +19,7 @@ FAILURE_CLASSES = {"PROVIDER_UNAVAILABLE", "ENDPOINT_BLOCKED", "AUTH_RUNTIME_MIS
 RESOLUTION_LADDER = ("REUSE_PREVIOUS_SUCCESSFUL_PATH", "CHECK_CONFIG_ENVIRONMENT", "EXISTING_CODE", "EXISTING_CREDENTIAL_CONTROL", "CLI", "API", "MCP", "PUBLIC_WEB", "ORACLE_BROWSER", "EXISTING_REMOTE_WORKER", "MODAL_CPU", "RESEARCH_ALTERNATIVE_PROVIDER", "GITHUB_OPEN_SOURCE_RESEARCH", "BUILD_OR_ADAPT_CONNECTOR", "REROUTE_OBJECTIVE", "RAY_ONLY_TRUE_BOUNDARY")
 ROOT = Path(__file__).resolve().parents[2]
 PORTFOLIO_PATH = ROOT / "data/runtime/company_goal_portfolio.json"
+OPERATING_PORTFOLIO_PATH = ROOT / "data/runtime/company_operating_portfolio_r23.json"
 ELIGIBLE_STATUSES = {"ACTIVE", "READY", "QUEUED"}
 PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 
@@ -442,7 +443,20 @@ def repetition_guard(attempts: Iterable[dict[str, Any]], *, max_identical: int =
 
 
 def active_objective_portfolio() -> list[dict[str, Any]]:
-    """Return the durable eligible portfolio, preserving all roadmap goals."""
+    """Return the R23 operating portfolio when present, else the full roadmap.
+
+    Test fixtures intentionally monkeypatch PORTFOLIO_PATH, so the operating
+    overlay is only active for the canonical runtime file. Historical goals
+    remain readable through ensure_company_goal_portfolio().
+    """
+    if PORTFOLIO_PATH == ROOT / "data/runtime/company_goal_portfolio.json" and OPERATING_PORTFOLIO_PATH.is_file():
+        try:
+            operating = json.loads(OPERATING_PORTFOLIO_PATH.read_text(encoding="utf-8"))
+            rows = operating.get("active_goals") if isinstance(operating, dict) else None
+            if isinstance(rows, list):
+                return [row for row in rows if isinstance(row, dict)]
+        except (OSError, ValueError, TypeError):
+            pass
     return [row for row in ensure_company_goal_portfolio() if row.get("status") in ELIGIBLE_STATUSES]
 
 
@@ -471,54 +485,71 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     if urgent:
         candidates = urgent
     else:
-        # A bounded closure session keeps repairable finalization work with
-        # its owning goal across scheduler yields.  The round limit prevents
-        # a pathological goal from monopolizing the portfolio.
-        stalled_exists = any(isinstance(row.get("closure_session"), dict)
-                             and row["closure_session"].get("closure_state") == "CLOSURE_STALLED"
-                             for row in rows)
-        sessions = [row for row in rows if isinstance(row.get("closure_session"), dict)
-                    and row["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"}
-                    and (int(row["closure_session"].get("current_round", 0)) < int(row["closure_session"].get("max_rounds", 4))
-                         or row["closure_session"].get("closure_state") == "REPAIR_REQUIRED")]
-        if sessions:
-            finalization_sessions = [row for row in sessions if row["closure_session"].get("closure_state") == "FINALIZATION_RETRY"]
-            if finalization_sessions:
-                sessions = finalization_sessions
-            candidates = sessions
+        # Fairness is a portfolio-wide invariant, not a fallback that only
+        # runs after closure/recovery cohorts.  Those cohorts are useful, but
+        # allowing them to pre-empt the least-run eligible goals indefinitely
+        # caused the durable 6..102 selection-count spread observed in R17.
+        # Preserve P0 urgency, then give the least-run eligible cohort first
+        # consideration; priority and age remain tie-breakers below.
+        counts = [int(row.get("selection_count", 0)) for row in rows]
+        max_count = max(counts, default=0)
+        min_count = min(counts, default=0)
+        # A bounded closure-repair session is more actionable than a generic
+        # least-run goal; fairness must not pre-empt an already-open repair.
+        starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count
+                   and max_count - min_count >= 2
+                   and not any(isinstance(candidate.get("closure_session"), dict)
+                               and candidate["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"}
+                               for candidate in rows)
+                   and not any(isinstance(candidate.get("last_result"), dict)
+                               and candidate.get("last_result", {}).get("rework_required")
+                               for candidate in rows)
+                   and not (isinstance(row.get("closure_session"), dict)
+                            and row["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"})]
+        if starved:
+            candidates = starved
         else:
-            recovery = [row for row in rows if isinstance(row.get("closure_session"), dict)
-                        and row["closure_session"].get("closure_state") == "CLOSURE_STALLED"]
-            # A successful criterion-specific artifact is immediately eligible
-            # for final assembly. Finish that path before opening another
-            # rework cohort, so failed-review backlog cannot starve closure.
-            finalization = [
-                row for row in rows
-                if str(row.get("next_action")) == "internal.assemble_final_deliverable"
-                and not (row.get("last_result") or {}).get("rework_required")
-            ]
-            rework = [row for row in rows if isinstance(row.get("last_result"), dict)
-                      and row.get("last_result", {}).get("rework_required")
-                      and not (isinstance(row.get("closure_session"), dict)
-                               and row["closure_session"].get("closure_state") == "CLOSURE_STALLED")]
-            if recovery:
-                # CLOSURE_STALLED exhausts one strategy; it is not a terminal
-                # parent state. Keep the goal visible so the next cycle can
-                # select a different governed recovery path.
-                candidates = recovery
-            elif finalization:
-                candidates = finalization
-            elif rework:
-                # A persisted reviewer deficiency is more actionable than a
-                # new exploratory child.
-                candidates = rework
-            else:
-                counts = [int(row.get("selection_count", 0)) for row in rows]
-                max_count = max(counts, default=0)
-                min_count = min(counts, default=0)
-                starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
-                fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
-                candidates = starved or (fair or rows)
+                # A bounded closure session keeps repairable finalization work with
+                # its owning goal across scheduler yields.  The round limit prevents
+                # a pathological goal from monopolizing the portfolio.
+                sessions = [row for row in rows if isinstance(row.get("closure_session"), dict)
+                            and row["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"}
+                            and (int(row["closure_session"].get("current_round", 0)) < int(row["closure_session"].get("max_rounds", 4))
+                                 or row["closure_session"].get("closure_state") == "REPAIR_REQUIRED")]
+                if sessions:
+                    finalization_sessions = [row for row in sessions if row["closure_session"].get("closure_state") == "FINALIZATION_RETRY"]
+                    if finalization_sessions:
+                        sessions = finalization_sessions
+                    candidates = sessions
+                else:
+                    recovery = [row for row in rows if isinstance(row.get("closure_session"), dict)
+                                and row["closure_session"].get("closure_state") == "CLOSURE_STALLED"]
+                    # A successful criterion-specific artifact is immediately eligible
+                    # for final assembly. Finish that path before opening another
+                    # rework cohort, so failed-review backlog cannot starve closure.
+                    finalization = [
+                        row for row in rows
+                        if str(row.get("next_action")) == "internal.assemble_final_deliverable"
+                        and not (row.get("last_result") or {}).get("rework_required")
+                    ]
+                    rework = [row for row in rows if isinstance(row.get("last_result"), dict)
+                              and row.get("last_result", {}).get("rework_required")
+                              and not (isinstance(row.get("closure_session"), dict)
+                                       and row["closure_session"].get("closure_state") == "CLOSURE_STALLED")]
+                    if recovery:
+                        # CLOSURE_STALLED exhausts one strategy; it is not a terminal
+                        # parent state. Keep the goal visible so the next cycle can
+                        # select a different governed recovery path.
+                        candidates = recovery
+                    elif finalization:
+                        candidates = finalization
+                    elif rework:
+                        # A persisted reviewer deficiency is more actionable than a
+                        # new exploratory child.
+                        candidates = rework
+                    else:
+                        fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
+                        candidates = fair or rows
     if recovery and candidates is recovery:
         # Once a closure strategy is exhausted, fairness must operate on the
         # recovery cohort itself.  Priority/age alone repeatedly selected the

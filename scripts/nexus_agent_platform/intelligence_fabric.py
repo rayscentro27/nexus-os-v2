@@ -20,7 +20,7 @@ REQUEST_SCHEMA = "nexus.department-research-request.v1"
 RESULT_SCHEMA = "nexus.department-result-feedback.v1"
 
 DEPARTMENTS = (
-    "ALPHA", "HERMES_NOVA", "SYSTEMS_ENGINEERING", "CREATIVE", "MARKETING",
+    "ALPHA", "HERMES_NOVA", "SYSTEMS", "SYSTEMS_ENGINEERING", "CREATIVE", "MARKETING", "CUSTOMER_SERVICE", "TRADING",
     "SEO", "CLYDE_CREDIT", "FUNDING", "FINANCE", "BUSINESS_OPPORTUNITY",
     "TRADING_RESEARCH",
 )
@@ -49,6 +49,9 @@ def build_research_request(*, department: str, question: str, knowledge_gap: str
         raise ValueError("unknown-department")
     if len(str(question).strip()) < 8 or len(str(knowledge_gap).strip()) < 8:
         raise ValueError("question-and-knowledge-gap-required")
+    created_at = _now()
+    reason = str(reason_needed or "Knowledge is required to continue the originating objective.").strip()
+    evidence = list(desired_evidence or ["source-backed finding", "freshness", "uncertainty"])
     payload = {
         "schema_version": REQUEST_SCHEMA,
         "request_id": _id("research_request", (department, objective_id, question, knowledge_gap)),
@@ -58,11 +61,12 @@ def build_research_request(*, department: str, question: str, knowledge_gap: str
         "work_order_id": work_order_id,
         "question": str(question).strip(),
         "knowledge_gap": str(knowledge_gap).strip(),
-        "reason_needed": str(reason_needed or "Knowledge is required to continue the originating objective.").strip(),
-        "desired_evidence": list(desired_evidence or ["source-backed finding", "freshness", "uncertainty"]),
+        "reason_needed": reason,
+        "desired_evidence": evidence,
         "risk_consequence": risk_consequence,
         "freshness_requirement": freshness_requirement,
-        "created_at": _now(),
+        "created_at": created_at,
+        "updated_at": created_at,
         "priority": priority,
         "research_status": "RECEIVED",
         "alpha_status": "NOT_STARTED",
@@ -70,6 +74,17 @@ def build_research_request(*, department: str, question: str, knowledge_gap: str
         "next_action": next_action or "Run bounded Research, then Alpha review.",
         "follow_up_request_id": None,
         "department_resume": "WAITING_FOR_INTELLIGENCE",
+        # Systems-facing aliases keep the canonical request readable to
+        # operators while preserving the existing V2 field names.
+        "requesting_department": department,
+        "business_reason": reason,
+        "source_requirements": evidence,
+        "constraints": {},
+        "deadline_if_any": None,
+        "status": "RECEIVED",
+        "result_artifact": None,
+        "alpha_validation_status": "NOT_STARTED",
+        "downstream_destination": "department_resume",
     }
     return payload
 
@@ -79,6 +94,7 @@ def persist_research_request(request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("invalid-research-request")
     if request.get("research_status") not in REQUEST_STATES:
         raise ValueError("invalid-research-request-state")
+    request = {**request, "updated_at": request.get("updated_at") or _now()}
     persistence.append_record("research_requests", request)
     persistence.emit_audit_event({"event": "department_research_request_recorded", "request_id": request["request_id"], "department": request["department"], "objective_id": request.get("objective_id"), "external_action_performed": False})
     return request
@@ -113,7 +129,7 @@ def run_research_request(request: dict[str, Any], evidence: Iterable[dict[str, A
     pack = alpha["pack"]
     alpha_status = "QUALIFIED" if pack["status"] == "COMPLETE" and pack["findings"] else "MORE_RESEARCH_REQUIRED"
     result_ref = alpha["receipt"]["receipt_id"]
-    updated = {**request, "research_status": "READY_TO_RESUME" if alpha_status == "QUALIFIED" else "FOLLOW_UP_REQUIRED", "alpha_status": alpha_status, "result_reference": result_ref, "next_action": "Resume originating department objective." if alpha_status == "QUALIFIED" else "Investigate the evidence deficiency through targeted Research."}
+    updated = {**request, "research_status": "READY_TO_RESUME" if alpha_status == "QUALIFIED" else "FOLLOW_UP_REQUIRED", "alpha_status": alpha_status, "result_reference": result_ref, "next_action": "Resume originating department objective." if alpha_status == "QUALIFIED" else "Investigate the evidence deficiency through targeted Research.", "status": "READY_TO_RESUME" if alpha_status == "QUALIFIED" else "FOLLOW_UP_REQUIRED", "result_artifact": result_ref, "alpha_validation_status": alpha_status, "downstream_destination": "department_resume"}
     follow_up = None
     if alpha_status != "QUALIFIED":
         follow_up = build_research_request(department=request["department"], objective_id=request.get("objective_id", ""), parent_goal_id=request.get("parent_goal_id", ""), work_order_id=request.get("work_order_id", ""), question=f"Follow up on: {request['question']}", knowledge_gap="Resolve the evidence deficiency identified by Alpha.", reason_needed="Alpha found insufficient evidence.", desired_evidence=request.get("desired_evidence"), risk_consequence=request.get("risk_consequence", "UNKNOWN"), freshness_requirement=request.get("freshness_requirement", "CURRENT"), priority=request.get("priority", "P2_REVENUE"))

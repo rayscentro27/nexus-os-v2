@@ -9,7 +9,6 @@ from __future__ import annotations
 import hashlib
 import html.parser
 import re
-import ssl
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import urlparse
@@ -130,9 +129,11 @@ def build_public_technical_audit(url: str, *, timeout: int = 8) -> Dict[str, Any
     try:
         context = None
         try:
+            import ssl
             import certifi
             context = ssl.create_default_context(cafile=certifi.where())
         except (ImportError, OSError):
+            import ssl
             context = ssl.create_default_context()
         with urlopen(request, timeout=timeout, context=context) as response: body = response.read(500_000); status = response.status; final_url = response.geturl()
     except Exception as exc: return {"url": url, "status": "DEPENDENCY_UNAVAILABLE", "error_class": type(exc).__name__, "observed_at": _now(), "lighthouse": "NOT_AVAILABLE", "external_action_performed": False}

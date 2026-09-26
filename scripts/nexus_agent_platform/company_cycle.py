@@ -24,6 +24,10 @@ from nexus_agent_platform.research.last30days_adapter import run_demand_radar
 from nexus_agent_platform.research_v2_bridge import build_research_package  # type: ignore
 
 
+COMPANY_OBJECTIVE = "Discover and investigate one current funding-readiness customer problem, challenge it with Alpha, and prepare a bounded approved response."
+ACTIVE_CYCLE_STATES = {"ACTIVE", "WAITING_EXTERNAL", "WAITING_RAY"}
+
+
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -77,13 +81,20 @@ def resume_approved_cycle(approval: dict[str, Any]) -> dict[str, Any]:
 
 
 def create_cycle() -> dict[str, Any]:
+    for path in sorted((ROOT / "data" / "runtime" / "company_cycles").glob("*.json")):
+        try:
+            prior = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            continue
+        if prior.get("objective") == COMPANY_OBJECTIVE and prior.get("status") in ACTIVE_CYCLE_STATES:
+            return {**prior, "admission_status": "DUPLICATE_SUPPRESSED", "duplicate_of": prior.get("company_cycle_id")}
     cycle_id = persistence.new_id("company_cycle")
     objective_id = f"{cycle_id}:goclear-funding-readiness-demand"
     state: dict[str, Any] = {
         "company_cycle_id": cycle_id,
         "objective_id": objective_id,
         "business": "GoClear",
-        "objective": "Discover and investigate one current funding-readiness customer problem, challenge it with Alpha, and prepare a bounded approved response.",
+        "objective": COMPANY_OBJECTIVE,
         "status": "ACTIVE",
         "current_stage": "RESEARCH",
         "stages": {},
@@ -173,6 +184,8 @@ def build_approval_package(state: dict[str, Any], package: dict[str, Any], alpha
 
 def run_cycle() -> dict[str, Any]:
     state = create_cycle()
+    if state.get("admission_status") == "DUPLICATE_SUPPRESSED":
+        return state
     package = run_research(state)
     alpha = run_alpha(state, package)
     if alpha.get("status") != "COMPLETE":

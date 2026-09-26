@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 STATE_PATH = ROOT / "data/runtime/productivity_audit_state.json"
 AUDIT_DIR = ROOT / "reports/runtime/productivity_audits"
 SESSION_REPORT = ROOT / "reports/research/NEXUS_CONTINUOUS_INTELLIGENCE_SESSION_2026-09-18.md"
+MATERIAL_EVENTS_PATH = ROOT / "data/runtime/nova_material_events.jsonl"
 STALL_SECONDS = int(os.environ.get("NEXUS_PRODUCTIVITY_STALL_SECONDS", "7200"))
 
 
@@ -55,38 +56,28 @@ def _records_since(path: Path, previous: str | None) -> list[dict[str, Any]]:
     return result[-100:]
 
 
-def _telegram(text: str) -> dict[str, Any]:
-    try:
-        try:
-            from scripts.telegram.nexus_telegram_bridge import ALLOWED_CHAT_IDS, get_bot_token, telegram_send_message
-        except ModuleNotFoundError:
-            from telegram.nexus_telegram_bridge import ALLOWED_CHAT_IDS, get_bot_token, telegram_send_message
-        token = get_bot_token()
-        if not token or not ALLOWED_CHAT_IDS:
-            return {"status": "UNAVAILABLE", "reason": "telegram_transport_unavailable"}
-        receipts = []
-        for chat_id in sorted(ALLOWED_CHAT_IDS):
-            response = telegram_send_message(token, chat_id, text)
-            receipts.append({"chat_id_masked": f"{str(chat_id)[:2]}***", "ok": bool(response and response.get("ok"))})
-        return {"status": "DELIVERED" if receipts and all(row["ok"] for row in receipts) else "FAILED", "receipts": receipts}
-    except Exception as exc:
-        return {"status": "FAILED", "reason": type(exc).__name__}
-
-
-def _summary_message(audit: dict[str, Any]) -> str:
-    research = audit["research_summary"]; alpha = audit["alpha_summary"]; departments = audit["department_summary"]; yt = audit["youtube_summary"]
-    status = audit["runtime_status"]
-    return "\n".join([
-        "NEXUS OPERATIONS AUDIT", "", f"Status: {status}",
-        f"Since last audit: Research {research['productive_actions']} productive / {research['active_workers']} active",
-        f"Alpha: {alpha['reviews_completed']} reviews / {alpha['followups_executed']} follow-ups",
-        f"Departments: {departments['handoffs_created']} handoffs / {departments['completed']} completed",
-        f"YouTube: {yt['channels_checked']}/4 checked, {yt['new_videos']} new videos",
-        f"Current priority: {audit['next_work']['highest_priority']}",
-        f"Blocked: {', '.join(audit['blockers']) or 'none'}",
-        f"Next: {audit['next_work']['next_action']}",
-        f"Audit: {audit['audit_id']}",
-    ])
+def _record_material_event(audit: dict[str, Any]) -> dict[str, Any]:
+    """Persist only actionable degradation for Nova's existing evaluator."""
+    status = str(audit.get("runtime_status", "")).upper()
+    if status == "HEALTHY":
+        return {"status": "INTERNAL_ONLY", "reason": "routine_healthy_audit"}
+    event = {
+        "kind": "PRODUCTIVITY_STALL" if status == "STALLED_RECOVERING" else "SUPERVISOR_UNHEALTHY",
+        "event_type": "PRODUCTIVITY_STALL" if status == "STALLED_RECOVERING" else "SUPERVISOR_UNHEALTHY",
+        "severity": "CRITICAL" if status == "STALLED_RECOVERING" else "WARNING",
+        "affected_system": "Research/Operations",
+        "material_status": status,
+        "blocker": "; ".join(audit.get("blockers") or []),
+        "required_action": "Review the operational condition." if status == "STALLED_RECOVERING" else "",
+        "summary": "Research productivity requires recovery after the bounded self-recovery window." if status == "STALLED_RECOVERING" else "Research runtime is degraded and needs bounded recovery.",
+        "next": audit.get("next_work", {}).get("next_action") or "Continue governed recovery.",
+        "source": "productivity_audit",
+        "observed_at": audit.get("timestamp"),
+    }
+    MATERIAL_EVENTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with MATERIAL_EVENTS_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True) + "\n")
+    return {"status": "INTERNAL_EVENT_RECORDED", "event_type": event["event_type"]}
 
 
 def run_productivity_audit(*, startup: bool = False, force: bool = False) -> dict[str, Any]:
@@ -129,14 +120,11 @@ def run_productivity_audit(*, startup: bool = False, force: bool = False) -> dic
         "blockers": ["KAGGLE_AUTH_UNAVAILABLE"] if not stalled else ["PRODUCTIVITY_STALL"], "recovery_actions": [], "stalled": stalled,
         "next_work": {"highest_priority": heartbeat.get("selected_lane_name") or "assigned Research work / bounded discovery", "next_action": heartbeat.get("next_action") or "continue canonical continuous cycle"}, "telegram_delivery_status": "PENDING",
     }
-    if startup and not previous.get("startup_canary_sent"):
-        audit["startup_canary"] = _telegram("Nexus intelligence engine started. Continuous Research/Alpha operations are active. I will send evidence-based productivity audits and alert you only if human action is required.")
-        audit["startup_canary_sent"] = audit["startup_canary"].get("status") == "DELIVERED"
-    audit["telegram_delivery"] = _telegram(_summary_message(audit)) if force or (not startup and last_audit) else {"status": "STARTUP_CANARY_ONLY"}
-    audit["telegram_delivery_status"] = audit["telegram_delivery"].get("status")
+    audit["telegram_delivery"] = _record_material_event(audit)
+    audit["telegram_delivery_status"] = "INTERNAL_ONLY"
     _write(AUDIT_DIR / f"{audit['audit_id']}.json", audit)
     _write(STATE_PATH, {"audit_id": audit["audit_id"], "timestamp": audit["timestamp"], "last_productive_at": last_productive or (now.isoformat() if productive else None), "startup_canary_sent": previous.get("startup_canary_sent", False) or audit.get("startup_canary_sent", False)})
     SESSION_REPORT.parent.mkdir(parents=True, exist_ok=True)
     with SESSION_REPORT.open("a", encoding="utf-8") as handle:
-        handle.write(f"\n## Productivity audit {audit['timestamp']}\n\n- Status: `{audit['runtime_status']}`\n- Productive actions since prior audit: `{productive}`\n- Research queue depth: `{audit['research_summary']['queue_depth']}`\n- YouTube channels with recorded checks: `{audit['youtube_summary']['channels_checked']}/4`\n- Telegram delivery: `{audit['telegram_delivery_status']}`\n- Next: {audit['next_work']['next_action']}\n")
+        handle.write(f"\n## Productivity audit {audit['timestamp']}\n\n- Status: `{audit['runtime_status']}`\n- Productive actions since prior audit: `{productive}`\n- Research queue depth: `{audit['research_summary']['queue_depth']}`\n- YouTube channels with recorded checks: `{audit['youtube_summary']['channels_checked']}/4`\n- Notification route: `INTERNAL_ONLY`; Nova evaluates only material degradation.\n- Next: {audit['next_work']['next_action']}\n")
     return audit
