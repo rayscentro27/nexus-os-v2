@@ -36,6 +36,15 @@ _incoming/
 # Temporal local persistence
 .temporal/
 
+# machine-local runtime/session state (source and canonical evidence remain visible)
+.runtime/
+test-results/
+**/*.lock
+**/auth.json
+**/state.db
+**/browser-profile/
+**/session-profile/
+
 data/private/
 data/runtime/execution_telemetry/
 data/runtime/nexus_operational_truth.db*
