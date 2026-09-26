@@ -23,6 +23,8 @@ _USE_LANGFUSE = os.getenv("LANGFUSE_TRACING_ENABLED", "").lower() == "true"
 
 # Patterns to redact from text and metadata values
 _REDACT_PATTERNS = [
+    # Provider profile assignments, including Modal token_id/token_secret.
+    (re.compile(r'(?i)((?:token[_-]?(?:id|secret)|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password|secret)\s*[=:]\s*)([^\s,;]+)'), r'\1[REDACTED]'),
     # Telegram bot tokens: digits:AAF...
     (re.compile(r'\d{9,10}:[A-Za-z0-9_-]{35}'), 'REDACTED_BOT_TOKEN'),
     # Bearer / Authorization headers

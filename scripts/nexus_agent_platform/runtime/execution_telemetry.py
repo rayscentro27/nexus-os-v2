@@ -12,6 +12,7 @@ import os
 import re
 import time
 import uuid
+import collections
 from contextvars import ContextVar
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -38,6 +39,9 @@ _SECRET_KEYS = {
     "password", "ssn", "dob", "credit_report", "raw_message", "message_body",
     "prompt", "full_prompt", "bank_account", "card_number",
 }
+_SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i)((?:token[_-]?(?:id|secret)|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password|secret)\s*[=:]\s*)([^\s,;]+)"
+)
 _PROCESS_NAMES = {
     "daily_monitor": "Daily Monitor",
     "system_health": "System Health Check",
@@ -94,7 +98,8 @@ def _sanitize_metadata(value: Any) -> Any:
     if isinstance(value, list):
         return [_sanitize_metadata(item) for item in value[:50]]
     if isinstance(value, str):
-        text = re.sub(r"\d{9,10}:[A-Za-z0-9_-]{35}", "REDACTED_BOT_TOKEN", value)
+        text = _SECRET_ASSIGNMENT_RE.sub(r"\1[REDACTED]", value)
+        text = re.sub(r"\d{9,10}:[A-Za-z0-9_-]{35}", "REDACTED_BOT_TOKEN", text)
         text = re.sub(r"sk-or-v1-[A-Za-z0-9]{20,}", "REDACTED_OPENROUTER", text)
         text = re.sub(r"\b\d{3}-\d{2}-\d{4}\b", "REDACTED_SSN", text)
         return text[:500]
@@ -602,14 +607,28 @@ def telemetry_health(
 
 def _enforce_retention(path: Path, retention_days: int = DEFAULT_RETENTION_DAYS, max_bytes: int = DEFAULT_MAX_BYTES) -> None:
     try:
+        # Do not rewrite the bounded tail on every event once the file crosses
+        # the nominal limit.  A small hysteresis band prevents append/compact
+        # thrashing, which can otherwise stall a scheduled runtime on a busy
+        # telemetry file.  Retention still runs before the file reaches 2x the
+        # configured cap and remains bounded to the newest 20,000 lines.
         if not path.exists() or path.stat().st_size <= max_bytes * 2:
             return
         cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        # Only consider the newest events; the store grows monotonically and the
+        # newest events are the ones retention cares about. Bounding the tail keeps
+        # this O(bounded) on every append instead of rewriting the whole store.
+        lines = collections.deque(open(path, encoding="utf-8"), maxlen=20000)
         kept = []
-        for event in read_events(path):
+        for raw in lines:
+            line = raw if raw.endswith("\n") else raw + "\n"
+            try:
+                event = json.loads(line)
+            except (ValueError, TypeError):
+                continue
             event_dt = _parse_dt(event.get("event_at"))
             if event_dt and event_dt >= cutoff:
-                kept.append(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
+                kept.append(line)
         tmp = path.with_suffix(".tmp")
         tmp.write_text("".join(kept), encoding="utf-8")
         os.chmod(tmp, 0o600)
