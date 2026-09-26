@@ -8,6 +8,7 @@ export async function createRevenueCheckout(input: { offerSlug: ServiceOfferSlug
   const { data, error } = await supabase.functions.invoke('create-stripe-checkout', { body: input });
   if (error) return { ok: false, error: 'checkout_unavailable' } as const;
   trackEvent({ event: 'revenue_checkout_started', route: '/pricing', detail: input.offerSlug });
+  trackEvent({ event: 'CHECKOUT_START', route: '/pricing', detail: input.offerSlug });
   return { ok: true, data } as const;
 }
 
