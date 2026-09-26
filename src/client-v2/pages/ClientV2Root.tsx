@@ -4,8 +4,6 @@ import '../styles/v2-theme.css'
 import { useSession } from '../../components/auth'
 import { resolveClientContextForUser } from '../../lib/clientAuthContext'
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient'
-import { useV2ClientData } from '../hooks/useV2ClientData'
-import { AppShellV2 } from '../layouts/AppShellV2'
 import { DashboardV2 } from './DashboardV2'
 import { CreditReviewV2 } from './CreditReviewV2'
 import { CreditImprovementV2 } from './CreditImprovementV2'
@@ -21,8 +19,10 @@ import { SupportV2 } from './SupportV2'
 import { CustomerGoalsV2 } from './CustomerGoalsV2'
 import { ReviewV2 } from './ReviewV2'
 import type { V2ViewData } from '../types/v2-models'
-import { ROUTE_LABELS, navigateV2, mapRouteToV2 } from '../utils/navigate'
+import { ROUTE_LABELS, mapRouteToV2 } from '../utils/navigate'
 import { V2_ROUTE_CONTRACTS } from '../routeContracts'
+import { ApprovedClientPortal } from '../approved/ApprovedClientPortal'
+import type { TabType } from '../approved/types/portal'
 
 const IMPLEMENTED_V2_ROUTES = new Set([
   '/client-v2/dashboard',
@@ -155,18 +155,19 @@ export function ClientV2Gate() {
 
 export function ClientV2Root() {
   const path = normalizePath(window.location.pathname)
-  const data = useV2ClientData(path)
   const known = Boolean(ROUTE_LABELS[path] || V2_ROUTE_CONTRACTS[path])
   const safePath = known ? path : '/client-v2/dashboard'
-  return (
-    <AppShellV2
-      profile={data.profile}
-      railStages={data.railStages}
-      currentPath={safePath}
-      isDemo={data.isDemo}
-      onNavigate={navigateV2}
-    >
-      {renderV2Page(safePath, data)}
-    </AppShellV2>
-  )
+  const tabByRoute: Record<string, TabType> = {
+    '/client-v2/dashboard': 'dashboard',
+    '/client-v2/credit-review': 'credit-profile',
+    '/client-v2/credit-improvement': 'credit-profile',
+    '/client-v2/documents': 'documents',
+    '/client-v2/business-foundation': 'business-setup',
+    '/client-v2/funding-readiness': 'funding-readiness',
+    '/client-v2/funding-access': 'funding-readiness',
+    '/client-v2/resources': 'resources',
+    '/client-v2/goals': 'recommendations',
+    '/client-v2/review': 'request-review',
+  }
+  return <ApprovedClientPortal live initialTab={tabByRoute[safePath] || 'dashboard'} />
 }

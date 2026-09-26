@@ -1,13 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { clientRoutes } from '../../components/client/ClientPortalShell'
-import WorldClassClientPortal from './WorldClassClientPortal'
-
-const fallbackPath = '/client/dashboard'
-
-function normalizePath(pathname) {
-  const trimmed = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
-  return clientRoutes.some(route => route.path === trimmed) ? trimmed : fallbackPath
-}
+import React from 'react'
+import { ApprovedClientPortal } from '../../client-v2/approved/ApprovedClientPortal'
 
 function DemoBanner() {
   return (
@@ -29,21 +21,10 @@ function DemoBanner() {
 }
 
 export default function ClientPreviewPage() {
-  const [path, setPath] = useState(() => normalizePath(window.location.pathname))
-  useEffect(() => {
-    if (window.location.pathname !== path) window.history.replaceState({}, '', path)
-    const onPopState = () => setPath(normalizePath(window.location.pathname))
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
-  }, [path])
-  function navigate(nextPath) {
-    window.history.pushState({}, '', nextPath)
-    setPath(nextPath)
-  }
   return (
     <>
       <DemoBanner />
-      <WorldClassClientPortal path={path} onNavigate={navigate} />
+      <ApprovedClientPortal live={false} />
     </>
   )
 }
