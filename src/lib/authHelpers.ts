@@ -1,6 +1,9 @@
 import { supabase } from './supabaseClient';
 import { clearNexusAuthSession } from './authSessionCleanup';
 
+export const PASSWORD_RESET_REDIRECT_PATH = '/update-password';
+export const PASSWORD_RESET_PRODUCTION_REDIRECT = `https://goclearonline.cc${PASSWORD_RESET_REDIRECT_PATH}`;
+
 /**
  * Returns the correct redirect URL for Supabase password recovery emails.
  * Uses goclearonline.cc in production, localhost in dev, with Netlify fallback.
@@ -11,9 +14,9 @@ export function getPasswordResetRedirectUrl(): string {
     return 'http://localhost:5173/update-password';
   }
   if (origin.includes('goclearonline.cc')) {
-    return 'https://goclearonline.cc/update-password';
+    return PASSWORD_RESET_PRODUCTION_REDIRECT;
   }
-  return `${origin}/update-password`;
+  return `${origin}${PASSWORD_RESET_REDIRECT_PATH}`;
 }
 
 /**

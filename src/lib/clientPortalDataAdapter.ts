@@ -146,6 +146,9 @@ export async function loadClientProfile(clientId?: string): Promise<{ data: Clie
 
       if (error) return { data: null, source: 'supabase' as const, error: error.message };
       if (data) return { data, source: 'supabase' as const };
+      // A configured Supabase client must never fall through to the demo
+      // profile. An empty live result is a real, tenant-scoped empty state.
+      return { data: null, source: 'supabase' as const, error: 'No client profile found' };
     } catch (e) {
       return { data: null, source: 'supabase' as const, error: String(e) };
     }
@@ -211,6 +214,9 @@ export async function loadClientDocuments(clientId?: string): Promise<{ data: Cl
         const byDocument=Object.fromEntries((workflows||[]).map((row:Record<string,unknown>)=>[row.document_id,row]));
         return { data: data.map((row:Record<string,unknown>)=>({...row,...(byDocument[String(row.id)]||{})})) as unknown as ClientDocument[], source: 'supabase' as const };
       }
+      // Keep configured/live mode empty when RLS returns no documents; do not
+      // manufacture synthetic records for an authenticated client.
+      return { data: [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
