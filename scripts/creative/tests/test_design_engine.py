@@ -5,7 +5,7 @@ from scripts.creative.design_engine import (
 
 def test_surface_router_uses_specialist_workers():
     assert classify_surface("Nexus Admin Executive Command Center")["recommended_worker"] == "penpot"
-    assert classify_surface("affiliate campaign landing page")["recommended_worker"] == "openpage"
+    assert classify_surface("affiliate campaign landing page")["recommended_worker"] == "render_canvas"
     assert classify_surface("existing React visual refinement", explicit="EXISTING_REACT_VISUAL_EDIT")["recommended_worker"] == "onlook"
 
 

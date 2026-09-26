@@ -42,7 +42,7 @@ TRANSITIONS = {
 
 WORKER_BY_SURFACE = {
     "PRODUCT_UI": "penpot", "ADMIN_DASHBOARD": "penpot", "CLIENT_PORTAL": "penpot",
-    "LANDING_PAGE": "openpage", "CAMPAIGN_PAGE": "openpage", "SEO_MICROSITE": "openpage",
+    "LANDING_PAGE": "render_canvas", "CAMPAIGN_PAGE": "render_canvas", "SEO_MICROSITE": "render_canvas",
     "MARKETING_SITE": "webstudio", "VISUAL_ASSET": "existing_creative_asset_worker",
     "DESIGN_QA": "impeccable", "EXISTING_REACT_VISUAL_EDIT": "onlook",
     "CUSTOM_PAGE_BUILDER": "grapesjs",
@@ -156,6 +156,7 @@ def route_asset(project: Mapping[str, Any], asset_type: str, *, source: str = "e
 def adapter_contract(worker: str) -> dict[str, Any]:
     operations = {
         "penpot": ["create_design_project", "create_page", "create_frame", "create_component", "apply_tokens", "insert_asset", "create_responsive_variant", "export_design_metadata", "fetch_design_artifact"],
+        "render_canvas": ["create_design_package", "render_html", "render_svg", "capture_desktop", "capture_mobile", "validate_pixels", "return_review_artifacts"],
         "openpage": ["create_site_config", "add_page", "add_section", "apply_theme", "insert_asset", "bind_content", "create_responsive_rules", "export_preview", "export_site_config"],
         "onlook": ["connect_repo", "open_route", "inspect_components", "apply_visual_change", "capture_preview", "persist_change_reference"],
         "impeccable": ["critique", "record_findings", "request_revision"],
