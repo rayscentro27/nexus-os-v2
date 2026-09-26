@@ -348,7 +348,8 @@ def run_alpha_research(job: dict, evidence: Iterable[dict], *, claim_specs: Opti
     (reports / f"{job['research_job_id']}.md").write_text(report, encoding="utf-8")
     (root / f"{job['research_job_id']}.receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     heartbeat = {"capability": "alpha_research", "status": "HEALTHY" if status in {"COMPLETE", "PARTIAL"} else "DEGRADED", "last_run": receipt["completed_at"], "last_success": receipt["completed_at"] if status in {"COMPLETE", "PARTIAL"} else None, "last_result": status, "research_job_id": job["research_job_id"], "receipt_id": receipt["receipt_id"], "source_count": len(source_rows), "evidence_count": len(evidence_by_id), "browser_evidence_used": bool(pack["cost_usage"].get("remote_cpu_jobs")), "freshness": pack["freshness"], "optional": True, "core_health_dependency": False, "consequential_action_performed": False, "updated_at": _now()}
-    heartbeat_path = Path(__file__).resolve().parents[2] / "reports/runtime/nexus_alpha_research_heartbeat_latest.json"
+    heartbeat_path = ((root / "nexus_alpha_research_heartbeat_latest.json") if runtime_root
+                      else Path(__file__).resolve().parents[2] / "reports/runtime/nexus_alpha_research_heartbeat_latest.json")
     heartbeat_path.parent.mkdir(parents=True, exist_ok=True); heartbeat_path.write_text(json.dumps(heartbeat, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return {"job": job, "plan": pack["plan"], "pack": pack, "report": report, "receipt": receipt, "heartbeat": heartbeat}
 

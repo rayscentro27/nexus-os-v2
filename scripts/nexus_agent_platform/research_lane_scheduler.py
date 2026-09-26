@@ -1,4 +1,8 @@
-"""Canonical Research-lane registry and bounded fair selector."""
+"""Canonical Research-lane registry and bounded fair selector.
+
+Research execution is intentionally unbounded.  The scheduler only chooses
+the next eligible item; certification counters observe it and never stop it.
+"""
 from __future__ import annotations
 
 import json
@@ -15,6 +19,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "research"))
 REGISTRY_PATH = ROOT / "data/runtime/research_lane_registry.json"
 SOURCE_REFRESH_STATE_PATH = ROOT / "data/runtime/research_source_refresh_state.json"
 EXECUTION_JOBS_PATH = ROOT / "data/runtime/research_execution_jobs.jsonl"
+PROGRAM_SERVICE_STATE_PATH = ROOT / "data/runtime/research_program_service_state.json"
 LANES = (
     ("BUSINESS_MARKET", "Business Market", "P1"),
     ("FUNDING_LENDER", "Funding and Lender", "P1"),
@@ -25,7 +30,39 @@ LANES = (
     ("YOUTUBE_CONTENT", "YouTube Content", "P2"),
     ("COMPETITOR_INTELLIGENCE", "Competitor Intelligence", "P2"),
     ("TRADING_MARKETS", "Trading Markets", "P1"),
+    ("GITHUB_TECHNOLOGY", "GitHub and Open Source", "P2"),
+    ("PLATFORM_CAPABILITY_INTELLIGENCE", "Platform Capability Intelligence", "P2"),
 )
+RESEARCH_CYCLE_LIMIT = "UNBOUNDED"
+RESEARCH_RUNTIME_STOP_CONDITION = "NONE"
+LIVE_SERVICE_WAKE_THRESHOLD = 3
+LIVE_PROGRAM_LANES = {
+    "CUSTOMER_NEEDS": "BUSINESS_MARKET",
+    "BUSINESS_FUNDING": "FUNDING_LENDER",
+    "YOUTUBE_INTELLIGENCE": "YOUTUBE_CONTENT",
+    "SEO_SEARCH_INTELLIGENCE": "SEO_SEARCH_DEMAND",
+    "GITHUB_OPEN_SOURCE": "GITHUB_TECHNOLOGY",
+    "PROJECT_SUPPORT": "BUSINESS_MARKET",
+    "LAST30DAYS_PROACTIVE": "BUSINESS_MARKET",
+    "RESEARCH_MORE": "BUSINESS_MARKET",
+}
+
+# These are aliases over real queue/registry lanes and governed source paths;
+# they are not extra schedulers or synthetic work queues.
+STANDING_LANE_ALIASES = {
+    "ASSIGNED_RESEARCH": ("ASSIGNED_QUEUE",),
+    "RESEARCH_MORE": ("RESEARCH_MORE_QUEUE",),
+    "CUSTOMER_NEEDS_COMPLAINTS_IDEAS": ("BUSINESS_MARKET",),
+    "YOUTUBE_RESEARCH": ("YOUTUBE_CONTENT",),
+    "SEO_SEARCH_ENGINE_RESEARCH": ("SEO_SEARCH_DEMAND",),
+    "GITHUB_OPEN_SOURCE_RESEARCH": ("GITHUB_TECHNOLOGY", "PLATFORM_CAPABILITY_INTELLIGENCE"),
+    "BUSINESS_FUNDING_CLYDE_INTELLIGENCE": ("FUNDING_LENDER", "GRANTS_GOVERNMENT"),
+    "AFFILIATE_PRODUCT_SOLUTION_DISCOVERY": ("AFFILIATE_REVENUE",),
+    "GENERAL_OPPORTUNITY_DISCOVERY": ("BUSINESS_MARKET",),
+    "STALE_INTELLIGENCE_REFRESH": ("SOURCE_REFRESH_STATE",),
+    "DEPARTMENT_RESEARCH_REQUESTS": ("ASSIGNED_QUEUE",),
+    "MONITORED_SOURCE_REFRESH": ("SOURCE_REFRESH_STATE",),
+}
 PRIORITY = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 GOVERNED = ROOT / "data/governed"
 LANE_TERMS = {
@@ -68,6 +105,21 @@ def _read_source_refresh_state() -> dict[str, dict[str, Any]]:
         return value if isinstance(value, dict) else {}
     except (OSError, ValueError, TypeError):
         return {}
+
+
+def _read_program_service_state() -> dict[str, dict[str, Any]]:
+    try:
+        value = json.loads(PROGRAM_SERVICE_STATE_PATH.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def _write_program_service_state(value: dict[str, dict[str, Any]]) -> None:
+    PROGRAM_SERVICE_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = PROGRAM_SERVICE_STATE_PATH.with_name(f".{PROGRAM_SERVICE_STATE_PATH.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, PROGRAM_SERVICE_STATE_PATH)
 
 
 def _write_source_refresh_state(value: dict[str, dict[str, Any]]) -> None:
@@ -223,6 +275,140 @@ def select_priority_work(*, worker_id: str = "research_scheduler", blocked_bucke
                             blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
 
 
+def ensure_live_program_work() -> dict[str, Any]:
+    """Materialize one bounded executable item for the two previously starved lanes.
+
+    This is idempotent queue projection, not a second scheduler.  A completed
+    item is never recreated automatically; a future refresh is a new governed
+    question or explicit project request.
+    """
+    queue = default_queue()
+    specs = {
+        "SEO_SEARCH_INTELLIGENCE": {
+            "lane_id": "SEO_SEARCH_DEMAND",
+            "title": "Funding-readiness search demand",
+            "question": "What search queries and content patterns indicate that small-business owners are seeking funding-readiness help?",
+            "source_candidates": [
+                {"source_type": "SEO_RESEARCH", "source_id": "google-seo-starter", "source_url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "title": "Google SEO Starter Guide"},
+                {"source_type": "SEO_RESEARCH", "source_id": "google-ai-search-features", "source_url": "https://developers.google.com/search/docs/appearance/ai-features", "title": "Google Search AI features guidance"},
+            ],
+        },
+        "GITHUB_OPEN_SOURCE": {
+            "lane_id": "GITHUB_TECHNOLOGY",
+            "title": "Research automation capability review",
+            "question": "What current open-source agent/research automation capability is relevant to reliable Nexus Research execution, and what are its limitations?",
+            "source_candidates": [
+                {"source_type": "GITHUB_REPOSITORY", "source_id": "openai/openai-cookbook", "source_url": "https://github.com/openai/openai-cookbook", "title": "OpenAI Cookbook automation and agent examples"},
+            ],
+        },
+    }
+    items = queue.load().get("items", [])
+    created = []
+    for program_id, spec in specs.items():
+        work_id = f"live-program:{program_id.lower()}"
+        if any(str(row.get("work_id")) == work_id for row in items):
+            continue
+        candidate = spec["source_candidates"][0]
+        queue.enqueue(
+            work_id=work_id, work_class="ASSIGNED", priority=1,
+            lane_id=spec["lane_id"], source_type="RESEARCH_OBJECTIVE",
+            source_id=f"{program_id.lower()}-20260925", source_url=None,
+            source_candidates=spec["source_candidates"], title=spec["title"],
+            question=spec["question"], objective_id=work_id,
+            requested_by="research_v2_live_service_guarantee",
+            lifecycle="ONE_TIME", selection_reason="bounded_live_program_service",
+            alpha_followup_required=False, evidence_refs=[],
+        )
+        created.append(program_id)
+        items.append({"work_id": work_id, "lane_id": spec["lane_id"], "status": "QUEUED"})
+    return {"created": created, "existing_or_created": sorted(specs), "task_ids": [f"live-program:{p.lower()}" for p in specs]}
+
+
+def _queue_work_for_lane(lane_id: str) -> list[dict[str, Any]]:
+    try:
+        rows = default_queue().load().get("items", [])
+    except Exception:
+        return []
+    return [row for row in rows
+            if str(row.get("lane_id") or "").upper() == str(lane_id).upper()
+            and str(row.get("status") or "").upper() in {"QUEUED", "WAITING"}
+            and not (row.get("next_eligible_at") and _parse_age(row.get("next_eligible_at"), _now()) == 0.0)]
+
+
+def _queue_work_for_program(program_id: str, lane_id: str) -> list[dict[str, Any]]:
+    """Return work belonging to this program, avoiding shared-lane inflation."""
+    rows = _queue_work_for_lane(lane_id)
+    if program_id == "SEO_SEARCH_INTELLIGENCE":
+        return [row for row in rows if str(row.get("work_id", "")).startswith("live-program:seo_") or str(row.get("program_id", "")) == program_id]
+    if program_id == "GITHUB_OPEN_SOURCE":
+        return [row for row in rows if str(row.get("work_id", "")).startswith("live-program:github_") or str(row.get("program_id", "")) == program_id]
+    if program_id == "YOUTUBE_INTELLIGENCE":
+        return [row for row in rows if str(row.get("source_type", "")).upper().startswith("YOUTUBE") or str(row.get("work_id", "")).startswith("yt-")]
+    if program_id == "BUSINESS_FUNDING":
+        return [row for row in rows if str(row.get("lane_id")) == "FUNDING_LENDER" or "fund" in str(row.get("question") or row.get("title") or "").lower()]
+    if program_id == "PROJECT_SUPPORT":
+        return [row for row in rows if row.get("project_id") or str(row.get("work_id", "")).startswith("project-research:") or str(row.get("work_id", "")).startswith("department-request:")]
+    if program_id == "RESEARCH_MORE":
+        return [row for row in rows if row.get("alpha_followup_required") or str(row.get("work_id", "")).startswith("investigation:")]
+    return [row for row in rows if str(row.get("program_id", "")) == program_id]
+
+
+def _persist_program_service_state(rows: list[dict[str, Any]], contexts: dict[str, dict[str, Any]], selected_lane: str | None = None) -> None:
+    prior = _read_program_service_state()
+    now = _now().isoformat()
+    state = {}
+    for program_id, lane_id in LIVE_PROGRAM_LANES.items():
+        row = next((item for item in rows if item.get("lane_id") == lane_id), {})
+        context = contexts.get(lane_id, {})
+        executable = len(_queue_work_for_program(program_id, lane_id))
+        old = prior.get(program_id, {})
+        selected = selected_lane == lane_id
+        skips = 0 if selected else int(old.get("consecutive_skips", 0) or 0) + (1 if executable else 0)
+        last_selected = row.get("last_run_at") or old.get("last_selected_at")
+        last_result = old.get("last_substantive_result_at")
+        source_state = _read_source_refresh_state()
+        matching = [v for v in source_state.values() if v.get("lane_id") == lane_id and v.get("last_changed_at")]
+        if matching:
+            last_result = max((v.get("last_changed_at") for v in matching), default=last_result)
+        blocked = bool(row.get("backoff_until") and _parse_age(row.get("backoff_until"), _now()) == 0.0)
+        status = "BLOCKED" if blocked else "RESEARCH_PROGRAM_STARVATION" if executable and skips >= LIVE_SERVICE_WAKE_THRESHOLD else "ELIGIBLE"
+        state[program_id] = {
+            "program_id": program_id, "lane_id": lane_id, "eligible": bool(row.get("enabled", True)),
+            "executable_work_count": executable, "last_selected_at": last_selected,
+            "last_substantive_result_at": last_result, "consecutive_skips": skips,
+            "deficit_or_priority_state": {"selection_count": int(row.get("selection_count", 0) or 0), "priority": row.get("priority")},
+            "blocker": row.get("last_failure_reason") if blocked else None,
+            "starvation_status": status, "updated_at": now,
+        }
+    _write_program_service_state(state)
+
+
+def program_service_snapshot() -> dict[str, Any]:
+    return _read_program_service_state()
+
+
+def repair_legacy_research_more_residue() -> dict[str, Any]:
+    """Park old runaway follow-ups without deleting their audit evidence."""
+    queue = default_queue()
+    store = queue.load()
+    repaired = []
+    for item in store.get("items", []):
+        if not item.get("alpha_followup_required") or int(item.get("attempt_count", 0) or 0) <= int(item.get("max_attempts", 3) or 3):
+            continue
+        if str(item.get("status") or "").upper() in {"IN_PROGRESS", "QUEUED", "WAITING"}:
+            item.update({"status": "PARKED", "completed_at": datetime.now(timezone.utc).isoformat(),
+                         "last_result": {**(item.get("last_result") or {}), "classification": "PARKED_LEGACY",
+                                          "reason": "legacy RESEARCH_MORE attempt count exceeded current bounded policy"},
+                         "claimed_by": None, "claimed_at": None, "lease_expires_at": None, "attempt_id": None})
+            repaired.append(str(item.get("work_id")))
+        elif str((item.get("last_result") or {}).get("classification", "")) not in {"PARKED_LEGACY", "REJECTED_LEGACY", "NO_ACTION_LEGACY", "SUPERSEDED"}:
+            item["legacy_followup_classification"] = "PARKED_LEGACY"
+            repaired.append(str(item.get("work_id")))
+    if repaired:
+        queue._save(store)
+    return {"repaired": repaired, "count": len(repaired), "audit_preserved": True}
+
+
 def _sync_governed_priority_work(queue) -> None:
     """Project unfinished V2 assignments into the operational queue.
 
@@ -361,9 +547,11 @@ def _lane_context(lane_id: str, now: datetime) -> dict[str, Any]:
             mission_pending = 1 if next_mission_item(source_type="YOUTUBE_VIDEO") else 0
         except Exception:
             mission_pending = 0
+    executable_work_count = len(_queue_work_for_lane(lane_id))
     return {"high": high, "medium": medium, "questions": len(questions), "investigations": len(investigations),
             "followups": len(followups), "theses": len(theses), "oldest_age_seconds": oldest_age,
-            "watched_sources": watched_sources, "mission_pending": mission_pending}
+            "watched_sources": watched_sources, "mission_pending": mission_pending,
+            "executable_work_count": executable_work_count}
 
 
 def ensure_registry() -> list[dict[str, Any]]:
@@ -377,25 +565,112 @@ def ensure_registry() -> list[dict[str, Any]]:
                      "selection_count": int(old.get("selection_count", 0)),
                      "last_run_at": old.get("last_run_at"), "next_due_at": old.get("next_due_at"),
                      "open_work_count": int(old.get("open_work_count", 1)),
-                     "last_selection_reason": old.get("last_selection_reason"), "updated_at": timestamp})
+                     "last_selection_reason": old.get("last_selection_reason"),
+                     "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
+                     "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION,
+                     "updated_at": timestamp})
     REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
     REGISTRY_PATH.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return rows
 
 
+def _select_live_service_work(rows: list[dict[str, Any]], blocked_buckets: set[str], now: datetime) -> dict[str, Any] | None:
+    """Guarantee bounded service for executable high-priority live programs."""
+    contexts = {str(row["lane_id"]): _lane_context(str(row["lane_id"]), now) for row in rows}
+    _persist_program_service_state(rows, contexts)
+    state = _read_program_service_state()
+    candidates = []
+    for program_id, lane_id in LIVE_PROGRAM_LANES.items():
+        row = next((item for item in rows if item.get("lane_id") == lane_id), None)
+        context = contexts.get(lane_id, {})
+        program_work = _queue_work_for_program(program_id, lane_id)
+        if not row or not row.get("enabled") or not program_work:
+            continue
+        bucket = "youtube" if lane_id == "YOUTUBE_CONTENT" else "web"
+        if bucket in blocked_buckets:
+            continue
+        service = state.get(program_id, {})
+        if service.get("blocker"):
+            continue
+        # Queue priority is part of the live-service contract.  Skip debt is
+        # still the fairness tie-breaker, but a newly assigned/high-priority
+        # question must not be hidden behind a large low-priority monitoring
+        # backlog (for example YouTube historical work).
+        min_priority = min((int(item.get("priority", 50) or 50) for item in program_work), default=50)
+        candidates.append((-min_priority,
+                           int(service.get("consecutive_skips", 0) or 0),
+                           0 if not service.get("last_selected_at") else 1,
+                           str(service.get("last_selected_at") or ""), program_id, lane_id, row, context))
+    if not candidates:
+        return None
+    # Highest queue priority first, then most-skipped/oldest.  The
+    # lexicographic tie-break is stable and makes the bounded guarantee
+    # deterministic across daemon restarts.
+    _, _, _, _, program_id, lane_id, row, context = max(
+        candidates, key=lambda value: (value[0], value[1], -value[2], value[3] or "", value[4])
+    )
+    claimed = None
+    for item in sorted(_queue_work_for_lane(lane_id), key=lambda value: (int(value.get("priority", 50)), str(value.get("created_at") or ""))):
+        claimed = default_queue().claim_work(str(item.get("work_id")), worker_id=f"research_scheduler:{os.getpid()}", lease_seconds=900)
+        if claimed:
+            break
+    selected = claimed or dict(row)
+    selected.update({"lane_id": lane_id, "program_id": program_id,
+                     "name": row.get("name") or lane_id.replace("_", " ").title(),
+                     "selected_work_class": selected.get("work_class") or "MONITORED",
+                     "selection_reason": "bounded_live_program_service",
+                     "fairness_gate": "LIVE_SERVICE_GUARANTEE",
+                     "live_service_guarantee": {"program_id": program_id, "consecutive_skips": state.get(program_id, {}).get("consecutive_skips", 0), "threshold": LIVE_SERVICE_WAKE_THRESHOLD},
+                     "selected_at": now.isoformat(), "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
+                     "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
+    updated = []
+    for existing in rows:
+        if existing.get("lane_id") == lane_id:
+            updated.append({**existing, "selection_count": int(existing.get("selection_count", 0) or 0) + 1,
+                            "last_run_at": now.isoformat(), "last_selection_reason": "bounded_live_program_service",
+                            "selected_work_class": selected.get("selected_work_class")})
+        else:
+            updated.append(existing)
+    REGISTRY_PATH.write_text(json.dumps(updated, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    contexts[lane_id] = {**context, "executable_work_count": max(0, int(context.get("executable_work_count", 0)) - (1 if claimed else 0))}
+    _persist_program_service_state(updated, contexts, selected_lane=lane_id)
+    return selected
+
+
 def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[str] | None = None) -> dict[str, Any]:
     _hydrate_refresh_state_from_history()
-    priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
-    if priority_work:
-        lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
-        lane = next((row for row in ensure_registry() if row.get("lane_id") == lane_id), None)
-        priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
-                              "selection_reason": priority_work.get("selection_reason") or "assigned_work_priority",
-                              "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
-                              "selected_at": _now().isoformat()})
-        return priority_work
+    ensure_live_program_work()
     rows = [row for row in ensure_registry() if row.get("enabled")]
     blocked_buckets = {str(bucket).lower() for bucket in (blocked_buckets or set())}
+    live_selected = _select_live_service_work(rows, blocked_buckets, _now())
+    if live_selected:
+        return live_selected
+
+    # A continuously replenished assigned/RESEARCH_MORE stream may not starve
+    # standing lanes.  We defer one priority claim whenever an enabled lane is
+    # materially behind the least-served lane.  The queued item remains intact
+    # and is claimed on the next eligible turn; this is a scheduling decision,
+    # not a rejection or stop condition.
+    counts = [int(row.get("selection_count", 0) or 0) for row in rows]
+    min_count = min(counts, default=0)
+    max_count = max(counts, default=0)
+    starvation_debt = max_count - min_count
+    fair_rotation_required = starvation_debt >= 1 and any(
+        int(row.get("selection_count", 0) or 0) == min_count and not row.get("backoff_until")
+        for row in rows
+    )
+    if not fair_rotation_required:
+        priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
+        if priority_work:
+            lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
+            lane = next((row for row in rows if row.get("lane_id") == lane_id), None)
+            priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
+                                  "selection_reason": priority_work.get("selection_reason") or "assigned_work_priority",
+                                  "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
+                                  "selected_at": _now().isoformat(), "fairness_gate": "NOT_REQUIRED",
+                                  "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
+                                  "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
+            return priority_work
 
     def lane_bucket(row: dict[str, Any]) -> str:
         lane_id = str(row.get("lane_id") or "").upper()
@@ -494,8 +769,13 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         priority_signal = max(0.0, 30.0 - PRIORITY.get(str(row.get("priority", "P4")), 4) * 6.0)
         score = base_score + fairness_debt + priority_signal
         scored.append((score, row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty))
-    score, selected_row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty = max(
-        scored, key=lambda x: (x[0], -int(x[1].get("selection_count", 0)), str(x[1]["lane_id"])))
+    if fair_rotation_required:
+        least_served = [item for item in scored if int(item[1].get("selection_count", 0) or 0) == min_count]
+        score, selected_row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty = max(
+            least_served or scored, key=lambda x: (x[7], x[2].get("oldest_age_seconds", 0), str(x[1]["lane_id"])))
+    else:
+        score, selected_row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty = max(
+            scored, key=lambda x: (x[0], -int(x[1].get("selection_count", 0)), str(x[1]["lane_id"])))
     selected = dict(selected_row)
     selected["selection_reason"] = "due_monitored_source" if context.get("watched_sources") or source_id else "general_discovery"
     selected["selected_work_class"] = "MONITORED"
@@ -518,7 +798,11 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         "why_selected": "highest explainable materiality/progression/age score after bounded fairness and duplicate cooldown",
         "materiality_basis": selected["materiality_basis"], "progression_basis": selected["progression_basis"],
         "age_basis": selected["age_basis"], "fairness_basis": selected["fairness_basis"], "duplicate_basis": selected["duplicate_basis"],
+        "fairness_gate": "LEAST_SERVED_LANE" if fair_rotation_required else "NORMAL_SCORE",
     }
+    selected["fairness_gate"] = "LEAST_SERVED_LANE" if fair_rotation_required else "NORMAL_SCORE"
+    selected["research_cycle_limit"] = RESEARCH_CYCLE_LIMIT
+    selected["research_runtime_stop_condition"] = RESEARCH_RUNTIME_STOP_CONDITION
     selected["selected_at"] = now.isoformat()
     selected["selection_count"] = int(selected.get("selection_count", 0)) + 1
     selected["last_run_at"] = selected["selected_at"]

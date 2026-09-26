@@ -120,6 +120,7 @@ class ResearchWorkQueue:
             "title": item.get("title"),
             "question": item.get("question"),
             "objective_id": item.get("objective_id"),
+            "project_id": item.get("project_id"),
             "parent_goal_id": item.get("parent_goal_id"),
             "mission_id": item.get("mission_id"),
             "mission_item_id": item.get("mission_item_id"),
@@ -159,6 +160,13 @@ class ResearchWorkQueue:
             "unknown_to_resolve": item.get("unknown_to_resolve"),
             "evidence_gaps": list(item.get("evidence_gaps", []) or []),
             "stop_condition": item.get("stop_condition"),
+            "program_id": item.get("program_id"),
+            "channel_id": item.get("channel_id"),
+            "channel_name": item.get("channel_name"),
+            "channel_url": item.get("channel_url"),
+            "published_at": item.get("published_at"),
+            "selection_reason": item.get("selection_reason"),
+            "backfill_rank": item.get("backfill_rank"),
         }
         return result
 

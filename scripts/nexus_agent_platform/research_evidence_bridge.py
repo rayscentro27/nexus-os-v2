@@ -117,6 +117,14 @@ def resolve_objective(objective_id: str) -> dict[str, Any]:
         missing.append("latest_research_package")
     if not latest_alpha:
         missing.append("latest_alpha_receipt")
+    else:
+        for field in ("deficiencies", "required_followup"):
+            value = latest_alpha.get(field)
+            if value and str(value) not in missing:
+                missing.append(str(value))
+    for value in ((latest_investigation or {}).get("unknowns") or []):
+        if value and str(value) not in missing:
+            missing.append(str(value))
     return {
         "status": "OK" if not missing else "PARTIAL",
         "objective_id": oid,
