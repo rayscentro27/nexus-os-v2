@@ -27,6 +27,7 @@ describe('Nexus wake-routed Voice', () => {
     expect(source).toContain('sendAgentMessage');
     expect(source).toContain('nexus:voice-thread-update');
     expect(source).toContain('Quick Voice');
+    expect(source).toContain("speech === 'STARTED'");
     expect(source).not.toMatch(/SpeechRecognition|webkitSpeechRecognition|google|deepgram|assemblyai/i);
   });
 });

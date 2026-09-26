@@ -4,7 +4,8 @@ const MAX_MS = 30000
 const PREVIEW_CADENCE_MS = 1200
 // Cloudflare Access credentials belong to the Netlify server relay.  Keep the
 // browser transport same-origin so an environment variable can never point
-// the browser directly at the protected Voice origin.
+// the browser directly at the protected Voice origin. VITE_NEXUS_VOICE_ENDPOINT
+// remains intentionally unused in the browser transport.
 const endpoint = '/.netlify/functions/voice-relay'
 const previewEndpoint = `${endpoint}?mode=preview`
 const STATE_LABELS = {
