@@ -13,6 +13,7 @@ import json
 import re
 import urllib.parse
 import urllib.request
+import ssl
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -78,7 +79,13 @@ def extract(text: str, source_type: str) -> dict[str, Any]:
 
 def fetch(url: str, accept: str = "text/html") -> tuple[str, dict[str, Any]]:
     req = urllib.request.Request(url, headers={"User-Agent": "NexusResearch/1.0", "Accept": accept})
-    with urllib.request.urlopen(req, timeout=25) as response:
+    context = None
+    try:
+        import certifi
+        context = ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        context = None
+    with urllib.request.urlopen(req, timeout=25, context=context) as response:
         body = response.read()
         return body.decode("utf-8", "replace"), {"status": response.status, "content_type": response.headers.get("Content-Type", "")}
 

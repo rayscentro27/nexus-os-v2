@@ -12,7 +12,9 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
+import ssl
 import tempfile
 import time
 import urllib.parse
@@ -27,7 +29,10 @@ from research_scoring import scoring_profile
 
 CANONICAL_ROOT = ROOT / "reports" / "runtime" / "youtube_artifacts"
 YT_DLP_MAX_ATTEMPTS = 1
-YT_DLP_TIMEOUT_SECONDS = 20
+# Each provider attempt is bounded.  The worker remains one-video-at-a-time;
+# this is deliberately not a mass ASR fanout on the Mac mini.
+YT_DLP_TIMEOUT_SECONDS = 35
+YOUTUBE_ASR_TIMEOUT_SECONDS = 120
 WHISPER_CPP_BINARY = ROOT / ".runtime" / "whisper.cpp" / "build-native" / "bin" / "whisper-cli"
 WHISPER_CPP_MODEL = ROOT / ".runtime" / "whisper.cpp" / "models" / "ggml-tiny.en.bin"
 
@@ -47,10 +52,24 @@ def _now() -> str:
 
 
 def _run(command: list[str], timeout: int = 180) -> subprocess.CompletedProcess[str]:
+    process: subprocess.Popen[str] | None = None
     try:
-        return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False, timeout=timeout)
+        process = subprocess.Popen(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+        stdout, stderr = process.communicate(timeout=timeout)
+        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
     except subprocess.TimeoutExpired as exc:
-        return subprocess.CompletedProcess(command, 124, exc.stdout or "", f"command timed out after {timeout}s")
+        if process is not None:
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+                stdout, stderr = process.communicate(timeout=3)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                stdout, stderr = process.communicate()
+            except ProcessLookupError:
+                stdout, stderr = "", ""
+        else:
+            stdout, stderr = exc.stdout or "", exc.stderr or ""
+        return subprocess.CompletedProcess(command, 124, stdout or "", f"command timed out after {timeout}s")
 
 
 def _run_ytdlp(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -70,7 +89,13 @@ def _run_ytdlp(command: list[str]) -> subprocess.CompletedProcess[str]:
 
 def _http_get(url: str, timeout: int = 15) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 Nexus Research/2.0"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    context = None
+    try:
+        import certifi
+        context = ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        context = None
+    with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
         return response.read()
 
 
@@ -85,7 +110,7 @@ def _rss_channel_videos(channel_url: str, limit: int) -> list[dict[str, str]]:
     root = ET.fromstring(_http_get(f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"))
     ns = {"atom": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
     videos = []
-    for entry in root.findall("atom:entry", ns)[:max(1, min(limit, 3))]:
+    for entry in root.findall("atom:entry", ns)[:max(1, min(limit, 10))]:
         video_id = entry.findtext("yt:videoId", default="", namespaces=ns)
         title = entry.findtext("atom:title", default=video_id, namespaces=ns)
         published = entry.findtext("atom:published", default="", namespaces=ns)
@@ -125,6 +150,8 @@ def _http_caption_tracks(url: str, video_id: str) -> tuple[str, list[dict[str, s
     if not track or not track.get("baseUrl"):
         raise RuntimeError("no English public caption track")
     caption_xml = _http_get(track["baseUrl"])
+    if not caption_xml.strip():
+        raise RuntimeError("public caption endpoint returned an empty response")
     root = ET.fromstring(caption_xml)
     segments = []
     for node in root.findall("text"):
@@ -249,7 +276,7 @@ def _acquire_audio_whisper_cpp(url: str, video_id: str) -> tuple[str, list[dict[
     with tempfile.TemporaryDirectory(prefix="nexus-youtube-asr-") as temp:
         audio, _source = _acquire_audio_wav(url, video_id, temp)
         output_base = Path(temp) / video_id
-        result = _run([str(WHISPER_CPP_BINARY), "-m", str(WHISPER_CPP_MODEL), "-f", str(audio), "-l", "en", "-otxt", "-oj", "-of", str(output_base), "-np", "-nt"], timeout=900)
+        result = _run([str(WHISPER_CPP_BINARY), "-m", str(WHISPER_CPP_MODEL), "-f", str(audio), "-l", "en", "-otxt", "-oj", "-of", str(output_base), "-np", "-nt"], timeout=YOUTUBE_ASR_TIMEOUT_SECONDS)
         txt_path = output_base.with_suffix(".txt")
         json_path = output_base.with_suffix(".json")
         if result.returncode != 0 or not txt_path.exists():

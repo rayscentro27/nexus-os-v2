@@ -7,11 +7,14 @@ creates opportunities, work orders, or Supabase records.
 from __future__ import annotations
 
 import json
+import traceback
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from research_document_pipeline import fetch, process_document
 from research_v2 import integrate_scheduled_result
+from research_v2_control_plane import classify_completion, stage_receipts
+from nexus_agent_platform.governed.persistence import append_record
 from youtube_full_pipeline import process_youtube_video
 
 
@@ -72,13 +75,20 @@ def process_scheduled_item(item: dict[str, Any]) -> dict[str, Any]:
         status = result.get("processing_status", "FULLY_PROCESSED")
         duplicate = status == "DUPLICATE_UNCHANGED"
         v2 = integrate_scheduled_result(item, result) if not duplicate else {"v2_integrated": True, "duplicate": True, "claims_created": 0, "questions_created": 0}
-        return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": True, "summary_created": not duplicate, "extraction_created": not duplicate, "scored": not duplicate, "provenance_created": True, "stored": True, "disposition": result.get("research_disposition", "DUPLICATE" if duplicate else "MONITOR"), "final_status": status, "result": result, "v2": v2, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+        result["raw_acquired"] = True
+        completion = classify_completion(result, source_type)
+        receipts = stage_receipts(item, result)
+        for receipt in receipts: append_record("research_stage_receipts", receipt)
+        return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": True, "summary_created": not duplicate, "extraction_created": not duplicate, "scored": not duplicate, "provenance_created": True, "stored": True, "disposition": result.get("research_disposition", "DUPLICATE" if duplicate else "MONITOR"), "final_status": status, "completion_status": completion, "stage_receipts": len(receipts), "result": result, "v2": v2, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
     except Exception as exc:
-        return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": False, "summary_created": False, "extraction_created": False, "scored": False, "provenance_created": False, "stored": False, "disposition": "INSUFFICIENT_SOURCE", "final_status": "FAILED_RETRYABLE", "error": str(exc), "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+        message = str(exc).replace("\n", " ")[:500]
+        return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": False, "summary_created": False, "extraction_created": False, "scored": False, "provenance_created": False, "stored": False, "disposition": "INSUFFICIENT_SOURCE", "final_status": "FAILED_RETRYABLE", "error": message, "error_class": type(exc).__name__, "exception_class": type(exc).__name__, "error_message": message, "http_status": getattr(exc, "code", None), "traceback_summary": " ".join(traceback.format_exc(limit=4).splitlines())[-1200:], "failure_stage": "scheduled_source_processing", "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
 
 
 def process_scheduled_batch(items: list[dict[str, Any]]) -> dict[str, Any]:
     results = [process_scheduled_item(item) for item in items]
     full = [x for x in results if x["final_status"] == "FULLY_PROCESSED"]
     duplicates = [x for x in results if x["final_status"] == "DUPLICATE_UNCHANGED"]
-    return {"scheduled_path_used": True, "results": results, "metrics": {"sources_discovered": len(items), "sources_acquired": sum(x["raw_acquired"] for x in results), "sources_fully_processed": len(full), "duplicates_skipped": len(duplicates), "summaries_created": sum(x["summary_created"] for x in results), "structured_extractions_created": sum(x["extraction_created"] for x in results), "substantive_findings_created": len(full), "follow_up_questions_created": len(full), "deep_research_items_created": sum(x["disposition"] == "DEEP_RESEARCH" for x in full), "processing_failures": sum(x["final_status"].startswith("FAILED") for x in results), "useful_output_rate": round(len(full) / len(results), 3) if results else 0.0}, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+    substantive = [x for x in results if x.get("completion_status") == "SUBSTANTIVE_COMPLETE"]
+    monitors = [x for x in results if x.get("completion_status") == "MONITOR_CHECK_COMPLETE"]
+    return {"scheduled_path_used": True, "results": results, "metrics": {"sources_discovered": len(items), "sources_acquired": sum(x["raw_acquired"] for x in results), "sources_fully_processed": len(full), "duplicates_skipped": len(duplicates), "summaries_created": sum(x["summary_created"] for x in results), "structured_extractions_created": sum(x["extraction_created"] for x in results), "substantive_findings_created": len(substantive), "monitor_checks_completed": len(monitors), "evidence_incomplete": sum(x.get("completion_status") == "EVIDENCE_INCOMPLETE" for x in results), "stage_receipts_created": sum(x.get("stage_receipts", 0) for x in results), "follow_up_questions_created": len(substantive), "deep_research_items_created": sum(x["disposition"] == "DEEP_RESEARCH" for x in substantive), "processing_failures": sum(x["final_status"].startswith("FAILED") for x in results), "useful_output_rate": round(len(substantive) / len(results), 3) if results else 0.0}, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}

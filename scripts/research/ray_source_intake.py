@@ -7,6 +7,8 @@ claims subject to the existing Research and Alpha evidence path.
 from __future__ import annotations
 
 import hashlib
+import re
+import urllib.parse
 from datetime import datetime, timezone
 from typing import Any
 
@@ -29,7 +31,26 @@ def _now() -> str:
 
 
 def _key(url: str) -> str:
-    return hashlib.sha256(url.rstrip("/").strip().lower().encode()).hexdigest()[:24]
+    return hashlib.sha256(_canonical_url(url).encode()).hexdigest()[:24]
+
+def _canonical_url(url: str) -> str:
+    parsed=urllib.parse.urlsplit(url.strip())
+    query=[(k,v) for k,v in urllib.parse.parse_qsl(parsed.query,keep_blank_values=True)
+           if not (k.lower().startswith("utm_") or k.lower() in {"fbclid","gclid","ref","referrer"})]
+    path=parsed.path.rstrip("/") or "/"
+    if parsed.netloc.lower().endswith("youtube.com") and path.startswith("/@"):
+        path=re.sub(r"/videos$|/featured$|/streams$","",path)
+        query=[]
+    return urllib.parse.urlunsplit((parsed.scheme.lower(),parsed.netloc.lower(),path,"&".join(f"{k}={v}" for k,v in query),""))
+
+def _cadence(source_type: str, intent: str, cadence: str) -> tuple[str,str|None]:
+    if intent=="ONE_TIME": return "NONE",None
+    cadence=cadence.upper()
+    if cadence not in {"AUTO","DAILY","WEEKLY","MONTHLY","EVENT_DRIVEN"}: raise ValueError("invalid_cadence")
+    chosen={"YOUTUBE_CHANNEL":"WEEKLY","FORUM_COMMUNITY":"DAILY","GITHUB_REPO":"WEEKLY","NEWS":"DAILY","SEO_QUERY":"WEEKLY"}.get(source_type,"MONTHLY") if cadence=="AUTO" else cadence
+    from datetime import timedelta,datetime,timezone
+    delta={"DAILY":1,"WEEKLY":7,"MONTHLY":30,"EVENT_DRIVEN":7}[chosen]
+    return chosen,(datetime.now(timezone.utc)+timedelta(days=delta)).isoformat()
 
 
 def _latest() -> list[dict[str, Any]]:
@@ -43,24 +64,36 @@ def _latest() -> list[dict[str, Any]]:
     return rows
 
 
-def add_source(url: str, *, source_type: str, lanes: list[str], priority: str = "P0_RAY_DIRECT", title: str = "") -> dict[str, Any]:
+def add_source(url: str, *, source_type: str, lanes: list[str], priority: str = "P0_RAY_DIRECT", title: str = "", processing_intent: str = "ONE_TIME", cadence: str = "AUTO", question: str = "", notes: str = "") -> dict[str, Any]:
     normalized_type = source_type.upper()
     normalized_lanes = sorted({lane.upper() for lane in lanes})
     if normalized_type not in SOURCE_TYPES:
         raise ValueError("unsupported_source_type")
     if not normalized_lanes or not set(normalized_lanes) <= LANES:
         raise ValueError("invalid_source_lanes")
-    normalized_url = url.strip()
+    normalized_url = _canonical_url(url)
     if not normalized_url.startswith(("https://", "http://")):
         raise ValueError("source_url_must_be_http")
+    intent=processing_intent.upper()
+    if intent not in {"ONE_TIME","CONTINUOUS"}: raise ValueError("invalid_processing_intent")
     source_id = f"ray_{_key(normalized_url)}"
-    existing = next((row for row in _latest() if row.get("source_id") == source_id or str(row.get("source_url", "")).rstrip("/").lower() == normalized_url.rstrip("/").lower()), None)
+    existing = next((row for row in _latest() if row.get("source_id") == source_id or _canonical_url(str(row.get("source_url", ""))) == normalized_url), None)
     if existing:
-        return {**existing, "status": "DUPLICATE_SUPPRESSED", "idempotent": True}
+        if intent=="CONTINUOUS" and existing.get("processing_intent")!="CONTINUOUS":
+            chosen,next_refresh=_cadence(normalized_type,intent,cadence)
+            updated={**existing,"processing_intent":"CONTINUOUS","persistent":True,"role":"PERSISTENT","cadence":chosen,"next_refresh_at":next_refresh,"status":"ACTIVE","mode_reconciled":"ONE_TIME_TO_CONTINUOUS","updated_at":_now()}
+            persistence.append_record("alpha_source_registry",updated); return updated
+        if intent=="ONE_TIME":
+            request={"request_id":"once_"+_key(normalized_url),"source_id":existing.get("source_id"),"url":normalized_url,"processing_intent":"ONE_TIME","status":"QUEUED","question":question,"created_at":_now()}
+            persistence.append_record("research_requests",request)
+            return {**existing,"status":"ONE_TIME_REQUEST_QUEUED","one_time_request_id":request["request_id"],"idempotent":True}
+        return {**existing,"status":"DUPLICATE_SUPPRESSED","idempotent":True}
+    chosen,next_refresh=_cadence(normalized_type,intent,cadence)
     record = {
-        "source_id": source_id, "source_url": normalized_url, "title": title or normalized_url,
+        "source_id": source_id, "source_url": normalized_url, "canonical_url": normalized_url, "title": title or normalized_url,
         "source_type": normalized_type, "lanes": normalized_lanes, "priority": priority,
-        "added_by": "RAY_CURATED", "status": "ACTIVE", "enabled": True,
+        "added_by": "RAY_CURATED", "origin": "RAY_SEED", "role": "PERSISTENT" if intent=="CONTINUOUS" else "ONE_TIME", "processing_intent":intent,"persistent":intent=="CONTINUOUS","cadence":chosen,"next_refresh_at":next_refresh,"status": "ACTIVE", "enabled": True,
+        "question":question,"notes":notes,
         "initial_backfill": {"status": "PENDING", "bounded_depth": 10 if normalized_type in {"YOUTUBE_CHANNEL", "YOUTUBE_VIDEO"} else 1, "processed_ids": []},
         "incremental_monitoring": {"status": "READY", "last_checked_at": None, "last_seen_fingerprint": None},
         "claim_verification": "RESEARCH_AND_ALPHA_REQUIRED", "created_at": _now(), "updated_at": _now(),

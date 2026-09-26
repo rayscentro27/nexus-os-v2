@@ -29,6 +29,8 @@ from nexus_agent_platform.governed import persistence  # noqa: E402
 from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
+from research_v2_control_plane import planner_tick  # noqa: E402
+from research_v2_control_plane import stage_receipts  # noqa: E402
 
 
 # Bounded, read-only scheduled source selection.  These are existing public
@@ -41,7 +43,12 @@ SOURCE_POOLS = {
     "FUNDING_LENDER": [("WEB_PAGE", "sba-loans", "https://www.sba.gov/loans", "SBA loans and funding")],
     "GRANTS_GOVERNMENT": [("WEB_PAGE", "sba-grants", "https://www.sba.gov/funding-programs/grants", "SBA grants")],
     "AFFILIATE_REVENUE": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Current small-business customer signals")],
-    "SEO_SEARCH_DEMAND": [("SEO_RESEARCH", "google-seo-starter", "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "Google SEO Starter Guide")],
+    "SEO_SEARCH_DEMAND": [
+        ("SEO_RESEARCH", "google-seo-starter", "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "Google SEO Starter Guide"),
+        ("SEO_RESEARCH", "google-ai-search-features", "https://developers.google.com/search/docs/appearance/ai-features", "Google Search AI features guidance"),
+    ],
+    "GITHUB_TECHNOLOGY": [("GITHUB_REPOSITORY", "openai/openai-cookbook", "https://github.com/openai/openai-cookbook", "OpenAI Cookbook automation and agent examples")],
+    "PLATFORM_CAPABILITY_INTELLIGENCE": [("GITHUB_REPOSITORY", "openai/openai-cookbook", "https://github.com/openai/openai-cookbook", "OpenAI Cookbook automation and agent examples")],
     "SOCIAL_CONTENT": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Small business community signals")],
     "YOUTUBE_CONTENT": [("YOUTUBE_VIDEO", "zbAmmnMh5ew", "https://www.youtube.com/watch?v=zbAmmnMh5ew", "Ray-approved YouTube research video")],
     "COMPETITOR_INTELLIGENCE": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Current small-business customer signals")],
@@ -66,6 +73,7 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                     "source_id": candidate.get("source_id") or queued.get("objective_id") or queued.get("work_id"),
                     "source_url": candidate["source_url"],
                     "title": candidate.get("title") or queued.get("title") or queued.get("objective_id"),
+                    "question": queued.get("question") or queued.get("title") or queued.get("objective_id"),
                     "author": queued.get("requested_by", "Nexus Research"),
                     "category": lane_id, "selection_reason": "governed_objective_source_candidate",
                     "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
@@ -80,6 +88,7 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 "source_id": queued.get("source_id") or queued.get("work_id"),
                 "source_url": queued.get("source_url") or queued.get("url") or known[1] or "",
                 "title": queued.get("title") or queued.get("question") or known[2] or queued.get("source_id") or queued.get("work_id"),
+                "question": queued.get("question") or queued.get("title") or queued.get("source_id") or queued.get("work_id"),
                 "author": queued.get("requested_by", "Nexus Research"),
                 "category": lane_id, "selection_reason": queued.get("selection_reason") or "assigned_request",
                 "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
@@ -153,10 +162,8 @@ def return_department_request(item: dict, *, package_id: str | None, alpha_resul
     Research evidence is append-only; this record is the state transition that
     lets the requesting department resume from the returned package.
     """
-    request_id = str(item.get("parent_request_id") or "")
+    request_id = str(item.get("parent_request_id") or item.get("work_id") or "")
     if not request_id or not item.get("department_target"):
-        return
-    if str(item.get("department_target")).upper() != "MARKETING":
         return
     persistence.append_record("research_requests", {
         "schema_version": "nexus.marketing-research-request.v1",
@@ -168,7 +175,14 @@ def return_department_request(item: dict, *, package_id: str | None, alpha_resul
         "alpha_decision": alpha_result.get("decision") or alpha_result.get("status"),
         "returned_work_id": item.get("work_id"),
         "returned_at": datetime.now(timezone.utc).isoformat(),
-        "return_to": "MARKETING_AI",
+        "return_to": str(item.get("department_target") or "RESEARCH").upper(),
+    })
+    persistence.append_record("research_v2_handoffs", {
+        "schema_version": "nexus.research-v2-handoff.v1", "handoff_id": f"handoff_{request_id}_{package_id}",
+        "request_id": request_id, "department_target": str(item.get("department_target") or "RESEARCH").upper(),
+        "research_package_id": package_id, "alpha_receipt_id": alpha_result.get("receipt_id"),
+        "alpha_decision": alpha_result.get("decision") or alpha_result.get("status"),
+        "status": "RETURNED", "returned_at": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -204,6 +218,13 @@ def run_selected_capability(item: dict, route_result: dict, execution_id: str) -
     otherwise the plan is merely metadata and the worker silently falls back
     to deterministic source processing.
     """
+    # Source semantics outrank a broad model capability preference. A GitHub
+    # repository must reach github_deep and SEO_RESEARCH must reach the SEO web
+    # processor; otherwise a valid source can be silently reclassified as a
+    # Last30Days demand task and the lane's evidence contract is not met.
+    source_type = str(item.get("source_type") or "").upper()
+    if source_type in {"GITHUB_REPOSITORY", "SEO_RESEARCH"}:
+        return None
     selected = (route_result.get("selected_executor") or {}).get("executor_id", "")
     if "last30days" not in str(selected).lower() and "demand_radar" not in str(selected).lower():
         return None
@@ -268,6 +289,15 @@ def main() -> int:
                 os.environ[env_key] = str(queued_context[field])
     event(execution_id, "CLAIMED", worker_id="research_operator_worker", attempt_count=1)
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
+    try:
+        v2_plan = planner_tick(worker_id="research_operator_worker")
+        v2_plan.pop("worker_id", None)
+        v2_plan.pop("status", None)
+        event(execution_id, "RESEARCH_V2_PLANNER", worker_id="research_operator_worker", **v2_plan)
+    except Exception as exc:
+        # V2 planning is isolated from the proven acquisition path; a planner
+        # failure cannot strand the claimed work or stop the Research wake.
+        event(execution_id, "RESEARCH_V2_PLANNER_DEGRADED", worker_id="research_operator_worker", error=str(exc)[:500])
     lane_id = os.environ.get("NEXUS_SELECTED_LANE_ID", "BUSINESS_MARKET")
     selected_work_class = os.environ.get("NEXUS_SELECTED_WORK_CLASS", "GENERAL_DISCOVERY")
     mission_item_id = os.environ.get("NEXUS_MISSION_ITEM_ID", "")
@@ -381,6 +411,8 @@ def main() -> int:
                   content_count=0, final_status=final_status, processor="pre_process_duplicate_check",
                   summary_created=False, extraction_created=False, scored=False, provenance_created=True,
                   stored=True, disposition="DUPLICATE", source_purpose=item.get("source_purpose"))
+            for receipt in stage_receipts(item, {"processing_status": "DUPLICATE_UNCHANGED", "raw_acquired": False}):
+                persistence.append_record("research_stage_receipts", receipt)
             settle_queue("MONITORING", result={"final_status": final_status, "source_id": item.get("source_id")})
             event(execution_id, "COMPLETED", worker_id="research_operator_worker", alpha_status="SKIPPED_DUPLICATE",
                   next_action="select new work after pre-process duplicate check")
@@ -405,6 +437,11 @@ def main() -> int:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE", result={"error": str(exc)[:500]}, next_action="retry bounded mission item")
         return 1
     final_status = result.get("final_status", "FAILED_RETRYABLE")
+    try:
+        for receipt in stage_receipts(item, result):
+            persistence.append_record("research_stage_receipts", receipt)
+    except Exception as exc:
+        event(execution_id, "RESEARCH_V2_RECEIPTS_DEGRADED", worker_id="research_operator_worker", error=str(exc)[:300])
     ai_interpretation = interpret(item, ai_plan_result.get("plan", {}), result)
     item["ai_interpretation"] = ai_interpretation
     write_monitor_snapshot(item=item, stage="AI_RESULT_INTERPRETATION", plan=ai_plan_result.get("plan"), route_result=ai_route_result, interpretation=ai_interpretation)
