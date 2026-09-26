@@ -1,0 +1,19 @@
+{
+  "primary": {
+    "name": "inspo",
+    "display_name": "Inspo hosted MCP",
+    "endpoint": "https://inspomcp.dev/api/mcp",
+    "transport": "streamable_http_mcp",
+    "read_only": true,
+    "auth": "none",
+    "cost_class": "free",
+    "commercial_policy": "principle extraction with attribution; no source asset/code/layout reuse",
+    "enabled_for": ["creative.visual_reference_research"]
+  },
+  "fallback": {
+    "name": "nexus_principle_catalog",
+    "transport": "local_python",
+    "read_only": true,
+    "enabled_for": ["creative.visual_reference_research"]
+  }
+}

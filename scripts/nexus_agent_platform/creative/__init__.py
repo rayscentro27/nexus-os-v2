@@ -29,6 +29,19 @@ from .intelligence import (
     persist_feedback,
     rank_with_preferences,
 )
+from .performance_intelligence import (
+    build_performance_observation,
+    build_pattern_observation,
+    build_research_alpha_marketing_creative_handoff,
+    feedback_loop_contract,
+)
+from .avatar_registry import (
+    AVATAR_USAGE_OPTIONAL,
+    avatar_namespaces,
+    build_avatar_contract,
+    build_brand_registry,
+    identity_version_increment_required,
+)
 
 __all__ = [
     "CreativeBudget",
@@ -56,4 +69,13 @@ __all__ = [
     "persist_concept_round",
     "persist_feedback",
     "rank_with_preferences",
+    "build_performance_observation",
+    "build_pattern_observation",
+    "build_research_alpha_marketing_creative_handoff",
+    "feedback_loop_contract",
+    "AVATAR_USAGE_OPTIONAL",
+    "avatar_namespaces",
+    "build_avatar_contract",
+    "build_brand_registry",
+    "identity_version_increment_required",
 ]

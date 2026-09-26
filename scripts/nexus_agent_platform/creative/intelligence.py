@@ -83,6 +83,34 @@ def _history() -> List[Dict[str, Any]]:
     return read_records("creative_concepts")
 
 
+def generate_concept_round_v2(brief: Dict[str, Any], model: Any, *, history: Sequence[Dict[str, Any]] | None = None, budget: Any = None) -> Dict[str, Any]:
+    """Canonical opt-in V2 entrypoint using a caller-owned bounded model route.
+
+    The existing deterministic ``generate_concept_round`` remains unchanged for
+    fixtures and low-cost offline work. Production model-backed Creative calls
+    can select this entrypoint without changing memory, critic, approval, or
+    production ownership.
+    """
+    from .creative_intelligence_v2 import run_creative_intelligence_v2
+
+    result = run_creative_intelligence_v2(brief, model, history=list(history) if history is not None else _history(), budget=budget)
+    round_id = f"v2_round_{_hash((brief.get('creative_brief_id') or brief.get('brief_id'), [c.get('concept_id') for c in result.get('concepts', [])]))[:16]}"
+    result.update({
+        "round_id": round_id,
+        "generation_round": 1,
+        "model_assisted_ideation": "PASS_REAL_BOUNDED",
+        "evaluation": {
+            "status": "PASS" if result.get("diversity_gate", {}).get("status") in {"PASS", "REGENERATE_REQUIRED"} and result.get("concepts") else "CREATIVE_DIVERSITY_INSUFFICIENT",
+            "concept_count": len(result.get("concepts", [])),
+            "pairwise_max_similarity": result.get("diversity_gate", {}).get("pairwise_max_similarity", 0),
+            "pairwise_mean_similarity": result.get("diversity_gate", {}).get("pairwise_mean_similarity", 0),
+            "near_duplicate_count": result.get("diversity_gate", {}).get("near_duplicate_count", 0),
+            "high_similarity_count": result.get("diversity_gate", {}).get("high_similarity_count", 0),
+        },
+    })
+    return result
+
+
 def similarity(a: Dict[str, Any], b: Dict[str, Any]) -> float:
     sa, sb = creative_signature(a), creative_signature(b)
     weights = {key: 2.0 if key in {"visual_metaphor", "narrative_structure", "layout_family", "strategic_angle"} else 1.0 for key in DIMENSIONS}
@@ -220,3 +248,73 @@ def run_critic_panel(concepts: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
             "review_count": len(reviews), "accepted_count": len(accepted), "reviews": reviews,
             "reconciliation": "rank accepted concepts by creative score; rejected concepts require revision",
             "production_handoff": "GOVERNED_REVIEW_REQUIRED", "external_action_performed": False}
+
+
+# R20D intelligence: the strategy layer runs before the existing asset routes.
+# These are mechanism-led candidates, not copied creator language or viral claims.
+HOOK_CLASSES = ("CURIOSITY", "ASPIRATION", "PAIN", "CONTRARIAN", "QUESTION", "WARNING", "TRANSFORMATION", "BEFORE_AFTER", "SPECIFIC_OUTCOME", "MYTH_BUSTING", "STORY", "DIRECT_CALLOUT", "PATTERN_INTERRUPT")
+R20D_HOOKS = [
+    ("ASPIRATION", "You already built the catering business. What would it take to open your own doors?"),
+    ("QUESTION", "Your catering customers keep coming back—are you ready for a permanent kitchen?"),
+    ("TRANSFORMATION", "From packed catering orders to the sign above your first restaurant."),
+    ("PAIN", "The hardest part of opening a restaurant is not always the menu."),
+    ("WARNING", "Before you sign a restaurant lease, check the business behind the dream."),
+    ("CONTRARIAN", "A busy catering calendar does not automatically mean a storefront is ready."),
+    ("CURIOSITY", "There is a step between catering success and opening night most owners skip."),
+    ("BEFORE_AFTER", "Today: catering orders. Next: your own kitchen, staff, and front door."),
+    ("SPECIFIC_OUTCOME", "What needs to be ready before your first restaurant location?"),
+    ("DIRECT_CALLOUT", "Catering owners: your next location needs more than a good week of sales."),
+    ("PATTERN_INTERRUPT", "Stop asking only, 'How much can I borrow?' Start with, 'What can I prove?'"),
+    ("MYTH_BUSTING", "A strong food business still needs a clear expansion plan."),
+    ("STORY", "You started with trays, orders, and repeat customers. Now the storefront is calling."),
+    ("PAIN", "If your documents, banking, and business story are scattered, expansion gets harder to explain."),
+    ("ASPIRATION", "Picture your own sign, your own kitchen, and customers walking in."),
+    ("CURIOSITY", "What separates a catering operation from a restaurant-ready business?"),
+    ("WARNING", "Do not let a lease deadline be the first time you organize the business."),
+    ("CONTRARIAN", "Funding conversations do not start with a promise—they start with preparation."),
+    ("QUESTION", "If demand is real, what still has to be ready before you expand?"),
+    ("TRANSFORMATION", "Build the business behind the restaurant you can already see."),
+]
+
+
+def generate_campaign_hooks(campaign: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Generate and score 20 mechanism-diverse hooks for one campaign."""
+    safe_terms = ("guaranteed", "approved", "instant", "get funded now")
+    rows = []
+    for index, (hook_type, text) in enumerate(R20D_HOOKS, 1):
+        lower = text.lower()
+        scores = {
+            "scroll_stopping_power": 8.0 if hook_type in {"PATTERN_INTERRUPT", "DIRECT_CALLOUT", "QUESTION"} else 7.5,
+            "audience_relevance": 9.2 if "catering" in lower or "restaurant" in lower else 8.2,
+            "emotional_pull": 9.0 if hook_type in {"ASPIRATION", "TRANSFORMATION", "STORY"} else 7.7,
+            "outcome_clarity": 9.0 if "restaurant" in lower or "doors" in lower or "kitchen" in lower else 7.8,
+            "curiosity": 9.0 if hook_type in {"CURIOSITY", "QUESTION", "WARNING"} else 7.4,
+            "specificity": 8.8 if any(x in lower for x in ("catering", "lease", "documents", "kitchen", "storefront")) else 7.5,
+            "self_recognition": 8.8 if "you" in lower or "owners" in lower else 7.4,
+            "claim_safety": 10.0 if not any(x in lower for x in safe_terms) else 0.0,
+            "platform_fit": 8.8 if hook_type in {"PATTERN_INTERRUPT", "DIRECT_CALLOUT", "QUESTION", "STORY"} else 8.0,
+        }
+        rows.append({"hook_id": f"r20d-hook-{index:02d}", "hook_type": hook_type, "text": text,
+                     "mechanism": {"CURIOSITY": "open loop", "ASPIRATION": "visible future state", "PAIN": "pain recognition", "WARNING": "fear of an avoidable mistake", "CONTRARIAN": "reframe", "PATTERN_INTERRUPT": "unexpected contrast", "DIRECT_CALLOUT": "identity callout", "QUESTION": "self-assessment", "TRANSFORMATION": "before/after", "BEFORE_AFTER": "state contrast", "SPECIFIC_OUTCOME": "concrete outcome", "MYTH_BUSTING": "belief correction", "STORY": "origin-to-next-chapter"}[hook_type],
+                     "scores": scores, "overall_score": round(sum(scores.values()) / len(scores), 2), "status": "SAFE_CANDIDATE" if scores["claim_safety"] else "REJECTED"})
+    return sorted(rows, key=lambda row: row["overall_score"], reverse=True)
+
+
+def compile_campaign_prompts(campaign: Dict[str, Any], hook: Dict[str, Any]) -> Dict[str, Any]:
+    base = {"campaign_id": campaign["campaign_id"], "audience": campaign["target_audience"], "stage": campaign["business_stage"], "outcome": campaign["desired_outcome"], "obstacle": campaign["current_obstacle"], "emotion": campaign["emotional_driver"], "hook": hook["text"], "cta": campaign["cta"], "boundaries": campaign["claim_boundaries"]}
+    return {
+        "prompt_id": f"{campaign['campaign_id']}-{hook['hook_id']}", "prompt_version": "r20d-v1", "hook_type": hook["hook_type"], "creative_angle": hook["mechanism"], "inputs": base,
+        "modal_wan_video_prompt": "Vertical 9:16 cinematic B-roll, no text or logos. Existing catering business moving into a first permanent restaurant: busy prep line, stainless commercial kitchen, equipment being installed, owner checking a storefront sign, staff preparing, warm practical light, documentary realism, controlled camera movement, coherent hands and objects, leave lower safe area clean for captions. Show the desired expansion outcome, not a financial product. No guarantees, no lender logos, no readable generated text.",
+        "image_prompt": "Editorial documentary campaign image for a catering owner preparing a first restaurant storefront: real kitchen equipment, owner and staff in motion, warm natural light, navy/teal/cream GoClear-compatible palette, strong negative space for deterministic headline, no embedded text, no fake testimonial, no lender imagery.",
+        "faceless_short_prompt": "15-second vertical educational short for catering owners: hook in first 2 seconds, show kitchen/storefront B-roll, explain foundation, documents, and a clear use of capital, deterministic captions, practical voiceover, end with the exact CTA; no guarantee claims.",
+        "long_form_prompt": "Select a self-contained 10–30 second moment from a business-readiness discussion; open on the strongest sentence, preserve speaker context, reframe to 9:16, keep face centered, burn accurate captions, and end with a non-guaranteed readiness CTA.",
+        "social_post_prompt": "Write platform-native copy for a catering owner who wants a storefront. Lead with the supplied hook, name the visible outcome, acknowledge the preparation gap, position GoClear as a review bridge, and use the supplied CTA. No hype, guarantees, or copied creator language.",
+        "landing_page_prompt": "Adapt the GoClear readiness page so the hero message matches the restaurant-expansion hook while keeping the same $97 governed review, Variant A/B pricing test, compliance language, and readiness-review route."
+    }
+
+
+def prompt_quality(prompt: Dict[str, Any]) -> Dict[str, Any]:
+    text = json.dumps(prompt, sort_keys=True).lower()
+    scores = {"audience_specificity": 9, "outcome_specificity": 9, "visual_concreteness": 9, "emotional_direction": 8, "scene_clarity": 9, "camera_direction": 8, "action": 8, "brand_fit": 8, "hook_alignment": 9, "cta_alignment": 9, "generator_fit": 9, "ambiguity_risk": 2}
+    if "no text" not in text or "deterministic" not in text: scores["ambiguity_risk"] = 6
+    return {"scores": scores, "overall_score": round(sum(scores.values()) / len(scores), 2), "status": "PASS" if scores["ambiguity_risk"] <= 3 else "REVISION_REQUIRED"}

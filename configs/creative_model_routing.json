@@ -1,0 +1,29 @@
+{
+  "schema_version": "nexus.creative-model-routing.v1",
+  "department": "CREATIVE",
+  "source_benchmark": "reports/architecture/creative_model_benchmark_2026-09-22.json",
+  "long_context_source": "reports/architecture/creative_model_benchmark_2026-09-22_long_context.json",
+  "mode": "CERTIFIED_BOUNDED",
+  "models": {
+    "google/gemini-2.5-flash": {"provider": "openrouter", "tier": "TIER_2", "input_price_per_1m": 0.30, "output_price_per_1m": 2.50, "vision": true, "structured_output": true},
+    "openai/gpt-4o-mini": {"provider": "openrouter", "tier": "TIER_2", "input_price_per_1m": 0.15, "output_price_per_1m": 0.60, "vision": true, "structured_output": true},
+    "nex-agi/nex-n2.5-pro:free": {"provider": "openrouter", "tier": "TIER_1", "input_price_per_1m": 0.0, "output_price_per_1m": 0.0, "vision": true, "structured_output": true},
+    "oracle_ollama_gemma": {"provider": "oracle_ollama_gemma", "model": "gemma3:4b", "tier": "LOCAL_FALLBACK", "input_price_per_1m": 0.0, "output_price_per_1m": 0.0, "vision": false, "structured_output": false}
+  },
+  "routes": {
+    "creative.direction": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_VALIDATED", "reason": "Passed direction and longer-brief structured fixtures; premium route did not pass strict schema."},
+    "creative.territory_generation": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_VALIDATED", "reason": "Uses the validated direction lane; no separate territory-only production call was made."},
+    "creative.critic": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_VALIDATED", "reason": "Passed critic fixture with valid structured output."},
+    "creative.revision": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_VALIDATED", "reason": "Passed bounded revision fixture with valid structured output."},
+    "creative.copy_variation": {"primary_model": "nex-agi/nex-n2.5-pro:free", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_1_VALIDATED", "reason": "Passed bounded copy fixture at zero listed token price; paid baseline is fallback."},
+    "creative.summary": {"primary_model": "nex-agi/nex-n2.5-pro:free", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_1_VALIDATED", "reason": "Passed bounded summary fixture at zero listed token price."},
+    "creative.visual_critique": {"primary_model": null, "fallback_model": null, "quality_tier": "UNASSIGNED", "reason": "No actual image-input fixture was run; catalog vision metadata alone is insufficient."}
+    ,"creative.prompt_architecture": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_VALIDATED", "reason": "Gemini and GPT-4o-mini passed the bounded structured Prompt Architect fixture; Gemini produced the stronger art-direction detail, while Nex failed JSON parsing."}
+    ,"creative.art_direction": {"primary_model": "openai/gpt-4o-mini", "fallback_model": "google/gemini-2.5-flash", "quality_tier": "TIER_2_BOUNDED", "reason": "GPT-4o-mini passed the bounded structured Art Director fixture using Nexus principle-only references; Gemini failed JSON parsing on this fixture and remains fallback-only until retested."}
+    ,"creative.response_strategy": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_BOUNDED", "reason": "Existing certified Creative direction lane reused for bounded response strategy and fast story ideation."}
+    ,"creative.fast_story_ideation": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_BOUNDED", "reason": "Existing certified Creative direction lane reused for lightweight structured story ideation."}
+    ,"creative.visual_reference_research": {"primary_model": null, "fallback_model": null, "quality_tier": "TIER_1_DETERMINISTIC", "reason": "Nexus-owned attributed principle catalog; no external MCP installed."}
+  },
+  "fallback_policy": "primary -> configured task fallback -> oracle_ollama_gemma where task and schema permit -> BLOCKED",
+  "resource_governor": {"mode": "SHADOW", "autonomous_premium_escalation": false}
+}
