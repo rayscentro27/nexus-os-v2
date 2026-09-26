@@ -1,0 +1,32 @@
+{
+  "schema_version": "nexus.content-acquisition-formula.v1",
+  "formula": ["RESEARCH", "ALPHA", "CREATIVE", "PROMPT_ARCHITECT", "META", "CAMPAIGN_PACKAGE", "POST_CREATION_REVIEW", "MARKETING", "DISTRIBUTION", "ENGAGEMENT_ANALYTICS", "NEXT_POST_DECISION"],
+  "research_finds_attention": true,
+  "research_provides_mechanisms_not_final_concepts": true,
+  "startup_attention_first_doctrine": true,
+  "prompt_architect_creative_substitutions": 0,
+  "marketing_prewrite_creative": false,
+  "performance_data_informs_creative": true,
+  "performance_data_dictates_creative": false,
+  "external_long_running_job_rule": {
+    "default_meta_recheck_minutes": 10,
+    "release_browser_worker": true,
+    "reattach_same_session": true,
+    "progress_resets_stall_timer": true,
+    "elapsed_time_is_not_failure": true,
+    "no_identity_cycling": true
+  },
+  "browser_operator": {
+    "mechanical_execution_only": true,
+    "low_cost_or_deterministic_preferred": true,
+    "premium_model_required_for_mechanical_work": false
+  },
+  "publishing": {
+    "auto_create_schedule": true,
+    "auto_publish": false,
+    "public_posts_created": false,
+    "ad_spend": 0,
+    "purchases": 0,
+    "new_subscriptions": 0
+  }
+}

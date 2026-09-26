@@ -1,0 +1,36 @@
+{
+  "schema_version": "nexus.social-provider-registry.v1",
+  "default_policy": {
+    "goclear_instagram_primary": "METRICOOL",
+    "goclear_instagram_secondary": "POSTIZ",
+    "goclear_facebook_primary": "METRICOOL",
+    "goclear_facebook_secondary": "POSTIZ",
+    "goclear_youtube_primary": "METRICOOL",
+    "goclear_youtube_secondary": "POSTIZ",
+    "goclear_tiktok_primary": "METRICOOL",
+    "goclear_tiktok_secondary": "POSTIZ",
+    "nexus_social_lab_primary": "POSTIZ",
+    "nexus_social_lab_metricool": "DISABLED",
+    "native_fallback": "NATIVE",
+    "auto_social_provider_failover": false,
+    "duplicate_publication_prevention": true,
+    "provider_owner_exclusive": true
+  },
+  "providers": {
+    "METRICOOL": {"role": "PRIMARY", "status": "CONNECTED_PASS_REAL", "plan": "MACHINE_VERIFIED_MCP", "mcp": "PASS_REAL_9_TOOLS", "auto_publish": false},
+    "POSTIZ": {"role": "SECONDARY_AND_LAB_PRIMARY", "status": "BLOCKED_HOST_DISK_94_PERCENT_FULL", "mcp": "DOCUMENTED_NOT_CONNECTED", "api": "DOCUMENTED_NOT_CONNECTED", "auto_publish": false},
+    "NATIVE": {"role": "FALLBACK", "status": "EXISTING_PARTIAL_CERTIFIED", "auto_publish": false}
+  },
+  "routes_reference": "configs/nexus_channel_access_registry.json",
+  "routes": [
+    {"business_id": "goclear", "platform": "instagram", "account_registry_key": "goclearonline", "channel_environment": "PRODUCTION", "primary_provider": "METRICOOL", "secondary_provider": "POSTIZ", "native_fallback": "NATIVE"},
+    {"business_id": "goclear", "platform": "facebook", "account_registry_key": "verified_page_id_131069194210954", "channel_environment": "PRODUCTION", "primary_provider": "METRICOOL", "secondary_provider": "POSTIZ", "native_fallback": "NATIVE"},
+    {"business_id": "goclear", "platform": "youtube", "account_registry_key": "UCZQ098fJZKUAhjZCYryCuBg", "channel_environment": "PRODUCTION", "primary_provider": "METRICOOL", "secondary_provider": "POSTIZ", "native_fallback": "NATIVE"},
+    {"business_id": "goclear", "platform": "tiktok", "account_registry_key": "nexusaiwealth", "channel_environment": "PRODUCTION", "primary_provider": "METRICOOL", "secondary_provider": "POSTIZ", "native_fallback": "NATIVE"},
+    {"business_id": "nexus_social_lab", "platform": "facebook", "account_registry_key": null, "channel_environment": "LAB", "primary_provider": "POSTIZ", "secondary_provider": null, "native_fallback": null, "metricool_connected": false},
+    {"business_id": "nexus_social_lab", "platform": "instagram", "account_registry_key": null, "channel_environment": "LAB", "primary_provider": "POSTIZ", "secondary_provider": null, "native_fallback": null, "metricool_connected": false},
+    {"business_id": "nexus_social_lab", "platform": "tiktok", "account_registry_key": null, "channel_environment": "LAB", "primary_provider": "POSTIZ", "secondary_provider": null, "native_fallback": null, "metricool_connected": false},
+    {"business_id": "nexus_social_lab", "platform": "youtube", "account_registry_key": null, "channel_environment": "LAB", "primary_provider": "POSTIZ", "secondary_provider": null, "native_fallback": null, "metricool_connected": false}
+  ],
+  "credential_values_exposed": false
+}
