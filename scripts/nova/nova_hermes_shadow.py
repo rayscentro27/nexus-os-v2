@@ -39,6 +39,7 @@ from executive_intelligence import (
     decompose_question,
     process_record,
 )
+from tool_loop_recovery import recovery_plan
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HERMES_ROOT = Path(os.getenv("NOVA_HERMES_ROOT", str(Path.home() / ".hermes/hermes-agent")))
@@ -973,7 +974,17 @@ def run_shadow(
         + "\nUse this only to choose appropriate depth. Preserve the parent question, "
         "separate evidence from judgment, surface contradictions, recommend one "
         "reversible next action when useful, and do not claim a goal complete "
-        "because one task or report finished."
+        "because one task or report finished. Resolve the user's intent before "
+        "answering: a PRIORITY_REQUEST needs a company priority and why now, not "
+        "a runtime status dump; a STATUS_REQUEST needs only current state; casual "
+        "conversation should remain natural. For decisions, include only facts "
+        "that materially affect the decision. Available system telemetry is not "
+        "business or pricing evidence unless you can explain the causal link. "
+        "When evidence is missing, label the answer provisional, keep the parent "
+        "decision open, and state the cheapest useful bounded test. Safe internal "
+        "Research, Alpha review, specialist analysis, planning, and internal work "
+        "creation are Nexus-owned next actions: proceed and tell Ray what Nexus "
+        "is doing; ask Ray only for a genuine external approval boundary."
     )
     turn_contract = turn_requirements(prompt, prior_records)
     turn_contract_guidance = ""
@@ -1139,6 +1150,8 @@ def run_shadow(
     first_state = evidence_state(prompt, _tool_messages(all_messages), prior_records)
     first_state["page_payloads"] = [row["payload"] for row in _tool_messages(all_messages) if row.get("name") == "public_web_retrieval_shadow"]
     first_tool_rows = _tool_messages(all_messages)
+    draft_text = str(result.get("final_response", "")) if isinstance(result, dict) else ""
+    recovery = recovery_plan(prompt, draft_text, first_tool_rows)
     # Native conversation is already Hermes' user-facing answer. Evidence
     # validators and operator presentation are for resource-backed claims;
     # they must not suppress or rewrite an ordinary zero-tool turn.
@@ -1146,7 +1159,6 @@ def run_shadow(
         claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
         if first_tool_rows else {"valid": True, "unsupported_claims": []}
     )
-    draft_text = str(result.get("final_response", "")) if isinstance(result, dict) else ""
     synthesis_terms_missing = []
     if first_state.get("synthesis_required"):
         lower_draft = draft_text.lower()
@@ -1336,8 +1348,20 @@ def run_shadow(
             platform="nova-shadow-final-presentation",
         )
         presentation_started = time.monotonic()
+        presentation_prompt = _final_presentation_prompt(prompt, draft, _tool_execution_state(final_rows), presentation_state)
+        if recovery.get("guardrail_halt_detected"):
+            # The failed method is suppressed only for this bounded recovery
+            # pass. Existing tool evidence remains available to synthesis; no
+            # second tool call or mutation is initiated here.
+            presentation_prompt += (
+                "\n\n[BOUNDED TOOL-LOOP RECOVERY]\n"
+                + recovery["next_instruction"]
+                + "\nSuppressed for this recovery pass: "
+                + ", ".join(recovery.get("temporarily_suppressed_tools") or ["the repeated tool path"])
+                + ". Answer the original question now."
+            )
         presented = presentation_agent.run_conversation(
-            _final_presentation_prompt(prompt, draft, _tool_execution_state(final_rows), presentation_state),
+            presentation_prompt,
             conversation_history=conversation_history or None,
             task_id=turn_id + "-presentation",
         )
@@ -1530,6 +1554,7 @@ def run_shadow(
     _save_shadow_state(active_session, shadow_state)
     if isinstance(result, dict):
         result["executive_plan"] = executive_plan
+        result["tool_loop_recovery"] = recovery
         process_record(active_session, prompt, executive_plan, result=str(result.get("final_response", "")))
         result["turn_contract"] = turn_contract
         result["evidence_state"] = state_contract

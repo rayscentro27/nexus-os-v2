@@ -1,7 +1,9 @@
 """Deterministic object-first resolution for Hermes control messages."""
 from __future__ import annotations
 
+import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -13,6 +15,49 @@ REPAIR_ID = re.compile(r"\b([A-Z][A-Z0-9]+-[0-9]{3})\b")
 WORK_ORDER_ID = re.compile(r"\b(wo_[a-f0-9]{20,})\b", re.I)
 MISSION_ID = re.compile(r"\b(telegram-[0-9]{8,}-[a-f0-9]{8})\b", re.I)
 RELEASE_ID = re.compile(r"\b(rel-telegram-[0-9]{8,}-[a-f0-9]{8}-[a-f0-9]{12})\b", re.I)
+CONTROL_CONTEXT_PATH = ROOT / "data/runtime/nexus_operational_control_context.json"
+CONTEXT_TTL_SECONDS = 900
+
+
+def load_control_context(chat_id: Any) -> dict[str, Any]:
+    """Load short-lived, redacted object context for one authorized chat."""
+    try:
+        data = json.loads(CONTROL_CONTEXT_PATH.read_text(encoding="utf-8"))
+        item = data.get(str(chat_id), {})
+        saved = datetime.fromisoformat(str(item.get("updated_at", "")).replace("Z", "+00:00"))
+        if (datetime.now(timezone.utc) - saved).total_seconds() > CONTEXT_TTL_SECONDS:
+            return {}
+        return {k: item[k] for k in ("object_type", "object_id", "repair_id", "work_order_id", "run_id", "handler", "confidence") if k in item}
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return {}
+
+
+def save_control_context(chat_id: Any, control: Mapping[str, Any]) -> None:
+    """Persist only non-secret control identity, never message/model content."""
+    try:
+        data = json.loads(CONTROL_CONTEXT_PATH.read_text(encoding="utf-8")) if CONTROL_CONTEXT_PATH.exists() else {}
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        data = {}
+    allowed = {k: control[k] for k in ("object_type", "object_id", "repair_id", "work_order_id", "run_id", "handler", "confidence") if control.get(k) is not None}
+    allowed["updated_at"] = datetime.now(timezone.utc).isoformat()
+    data[str(chat_id)] = allowed
+    CONTROL_CONTEXT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONTROL_CONTEXT_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def is_operational_control_intent(text: str, control: Optional[Mapping[str, Any]] = None) -> bool:
+    """Classify operational/control questions without enumerating phrases."""
+    normalized = re.sub(r"[^a-z0-9_ -]", " ", str(text).lower())
+    control_words = {"status", "running", "happening", "working", "waiting", "queued", "continue", "resume", "approval", "approvals", "need", "doing", "loops", "repair"}
+    object_words = {"voice", "nexus", "operator", "repair", "work", "system", "loop", "loops", "approval", "approvals"}
+    return (control or {}).get("object_type") in {"REPAIR", "UNKNOWN_REPAIR", "UNKNOWN_WORK_ORDER"} or (bool(control_words & set(normalized.split())) and bool(object_words & set(normalized.split())))
+
+
+def format_repair_status(repair: Mapping[str, Any]) -> str:
+    return (f"{repair['repair_id']}\nWork order: {repair.get('work_order_id', 'UNKNOWN')}\n"
+            f"State: {repair.get('lifecycle_state', 'UNKNOWN')}\n"
+            f"Access: {repair.get('access_state', 'UNKNOWN')}\n"
+            "Deployment: not authorized\nNo engineering execution started.")
 
 
 def _manual_repairs() -> list[dict[str, Any]]:
@@ -75,7 +120,6 @@ def resolve_control_object(text: str, chat_context: Optional[Mapping[str, Any]] 
     work_match = WORK_ORDER_ID.search(text)
     mission_match = MISSION_ID.search(text)
     release_match = RELEASE_ID.search(text)
-    repairs = _manual_repairs()
     if repair_match:
         repair_id = repair_match.group(1).upper()
         repair = get_repair(repair_id)
@@ -100,4 +144,13 @@ def resolve_control_object(text: str, chat_context: Optional[Mapping[str, Any]] 
     context = chat_context or {}
     if context.get("object_type") in {"REPAIR", "WORK_ORDER", "MISSION", "RELEASE"}:
         return dict(context)
+    # If the user names a unique active repair domain but has no saved context,
+    # recover only the canonical active object; never create from fuzzy text.
+    words = set(re.sub(r"[^a-z0-9 -]", " ", str(text).lower()).split())
+    if words & {"voice"} and words & {"status", "running", "happening", "working", "waiting", "queued", "continue", "resume", "repair", "doing"}:
+        repair = get_repair("VOICE-001")
+        if repair and str(repair.get("lifecycle_state", "")).upper() not in {"PASS", "COMPLETED", "CANCELLED"}:
+            return {"object_type": "REPAIR", "object_id": "VOICE-001", "repair_id": "VOICE-001",
+                    "work_order_id": repair.get("work_order_id"), "run_id": repair.get("run_id"),
+                    "handler": "GOVERNED_REPAIR_CONTROL", "confidence": "ACTIVE_OBJECT_CONTEXT"}
     return {"object_type": "NONE", "handler": "FUZZY_INTENT", "confidence": "NONE"}

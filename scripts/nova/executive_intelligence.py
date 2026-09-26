@@ -186,7 +186,7 @@ def decompose_question(question: str) -> dict[str, Any]:
     needs_research = complexity not in {"SIMPLE_FACT"} and bool(
         re.search(r"\b(current|latest|evidence|market|unknown|research|changed|competitor)", question or "", re.I)
     )
-    return {
+    plan = {
         "schema_version": "nexus.nova-executive-plan.v1",
         "complexity": complexity,
         "intent": intent["intent"],
@@ -204,6 +204,18 @@ def decompose_question(question: str) -> dict[str, Any]:
         "goal_completion_rule": "Do not close the parent goal when only a task, report, asset, or specialist response is complete.",
         "created_at": _now(),
     }
+    # Additive conversational intelligence: preserve the existing planner
+    # fields while exposing a canonical per-subquestion ledger to callers that
+    # need compound-query completeness.
+    try:
+        from conversational_intelligence import decompose_compound_query
+        compound = decompose_compound_query(question)
+        plan["compound_query"] = compound
+        plan["subquestions"] = compound.get("intents", [])
+        plan["no_lost_subquestion_policy"] = compound.get("no_lost_subquestion_policy")
+    except (ImportError, OSError, ValueError):
+        plan["compound_query"] = None
+    return plan
 
 
 def process_record(session_id: str, question: str, plan: dict[str, Any], *, result: str | None = None) -> dict[str, Any] | None:

@@ -20,11 +20,16 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from nova_telegram_worker import get_env, tg_send_message  # noqa: E402
+from notification_policy import classify_event, event_fingerprint, event_type as policy_event_type, executive_message, material_state  # noqa: E402
 
 STATE_PATH = ROOT / "data/runtime/nova_proactive_communications.json"
 HEARTBEAT_PATH = ROOT / "data/runtime/research_heartbeat.json"
 OPERATOR_PATH = ROOT / "reports/runtime/active_operator_latest.json"
 RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
+MATERIAL_EVENTS_PATH = ROOT / "data/runtime/nova_material_events.jsonl"
+# Recurring executive reports are a separate, explicitly approved product
+# surface.  They must never be enabled merely because the worker is alive.
+AUTOMATIC_REPORTS_APPROVED = os.getenv("NOVA_APPROVED_MORNING_REPORT", "0").strip().lower() in {"1", "true", "yes"}
 
 
 def now() -> str:
@@ -58,21 +63,12 @@ def trusted_ray_chat() -> str | None:
     return raw
 
 
-def classify_event(event: dict[str, Any]) -> str:
-    kind = str(event.get("kind", "")).upper()
-    if event.get("test") is True:
-        return "MATERIAL"
-    if kind in {"SUPERVISOR_UNHEALTHY", "RESEARCH_NOT_REAL", "REQUIRED_PATH_FAILED",
-                "RAY_REQUIRED", "APPROVAL_REQUIRED", "SAFETY_EVENT", "RECOVERY"}:
-        return "CRITICAL"
-    if kind == "TERMINAL_CERTIFICATION":
-        return "MATERIAL"
-    if kind in {"GOAL_ADVANCED", "GOAL_COMPLETED", "BLOCKER_REPAIRED",
-                "CAPABILITY_PROVEN", "DEPARTMENT_MILESTONE"}:
-        return "MATERIAL"
-    if kind in {"CYCLE", "HEARTBEAT", "REFRESH", "UNCHANGED"}:
-        return "ROUTINE"
-    return "SUPPRESSED"
+def _material_state(event: dict[str, Any]) -> dict[str, Any]:
+    return material_state(event)
+
+
+def _material_state_hash(event: dict[str, Any]) -> str:
+    return event_fingerprint(event)
 
 
 def _latest_receipt() -> dict[str, Any] | None:
@@ -89,6 +85,11 @@ def collect_events() -> list[dict[str, Any]]:
     heartbeat = _read(HEARTBEAT_PATH, {})
     operator = _read(OPERATOR_PATH, {})
     events: list[dict[str, Any]] = []
+    try:
+        rows = [json.loads(line) for line in MATERIAL_EVENTS_PATH.read_text(encoding="utf-8").splitlines() if line.strip()][-20:]
+        events.extend(row for row in rows if isinstance(row, dict))
+    except (OSError, ValueError):
+        pass
     mode = str(heartbeat.get("execution_mode") or "").upper()
     if not mode and heartbeat.get("heartbeat") == "ACTIVE" and heartbeat.get("result_status") == "PASS":
         mode = "REAL"
@@ -227,9 +228,12 @@ def _message(event: dict[str, Any], severity: str) -> str:
 
 def process_once(*, force_test: bool = False, force_digest: bool = False,
                  terminal_event: dict[str, Any] | None = None) -> dict[str, Any]:
-    state = _read(STATE_PATH, {"schema_version": "nexus.proactive-communications.v1", "events": {}, "deliveries": {}, "last_notification_at": None, "last_digest_at": None})
+    state = _read(STATE_PATH, {"schema_version": "nexus.proactive-communications.v2", "events": {}, "deliveries": {}, "last_notification_at": None, "last_digest_at": None})
+    state["schema_version"] = "nexus.proactive-communications.v2"
     state.setdefault("events", {})
     state.setdefault("deliveries", {})
+    state.setdefault("last_external_by_type", {})
+    state.setdefault("resolved_states", {})
     chat = trusted_ray_chat()
     if not chat:
         state["last_suppression_reason"] = "TRUSTED_RAY_CHAT_NOT_PROVEN"
@@ -242,27 +246,39 @@ def process_once(*, force_test: bool = False, force_digest: bool = False,
     results = []
     for event in events:
         severity = classify_event(event)
-        key = _hash({k: v for k, v in event.items() if not str(k).startswith("_")})
-        if key in state["events"] and state["events"][key].get("status", state["events"][key].get("delivery_state")) == "SENT":
-            results.append({"event": key, "severity": severity, "status": "SUPPRESSED_DUPLICATE"})
+        event_type_fn = policy_event_type(event)
+        material_state_hash = _material_state_hash(event)
+        key = _hash({"event_type": event_type_fn, "material_state_hash": material_state_hash})
+        prior = state["last_external_by_type"].get(event_type_fn, {})
+        if prior.get("material_state_hash") == material_state_hash and prior.get("status") == "SENT":
+            results.append({"event": key, "event_type": event_type_fn, "severity": severity, "status": "SUPPRESSED_NO_MATERIAL_CHANGE"})
             continue
         if not force_test and severity in {"ROUTINE", "SUPPRESSED"}:
-            state["events"][key] = {"severity": severity, "delivery_state": "SUPPRESSED", "suppression_reason": "routine_or_insufficient_evidence", "observed_at": now()}
-            results.append({"event": key, "severity": severity, "status": "SUPPRESSED"})
+            state["events"][key] = {"event_type": event_type_fn, "material_state_hash": material_state_hash, "severity": severity, "delivery_state": "SUPPRESSED", "suppression_reason": "routine_or_insufficient_evidence", "observed_at": now()}
+            results.append({"event": key, "event_type": event_type_fn, "severity": severity, "status": "SUPPRESSED_ROUTINE"})
             continue
-        text = _message(event, severity)
-        delivery = {"event_id": key, "severity": severity, "status": "PENDING", "attempts": int(state["deliveries"].get(key, {}).get("attempts", 0)) + 1, "message_hash": _hash(text), "parent_goal": event.get("goal"), "source_receipt": event.get("source"), "created_at": now()}
+        text = executive_message(event, severity) if not event.get("test") else _message(event, severity)
+        delivery = {"event_id": key, "event_type": event_type_fn, "material_state_hash": material_state_hash, "severity": severity, "status": "PENDING", "attempts": int(state["deliveries"].get(key, {}).get("attempts", 0)) + 1, "message_hash": _hash(text), "parent_goal": event.get("goal"), "source_receipt": event.get("source"), "created_at": now()}
         state["deliveries"][key] = delivery
         _write(state)
         ids = tg_send_message(chat, text)
         delivery.update({"status": "SENT" if ids else "FAILED", "message_ids": ids, "delivered_at": now() if ids else None})
         state["events"][key] = delivery
+        state["last_external_by_type"][event_type_fn] = {
+            "event_id": key,
+            "material_state_hash": material_state_hash,
+            "status": delivery["status"],
+            "last_external_notification": delivery.get("delivered_at"),
+        }
         state["last_notification_at"] = delivery.get("delivered_at")
         state["last_notified_event"] = key
         state["last_event_severity"] = severity
         _write(state)
         results.append({"event": key, "severity": severity, "status": delivery["status"], "message_ids": ids})
-    if terminal_event is None and not force_test and (force_digest or _digest_due(state)):
+    # No recurring digest is permitted without explicit Ray approval recorded
+    # outside this worker.  Heartbeats and internal reports continue normally.
+    material_observed = any(classify_event(item) in {"MATERIAL", "CRITICAL"} for item in events)
+    if terminal_event is None and not force_test and AUTOMATIC_REPORTS_APPROVED and material_observed and (force_digest or _digest_due(state)):
         digest_key = _hash({"kind": "DIGEST", "period": datetime.now(timezone.utc).strftime("%Y%m%d%H")})
         if digest_key not in state["events"]:
             text = _digest_message()
@@ -271,7 +287,7 @@ def process_once(*, force_test: bool = False, force_digest: bool = False,
             state["last_digest_at"] = now()
             _write(state)
             results.append({"event": digest_key, "severity": "ROUTINE", "status": "SENT" if ids else "FAILED", "message_ids": ids})
-    if terminal_event is None and not force_test and _morning_digest_due(state):
+    if terminal_event is None and not force_test and AUTOMATIC_REPORTS_APPROVED and material_observed and _morning_digest_due(state):
         local_date = datetime.now(ZoneInfo("America/Phoenix")).date().isoformat()
         digest_key = _hash({"kind": "MORNING_DIGEST", "local_date": local_date})
         if digest_key not in state["events"]:

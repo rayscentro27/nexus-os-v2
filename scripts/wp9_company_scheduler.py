@@ -255,17 +255,13 @@ def cycle_summary(record: dict[str, Any]) -> str:
             detail = result.get("stderr_tail", "bounded execution failure") if isinstance(result, dict) else str(result or "bounded execution failure")
             failed.append(f"{department.title()}: {detail[-180:]}")
     rollup = record.get("finance_rollup", {})
-    lines = ["Nexus night cycle complete.", "", "Completed:"]
-    lines.extend(f"- {line}" for line in completed[:6])
-    if deferred:
-        lines.extend(["", "Deferred/no change:"] + [f"- {line}" for line in deferred[:3]])
+    lines = ["Overnight update", ""]
+    if completed:
+        lines += ["What happened:"] + [f"• {line.split(':', 1)[0]} completed its bounded internal work." for line in completed[:6]]
     if failed:
-        lines.extend(["", "Failures/recovery:"] + [f"- {line}" for line in failed[:3]])
-    lines.extend(["", "Finance:", f"Cash: ${float(rollup.get('cash_cost_usd', 0)):.2f}",
-                  f"Compute: {rollup.get('compute_consumed', 0)} minutes; free/credited: {rollup.get('free_credit_consumed', 0)}; quota: {rollup.get('quota_consumed', 0)}",
-                  f"Estimated equivalent cost: {rollup.get('estimated_replacement_cost_usd', 'UNKNOWN')}", "",
-                  "Needs you: Review only if a failure or decision is listed above.",
-                  "My recommendation: Keep internal work bounded; follow up on failed departments before expanding scope."])
+        lines += (["" if completed else "", "Needs you:"] +
+                  [f"• Review the {line.split(':', 1)[0]} issue; bounded recovery was recorded." for line in failed[:3]])
+    lines += ["", "Next:", "• Nexus will continue safe, bounded internal work. No external publication, payment, or live trading was performed."]
     return "\n".join(lines)[:3800]
 
 
@@ -334,8 +330,10 @@ def run_cycle(*, scheduled: bool, dry_run: bool = False) -> dict[str, Any]:
               "authority": authority(), "publication": False, "payments": False, "live_trading": False}
     write_json(RUNTIME / "cycles" / f"{cycle}-complete.json", record)
     current.update({"active": False, "last_outcome": "COMPLETED", "last_completed_at": completed, "cycles": (current.get("cycles") or [])[-49:] + [record]}); persist_state(current)
-    if not dry_run:
-        send_telegram(cycle_summary(record), event_type="COMPLETE", cycle=cycle)
+    # Normal company cycles remain internal receipts.  Nova's existing
+    # material-event evaluator is the sole proactive Ray-facing route.
+    # Explicit --transport-test remains available for separately authorized
+    # transport verification and is never called by the scheduler.
     return record
 
 

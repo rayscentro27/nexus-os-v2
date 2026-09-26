@@ -560,6 +560,8 @@ NOVA_MISSIONS_DIR = os.path.join(REPO_ROOT, "data", "nova", "missions")
 def create_mission(update_id, chat_id, user_id, text):
     ts = datetime.now(timezone.utc)
     mission_id = f"nova_{ts.strftime('%Y%m%dT%H%M%S')}_{update_id}"
+    from nexus_agent_platform.company_objective_router import build_root_objective
+    root_objective = build_root_objective(text, conversation_message_id=update_id)
     mission = {
         "mission_id": mission_id,
         "update_id": update_id,
@@ -575,6 +577,12 @@ def create_mission(update_id, chat_id, user_id, text):
         "validation_error": None,
         "fallback_used": False,
         "correlation_id": f"tg-{update_id}-{hashlib.sha256(f'{chat_id}:{update_id}'.encode()).hexdigest()[:12]}",
+        "root_objective": root_objective,
+        "root_objective_id": root_objective["objective_id"],
+        "objective_source": "RAY",
+        "objective_source_type": "DIRECT_MESSAGE",
+        "parent_objective_id": None,
+        "child_tasks": [],
     }
     os.makedirs(NOVA_MISSIONS_DIR, exist_ok=True)
     path = os.path.join(NOVA_MISSIONS_DIR, f"{mission_id}.json")
@@ -1091,18 +1099,26 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         # selection and preserves the objective across governed handoffs.
         try:
             from nexus_agent_platform.company_objective_router import route_company_objective
-            company_plan = route_company_objective(text)
-            if company_plan.get("intent_class") in {"OPPORTUNITY_INTAKE", "TRADING_PREMARKET", "RESEARCH"} or len(company_plan.get("steps", [])) > 1:
+            company_plan = route_company_objective(text, conversation_message_id=update_id)
+            structured_objective = (
+                len(company_plan.get("root_objective", {}).get("requirements", [])) >= 2
+                and (len(text) >= 240 or any(marker in text.upper() for marker in ("MISSION", "SUCCESS CRITERIA", "FINAL OUTPUT")))
+            )
+            if (company_plan.get("intent_class") in {"OPPORTUNITY_INTAKE", "TRADING_PREMARKET", "RESEARCH"}
+                    or len(company_plan.get("steps", [])) > 1 or structured_objective):
                 update_mission(mission, "RESPONSE_COMPOSED", {
                     "response_mode": "company_objective_plan",
                     "company_objective": company_plan,
                 })
-                owners = " → ".join(company_plan.get("handoff_order", []))
-                response = (f"Nexus objective accepted.\n\nObjective: {company_plan.get('objective')}\n"
-                            f"Departments selected: {owners}\n\n"
-                            "The objective remains governed across these handoffs. "
-                            "Ray approval is requested only at the listed consequential boundary.\n\n"
-                            f"Next: {company_plan.get('steps', [{}])[-1].get('action', 'review the objective plan')}")
+                child_tasks = [{**step, "objective_source": "INTERNAL_DECOMPOSITION",
+                                "objective_source_type": "CHILD_TASK",
+                                "parent_objective_id": company_plan["root_objective"]["objective_id"]}
+                               for step in company_plan.get("steps", [])]
+                mission["child_tasks"] = child_tasks
+                response = ("Nexus objective accepted.\n\n"
+                            f"Objective: {company_plan.get('objective')}\n\n"
+                            "I’ll coordinate the internal workstreams as one governed objective "
+                            "and surface only material progress, blockers, or approval requests.")
                 delivery = _deliver_response(update_id, chat_id, response, mission_id=mission["mission_id"])
                 update_mission(mission, "DELIVERED" if delivery.get("state") == "DELIVERED" else "DELIVERY_FAILED", {
                     "response_mode": "company_objective_plan",
