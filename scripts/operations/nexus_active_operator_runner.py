@@ -58,6 +58,7 @@ OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json
 OPERATOR_REPORT_JSON_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.json"
 OPERATOR_REPORT_MD_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.md"
 LOCK_PATH = ROOT / "data/runtime/nexus_active_operator.lock"
+WORK_ORDER_ADMISSION_LOCK_PATH = ROOT / "data/runtime/nexus_work_order_admission.lock"
 PROGRESS_PATH = ROOT / "reports/runtime/nexus_active_operator_progress.json"
 KILL_SWITCH_PATH = ROOT / "data/runtime/active_operator_control.json"
 CADENCE_SECONDS = 300
@@ -1185,7 +1186,19 @@ def _existing_idempotency_keys() -> set[str]:
     return {str(item.get("idempotency_key")) for item in work_orders.list_work_orders(limit=500)}
 
 
-def create_pending_work_order(finding: Dict[str, Any]) -> Dict[str, Any]:
+@contextmanager
+def _work_order_admission_lock():
+    """Serialize duplicate check plus admission across concurrent workers."""
+    WORK_ORDER_ADMISSION_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with WORK_ORDER_ADMISSION_LOCK_PATH.open("a+") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _create_pending_work_order_locked(finding: Dict[str, Any]) -> Dict[str, Any]:
     stable = f"{finding.get('dedupe_key', finding['finding_id'])}:{finding.get('material_fingerprint', '')}"
     key = "active_operator:" + hashlib.sha256(stable.encode()).hexdigest()[:24]
     action_id = finding.get("proposed_action") or finding.get("recommended_action") or "runtime_report.generate"
@@ -1218,6 +1231,12 @@ def create_pending_work_order(finding: Dict[str, Any]) -> Dict[str, Any]:
         "status": "CREATED", "idempotency_key": key, "finding_id": finding["finding_id"],
         "approval_id": approval["id"], "work_order_id": order["work_order_id"],
     }
+
+
+def create_pending_work_order(finding: Dict[str, Any]) -> Dict[str, Any]:
+    """Admit at most one active governed work order for a semantic finding."""
+    with _work_order_admission_lock():
+        return _create_pending_work_order_locked(finding)
 
 
 def _receipt(run_id: str, result: Dict[str, Any]) -> Path:
