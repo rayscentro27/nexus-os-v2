@@ -75,7 +75,9 @@ def knowledge_maturity(prior_items: int, prior_outcomes: int = 0) -> dict[str, A
 
 
 def extract_claims(text: str, source: dict[str, Any]) -> list[dict[str, Any]]:
-    sentences = [x.strip() for x in re.split(r"(?<=[.!?])\s+", text or "") if len(x.strip()) >= 35]
+    # Keep concise but meaningful evidence sentences; the previous 35-character
+    # cutoff silently dropped valid short claims from Alpha packages.
+    sentences = [x.strip() for x in re.split(r"(?<=[.!?])\s+", text or "") if len(x.strip()) >= 20]
     rows = []
     for index, sentence in enumerate(sentences[:30]):
         lower = sentence.lower()
