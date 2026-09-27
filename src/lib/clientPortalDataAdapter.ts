@@ -380,10 +380,18 @@ const PROFILE_INTAKE_COLUMNS = [
   'business_email_verification_status', 'google_business_profile_verification_status',
 ].join(',');
 
+const PROFILE_COMPLETENESS_FIELDS: (keyof ProfileIntakeData)[] = [
+  'legal_name', 'preferred_name', 'phone', 'mailing_address_line1', 'mailing_address_line2', 'city', 'state', 'postal_code',
+  'business_name', 'entity_type', 'ein_status', 'industry', 'naics_code',
+  'business_address_line1', 'business_address_line2', 'business_city', 'business_state', 'business_postal_code',
+  'time_in_business', 'monthly_revenue_range', 'funding_goal_range',
+  'business_website', 'business_phone', 'business_email', 'formation_date',
+  'google_business_profile_status', 'google_business_profile_url',
+];
+
 function profileCompleteness(data: ProfileIntakeData): number {
-  const fields = Object.values(data);
-  const filled = fields.filter(f => f && f.trim() !== '').length;
-  return Math.round((filled / fields.length) * 100);
+  const filled = PROFILE_COMPLETENESS_FIELDS.filter((field) => data[field] && data[field].trim() !== '').length;
+  return Math.round((filled / PROFILE_COMPLETENESS_FIELDS.length) * 100);
 }
 
 export interface ClientPortalLiveData {
