@@ -1,0 +1,7 @@
+{
+  "date": "2026-09-27",
+  "goal_ledger": {"rows": 24, "nonterminal": 12, "without_next_action": ["nexus.productization", "research.continuation_revenue"], "waiting_on_ray": ["portal.client_beta", "portal.admin_control_center", "goclear.example_campaign"]},
+  "research_projection": {"projects": 14, "status": "NEEDS_MORE_RESEARCH", "separate_projection": true},
+  "canary": {"project": "trading-followup:alpha_receipt_1ce5c47680684814ae5f2eb312054816:strategy-change:1", "work_order": "wo_949ae09e4e6e41ef9d48e662d04c3425", "owner": "TRADING_ENGINE", "worker": "DETERMINISTIC_EXECUTOR", "output": "BLOCKED_DEPENDENCY", "review": "RETURN_TO_RESEARCH", "next_action": "Acquire a supported strategy ruleset from permitted public sources.", "end_state": "WAITING_DEPENDENCY", "result": "PASS_REAL_PARTIAL"},
+  "bottlenecks": {"top_systemic_execution_defect": "missing universal handoff-consumer bridge", "top_department_consumption_defect": "most department targets lack claimable consumers", "top_ai_workforce_defect": "registry workers overstate connected execution", "top_project_state_defect": "goal, research, and handoff states are not globally reconciled"}
+}

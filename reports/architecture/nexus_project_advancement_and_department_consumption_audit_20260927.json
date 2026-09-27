@@ -1,0 +1,18 @@
+{
+  "date": "2026-09-27",
+  "result": "PASS_REAL_PARTIAL",
+  "root_cause": "No canonical consumer bridge connected Research/Alpha handoffs to governed work orders, workers, review, next action, and project state.",
+  "sources_of_truth": {
+    "goals": "data/runtime/company_goal_portfolio.json",
+    "research_projects": "data/runtime/research_work_queue.json + scripts/nexus_agent_platform/research_project_portfolio.py",
+    "handoffs": "data/governed/research_v2_handoffs.jsonl",
+    "work_orders": "data/governed/work_orders.jsonl via governed.persistence",
+    "approvals": "data/governed/approvals.jsonl via governed.approvals/policy_gate"
+  },
+  "portfolio": {"goal_rows": 24, "nonterminal_goal_rows": 12, "research_objective_projects": 14, "research_status": "NEEDS_MORE_RESEARCH", "goal_rows_without_next_action": 2, "explicit_human_review_goal_rows": 3},
+  "chain": {"goal_to_project": "PARTIAL", "project_to_work_order": "FAIL_BEFORE_REPAIR_PASS_CANARY", "work_order_to_department": "PARTIAL_PASS_CANARY", "department_to_worker": "PARTIAL", "worker_to_output": "PASS_CANARY", "output_to_review": "PASS_CANARY", "review_to_next_action": "PASS_CANARY", "next_action_to_project_state": "PASS_CANARY_FAIL_GLOBAL"},
+  "canary": {"handoff_id": "handoff_trading-followup:alpha_receipt_1ce5c47680684814ae5f2eb312054816:strategy-change:1_research_package_2aa31024da0c4c728fe7804fd35647fd", "alpha_decision": "TEST", "work_order_id": "wo_949ae09e4e6e41ef9d48e662d04c3425", "owner": "TRADING_ENGINE", "worker_type": "DETERMINISTIC_EXECUTOR", "output_status": "BLOCKED_DEPENDENCY", "review_decision": "RETURN_TO_RESEARCH", "next_action_owner": "RESEARCH", "end_state": "WAITING_DEPENDENCY", "live_trading": false, "external_action": false},
+  "metrics": {"work_orders_created": 1, "work_orders_claimed": 1, "work_orders_completed": 1, "deterministic_executions": 1, "outputs_reviewed": 1, "next_actions_created": 2, "project_state_transitions": 1, "handoffs_consumed": 1, "department_activity": {"TRADING": 1}},
+  "tests": {"focused": 20, "py_compile": "PASS", "git_diff_check": "PASS"},
+  "safety": {"paid_actions": 0, "publications": 0, "customer_messages": 0, "live_trades": 0, "funds_moved": 0, "unapproved_production_changes": 0}
+}
