@@ -12,12 +12,16 @@ TYPECHECK=PASS — `npx tsc --noEmit`
 BUILD=PASS — `npm run build` (existing chunk-size and dynamic-import warnings only)
 FOCUSED_TESTS=PASS — Playwright visual structure smoke: 2 passed (desktop and mobile). The test runner dependency and executable-path fallback were added because the canonical package did not declare `@playwright/test` and this macOS environment cannot download the newest bundled Chromium.
 DESKTOP_LOCAL=PASS — local preview captured at 1440x900; sidebar flex/visible, journey 7 columns, mission grid 2 columns, Momentum present, footer flex/visible.
-DESKTOP_PRODUCTION=PASS after deploy — production preview must be re-captured after Netlify deployment; pre-deploy baseline was the known failing render.
+DESKTOP_PRODUCTION=PASS — post-deploy production preview at 1440x900 reports approved root present, sidebar flex at 256px, 7-column journey, and 2-column mission grid.
 MOBILE=PASS — 390x844 captured; desktop aside hidden and Mobile Navigation Dock visible.
 AUTH_LIVE=NOT_INSPECTED — no safe authenticated production session was available in this run; live bridge wiring was not changed.
-VISUAL_PARITY=PASS — local rendered structure matches the approved component geometry; production acceptance is completed after the pushed Netlify deploy verification.
+VISUAL_PARITY=PASS — local and production rendered structure match the approved component geometry; dynamic data values remain allowed to differ.
 CLIENT_DATA_BINDING=PASS — `installNexusPortalBridge()` and approved context data/action paths are unchanged.
 GLOBAL_NEXUS_UI_REGRESSION=PASS — change is root-scoped; typecheck/build pass and no global Nexus stylesheet was upgraded.
 ADMIN_INTEGRATION_STANDARD_CREATED=PASS
+
+COMMITS_CREATED=4ecac452; 95067c95; f4632bdd
+COMMITS_PUSHED=PASS — `main` pushed to `origin` at f4632bdd
+NETLIFY_DEPLOYMENT=PASS — existing Netlify Git deployment rolled out and production re-verified at https://goclearonline.cc/client/preview
 
 Evidence screenshots are in `reports/client_portal/visual-baseline/`.

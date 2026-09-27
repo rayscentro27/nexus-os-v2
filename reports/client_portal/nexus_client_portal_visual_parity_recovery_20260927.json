@@ -16,13 +16,13 @@
   "build": "PASS",
   "focused_tests": "PASS: 2 Playwright visual structure tests",
   "local_visual_smoke": "PASS",
-  "production_visual_smoke": "PASS after deploy verification",
+  "production_visual_smoke": "PASS: post-deploy 1440x900 and 390x844 production captures; approved root present, desktop sidebar flex 256px, journey 7 columns, mission grid 2 columns, mobile dock visible",
   "auth_live": "NOT_INSPECTED: no safe authenticated session available",
   "global_nexus_ui_regression": "PASS",
   "google_ai_studio_isolation_standard": "CREATED",
   "admin_integration_preflight": "CREATED",
-  "commits_created": [],
-  "commits_pushed": [],
-  "netlify_deployment": "PENDING",
+  "commits_created": ["4ecac452", "95067c95", "f4632bdd"],
+  "commits_pushed": ["4ecac452", "95067c95", "f4632bdd"],
+  "netlify_deployment": "PASS: existing Netlify Git deployment rolled out and verified at https://goclearonline.cc/client/preview",
   "evidence_directory": "reports/client_portal/visual-baseline/"
 }
