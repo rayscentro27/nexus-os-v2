@@ -11,6 +11,9 @@ const EMPTY: ProfileIntakeData = {
   legal_name: '', preferred_name: '', phone: '', mailing_address_line1: '', mailing_address_line2: '', city: '', state: '', postal_code: '',
   business_name: '', entity_type: '', ein_status: '', industry: '', naics_code: '', business_address_line1: '', business_address_line2: '',
   business_city: '', business_state: '', business_postal_code: '', time_in_business: '', monthly_revenue_range: '', funding_goal_range: '',
+  business_website: '', business_phone: '', business_email: '', formation_date: '', google_business_profile_status: '', google_business_profile_url: '',
+  linkedin_business_url: '', facebook_business_url: '', instagram_business_url: '', youtube_channel_url: '', other_business_social_url: '',
+  business_address_verification_status: 'UNKNOWN', business_website_verification_status: 'UNKNOWN', business_phone_verification_status: 'UNKNOWN', business_email_verification_status: 'UNKNOWN', google_business_profile_verification_status: 'UNKNOWN',
 }
 
 export default function ClientOnboardingPage() {

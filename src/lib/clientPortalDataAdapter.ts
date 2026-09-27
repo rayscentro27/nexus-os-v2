@@ -335,6 +335,22 @@ export interface ProfileIntakeData {
   time_in_business: string;
   monthly_revenue_range: string;
   funding_goal_range: string;
+  business_website: string;
+  business_phone: string;
+  business_email: string;
+  formation_date: string;
+  google_business_profile_status: string;
+  google_business_profile_url: string;
+  linkedin_business_url: string;
+  facebook_business_url: string;
+  instagram_business_url: string;
+  youtube_channel_url: string;
+  other_business_social_url: string;
+  business_address_verification_status: string;
+  business_website_verification_status: string;
+  business_phone_verification_status: string;
+  business_email_verification_status: string;
+  google_business_profile_verification_status: string;
 }
 
 const EMPTY_PROFILE_INTAKE: ProfileIntakeData = {
@@ -343,6 +359,12 @@ const EMPTY_PROFILE_INTAKE: ProfileIntakeData = {
   business_name: '', entity_type: '', ein_status: '', industry: '', naics_code: '',
   business_address_line1: '', business_address_line2: '', business_city: '', business_state: '', business_postal_code: '',
   time_in_business: '', monthly_revenue_range: '', funding_goal_range: '',
+  business_website: '', business_phone: '', business_email: '', formation_date: '',
+  google_business_profile_status: '', google_business_profile_url: '',
+  linkedin_business_url: '', facebook_business_url: '', instagram_business_url: '', youtube_channel_url: '', other_business_social_url: '',
+  business_address_verification_status: 'UNKNOWN', business_website_verification_status: 'UNKNOWN',
+  business_phone_verification_status: 'UNKNOWN', business_email_verification_status: 'UNKNOWN',
+  google_business_profile_verification_status: 'UNKNOWN',
 };
 
 const PROFILE_INTAKE_COLUMNS = [
@@ -351,6 +373,11 @@ const PROFILE_INTAKE_COLUMNS = [
   'business_name', 'entity_type', 'ein_status', 'industry', 'naics_code',
   'business_address_line1', 'business_address_line2', 'business_city', 'business_state', 'business_postal_code',
   'time_in_business', 'monthly_revenue_range', 'funding_goal_range',
+  'business_website', 'business_phone', 'business_email', 'formation_date',
+  'google_business_profile_status', 'google_business_profile_url',
+  'linkedin_business_url', 'facebook_business_url', 'instagram_business_url', 'youtube_channel_url', 'other_business_social_url',
+  'business_address_verification_status', 'business_website_verification_status', 'business_phone_verification_status',
+  'business_email_verification_status', 'google_business_profile_verification_status',
 ].join(',');
 
 function profileCompleteness(data: ProfileIntakeData): number {
@@ -499,6 +526,22 @@ export async function loadClientProfileIntake(forcedContext?: ResolvedClientCont
       time_in_business: String(row.time_in_business || ''),
       monthly_revenue_range: String(row.monthly_revenue_range || ''),
       funding_goal_range: String(row.funding_goal_range || ''),
+      business_website: String(row.business_website || ''),
+      business_phone: String(row.business_phone || ''),
+      business_email: String(row.business_email || ''),
+      formation_date: String(row.formation_date || ''),
+      google_business_profile_status: String(row.google_business_profile_status || ''),
+      google_business_profile_url: String(row.google_business_profile_url || ''),
+      linkedin_business_url: String(row.linkedin_business_url || ''),
+      facebook_business_url: String(row.facebook_business_url || ''),
+      instagram_business_url: String(row.instagram_business_url || ''),
+      youtube_channel_url: String(row.youtube_channel_url || ''),
+      other_business_social_url: String(row.other_business_social_url || ''),
+      business_address_verification_status: String(row.business_address_verification_status || 'UNKNOWN'),
+      business_website_verification_status: String(row.business_website_verification_status || 'UNKNOWN'),
+      business_phone_verification_status: String(row.business_phone_verification_status || 'UNKNOWN'),
+      business_email_verification_status: String(row.business_email_verification_status || 'UNKNOWN'),
+      google_business_profile_verification_status: String(row.google_business_profile_verification_status || 'UNKNOWN'),
     }
     return { data: intake, source: 'supabase' as const }
   } catch (e) {
@@ -537,6 +580,17 @@ export async function saveClientProfileIntake(payload: ProfileIntakeData, forced
     time_in_business: payload.time_in_business || null,
     monthly_revenue_range: payload.monthly_revenue_range || null,
     funding_goal_range: payload.funding_goal_range || null,
+    business_website: payload.business_website || null,
+    business_phone: payload.business_phone || null,
+    business_email: payload.business_email || null,
+    formation_date: payload.formation_date || null,
+    google_business_profile_status: payload.google_business_profile_status || null,
+    google_business_profile_url: payload.google_business_profile_url || null,
+    linkedin_business_url: payload.linkedin_business_url || null,
+    facebook_business_url: payload.facebook_business_url || null,
+    instagram_business_url: payload.instagram_business_url || null,
+    youtube_channel_url: payload.youtube_channel_url || null,
+    other_business_social_url: payload.other_business_social_url || null,
     updated_at: new Date().toISOString(),
   }
 
@@ -553,7 +607,7 @@ export async function saveClientProfileIntake(payload: ProfileIntakeData, forced
   }
 }
 
-export function checkProfileIntakeComplete(data: ProfileIntakeData): { complete: boolean; percent: number; missingFields: string[] } {
+export function checkProfileIntakeComplete(data: ProfileIntakeData, options: { includeBusinessPresence?: boolean } = {}): { complete: boolean; percent: number; missingFields: string[] } {
   const missingFields: string[] = []
   const required: [keyof ProfileIntakeData, string][] = [
     ['legal_name', 'Legal name'],
@@ -562,7 +616,13 @@ export function checkProfileIntakeComplete(data: ProfileIntakeData): { complete:
     ['entity_type', 'Entity type'],
     ['industry', 'Industry'],
   ]
-  for (const [key, label] of required) {
+  const requiredFields = options.includeBusinessPresence ? required.concat([
+    ['business_address_line1', 'Business address'],
+    ['business_phone', 'Business phone'],
+    ['business_email', 'Business email'],
+    ['business_website', 'Business website'],
+  ]) : required;
+  for (const [key, label] of requiredFields) {
     if (!data[key] || data[key].trim() === '') missingFields.push(label)
   }
   return { complete: missingFields.length === 0, percent: profileCompleteness(data), missingFields }
