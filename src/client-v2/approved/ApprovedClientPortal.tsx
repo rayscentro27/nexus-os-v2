@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import ApprovedApp from './App';
 import './portal-theme.css';
-import './generated.css';
+import './generated.scoped.css';
 import { clearNexusPortalBridge, installNexusPortalBridge } from './nexusPortalBridge';
 import type { TabType } from './types/portal';
 
@@ -19,6 +19,10 @@ export function ApprovedClientPortal({ live, initialTab = 'dashboard' }: { live:
     };
   }, [live]);
 
-  if (!ready) return loading;
-  return <ApprovedApp initialTab={initialTab} />;
+  if (!ready) return <div className="goclear-approved-portal">{loading}</div>;
+  return (
+    <div className="goclear-approved-portal" data-visual-source="google-ai-studio-approved">
+      <ApprovedApp initialTab={initialTab} />
+    </div>
+  );
 }
