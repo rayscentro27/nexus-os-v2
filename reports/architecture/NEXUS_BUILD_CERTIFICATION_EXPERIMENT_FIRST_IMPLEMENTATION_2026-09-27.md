@@ -64,8 +64,8 @@ Source: https://github.com/NousResearch/hermes-agent/releases
 No customer messages, publications, paid ads, purchases, funds movement, or live
 trades occurred. No production tool installation or production Hermes upgrade
 occurred. Focused tests cover mode selection, safe test conversion, normal-mode
-preservation, hard-blocker precedence, unknown testability, and append-only
-learning fields.
+preservation, hard-blocker precedence, unknown testability, append-only
+learning fields, Systems intake, and project advancement (14 passed).
 
 ## Assessment
 
