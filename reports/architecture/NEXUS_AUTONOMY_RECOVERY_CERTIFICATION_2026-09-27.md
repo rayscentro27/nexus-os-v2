@@ -2,7 +2,7 @@
 
 ## Result
 
-`AUTONOMY_RESULT=PASS_REAL_BOUNDED`
+`AUTONOMY_RESULT=PARTIAL_REAL`
 
 The permanent Research owner remains `com.nexus.continuous-loop`, running from
 the canonical repository under launchd with `KeepAlive=true`. The repair was
@@ -53,7 +53,11 @@ selection, AI result interpretation, evidence settlement, and completion.
 The queue remained durable (`QUEUED`, `WAITING`, `COMPLETE`, and
 `SUPERSEDED` states) and the heartbeat remained active with
 `resume_without_manual_restart=true`. These were daemon-owned transitions, not
-foreground Codex callbacks.
+foreground Codex callbacks. This session did not terminate Codex and wait for a
+later launchd wake, so the final certification is conservatively
+`PARTIAL_REAL`; the persistence and owner evidence support
+`CODEX_REQUIRED_FOR_CONTINUATION=NO`, but a literal post-exit observation
+remains the next certification action.
 
 ## Permanent source state
 

@@ -1,6 +1,7 @@
 {
   "schema_version": "nexus.autonomy-recovery-certification.v1",
   "generated_at": "2026-09-27T20:52:00Z",
+  "autonomy_result": "PARTIAL_REAL",
   "root_cause_of_previous_stop": "The canonical lane selector could return an idle/no-source result before invoking the existing goal-aware continuation planner, so a live daemon did not derive next work from permanent objectives.",
   "exact_stop_transition": "completed useful AI research -> selector no_source_selected/NO_ACTION_REQUIRED -> heartbeat remained active -> no objective-derived queue item was created",
   "repair": {
@@ -14,7 +15,8 @@
     "keepalive": true,
     "post_reload_execution_ids": ["research_exec_264e8ec4ba5c49bab9ef", "research_exec_d078386030854aa3a76d"],
     "required_transitions": ["AI_INVESTIGATION_PLAN", "SOURCE_SELECTED", "AI_RESULT_INTERPRETATION", "EVIDENCE_READY", "COMPLETED"],
-    "codex_supplied_next_prompt": false
+    "codex_supplied_next_prompt": false,
+    "literal_codex_exit_observed_in_session": false
   },
   "permanent_sources": {
     "stedman_waiters": {"state": "ACTIVE_RESEARCH", "transcripts_acquired": 2},
