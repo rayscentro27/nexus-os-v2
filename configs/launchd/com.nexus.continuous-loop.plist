@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.continuous-loop</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh</string>
+    <string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/run_continuous_operating_kernel.py</string>
+    <string>--daemon</string>
+    <string>--interval-seconds</string>
+    <string>1200</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/raymonddavis/nexus-os-v2-canonical/scripts</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/continuous_loop_launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/continuous_loop_launchd_error.log</string>
+</dict>
+</plist>

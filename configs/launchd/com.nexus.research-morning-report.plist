@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nexus.research-morning-report</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh</string><string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string><string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/research/morning_research_report.py</string></array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>KeepAlive</key><false/>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/morning_research_report.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/morning_research_report.error.log</string>
+</dict>
+</plist>

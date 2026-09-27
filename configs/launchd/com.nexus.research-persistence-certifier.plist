@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nexus.research-persistence-certifier</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh</string><string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string><string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/research/research_persistence_certifier.py</string></array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><false/>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/research_persistence_certifier.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/research_persistence_certifier.error.log</string>
+</dict>
+</plist>
