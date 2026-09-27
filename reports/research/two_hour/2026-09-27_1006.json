@@ -1,0 +1,204 @@
+{
+  "alpha": {
+    "decisions": {
+      "RESEARCH_MORE": 2
+    },
+    "provider_models": [
+      "openrouter:openai/gpt-4o-mini"
+    ],
+    "reviews_completed": 2
+  },
+  "blockers": {
+    "human_action_required": [],
+    "source_provider_failures": 6,
+    "stale_data": [],
+    "technical_blockers": [],
+    "worker_issues": []
+  },
+  "cumulative_today": {
+    "ai_analyses": 20,
+    "alpha_reviews": 2,
+    "decisions": {
+      "RESEARCH_MORE": 2
+    },
+    "sources_acquired": 20,
+    "substantive_findings": 20
+  },
+  "domains": {
+    "business_funding": {
+      "substantive_findings": 0
+    },
+    "customer_needs": {
+      "status": "NO_DOMAIN_TAG_IN_WINDOW",
+      "substantive_findings": 0
+    },
+    "financial_institution_intelligence": {
+      "source_count": 10,
+      "substantive_findings": 0
+    },
+    "github_technology": {
+      "substantive_findings": 1
+    },
+    "last30days": {
+      "substantive_findings": 9
+    },
+    "seo_search": {
+      "substantive_findings": 1
+    },
+    "youtube": {
+      "ai_analyses": 7,
+      "videos_selected": 11
+    }
+  },
+  "generated_at": "2026-09-27T17:06:51.277039+00:00",
+  "governance": {
+    "consumes_jobs": false,
+    "external_actions": 0,
+    "observer_only": true,
+    "selects_work": false,
+    "stops_research": false
+  },
+  "handoffs": {
+    "count": 0,
+    "departments": []
+  },
+  "next_two_hours": {
+    "priorities": [
+      "YOUTUBE_INTELLIGENCE",
+      "WEB_SOURCE_WATCH",
+      "GITHUB_LAST_30_DAYS",
+      "SEO_INTELLIGENCE",
+      "NEXUS_SYSTEM_IMPROVEMENT",
+      "MARKETING_INTELLIGENCE",
+      "BUSINESS_OPPORTUNITY_DISCOVERY",
+      "TRADING_RESEARCH"
+    ],
+    "project_driven_research": 8,
+    "queued_followups": 8
+  },
+  "productivity": {
+    "ai_analyses": 20,
+    "alpha_reviews": 2,
+    "department_handoffs": 0,
+    "duplicates": 0,
+    "failed_acquisitions": 6,
+    "no_ops": 0,
+    "sources_acquired": 20,
+    "substantive_findings": 20
+  },
+  "project_impact": {
+    "exact_bottleneck": [
+      "DEGRADED"
+    ],
+    "projects_advanced": 0,
+    "projects_stalled": 6,
+    "projects_unchanged": 0
+  },
+  "returns": {
+    "alpha_to_research": 5,
+    "clyde_to_research": 5,
+    "count": 5
+  },
+  "schema_version": "nexus.research.two-hour-report.v1",
+  "system": {
+    "active_programs": [
+      "YOUTUBE_INTELLIGENCE",
+      "WEB_SOURCE_WATCH",
+      "GITHUB_LAST_30_DAYS",
+      "SEO_INTELLIGENCE",
+      "NEXUS_SYSTEM_IMPROVEMENT",
+      "MARKETING_INTELLIGENCE",
+      "BUSINESS_OPPORTUNITY_DISCOVERY",
+      "TRADING_RESEARCH",
+      "FUNDING_INTELLIGENCE",
+      "GRANT_INTELLIGENCE",
+      "COMPETITOR_INTELLIGENCE",
+      "CAPABILITY_INTELLIGENCE"
+    ],
+    "continuous_scope": {
+      "programs": [
+        "CUSTOMER_NEEDS",
+        "BUSINESS_FUNDING",
+        "FINANCIAL_INSTITUTION_INTELLIGENCE",
+        "YOUTUBE_INTELLIGENCE",
+        "SEO_SEARCH_INTELLIGENCE",
+        "GITHUB_OPEN_SOURCE",
+        "LAST30DAYS_PROACTIVE",
+        "AFFILIATE_SOLUTION_DISCOVERY",
+        "COMPETITOR_INTELLIGENCE",
+        "PROJECT_SUPPORT",
+        "RESEARCH_FOLLOWUPS",
+        "DEPARTMENT_PROJECT_REQUESTS"
+      ],
+      "single_scheduler": "com.nexus.continuous-loop",
+      "source": "existing scheduler/lane registry"
+    },
+    "failed_or_retrying_programs": [],
+    "heartbeat": {
+      "cycle_id": "kernel_cycle_33",
+      "dry_run": false,
+      "enabled": true,
+      "execution_mode": "REAL",
+      "heartbeat": "ACTIVE",
+      "last_department_served": null,
+      "last_real_output": "2026-09-27T16:52:44.404076+00:00",
+      "last_success": "2026-09-27T16:52:44.404076+00:00",
+      "latest_parent_goal_advanced": null,
+      "next_action": "RUN_BOUNDED_AUTONOMOUS_DISCOVERY",
+      "next_wake": "2026-09-27T17:12:44.404081+00:00",
+      "objective_has_durable_owner": true,
+      "objective_owner": "RESEARCH",
+      "queue_empty_does_not_stop": true,
+      "resources": {
+        "checkpoint": {
+          "cycle_id": "kernel_cycle_33",
+          "next_action": "RUN_BOUNDED_AUTONOMOUS_DISCOVERY"
+        },
+        "next_action": "continue_cycle",
+        "research_enabled": true,
+        "resume_without_manual_restart": true,
+        "state": "RUNNING"
+      },
+      "result_status": "NO_ACTION_REQUIRED",
+      "scheduler": "ACTIVE_DAEMON",
+      "schema_version": "nexus.research-heartbeat.v1",
+      "selected_lane_id": null,
+      "selected_lane_name": null,
+      "started_at": "2026-09-27T16:52:44.404061+00:00",
+      "task_processing": "SUPERVISED",
+      "worker_state": "IDLE_BETWEEN_CYCLES"
+    },
+    "next_wake": "2026-09-27T17:12:44.404081+00:00",
+    "provider_model_health": {
+      "alpha": "observed from persisted Alpha receipts",
+      "provider": [
+        "openrouter"
+      ]
+    },
+    "research_service": {
+      "label": "com.nexus.continuous-loop",
+      "pid": 66857,
+      "running": true
+    }
+  },
+  "what_research_did": {
+    "ai_analyses": 20,
+    "channel_checks": 22,
+    "follow_up_searches": 0,
+    "source_selected": 22,
+    "source_types": {
+      "GITHUB_REPOSITORY": 1,
+      "SEO_RESEARCH": 1,
+      "WEB_PAGE": 9,
+      "YOUTUBE_VIDEO": 11
+    },
+    "substantive_findings": 20,
+    "transcripts_acquired": 0,
+    "transcripts_analyzed": 7
+  },
+  "window": {
+    "end": "2026-09-27T17:06:51.277039+00:00",
+    "hours": 2,
+    "start": "2026-09-27T07:00:00+00:00"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "research_service": {
+    "label": "com.nexus.continuous-loop",
+    "running": true,
+    "pid": 66857,
+    "canonical_path": "/Users/raymonddavis/nexus-os-v2-canonical",
+    "keep_alive": true,
+    "duplicate_runners": 0
+  },
+  "reporter": {
+    "label": "com.nexus.research-two-hour-report",
+    "persistent": true,
+    "observer_only": true,
+    "selects_work": false,
+    "stops_research": false,
+    "consumes_jobs": false,
+    "on_demand_command": "python3 scripts/research/generate_research_status_report.py --window-hours 2 --output latest"
+  },
+  "first_report": {
+    "path": "reports/research/two_hour/latest.md",
+    "json_path": "reports/research/two_hour/latest.json",
+    "window_start": "2026-09-27T15:10:12.933532+00:00",
+    "window_end": "2026-09-27T17:10:12.933532+00:00",
+    "substantive_findings": 11,
+    "ai_analyses": 11,
+    "alpha_reviews": 0,
+    "handoffs": 0
+  },
+  "scope": ["CUSTOMER_NEEDS", "BUSINESS_FUNDING", "FINANCIAL_INSTITUTION_INTELLIGENCE", "YOUTUBE_INTELLIGENCE", "SEO_SEARCH_INTELLIGENCE", "GITHUB_OPEN_SOURCE", "LAST30DAYS_PROACTIVE", "AFFILIATE_SOLUTION_DISCOVERY", "COMPETITOR_INTELLIGENCE", "PROJECT_SUPPORT", "RESEARCH_FOLLOWUPS", "DEPARTMENT_PROJECT_REQUESTS"],
+  "governance": {"customer_messages": 0, "paid_services": 0, "public_publishing": 0, "financial_transactions": 0, "trading": 0}
+}
