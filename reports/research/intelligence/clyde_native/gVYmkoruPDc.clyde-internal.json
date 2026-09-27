@@ -1,0 +1,57 @@
+{
+  "alpha_receipt_id": "alpha_receipt_ff30fd24f38f4e34b0d9b092dae94572",
+  "consequential_action_performed": false,
+  "consumer": "clyde_credit_research_handoff_consumer_v1",
+  "created_at": "2026-09-27T16:06:25.816508+00:00",
+  "decision": "RESEARCH_MORE",
+  "external_action_allowed": false,
+  "final_internal_state": "RESEARCH_MORE",
+  "finding_id": "real-intelligence-gap-closure-gVYmkoruPDc",
+  "funding_readiness_implications": [
+    "A borrower profile should be segmented by credit, revenue/cash flow, business history, funding amount, collateral, and guarantees.",
+    "Product comparison should separate official program facts from lender-variable pricing and underwriting terms.",
+    "GoClear education can focus on evidence preparation and comparison questions, not approval prediction."
+  ],
+  "handoff_id": "research_handoff_237bb7a35e454ce7a186baac8832fbdd",
+  "human_approval_required": false,
+  "investigation_id": "real-intelligence-gap-closure-gVYmkoruPDc",
+  "lender_evidence_found": false,
+  "missing_verification": [
+    "independent lender evidence for fees, APR-equivalent costs, collateral, guarantees, and early repayment terms"
+  ],
+  "need_id": "need_d0c56031662e89bbfe00",
+  "research_return_created": true,
+  "research_return_path": "research_requests -> Research -> Alpha -> CLYDE_CREDIT",
+  "research_return_request_id": "research_request_4c702ee65e9df95ee1be",
+  "schema_version": "nexus.clyde.research-intelligence.v1",
+  "source_claim_vs_nexus_interpretation": {
+    "nexus_interpretation": "Use this only as internal funding-readiness education research. Do not present lender-specific thresholds or timelines as client facts.",
+    "source_claim": "The video presents financing options and qualification factors; it is commercially interested and contains claims Alpha marked for verification."
+  },
+  "source_lineage": {
+    "ai_analysis": "reports/research/intelligence/youtube/gVYmkoruPDc.ai-analysis.json",
+    "alpha_receipt": "reports/research/intelligence/alpha_native_canary/alpha_receipt_ff30fd24f38f4e34b0d9b092dae94572.json",
+    "transcript": "reports/research/intelligence/youtube/gVYmkoruPDc.transcript.txt",
+    "youtube_video_id": "gVYmkoruPDc"
+  },
+  "target_department": "CLYDE_CREDIT",
+  "unverified": [
+    "Transcript credit-score ranges and 10-to-90-day timeline claims",
+    "Product-specific fees, APR-equivalent costs, collateral, guarantees, and early-repayment terms",
+    "Clear Value Lending product availability and commercial claims"
+  ],
+  "verified": {
+    "alpha_decision": "QUALIFY",
+    "official_evidence_summary": "Existing SBA.gov material covers SBA-backed 7(a), 504, and microloan program context and points to Lender Match.",
+    "official_sba_evidence": [
+      {
+        "artifact": "reports/runtime/research_artifacts/web/cert-sba-funding.document.json",
+        "normalized_text": "reports/runtime/research_artifacts/web/cert-sba-funding.normalized.txt",
+        "retrieved_at": "2026-09-26T23:55:27.395233+00:00",
+        "source_class": "OFFICIAL_GOVERNMENT",
+        "source_id": "cert-sba-funding",
+        "source_url": "https://www.sba.gov/funding-programs/loans"
+      }
+    ]
+  }
+}
