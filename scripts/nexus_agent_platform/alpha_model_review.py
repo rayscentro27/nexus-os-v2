@@ -15,6 +15,7 @@ from typing import Any
 
 from nexus_agent_platform.governed import persistence
 from nexus_agent_platform.research_work_queue import default_queue
+from nexus_agent_platform.alpha_decision_policy import apply_policy
 
 
 def _now() -> str:
@@ -147,9 +148,9 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             "white-label", "consulting", "education", "lead generation",
             "existing third-party software", "new Nexus software", "no attractive opportunity",
         ],
-        "allowed_decisions": ["QUALIFY", "RESEARCH_MORE", "REJECT", "PARK"],
+        "allowed_decisions": ["QUALIFY", "TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"],
         "required_json_keys": [
-            "need", "decision", "confidence", "reasoning_summary", "evidence_strength",
+            "need", "decision", "confidence", "reasoning_summary", "evidence_strength", "evidence_for", "evidence_against", "unknowns", "hard_blockers", "soft_risks", "testable_unknowns",
             "contradictions", "deficiencies", "commercial_intent_assessment",
             "existing_solution_assessment", "monetization_paths_considered",
             "required_followup", "recommended_next_stage",
@@ -161,7 +162,11 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             {"role": "system", "content": (
                 "You are Nexus Alpha. Review only the supplied fresh public evidence. "
                 "Do not invent demand, customers, revenue, or capabilities. Separate "
-                "observed evidence from inference. Return one compact JSON object only."
+                "observed evidence from inference. Do not reject merely because certainty "
+                "is incomplete: identify whether a low-cost reversible internal TEST can "
+                "resolve the uncertainty. Reserve rejection for hard safety/compliance, "
+                "clear irrelevance, disproven claims, impossible dependencies, or no "
+                "meaningful hypothesis. Return one compact JSON object only."
             )},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)},
         ],
@@ -196,14 +201,15 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         error = oracle["error"]
         latency_ms = oracle["latency_ms"]
         judgment = oracle["judgment"]
-    if not judgment or str(judgment.get("decision") or "").upper() not in {"QUALIFY", "RESEARCH_MORE", "REJECT", "PARK"}:
+    if not judgment or str(judgment.get("decision") or "").upper() not in {"QUALIFY", "TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"}:
         return {
             "status": "FAILED", "request_id": request_id, "provider": provider, "model": model,
             "model_calls": model_calls, "http_status": status, "error": error or "invalid_structured_review",
             "latency_ms": latency_ms,
         }
 
-    decision = str(judgment["decision"]).upper()
+    policy = apply_policy(package, judgment)
+    decision = policy["decision"]
     need = _normalize_need(judgment, package, source_refs)
     need_id = str(need.get("need_id") or persistence.new_id("need"))
     from nexus_agent_platform.research_work_queue import ResearchWorkQueue
@@ -245,9 +251,9 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         "need_id": need_id, "investigation_id": investigation_id or None,
         "provider": provider, "model": model, "model_calls": 1,
         "started_at": started_at, "completed_at": completed_at,
-        "decision": decision, "status": "COMPLETE", "latency_ms": latency_ms,
+        "decision": decision, "model_decision": policy["model_decision"], "status": "COMPLETE", "latency_ms": latency_ms,
         "source_refs": source_refs, "evidence_refs": source_refs,
-        "model_review": judgment,
+        "model_review": {**judgment, "policy": policy},
         "execution_performed": True, "consequential_action_performed": False,
     }
     evaluation = {
@@ -258,7 +264,7 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         "finding_id": finding_id, "need_id": need_id,
         "investigation_id": investigation_id or None,
         "provider": provider, "model": model, "model_calls": 1,
-        "decision": decision, "confidence": judgment.get("confidence"),
+        "decision": decision, "model_decision": policy["model_decision"], "confidence": judgment.get("confidence"),
         "reasoning_summary": judgment.get("reasoning_summary"),
         "evidence_strength": judgment.get("evidence_strength"),
         "contradictions": judgment.get("contradictions") or [],
@@ -268,6 +274,10 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         "monetization_paths_considered": judgment.get("monetization_paths_considered") or [],
         "required_followup": judgment.get("required_followup"),
         "recommended_next_stage": judgment.get("recommended_next_stage"),
+        "why": policy["why"], "evidence_for": policy["evidence_for"], "evidence_against": policy["evidence_against"],
+        "unknowns": policy["unknowns"], "hard_blockers": policy["hard_blockers"], "soft_risks": policy["soft_risks"],
+        "testable_unknowns": policy["testable_unknowns"], "recommended_next_step": policy["recommended_next_step"],
+        "next_owner": policy["next_owner"], "ray_policy_rules_applied": policy["ray_policy_rules_applied"],
         "evidence_refs": source_refs, "source_refs": source_refs,
         "evaluated_at": completed_at, "no_external_action": True,
     }
@@ -309,25 +319,29 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             # the entire source_refs list into source_url, which serialized
             # as unusable/empty input and caused a retryable URL failure.
             source_url=source_refs[0] if source_refs else None,
+            department_target=policy["next_owner"], research_mode=package.get("research_mode"),
+            alpha_eligible=True, alpha_review_required=True, WHY_THIS_RESEARCH=policy["why"],
+            TRIGGER="RESEARCH_GAP", DEPARTMENT=policy["next_owner"], PARENT_GOAL=package.get("parent_goal_id"),
+            PROJECT=package.get("project_id") or package.get("objective_id"), EXPECTED_VALUE=policy["recommended_next_step"],
             )
         receipt["followup_work_id"] = followup.get("work_id")
         receipt["followup_priority"] = 2
         receipt["followup_deduplicated"] = bool(followup.get("deduplicated"))
-    if decision == "QUALIFY":
+    if decision in {"QUALIFY", "TEST"}:
         handoff_id = persistence.new_id("research_handoff")
         handoff = {
             "schema_version": "nexus.research-v2.1",
             "handoff_id": handoff_id, "finding_id": finding_id, "need_id": need_id,
             "alpha_receipt_id": receipt_id, "target_department": str(package.get("handoff_target") or package.get("department_target") or "CLYDE_CREDIT").upper(),
-            "reason": "Model-backed Alpha qualified a funding-readiness customer need for internal review.",
-            "department_handoff_status": "DRAFT_REVIEW_REQUIRED",
-            "expected_department_output": "bounded funding-readiness validation brief",
+            "reason": policy["why"],
+            "department_handoff_status": "DRAFT_REVIEW_REQUIRED" if decision == "QUALIFY" else "TEST_PROPOSED",
+            "expected_department_output": policy["recommended_next_step"],
             "external_action_allowed": False, "source_refs": source_refs,
             "recorded_at": completed_at,
         }
         persistence.append_record("research_v2_handoffs", handoff)
         receipt["handoff_id"] = handoff_id
-        receipt["handoff_status"] = "DRAFT_REVIEW_REQUIRED"
+        receipt["handoff_status"] = handoff["department_handoff_status"]
         receipt["target_department"] = handoff["target_department"]
     root = runtime_root or Path(__file__).resolve().parents[2] / "data/runtime/alpha_research"
     root.mkdir(parents=True, exist_ok=True)

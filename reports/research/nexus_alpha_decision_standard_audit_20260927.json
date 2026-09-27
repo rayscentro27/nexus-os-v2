@@ -1,0 +1,192 @@
+{
+  "decisions": [
+    {
+      "alpha_receipt_id": "alpha_receipt_75fd68c48ae046fc9d92072f882c4a75",
+      "confidence": "Low",
+      "cost_concern": "UNKNOWN",
+      "department": "GOCLEAR",
+      "evidence": [
+        "https://www.sba.gov/business-guide/plan-your-business/market-research-competitive-analysis"
+      ],
+      "evidence_strength": "Weak",
+      "expected_value_concern": "Unclear due to insufficient data.",
+      "finding_id": "proactive-canary-goclear-funding",
+      "implementation_concern": "Lack of concrete evidence and reliable sources.",
+      "legal_compliance_concern": [],
+      "missing_evidence": "Lack of concrete evidence and reliable sources.",
+      "mission": "What current public funding-readiness problem should GoClear investigate next, and what evidence is needed before client education?",
+      "new_decision": "RESEARCH_MORE",
+      "new_next_step": "Obtain reliable evidence and resolve the URL reference.",
+      "new_reason": "The evidence provided is insufficient due to a public fetch bounded failure and unresolved URL reference.",
+      "next_action": "Obtain reliable evidence and resolve the URL reference.",
+      "next_owner": "CLYDE_CREDIT",
+      "novelty_concern": null,
+      "original_decision": "RESEARCH_MORE",
+      "original_rationale": "The evidence provided is insufficient due to a public fetch bounded failure and unresolved URL reference.",
+      "question": "What current public funding-readiness problem should GoClear investigate next, and what evidence is needed before client education?",
+      "ray_standard_difference": "No change: unresolved source evidence does not establish a safe test profile; Trading also lacks a meaningful testable hypothesis.",
+      "risk": "None observed.",
+      "threshold_or_rule": "Model prompt allowed QUALIFY/RESEARCH_MORE/REJECT/PARK; pre-policy implementation had no TEST or explicit Ray rubric."
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_8b30ea766e4a48e887735b0ad4bcf8c5",
+      "confidence": "Medium",
+      "cost_concern": "UNKNOWN",
+      "department": "GOCLEAR / CLYDE",
+      "evidence": [
+        "https://www.sba.gov/funding-programs/loans/7a-loan-program",
+        "https://www.bankofamerica.com/smallbusiness/business-financing/",
+        "https://www.americanexpress.com/en-us/business/blueprint/"
+      ],
+      "evidence_strength": "Weak",
+      "expected_value_concern": "Not applicable as no customer outcome or approval is asserted.",
+      "finding_id": "proactive-canary-qualified-funding",
+      "implementation_concern": "Lack of accessible data from the sources limits the ability to draw definitive conclusions.",
+      "legal_compliance_concern": [],
+      "missing_evidence": "Lack of accessible data from the sources limits the ability to draw definitive conclusions.",
+      "mission": "Which borrower qualification factors are supported across SBA and independent lender sources, and what should Clyde use internally?",
+      "new_decision": "RESEARCH_MORE",
+      "new_next_step": "Access the sources again or find alternative data to confirm borrower qualification factors.",
+      "new_reason": "The evidence gathered indicates a separation between SBA rules and lender-specific terms, but the sources could not be accessed due to fetch failures.",
+      "next_action": "Access the sources again or find alternative data to confirm borrower qualification factors.",
+      "next_owner": "CLYDE_CREDIT",
+      "novelty_concern": null,
+      "original_decision": "RESEARCH_MORE",
+      "original_rationale": "The evidence gathered indicates a separation between SBA rules and lender-specific terms, but the sources could not be accessed due to fetch failures.",
+      "question": "Which borrower qualification factors are supported across SBA and independent lender sources, and what should Clyde use internally?",
+      "ray_standard_difference": "No change: unresolved source evidence does not establish a safe test profile; Trading also lacks a meaningful testable hypothesis.",
+      "risk": [],
+      "threshold_or_rule": "Model prompt allowed QUALIFY/RESEARCH_MORE/REJECT/PARK; pre-policy implementation had no TEST or explicit Ray rubric."
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_31f4260a60c045f1a5cbcfe22f9155d9",
+      "confidence": "Low",
+      "cost_concern": "UNKNOWN",
+      "department": "REVENUE",
+      "evidence": [
+        "https://www.shopify.com/affiliates"
+      ],
+      "evidence_strength": "Weak",
+      "expected_value_concern": "Unclear due to lack of accessible evidence.",
+      "finding_id": "proactive-canary-revenue-opportunity",
+      "implementation_concern": "Missing verified evidence and economic analysis from the provided source.",
+      "legal_compliance_concern": [],
+      "missing_evidence": "Missing verified evidence and economic analysis from the provided source.",
+      "mission": "What low-cost public opportunity could plausibly contribute to verified net revenue, and what economics and fulfillment evidence is missing?",
+      "new_decision": "RESEARCH_MORE",
+      "new_next_step": "Investigate alternative sources or retry accessing the original URL.",
+      "new_reason": "The evidence source is unresolved due to a public fetch failure, limiting the ability to assess potential opportunities.",
+      "next_action": "Investigate alternative sources or retry accessing the original URL.",
+      "next_owner": "REVENUE_OPPORTUNITY_DISCOVERY",
+      "novelty_concern": null,
+      "original_decision": "RESEARCH_MORE",
+      "original_rationale": "The evidence source is unresolved due to a public fetch failure, limiting the ability to assess potential opportunities.",
+      "question": "What low-cost public opportunity could plausibly contribute to verified net revenue, and what economics and fulfillment evidence is missing?",
+      "ray_standard_difference": "No change: unresolved source evidence does not establish a safe test profile; Trading also lacks a meaningful testable hypothesis.",
+      "risk": [],
+      "threshold_or_rule": "Model prompt allowed QUALIFY/RESEARCH_MORE/REJECT/PARK; pre-policy implementation had no TEST or explicit Ray rubric."
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_b76d48cbdcb84f778f86dda909808eff",
+      "confidence": "Low",
+      "cost_concern": "UNKNOWN",
+      "department": "SYSTEMS",
+      "evidence": [
+        "https://github.com/search?q=needle+jev&type=repositories"
+      ],
+      "evidence_strength": "Weak",
+      "expected_value_concern": "Unclear due to lack of evidence.",
+      "finding_id": "proactive-canary-systems-capability",
+      "implementation_concern": "Public fetch failure indicates insufficient evidence to support a definitive conclusion.",
+      "legal_compliance_concern": [],
+      "missing_evidence": "Public fetch failure indicates insufficient evidence to support a definitive conclusion.",
+      "mission": "What are Needle and Jev, and do their public evidence and compatibility constraints justify an isolated Nexus benchmark?",
+      "new_decision": "RESEARCH_MORE",
+      "new_next_step": "Further investigation into Needle and Jev is necessary to gather reliable evidence.",
+      "new_reason": "The public evidence regarding Needle and Jev is currently unresolved, indicating a lack of clarity and reliability.",
+      "next_action": "Further investigation into Needle and Jev is necessary to gather reliable evidence.",
+      "next_owner": "SYSTEMS",
+      "novelty_concern": null,
+      "original_decision": "RESEARCH_MORE",
+      "original_rationale": "The public evidence regarding Needle and Jev is currently unresolved, indicating a lack of clarity and reliability.",
+      "question": "What are Needle and Jev, and do their public evidence and compatibility constraints justify an isolated Nexus benchmark?",
+      "ray_standard_difference": "No change: unresolved source evidence does not establish a safe test profile; Trading also lacks a meaningful testable hypothesis.",
+      "risk": [],
+      "threshold_or_rule": "Model prompt allowed QUALIFY/RESEARCH_MORE/REJECT/PARK; pre-policy implementation had no TEST or explicit Ray rubric."
+    },
+    {
+      "alpha_receipt_id": "alpha_receipt_1ce5c47680684814ae5f2eb312054816",
+      "confidence": "LOW",
+      "cost_concern": "UNKNOWN",
+      "department": "TRADING",
+      "evidence": [
+        "https://www.tradingview.com/scripts/editors-picks/"
+      ],
+      "evidence_strength": "WEAK",
+      "expected_value_concern": "Not applicable due to lack of actionable evidence.",
+      "finding_id": "proactive-canary-trading-candidate",
+      "implementation_concern": "The source URL is unresolved, and no valid evidence was retrieved.",
+      "legal_compliance_concern": [],
+      "missing_evidence": "The source URL is unresolved, and no valid evidence was retrieved.",
+      "mission": "What bounded strategy or tool candidate appears in TradingView Editor's Picks that Trading should paper-test next?",
+      "new_decision": "REJECT",
+      "new_next_step": "Investigate the source URL for resolution or alternative evidence.",
+      "new_reason": "The evidence source is unresolved due to a public fetch failure, indicating a lack of reliable information.",
+      "next_action": "Investigate the source URL for resolution or alternative evidence.",
+      "next_owner": "TRADING",
+      "novelty_concern": null,
+      "original_decision": "REJECT",
+      "original_rationale": "The evidence source is unresolved due to a public fetch failure, indicating a lack of reliable information.",
+      "question": "What bounded strategy or tool candidate appears in TradingView Editor's Picks that Trading should paper-test next?",
+      "ray_standard_difference": "No change: unresolved source evidence does not establish a safe test profile; Trading also lacks a meaningful testable hypothesis.",
+      "risk": [],
+      "threshold_or_rule": "Model prompt allowed QUALIFY/RESEARCH_MORE/REJECT/PARK; pre-policy implementation had no TEST or explicit Ray rubric."
+    }
+  ],
+  "generated_at": "2026-09-27T17:57:02.343144+00:00",
+  "over_conservative_patterns": [
+    "incomplete public fetch was treated as a generic evidence stop without checking a test profile",
+    "no bounded TEST disposition existed",
+    "Alpha prompt did not ask for economics, reversibility, or testable unknowns"
+  ],
+  "policy_provenance": [
+    {
+      "finding": "TEST/MONITOR/NO_ACTION absent before repair",
+      "rule": "QUALIFY/RESEARCH_MORE/REJECT/PARK only",
+      "source": "MODEL_DEFAULT + IMPLEMENTATION_DEFAULT"
+    },
+    {
+      "rule": "hard safety gates",
+      "source": "RAY_DEFINED in new canonical policy; existing governance boundary retained"
+    },
+    {
+      "rule": "low-cost reversible experiment",
+      "source": "RAY_DEFINED in new canonical policy"
+    },
+    {
+      "rule": "PARK maps to MONITOR",
+      "source": "LEGACY_RULE normalized by new policy"
+    }
+  ],
+  "ray_aligned_policy": {
+    "alpha_final_business_authority": false,
+    "dispositions": [
+      "QUALIFY",
+      "TEST",
+      "RESEARCH_MORE",
+      "MONITOR",
+      "REJECT",
+      "NO_ACTION"
+    ],
+    "hard_safety_gates_preserved": true
+  },
+  "safety": {
+    "customer_messages": 0,
+    "funds_moved": 0,
+    "live_trades": 0,
+    "paid_actions": 0,
+    "production_tool_installations": 0,
+    "publications": 0
+  },
+  "schema_version": "nexus.alpha-decision-standard-audit.v1"
+}
