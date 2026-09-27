@@ -21,7 +21,15 @@ export const DashboardView: React.FC = () => {
   } = usePortal();
 
   const percentage = Math.round((profile.readinessPoints / profile.readinessTarget) * 100);
-  const nextMission = missions.find((m) => !m.completed) || missions[0];
+  const nextMission = missions.find((m) => !m.completed) || missions[0] || null;
+  // The approved desktop shell is a stable 2x2 mission grid. These display-only
+  // slots preserve that geometry when the tenant-scoped live response is sparse.
+  const missionSlots: Array<Mission | null> = missions.length >= 4
+    ? missions
+    : [
+        ...missions,
+        ...Array.from({ length: 4 - missions.length }, () => null)
+      ];
 
   // Context-aware financial explanations for mission cards
   const getMissionTooltip = (mission: Mission) => {
@@ -230,38 +238,48 @@ export const DashboardView: React.FC = () => {
           </div>
 
           {/* Right: Next Mission Spotlight CTA */}
-          <Tooltip
-            title="Next Strategic Milestone"
-            tag={`+${nextMission.points} PTS`}
-            tagType="amber"
-            position="bottom"
-            content={`Priority underwriting directive: ${nextMission.description} Completing this action clears the top commercial loan blocker.`}
-          >
-            <div className="shrink-0 flex items-center gap-3 bg-white border border-teal-200/90 rounded-xl p-2.5 shadow-xs">
-              <div className="text-left min-w-0">
-                <div className="flex items-center gap-1.5 text-[9px] font-bold text-amber-800 uppercase tracking-wider mb-1">
-                  <StatusBadge
-                    status={nextMission.status || (nextMission.completed ? 'Completed' : 'In Progress')}
-                    variant="light"
-                    size="sm"
-                  />
-                  <span className="font-mono">+{nextMission.points} PTS</span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-[10px] text-slate-500 font-medium">{nextMission.timeEstimate}</span>
+          {nextMission ? (
+            <Tooltip
+              title="Next Strategic Milestone"
+              tag={`+${nextMission.points} PTS`}
+              tagType="amber"
+              position="bottom"
+              content={`Priority underwriting directive: ${nextMission.description} Completing this action clears the top commercial loan blocker.`}
+            >
+              <div className="shrink-0 flex items-center gap-3 bg-white border border-teal-200/90 rounded-xl p-2.5 shadow-xs">
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-amber-800 uppercase tracking-wider mb-1">
+                    <StatusBadge
+                      status={nextMission.status || (nextMission.completed ? 'Completed' : 'In Progress')}
+                      variant="light"
+                      size="sm"
+                    />
+                    <span className="font-mono">+{nextMission.points} PTS</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="text-[10px] text-slate-500 font-medium">{nextMission.timeEstimate}</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 truncate max-w-[170px]">
+                    {nextMission.title}
+                  </div>
                 </div>
-                <div className="text-xs font-bold text-slate-900 truncate max-w-[170px]">
-                  {nextMission.title}
-                </div>
-              </div>
 
-              <button
-                onClick={() => setActiveTab(nextMission.targetTab)}
-                className="px-3 py-2 bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white font-bold text-xs rounded-lg transition-all shadow-sm active:scale-95 whitespace-nowrap cursor-pointer"
-              >
-                Continue →
-              </button>
+                <button
+                  onClick={() => setActiveTab(nextMission.targetTab)}
+                  className="px-3 py-2 bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white font-bold text-xs rounded-lg transition-all shadow-sm active:scale-95 whitespace-nowrap cursor-pointer"
+                >
+                  Continue →
+                </button>
+              </div>
+            </Tooltip>
+          ) : (
+            <div className="shrink-0 flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs" aria-label="No current mission">
+              <div className="text-left min-w-0">
+                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mission queue</div>
+                <div className="text-xs font-bold text-slate-900 truncate max-w-[170px]">No current mission</div>
+              </div>
+              <span className="text-[10px] text-slate-500 whitespace-nowrap">Waiting for next action</span>
             </div>
-          </Tooltip>
+          )}
         </div>
       </div>
 
@@ -288,7 +306,29 @@ export const DashboardView: React.FC = () => {
 
             {/* Auto-filling Missions Grid with Context-Aware Tooltips & Prominent Visual Indicator Badges */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2.5">
-              {missions.map((mission) => {
+              {missionSlots.map((mission, slotIndex) => {
+                if (!mission) {
+                  return (
+                    <div
+                      key={`mission-slot-${slotIndex}`}
+                      className="p-2.5 rounded-xl border border-slate-200 bg-white/80 flex flex-col justify-between min-h-[108px]"
+                      aria-label="No current mission"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider rounded border border-slate-200 bg-slate-50 text-slate-500">
+                            No active task
+                          </span>
+                        </div>
+                        <h3 className="text-xs font-bold text-slate-700 leading-tight">No current mission</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Waiting for next action</p>
+                      </div>
+                      <div className="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 font-medium">
+                        No points or action available
+                      </div>
+                    </div>
+                  );
+                }
                 const isCompleted = mission.completed;
                 const isBlocked = mission.status === 'Blocked' && !isCompleted;
                 const statusToDisplay = isCompleted ? 'Completed' : isBlocked ? 'Blocked' : 'In Progress';

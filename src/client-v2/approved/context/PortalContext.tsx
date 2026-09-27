@@ -710,7 +710,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode; initialTab?: 
     const clearLiveState = () => {
       setProfile({ name: 'Client', companyName: 'Business name unavailable', role: 'Authorized client', ein: 'Not available', duns: 'Not available', entityType: 'Not available', stateOfFormation: 'Not available', industry: 'Not available', naicsCode: 'Not available', memberSince: 'Not available', readinessPoints: 0, readinessTarget: 100, currentLevelIndex: 0, streakDays: 0, avatarUrl: clientAvatarPath, targetFundingAmount: 0 });
       setJourneyNodes([]);
-      setMissions([{ id: 'no-live-task', title: 'No active client task recorded', category: 'Setup', points: 0, impact: 'Medium', timeEstimate: 'Not scheduled', description: 'No executable client task was returned by the authenticated tenant-scoped query.', actionText: 'Review readiness', targetTab: 'dashboard', completed: true, status: 'Completed' }]);
+      setMissions([]);
       setAchievements([]);
       setDocuments([]);
       setBankabilityPillars([]);
