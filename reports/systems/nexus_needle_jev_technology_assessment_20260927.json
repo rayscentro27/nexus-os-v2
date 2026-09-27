@@ -1,0 +1,9 @@
+{
+  "date": "2026-09-27",
+  "evidence_confidence": {"needle": "PARTIAL", "jev": "LOW/PARTIAL"},
+  "needle": {"identity": "needle-ai/needle-mcp", "official_sources": ["https://github.com/needle-ai/needle-mcp", "https://needle.app/docs/mcp/introduction"], "license": "MIT", "activity": "34 commits shown on repository page; exact pinned release not established", "mac_compatibility": "UNPROVEN; no install", "oracle_compatibility": "POTENTIAL; isolated Linux/MCP assessment suitable, auth dependency remains", "resource_requirements": "uv or Docker plus credentials for useful remote operation; CPU/RAM unknown", "nexus_value": "Potential MCP document retrieval/long-term memory; overlap and data boundary unproven"},
+  "jev": {"identity": "AMBIGUOUS: hosted Jev AI/TypeSafe model versus okooo5km/jev community CLI", "official_sources": ["https://github.com/jev-ai"], "community_source": "https://github.com/okooo5km/jev/blob/main/README.en.md", "license": "Hosted model terms unresolved; community CLI README states Apache-2.0", "activity": "Community README documents v0.3.2 and macOS/Linux installer", "mac_compatibility": "Community CLI path documented but Intel/resource benchmark unproven", "oracle_compatibility": "Potential Linux/API path; not tested", "resource_requirements": "Hosted API or community CLI assets; exact footprint unknown", "nexus_value": "Potential typed decision routing/guardrails; target and value unresolved"},
+  "source_recovery": {"attempts": 6, "fallbacks_used": ["official repository/docs", "community README", "bounded secondary identity source"], "question_still_open": true},
+  "decision": {"systems": "NEEDS_MORE_EVIDENCE", "next_owner": "RESEARCH", "next_action": "Bind intended identities and verify license/terms, pinned versions, runtime/dependencies, compatibility, and benchmark evidence before Alpha re-review."},
+  "safety": {"installed": false, "production_mac_changed": false, "paid_action": false, "production_touch": false}
+}

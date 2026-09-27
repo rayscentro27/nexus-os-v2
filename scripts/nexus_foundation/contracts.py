@@ -18,6 +18,7 @@ SPECIALISTS = {
     "NOVA": {"role": "executive/business partner", "department": "executive", "status": "ACTIVE", "authority_level": "judgment"},
     "ALPHA": {"role": "business research, economics, trading research, evidence challenge", "department": "research", "status": "ACTIVE", "authority_level": "advisory"},
     "JAX": {"role": "engineering, system repair, technical implementation", "department": "engineering", "status": "ACTIVE", "authority_level": "sandboxed_implementation"},
+    "SYSTEMS_AI_WORKER": {"role": "Systems technology assessment and isolated benchmark planning", "department": "systems", "status": "ACTIVE", "authority_level": "read_only"},
     "GROWTH": {"role": "marketing, sales, revenue, campaign optimization", "department": "growth", "status": "ACTIVE", "authority_level": "advisory"},
     "CREATIVE": {"role": "content, media, campaign assets", "department": "creative", "status": "ACTIVE", "authority_level": "draft_only"},
     "CLYDE": {"role": "credit, funding, client delivery", "department": "client_delivery", "status": "ACTIVE", "authority_level": "advisory"},
@@ -39,6 +40,7 @@ RESOURCE_PERMISSIONS = {
     "NOVA": {"nexus": "read", "google": "read", "web": "read", "alpha": "delegate", "specialists": "delegate"},
     "ALPHA": {"web": "read", "browser": "read", "python": "execute", "nexus": "read"},
     "JAX": {"git": "read", "filesystem": "sandboxed_write", "terminal": "sandboxed_execute", "python": "execute", "nexus_work_orders": "read"},
+    "SYSTEMS_AI_WORKER": {"web": "read", "repository": "read", "python": "execute", "nexus_work_orders": "read"},
     "GROWTH": {"campaign_state": "read", "analytics": "read", "web": "read", "python": "execute"},
     "CREATIVE": {"creative_media": "draft", "campaign_briefs": "read", "asset_workflows": "draft"},
     "CLYDE": {"credit_state": "read", "funding_state": "read", "client_workflows": "read"},
@@ -48,6 +50,7 @@ RESOURCE_PERMISSIONS = {
 SKILL_ASSIGNMENTS = {
     "ALPHA": {"validate-business-opportunity": "1.0", "research-market": "1.0", "evaluate-economics": "1.0", "research-trading-strategy": "1.0"},
     "JAX": {"diagnose-engineering-defect": "1.0", "implement-feature": "1.0", "run-regression-suite": "1.0"},
+    "SYSTEMS_AI_WORKER": {"assess-technology": "1.0", "plan-isolated-benchmark": "1.0", "evaluate-compatibility": "1.0"},
     "GROWTH": {"design-offer": "1.0", "build-funnel": "1.0", "analyze-campaign": "1.0"},
     "CREATIVE": {"create-ad-concept": "1.0", "create-content-brief": "1.0", "repurpose-content": "1.0"},
     "CLYDE": {"evaluate-funding-readiness": "1.0", "analyze-credit-discrepancy": "1.0"},

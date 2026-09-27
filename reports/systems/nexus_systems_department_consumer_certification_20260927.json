@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-27",
+  "certification": "PASS_REAL_BOUNDED",
+  "department": "SYSTEMS",
+  "consumer": "scripts/nexus_agent_platform/systems_consumer.py",
+  "worker": {"id": "SYSTEMS_AI_WORKER", "type": "AI_REASONING_WORKER", "provider": "openrouter", "model": "openai/gpt-4o-mini", "runtime_host": "ORACLE", "hermes_version": "0.20.6", "real_model_call": true},
+  "lineage": {"research_package": "package_929140eea4df5a409edc", "alpha_receipt": "alpha_receipt_33de1addbf224fd08f1edf4decaff75c", "handoff": "handoff_alpha_model_req_ddfb9541d6674732a781268c9c096d6c_package_929140eea4df5a409edc", "work_order": "wo_5085bac6cea544228c212afddf6b79ee", "analysis": "systems_analysis_b9cea45eef4a49c2b701fdcf5a25a6e0"},
+  "decision": {"alpha_disposition": "RESEARCH_MORE", "systems_disposition": "NEEDS_MORE_EVIDENCE", "reviewer": "SYSTEMS_AI_REVIEW", "next_owner": "RESEARCH", "next_action": "Verify intended Jev identity, license/terms, runtime/dependencies, and compatibility; return the same opportunity to Alpha."},
+  "state": {"start": "RESEARCH_MORE", "end": "SYSTEMS_ASSESSED_NEEDS_EVIDENCE", "transition": "Systems AI assessment completed without authorizing a test"},
+  "host": {"selected": "ORACLE", "reason": "isolated remote Linux path; protects Intel Mac control plane", "isolated_test_ready": false, "isolated_test_executed": false, "production_mac_changed": false, "production_installation": false},
+  "metrics": {"systems_work_received": 1, "systems_work_claimed": 1, "systems_ai_analyses": 1, "systems_tests_planned": 0, "systems_tests_executed": 0, "systems_tests_blocked": 1, "systems_research_returns": 1, "systems_alpha_returns": 0, "systems_project_transitions": 1, "active_systems_candidates": ["Needle / Jev"]},
+  "safety": {"paid_actions": 0, "customer_messages": 0, "publications": 0, "funds_moved": 0, "live_trades": 0, "unapproved_production_changes": 0},
+  "tests": {"focused": 13, "py_compile": "PASS", "git_diff_check": "PASS"}
+}
