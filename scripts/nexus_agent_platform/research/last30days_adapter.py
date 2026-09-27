@@ -311,6 +311,12 @@ def run_demand_radar(request: dict[str, Any], *, timeout_seconds: int | None = N
         command.extend(["--search", ",".join(requested_sources)])
     environment = os.environ.copy()
     _runtime_ssl_environment(environment)
+    # The pinned CLI imports Python's stdlib ``platform`` module.  The Nexus
+    # control-plane PYTHONPATH can contain scripts/nexus_agent_platform, which
+    # also has a platform.py; inheriting it shadows the stdlib inside the
+    # child and breaks the primary adapter before source acquisition starts.
+    # The pinned script is self-contained, so isolate its import path.
+    environment.pop("PYTHONPATH", None)
     environment["LAST30DAYS_MEMORY_DIR"] = str(cache_dir)
     environment["LAST30DAYS_BROWSER_COOKIES"] = "0"
     environment.pop("LAST30DAYS_PUBLISH_PASSWORD", None)
