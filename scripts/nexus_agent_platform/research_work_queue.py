@@ -167,6 +167,12 @@ class ResearchWorkQueue:
             "published_at": item.get("published_at"),
             "selection_reason": item.get("selection_reason"),
             "backfill_rank": item.get("backfill_rank"),
+            "research_mode": item.get("research_mode"), "WHY_THIS_RESEARCH": item.get("WHY_THIS_RESEARCH"),
+            "TRIGGER": item.get("TRIGGER"), "DEPARTMENT": item.get("DEPARTMENT") or item.get("department"),
+            "BUSINESS_OR_NEXUS": item.get("BUSINESS_OR_NEXUS"), "PARENT_GOAL": item.get("PARENT_GOAL"),
+            "PROJECT": item.get("PROJECT") or item.get("project_id"), "QUESTION": item.get("QUESTION") or item.get("question"),
+            "EXPECTED_VALUE": item.get("EXPECTED_VALUE"), "SOURCE_PLAN": list(item.get("SOURCE_PLAN", []) or []),
+            "alpha_eligible": bool(item.get("alpha_eligible", False)), "alpha_review_required": bool(item.get("alpha_review_required", False)),
         }
         return result
 

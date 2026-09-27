@@ -318,7 +318,7 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         handoff = {
             "schema_version": "nexus.research-v2.1",
             "handoff_id": handoff_id, "finding_id": finding_id, "need_id": need_id,
-            "alpha_receipt_id": receipt_id, "target_department": "CLYDE_CREDIT",
+            "alpha_receipt_id": receipt_id, "target_department": str(package.get("handoff_target") or package.get("department_target") or "CLYDE_CREDIT").upper(),
             "reason": "Model-backed Alpha qualified a funding-readiness customer need for internal review.",
             "department_handoff_status": "DRAFT_REVIEW_REQUIRED",
             "expected_department_output": "bounded funding-readiness validation brief",
@@ -328,7 +328,7 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         persistence.append_record("research_v2_handoffs", handoff)
         receipt["handoff_id"] = handoff_id
         receipt["handoff_status"] = "DRAFT_REVIEW_REQUIRED"
-        receipt["target_department"] = "CLYDE_CREDIT"
+        receipt["target_department"] = handoff["target_department"]
     root = runtime_root or Path(__file__).resolve().parents[2] / "data/runtime/alpha_research"
     root.mkdir(parents=True, exist_ok=True)
     (root / f"{receipt_id}.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")

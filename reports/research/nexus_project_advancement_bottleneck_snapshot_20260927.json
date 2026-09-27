@@ -1,0 +1,49 @@
+{
+  "evidence": "latest two-hour report and durable queue/execution ledgers",
+  "external_blockers": [],
+  "generated_at": "2026-09-27T17:35:31.892802+00:00",
+  "projects_blocked_on_ray": [],
+  "projects_with_no_active_worker": [],
+  "projects_with_no_owner": [
+    "alpha-model-followup:alpha_eval_584d3dbfb4414a34b88fb9bbb86096ed",
+    "alpha-model-followup:alpha_eval_75cdb47e315940639b19657f55191a69",
+    "alpha-model-followup:alpha_eval_ed9c808bdb6a4ce1a5cd781cc99da06b",
+    "alpha-model-followup:alpha_eval_57facde700f34d96aa220e51915d68b3",
+    "alpha-model-followup:alpha_eval_09f1294d014d4f51a1f038c51e84845a",
+    "alpha-model-followup:alpha_eval_1eb4ffce93cd4d789f76ece41e281306",
+    "alpha-model-followup:alpha_eval_30edfb3bc509452c94eab54c0d8ff583",
+    "alpha-model-followup:alpha_eval_25b553d637eb402d82acd0c429fcb4f9",
+    "alpha-model-followup:alpha_eval_3a935cb8418949f684cec9f1252e6735",
+    "alpha-model-followup:alpha_eval_1843c4dfb4de453b9e105de41a102505",
+    "alpha-model-followup:alpha_eval_38eebd02c27943cab91ff09c3e9a3140",
+    "alpha-model-followup:alpha_eval_1724385e56f0401c96c90b405a6d8464"
+  ],
+  "top_company_bottleneck": "Mission-linked proactive work was not being generated from the durable charter/question contract; generic monitored evidence had no Alpha owner or department route.",
+  "unconsumed_handoffs": [
+    "proactive:systems:4c5d69faff79",
+    "proactive:trading:94dfa2e76c01",
+    "proactive:clyde_funding:bf076e2ef627",
+    "proactive:revenue_opportunity_discovery:1450f2984ed6",
+    "proactive:clyde_funding:c4396ced0f32"
+  ],
+  "unresolved_alpha_returns": [],
+  "work_with_no_next_action": [
+    "alpha-model-followup:alpha_eval_584d3dbfb4414a34b88fb9bbb86096ed",
+    "alpha-model-followup:alpha_eval_75cdb47e315940639b19657f55191a69",
+    "alpha-model-followup:alpha_eval_ed9c808bdb6a4ce1a5cd781cc99da06b",
+    "alpha-model-followup:alpha_eval_57facde700f34d96aa220e51915d68b3",
+    "alpha-model-followup:alpha_eval_09f1294d014d4f51a1f038c51e84845a",
+    "alpha-model-followup:alpha_eval_1eb4ffce93cd4d789f76ece41e281306",
+    "alpha-model-followup:alpha_eval_30edfb3bc509452c94eab54c0d8ff583",
+    "alpha-model-followup:alpha_eval_25b553d637eb402d82acd0c429fcb4f9",
+    "proactive:systems:4c5d69faff79",
+    "alpha-model-followup:alpha_eval_3a935cb8418949f684cec9f1252e6735",
+    "proactive:trading:94dfa2e76c01",
+    "proactive:clyde_funding:bf076e2ef627",
+    "alpha-model-followup:alpha_eval_1843c4dfb4de453b9e105de41a102505",
+    "proactive:revenue_opportunity_discovery:1450f2984ed6",
+    "alpha-model-followup:alpha_eval_38eebd02c27943cab91ff09c3e9a3140",
+    "proactive:clyde_funding:c4396ced0f32",
+    "alpha-model-followup:alpha_eval_1724385e56f0401c96c90b405a6d8464"
+  ]
+}

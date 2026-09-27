@@ -83,7 +83,12 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                     "required_capabilities": queued.get("required_capabilities", []),
                     "ai_plan_id": queued.get("ai_plan_id"),
                     "alpha_followup_required": queued.get("alpha_followup_required", False),
-                    "department_target": queued.get("department_target"), "lifecycle": queued.get("lifecycle", "MONITORED")}
+                    "department_target": queued.get("department_target"), "lifecycle": queued.get("lifecycle", "MONITORED"),
+                    "research_mode": queued.get("research_mode"), "alpha_eligible": queued.get("alpha_eligible", False),
+                    "alpha_review_required": queued.get("alpha_review_required", False), "WHY_THIS_RESEARCH": queued.get("WHY_THIS_RESEARCH"),
+                    "TRIGGER": queued.get("TRIGGER"), "DEPARTMENT": queued.get("DEPARTMENT"), "BUSINESS_OR_NEXUS": queued.get("BUSINESS_OR_NEXUS"),
+                    "PARENT_GOAL": queued.get("PARENT_GOAL"), "PROJECT": queued.get("PROJECT"), "QUESTION": queued.get("QUESTION"),
+                    "EXPECTED_VALUE": queued.get("EXPECTED_VALUE"), "SOURCE_PLAN": queued.get("SOURCE_PLAN", [])}
         return {"source_type": queued.get("source_type") or "WEB_PAGE",
                 "source_id": queued.get("source_id") or queued.get("work_id"),
                 "source_url": queued.get("source_url") or queued.get("url") or known[1] or "",
@@ -99,7 +104,14 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 "ai_plan_id": queued.get("ai_plan_id"),
                 "alpha_followup_required": queued.get("alpha_followup_required", False),
                 "department_target": queued.get("department_target"),
-                "lifecycle": queued.get("lifecycle", "MONITORED")}
+                "lifecycle": queued.get("lifecycle", "MONITORED"),
+                "research_mode": queued.get("research_mode"), "alpha_eligible": queued.get("alpha_eligible", False),
+                "alpha_review_required": queued.get("alpha_review_required", False),
+                "WHY_THIS_RESEARCH": queued.get("WHY_THIS_RESEARCH"), "TRIGGER": queued.get("TRIGGER"),
+                "DEPARTMENT": queued.get("DEPARTMENT"), "BUSINESS_OR_NEXUS": queued.get("BUSINESS_OR_NEXUS"),
+                "PARENT_GOAL": queued.get("PARENT_GOAL"), "PROJECT": queued.get("PROJECT"),
+                "QUESTION": queued.get("QUESTION"), "EXPECTED_VALUE": queued.get("EXPECTED_VALUE"),
+                "SOURCE_PLAN": queued.get("SOURCE_PLAN", [])}
     if lane_id == "YOUTUBE_CONTENT":
         config = json.loads((ROOT / "configs/youtube_research_channels.json").read_text(encoding="utf-8"))
         channels = [row for row in config.get("channels", []) if row.get("enabled") and row.get("approved_by_ray")]
@@ -471,7 +483,9 @@ def main() -> int:
           provenance_created=result.get("provenance_created", False), stored=result.get("stored", False),
           disposition=result.get("disposition"), research_id=(result.get("result") or {}).get("research_item_id"),
           work_id=item.get("work_id"), objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
-          research_package_id=(result.get("v2") or {}).get("research_package_id"))
+          research_package_id=(result.get("v2") or {}).get("research_package_id"), research_mode=item.get("research_mode"),
+          alpha_eligible=item.get("alpha_eligible", False), department_target=item.get("department_target"),
+          project_id=item.get("project_id") or item.get("PROJECT"))
     if final_status.startswith("FAILED"):
         mark_lane_backoff(lane_id, result.get("error", "scheduled processor failed"))
         fallback = strategy_changing_fallback(item, failure_class="SCHEDULED_PROCESSOR_FAILURE", error=result.get("error", "scheduled processor failed"), attempt=int(os.environ.get("NEXUS_ATTEMPT_COUNT", "1")))
@@ -491,7 +505,9 @@ def main() -> int:
     # Assigned objective/follow-up work is an Alpha-eligible handoff.  Keep
     # routine monitoring cheap, but do not let evidence-ready assigned work
     # disappear after persistence.  The bridge is bounded and restart-safe.
-    if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} and selected_work_class in {"ASSIGNED", "DEMAND_DISCOVERY"}:
+    alpha_eligible = bool(item.get("alpha_eligible") or item.get("alpha_review_required") or
+                          item.get("research_mode") in {"REQUESTED_RESEARCH", "GOCLEAR_PROACTIVE", "NEXUS_DEPARTMENTAL_PROACTIVE"})
+    if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} and (selected_work_class in {"ASSIGNED", "DEMAND_DISCOVERY"} or alpha_eligible):
         source_row = ((result.get("v2") or {}).get("source") or {})
         try:
             alpha_result = review_assigned_research_output(
@@ -509,6 +525,8 @@ def main() -> int:
           alpha_status=alpha_result.get("decision") or alpha_result.get("status", "SKIPPED"),
           alpha_receipt_id=alpha_result.get("receipt_id"), alpha_evaluation_id=alpha_result.get("evaluation_id"),
           alpha_followup_work_id=alpha_result.get("followup_work_id"), alpha_handoff_id=alpha_result.get("handoff_id"),
+          research_mode=item.get("research_mode"), alpha_eligible=item.get("alpha_eligible", False),
+          department_target=item.get("department_target"), project_id=item.get("project_id") or item.get("PROJECT"),
           next_action="continue next scheduled research wake")
     try:
         return_department_request(item, package_id=(result.get("v2") or {}).get("research_package_id"), alpha_result=alpha_result)
