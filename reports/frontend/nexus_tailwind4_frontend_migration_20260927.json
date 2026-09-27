@@ -1,0 +1,51 @@
+{
+  "TAILWIND4_MIGRATION": "PASS",
+  "MIGRATION_WORKTREE": "/Users/raymonddavis/nexus-os-v2-tailwind4",
+  "MIGRATION_BRANCH": "migration/tailwind4-frontend",
+  "BASE_SHA": "bc656ba21e8e0ca96270d7fcef26b106d7f725a8",
+  "PREVIOUS_TAILWIND_VERSION": "3.4.19",
+  "NEW_TAILWIND_VERSION": "4.3.3",
+  "TAILWIND4_INTEGRATION_METHOD": "@tailwindcss/vite plus @tailwindcss/cli package-local approved bundle",
+  "VISUAL_DRIFT_ROOT_CAUSE": "Tailwind 3 host plus missing approved v4 utility behavior, compounded by unlayered host .grid/.hidden selectors overriding Tailwind utility layers.",
+  "CLIENT_PORTAL_NATIVE_TAILWIND4": "PASS",
+  "CLIENT_PORTAL_VISUAL_PARITY": "PASS",
+  "CLIENT_PORTAL_LIVE_DATA_BINDING": "PASS",
+  "UNAPPROVED_STATE_STYLING_REMOVED": "PASS — no unapproved dark/disabled state is rendered",
+  "DESKTOP_VISUAL_ACCEPTANCE": "PASS",
+  "MOBILE_VISUAL_ACCEPTANCE": "PASS",
+  "FRONT_PAGE_STATUS": "PASS",
+  "ADMIN_TAILWIND4_FOUNDATION": "PASS",
+  "CSS_ISOLATION_METHOD": "Tailwind 4 CLI output namespaced under .goclear-approved-portal with internal layers flattened for scoped cascade protection",
+  "COMPATIBILITY_FILES_REMOVED": [
+    "tailwind.v2.config.cjs",
+    "src/client-v2/styles/v2-tailwind.src.css",
+    "src/client-v2/styles/v2-tailwind.generated.css",
+    "src/client-v2/approved/generated.css",
+    "src/client-v2/approved/index.css",
+    "src/client-v2/approved/tailwind.input.css",
+    "autoprefixer dependency",
+    "tailwind:v2 script"
+  ],
+  "COMPATIBILITY_FILES_RETAINED": [
+    "src/client-v2/approved/generated.scoped.css",
+    "scripts/namespace-approved-portal-css.mjs",
+    "src/client-v2/approved/portal-theme.css",
+    "src/client-v2/styles/v2-theme.css"
+  ],
+  "TYPECHECK": "PASS",
+  "BUILD": "PASS",
+  "FOCUSED_TESTS": "PASS — 4 files / 19 tests",
+  "VISUAL_TESTS": "PASS — local and production Playwright smoke",
+  "COMMITS_CREATED": [
+    "ea1e655f Frontend: migrate Nexus to Tailwind 4",
+    "131221ac Client Portal: add Tailwind 4 visual evidence"
+  ],
+  "COMMITS_PUSHED": "PASS — branch and origin/main",
+  "NETLIFY_DEPLOYMENT": "PASS",
+  "PRODUCTION_CLIENT_PORTAL": "PASS",
+  "PRODUCTION_FRONT_PAGE": "PASS",
+  "AUTH_LIVE": "NOT_EXERCISED — no safe authenticated production session available",
+  "GLOBAL_NEXUS_UI_REGRESSION": "PASS for exercised public/client routes",
+  "REPORT_EVIDENCE_DIRECTORY": "reports/client_portal/tailwind4-migration/",
+  "ROLLBACK_REQUIRED": "NO"
+}
