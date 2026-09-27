@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import '../styles/v2-tailwind.generated.css'
 import '../styles/v2-theme.css'
 import { useSession } from '../../components/auth'
 import { resolveClientContextForUser } from '../../lib/clientAuthContext'

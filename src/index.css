@@ -1,3 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-v2navy: #0B2D5B;
+  --color-v2navy-deep: #082144;
+  --color-v2navy-hover: #123F75;
+  --color-v2navy-active: #00B4C6;
+  --color-v2canvas: #F3F6F9;
+  --color-v2card: #FFFFFF;
+  --color-v2line: #DDE6EF;
+  --color-v2ink: #0B2D5B;
+  --color-v2muted: #6B7280;
+  --color-v2brand: #0B2D5B;
+  --color-v2brand-soft: #123F75;
+  --color-v2brand-tint: #E6F7FA;
+  --color-v2indigo: #00B4C6;
+  --color-v2indigo-tint: #E6F7FA;
+  --color-v2emerald: #22C55E;
+  --color-v2emerald-tint: #EAF9EF;
+  --color-v2amber: #D99A24;
+  --color-v2amber-deep: #9A6B10;
+  --color-v2amber-tint: #FFF6E2;
+  --color-v2red: #DC2626;
+  --color-v2red-deep: #B91C1C;
+  --color-v2red-tint: #FEECEC;
+  --color-v2bg: #F3F6F9;
+  --color-v2surface: #FFFFFF;
+  --radius-v2xl: 18px;
+  --radius-v2lg: 14px;
+  --shadow-v2sm: 0 1px 2px rgba(15,27,61,0.05), 0 1px 4px rgba(15,27,61,0.06);
+  --shadow-v2md: 0 10px 30px rgba(15,27,61,0.10);
+  --text-v2xs: 11px;
+  --text-v2xs--line-height: 14px;
+  --text-v2sm: 12.5px;
+  --text-v2sm--line-height: 18px;
+  --text-v2base: 14px;
+  --text-v2base--line-height: 20px;
+  --text-v2lg: 16px;
+  --text-v2lg--line-height: 22px;
+  --text-v2xl: 20px;
+  --text-v2xl--line-height: 26px;
+  --text-v2hero: 26px;
+  --text-v2hero--line-height: 32px;
+}
+
 :root {
   --bg: #070b16;
   --bg2: #0b1322;

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
@@ -309,7 +310,7 @@ function nexusLocalBridges() {
 }
 
 export default defineConfig({
-  plugins: [nexusLocalBridges(), react()],
+  plugins: [nexusLocalBridges(), tailwindcss(), react()],
   define: Object.fromEntries(Object.entries(buildMetadata).map(([key,value]) => [`import.meta.env.${key}`, JSON.stringify(value)])),
   build: { outDir: 'dist' },
   // Keep Vitest focused on Nexus-owned contracts. Vendored packages and the

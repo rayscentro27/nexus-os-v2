@@ -19,11 +19,13 @@ Every surface must render inside a unique visual root such as `.goclear-approved
 ## Tailwind and CSS rules
 
 - Record the source package Tailwind/runtime version before integration.
-- Keep the existing Nexus frontend stack unchanged unless isolation is impossible.
-- Generate a static, scoped CSS bundle from the approved source where practical.
+- Nexus Frontend is standardized on Tailwind CSS v4 and the approved package should run in its native Tailwind 4 environment.
+- Use the official Tailwind 4 Vite integration for application CSS and CSS-first theme variables; do not translate an approved package back to Tailwind 3 conventions.
+- Generate a static, scoped CSS bundle from the approved source where practical. Isolation protects the surface from unrelated global CSS; it must not emulate an older Tailwind runtime.
 - Scope theme variables, resets, utility classes, scrollbar rules, and animations.
 - Do not import an approved package's unscoped CSS into the application global namespace.
 - Verify import order and computed styles; source hashes alone are not acceptance evidence.
+- Keep package-local source discovery explicit so utilities used by an approved package are generated reliably.
 
 ## Acceptance requirements
 
