@@ -20,8 +20,8 @@ CLIENT_DATA_BINDING=PASS — `installNexusPortalBridge()` and approved context d
 GLOBAL_NEXUS_UI_REGRESSION=PASS — change is root-scoped; typecheck/build pass and no global Nexus stylesheet was upgraded.
 ADMIN_INTEGRATION_STANDARD_CREATED=PASS
 
-COMMITS_CREATED=4ecac452; 95067c95; f4632bdd
-COMMITS_PUSHED=PASS — `main` pushed to `origin` at f4632bdd
+COMMITS_CREATED=4ecac452; 95067c95; f4632bdd; 0e8c307a
+COMMITS_PUSHED=PASS — `main` pushed to `origin` at 0e8c307a
 NETLIFY_DEPLOYMENT=PASS — existing Netlify Git deployment rolled out and production re-verified at https://goclearonline.cc/client/preview
 
 Evidence screenshots are in `reports/client_portal/visual-baseline/`.

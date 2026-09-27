@@ -21,8 +21,8 @@
   "global_nexus_ui_regression": "PASS",
   "google_ai_studio_isolation_standard": "CREATED",
   "admin_integration_preflight": "CREATED",
-  "commits_created": ["4ecac452", "95067c95", "f4632bdd"],
-  "commits_pushed": ["4ecac452", "95067c95", "f4632bdd"],
+  "commits_created": ["4ecac452", "95067c95", "f4632bdd", "0e8c307a"],
+  "commits_pushed": ["4ecac452", "95067c95", "f4632bdd", "0e8c307a"],
   "netlify_deployment": "PASS: existing Netlify Git deployment rolled out and verified at https://goclearonline.cc/client/preview",
   "evidence_directory": "reports/client_portal/visual-baseline/"
 }
