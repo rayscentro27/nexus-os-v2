@@ -55,7 +55,7 @@ def create_internal_work_order(handoff: dict[str, Any]) -> dict[str, Any]:
     if existing:
         return {**existing, "deduplicated": True}
     decision = str(handoff.get("alpha_decision") or handoff.get("decision") or "").upper()
-    if decision not in {"QUALIFY", "QUALIFIED", "TEST"}:
+    if decision not in {"QUALIFY", "QUALIFIED", "TEST", "CERTIFICATION_TEST"}:
         raise ValueError("handoff_not_executable")
     department = str(handoff.get("department_target") or handoff.get("target_department") or "").upper()
     owner = OWNER_BY_DEPARTMENT.get(department)

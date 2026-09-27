@@ -1,0 +1,28 @@
+{
+  "schema_version": "nexus.build-certification-report.v1",
+  "generated_at": "2026-09-27",
+  "operating_mode": "BUILD_CERTIFICATION",
+  "normal_production_mode_preserved": true,
+  "certification_test": {
+    "implemented": true,
+    "requires_safe_cheap_reversible_learning_profile": true,
+    "hard_safety_gates_preserved": true,
+    "learning_store": "data/governed/certification_experiments.jsonl"
+  },
+  "real_canaries": {
+    "systems": {"status": "BLOCKED_EXTERNAL", "disposition": "RESEARCH_MORE", "reason": "Needle/Jev identity and compatibility evidence remain insufficient; no installation."},
+    "trading": {"status": "INSUFFICIENT_INPUT", "disposition": "REJECT_OR_RESEARCH_MORE_PRESERVED", "reason": "No supported concrete ruleset; no backtest invented."},
+    "clyde_funding": {"status": "CERTIFICATION_PARTIAL", "internal_matching": true, "external_action": false},
+    "creative": {"status": "CERTIFICATION_PARTIAL", "real_ai_and_render_receipts": true, "publication": false},
+    "revenue": {"status": "INSUFFICIENT_INPUT", "external_action": false}
+  },
+  "hermes": {
+    "current_version": "0.20.6",
+    "latest_known_version": "0.21.2",
+    "recommended_action": "MONITOR",
+    "production_upgraded": false,
+    "source": "https://github.com/NousResearch/hermes-agent/releases"
+  },
+  "safety": {"customer_messages": 0, "publications": 0, "paid_ads": 0, "purchases": 0, "funds_moved": 0, "live_trades": 0, "unapproved_production_changes": 0},
+  "focused_tests": "12 passed"
+}

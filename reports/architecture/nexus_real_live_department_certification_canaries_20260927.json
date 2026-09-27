@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.real-department-certification-canaries.v1",
+  "generated_at": "2026-09-27",
+  "canaries": {
+    "SYSTEMS": {"status": "BLOCKED_EXTERNAL", "alpha_disposition": "RESEARCH_MORE", "ai_assessment": true, "isolated_test": false},
+    "TRADING": {"status": "INSUFFICIENT_INPUT", "ruleset": false, "paper_backtest": false, "live_trading": false},
+    "CLYDE_FUNDING": {"status": "CERTIFICATION_PARTIAL", "internal_matching": true, "customer_application": false},
+    "CREATIVE": {"status": "CERTIFICATION_PARTIAL", "ai_direction": true, "local_render": true, "review": true, "publication": false},
+    "REVENUE": {"status": "INSUFFICIENT_INPUT", "internal_validation": false, "paid_action": false}
+  },
+  "hermes_monitoring": {"current_version": "0.20.6", "latest_known_version": "0.21.2", "recommendation": "MONITOR", "production_upgraded": false},
+  "safety": {"customer_messages": 0, "publications": 0, "paid_ads": 0, "purchases": 0, "funds_moved": 0, "live_trades": 0, "production_installations": 0},
+  "certification_claim": "PASS_BOUNDED: policy and safe internal certification path are implemented; not every real canary is yet executable."
+}

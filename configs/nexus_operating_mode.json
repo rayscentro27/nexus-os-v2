@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.operating-mode.v1",
+  "mode": "BUILD_CERTIFICATION",
+  "allowed_modes": [
+    "BUILD_CERTIFICATION",
+    "NORMAL_PRODUCTION"
+  ],
+  "source": "canonical build and certification configuration"
+}

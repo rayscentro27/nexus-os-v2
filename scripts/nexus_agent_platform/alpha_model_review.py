@@ -149,12 +149,15 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             "white-label", "consulting", "education", "lead generation",
             "existing third-party software", "new Nexus software", "no attractive opportunity",
         ],
-        "allowed_decisions": ["QUALIFY", "TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"],
+        "allowed_decisions": ["QUALIFY", "TEST", "CERTIFICATION_TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"],
         "required_json_keys": [
             "need", "decision", "confidence", "reasoning_summary", "evidence_strength", "evidence_for", "evidence_against", "unknowns", "hard_blockers", "soft_risks", "testable_unknowns",
             "contradictions", "deficiencies", "commercial_intent_assessment",
             "existing_solution_assessment", "monetization_paths_considered",
             "required_followup", "recommended_next_stage",
+            "can_this_be_tested_safely", "can_this_be_tested_cheaply",
+            "can_this_be_tested_reversibly", "can_this_teach_nexus_something",
+            "hard_blocker_present", "why_certification_test_not_used",
         ],
     }
     payload = {
@@ -167,7 +170,7 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
                 "is incomplete: identify whether a low-cost reversible internal TEST can "
                 "resolve the uncertainty. Reserve rejection for hard safety/compliance, "
                 "clear irrelevance, disproven claims, impossible dependencies, or no "
-                "meaningful hypothesis. Return one compact JSON object only."
+                "meaningful hypothesis. During BUILD_CERTIFICATION mode, include an explicit testability review; do not treat low confidence alone as a hard stop. Return one compact JSON object only."
             )},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)},
         ],
@@ -202,7 +205,7 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         error = oracle["error"]
         latency_ms = oracle["latency_ms"]
         judgment = oracle["judgment"]
-    if not judgment or str(judgment.get("decision") or "").upper() not in {"QUALIFY", "TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"}:
+    if not judgment or str(judgment.get("decision") or "").upper() not in {"QUALIFY", "TEST", "CERTIFICATION_TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"}:
         return {
             "status": "FAILED", "request_id": request_id, "provider": provider, "model": model,
             "model_calls": model_calls, "http_status": status, "error": error or "invalid_structured_review",
@@ -278,6 +281,12 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         "why": policy["why"], "evidence_for": policy["evidence_for"], "evidence_against": policy["evidence_against"],
         "unknowns": policy["unknowns"], "hard_blockers": policy["hard_blockers"], "soft_risks": policy["soft_risks"],
         "testable_unknowns": policy["testable_unknowns"], "recommended_next_step": policy["recommended_next_step"],
+        "can_this_be_tested_safely": policy["can_this_be_tested_safely"],
+        "can_this_be_tested_cheaply": policy["can_this_be_tested_cheaply"],
+        "can_this_be_tested_reversibly": policy["can_this_be_tested_reversibly"],
+        "can_this_teach_nexus_something": policy["can_this_teach_nexus_something"],
+        "hard_blocker_present": policy["hard_blocker_present"],
+        "why_certification_test_not_used": policy["why_certification_test_not_used"],
         "next_owner": policy["next_owner"], "ray_policy_rules_applied": policy["ray_policy_rules_applied"],
         "evidence_refs": source_refs, "source_refs": source_refs,
         "evaluated_at": completed_at, "no_external_action": True,
@@ -338,14 +347,14 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         receipt["followup_work_id"] = followup.get("work_id")
         receipt["followup_priority"] = 2
         receipt["followup_deduplicated"] = bool(followup.get("deduplicated"))
-    if decision in {"QUALIFY", "TEST"}:
+    if decision in {"QUALIFY", "TEST", "CERTIFICATION_TEST"}:
         handoff_id = persistence.new_id("research_handoff")
         handoff = {
             "schema_version": "nexus.research-v2.1",
             "handoff_id": handoff_id, "finding_id": finding_id, "need_id": need_id,
             "alpha_receipt_id": receipt_id, "target_department": str(package.get("handoff_target") or package.get("department_target") or "CLYDE_CREDIT").upper(),
             "reason": policy["why"],
-            "department_handoff_status": "DRAFT_REVIEW_REQUIRED" if decision == "QUALIFY" else "TEST_PROPOSED",
+            "department_handoff_status": "DRAFT_REVIEW_REQUIRED" if decision == "QUALIFY" else "CERTIFICATION_TEST_PROPOSED" if decision == "CERTIFICATION_TEST" else "TEST_PROPOSED",
             "expected_department_output": policy["recommended_next_step"],
             "external_action_allowed": False, "source_refs": source_refs,
             "recorded_at": completed_at,

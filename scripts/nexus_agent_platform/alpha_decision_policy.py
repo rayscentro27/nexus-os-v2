@@ -9,8 +9,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from nexus_agent_platform.governed import persistence
+from nexus_agent_platform.certification_mode import choose_disposition, testability_review
 
-DISPOSITIONS = ("QUALIFY", "TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION")
+DISPOSITIONS = ("QUALIFY", "TEST", "CERTIFICATION_TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION")
 HARD_BLOCKER_TERMS = ("illegal", "fraud", "deception", "unsafe", "privacy exposure", "security vulnerability", "clearly disproven", "negative economics", "impossible dependency", "paid action without approval", "live trading")
 
 def _now() -> str:
@@ -74,13 +75,23 @@ def apply_policy(package: dict[str, Any], judgment: dict[str, Any]) -> dict[str,
             testable = testable or unknowns
     elif model_decision == "PARK":
         decision = "MONITOR"
+    testability = testability_review(package, judgment, blockers)
+    # In build/certification mode, an explicit safe/cheap/reversible learning
+    # profile exercises the real department even when the model is cautious.
+    # Normal production mode remains gated by the existing disposition.
+    certification_decision = choose_disposition(model_decision, testability)
+    if certification_decision == "CERTIFICATION_TEST":
+        decision = certification_decision
+        why = "Build certification mode authorizes a bounded internal experiment; this is not production or external approval."
+        testable = testable or unknowns
     next_owner = str(package.get("handoff_target") or package.get("department_target") or package.get("department") or "RESEARCH").upper()
     return {
         "model_decision": model_decision, "decision": decision, "why": why,
         "evidence_for": evidence_for, "evidence_against": evidence_against, "unknowns": unknowns,
         "hard_blockers": blockers, "soft_risks": list(judgment.get("soft_risks") or judgment.get("deficiencies") or []),
         "testable_unknowns": testable, "test_profile": profile, "next_owner": next_owner,
-        "recommended_next_step": ("Create a bounded internal test work order; no external action." if decision == "TEST" else judgment.get("required_followup") or judgment.get("recommended_next_stage") or "Preserve the result and select the next governed step."),
+        "recommended_next_step": ("Create a bounded internal certification test work order; no external action." if decision == "CERTIFICATION_TEST" else "Create a bounded internal test work order; no external action." if decision == "TEST" else judgment.get("required_followup") or judgment.get("recommended_next_stage") or "Preserve the result and select the next governed step."),
+        **testability,
         "ray_policy_rules_applied": ["hard safety gates are automatic stops", "uncertainty is not rejection", "low-cost reversible tests are eligible", "Alpha is advisory; Ray remains final business authority"],
     }
 

@@ -143,7 +143,7 @@ def create_systems_work_order(handoff: dict[str, Any], *, assessment_only: bool 
     if existing:
         return {**existing, "deduplicated": True}
     decision = str(handoff.get("alpha_decision") or handoff.get("decision") or "").upper()
-    allowed = {"TEST", "QUALIFY", "QUALIFIED"}
+    allowed = {"TEST", "CERTIFICATION_TEST", "QUALIFY", "QUALIFIED"}
     if assessment_only:
         allowed.add("RESEARCH_MORE")
     if decision not in allowed:
