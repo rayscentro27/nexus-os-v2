@@ -2,10 +2,10 @@
   "alpha_receipt_id": "alpha_receipt_ff30fd24f38f4e34b0d9b092dae94572",
   "consequential_action_performed": false,
   "consumer": "clyde_credit_research_handoff_consumer_v1",
-  "created_at": "2026-09-27T16:06:25.816508+00:00",
-  "decision": "RESEARCH_MORE",
+  "created_at": "2026-09-27T16:18:52.914811+00:00",
+  "decision": "QUALIFIED_INTERNAL",
   "external_action_allowed": false,
-  "final_internal_state": "RESEARCH_MORE",
+  "final_internal_state": "QUALIFIED_INTERNAL",
   "finding_id": "real-intelligence-gap-closure-gVYmkoruPDc",
   "funding_readiness_implications": [
     "A borrower profile should be segmented by credit, revenue/cash flow, business history, funding amount, collateral, and guarantees.",
@@ -15,12 +15,10 @@
   "handoff_id": "research_handoff_237bb7a35e454ce7a186baac8832fbdd",
   "human_approval_required": false,
   "investigation_id": "real-intelligence-gap-closure-gVYmkoruPDc",
-  "lender_evidence_found": false,
-  "missing_verification": [
-    "independent lender evidence for fees, APR-equivalent costs, collateral, guarantees, and early repayment terms"
-  ],
+  "lender_evidence_found": true,
+  "missing_verification": [],
   "need_id": "need_d0c56031662e89bbfe00",
-  "research_return_created": true,
+  "research_return_created": false,
   "research_return_path": "research_requests -> Research -> Alpha -> CLYDE_CREDIT",
   "research_return_request_id": "research_request_4c702ee65e9df95ee1be",
   "schema_version": "nexus.clyde.research-intelligence.v1",
@@ -42,6 +40,50 @@
   ],
   "verified": {
     "alpha_decision": "QUALIFY",
+    "lender_evidence": [
+      {
+        "artifact": "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json",
+        "product_scope": "Business Advantage Term Loan",
+        "source_class": "OFFICIAL_LENDER",
+        "source_id": "Bank of America",
+        "source_url": "https://secure.bankofamerica.com/sparta/secure-digital-lending-application/public/business-lending/sign-in/?groupcode=YADV&locale=en_US&producttype=UTERM&requesttype=SBDL&secured=no&subchannel=SBATLD"
+      },
+      {
+        "artifact": "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json",
+        "product_scope": "Business Advantage Credit Line and Term Loan comparison",
+        "source_class": "OFFICIAL_LENDER",
+        "source_id": "Bank of America",
+        "source_url": "https://business.bankofamerica.com/en/business-loans"
+      },
+      {
+        "artifact": "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json",
+        "product_scope": "American Express Business Line of Credit",
+        "source_class": "OFFICIAL_LENDER",
+        "source_id": "American Express",
+        "source_url": "https://www.americanexpress.com/en-us/business/blueprint/help-center/business-line-of-credit/applying/faq.whats-required-to-apply-for-american-express-business-line-of-credit.html"
+      },
+      {
+        "artifact": "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json",
+        "product_scope": "OnDeck business term loan and line of credit",
+        "source_class": "OFFICIAL_LENDER",
+        "source_id": "OnDeck",
+        "source_url": "https://www.ondeck.com/faqs"
+      },
+      {
+        "artifact": "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json",
+        "product_scope": "General business-loan application guidance",
+        "source_class": "OFFICIAL_BANK_GUIDANCE",
+        "source_id": "Chase for Business",
+        "source_url": "https://www.chase.com/business/knowledge-center/grow/how-to-apply-for-business-loan"
+      },
+      {
+        "artifact": "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json",
+        "product_scope": "Market comparison, not a lender offer",
+        "source_class": "REPUTABLE_MARKETPLACE_SUMMARY",
+        "source_id": "Nav",
+        "source_url": "https://www.nav.com/blog/how-to-get-a-business-loan-64286/"
+      }
+    ],
     "official_evidence_summary": "Existing SBA.gov material covers SBA-backed 7(a), 504, and microloan program context and points to Lender Match.",
     "official_sba_evidence": [
       {

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePortal } from '../../context/PortalContext';
 import { TabType } from '../../types/portal';
 
 export const TopBar: React.FC = () => {
   const { activeTab, setActiveTab, setIsClydeOpen, isClydeOpen, profile } = usePortal();
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const navLinks: { label: string; tab: TabType }[] = [
     { label: 'Command', tab: 'dashboard' },
@@ -77,8 +78,11 @@ export const TopBar: React.FC = () => {
           </button>
 
           {/* Client Avatar (David Vance) */}
+          <div className="relative">
           <button
-            onClick={() => setActiveTab('credit-profile')}
+            onClick={() => setAccountOpen((open) => !open)}
+            aria-expanded={accountOpen}
+            aria-label="Open account menu"
             className="relative ml-0.5 w-8 h-8 rounded-full ring-2 ring-teal-500/40 overflow-hidden shrink-0 hover:ring-teal-400 transition-all cursor-pointer"
             title={`${profile.name} · ${profile.companyName}`}
           >
@@ -89,6 +93,11 @@ export const TopBar: React.FC = () => {
               className="w-full h-full object-cover"
             />
           </button>
+          {accountOpen && <div className="absolute right-0 top-10 z-50 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+            <button type="button" onClick={() => { setActiveTab('profile'); setAccountOpen(false); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50">My Profile</button>
+            <button type="button" onClick={() => { setActiveTab('settings'); setAccountOpen(false); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50">Settings</button>
+          </div>}
+          </div>
         </div>
       </div>
     </header>

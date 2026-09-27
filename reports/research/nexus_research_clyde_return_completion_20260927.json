@@ -1,0 +1,37 @@
+{
+  "report_date": "2026-09-27",
+  "research_return_found": true,
+  "research_return_id": "research_request_4c702ee65e9df95ee1be",
+  "research_return_storage": "data/governed/research_requests.jsonl",
+  "research_return_original_state": "RECEIVED",
+  "research_return_final_state": "RESUMED",
+  "research_return_owner": "CLYDE_CREDIT",
+  "research_return_created_at": "2026-09-27T16:05:11.370792+00:00",
+  "research_return_next_action": "Clyde re-review completed; bounded lender evidence is linked to the internal intelligence artifact.",
+  "research_return_duplicates": 0,
+  "video_id": "gVYmkoruPDc",
+  "finding_id": "real-intelligence-gap-closure-gVYmkoruPDc",
+  "need_id": "need_d0c56031662e89bbfe00",
+  "handoff_id": "research_handoff_237bb7a35e454ce7a186baac8832fbdd",
+  "new_evidence_created": true,
+  "new_evidence_paths": [
+    "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json"
+  ],
+  "new_alpha_result_reference": "alpha-receipt-e4c00b5977744540",
+  "clyde_rereview_occurred": true,
+  "clyde_rereview_decision": "QUALIFIED_INTERNAL",
+  "clyde_rereview_output": "reports/research/intelligence/clyde_native/gVYmkoruPDc.clyde-internal.json",
+  "final_handoff_state": "QUALIFIED_INTERNAL",
+  "final_return_state": "RESUMED",
+  "full_closed_loop_status": "PASS_INTERNAL_GOVERNED_CLOSED_LOOP",
+  "duplicate_return_created": false,
+  "consequential_action_performed": false,
+  "transcript_rerun": false,
+  "second_pipeline_created": false,
+  "evidence_classes": [
+    "OFFICIAL_LENDER",
+    "OFFICIAL_BANK_GUIDANCE",
+    "REPUTABLE_MARKETPLACE_SUMMARY",
+    "OFFICIAL_GOVERNMENT"
+  ]
+}

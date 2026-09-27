@@ -9,6 +9,8 @@ export type V2RouteContract = {
 }
 
 export const V2_ROUTE_CONTRACTS: Record<string, V2RouteContract> = {
+  '/client-v2/profile': { purpose: 'Client personal and business profile', realData: ['tenant-scoped client profile', 'authenticated account email', 'profile completeness'], actions: ['view', 'update permitted profile fields'], backend: ['Supabase Auth', 'client_profiles/RLS'], access: 'authenticated client', mobile: 'single-column form sections', visualDesignPending: false },
+  '/client-v2/settings': { purpose: 'Client account settings', realData: ['authenticated account identity', 'profile link', 'security path'], actions: ['request password reset', 'navigate to profile'], backend: ['Supabase Auth', 'client profile contract'], access: 'authenticated client', mobile: 'stacked setting cards', visualDesignPending: false },
   '/client-v2/dashboard': { purpose: 'Summary and navigation', realData: ['client identity', 'readiness summary', 'next actions', 'recent activity'], actions: ['navigate', 'open Clyde'], backend: ['client data adapter', 'RLS client context'], access: 'authenticated client or FREE_GUEST', mobile: 'single-column summary; no workflow duplication', visualDesignPending: true },
   '/client-v2/credit': { purpose: 'Credit profile and status', realData: ['credit profile', 'review state'], actions: ['view', 'request review'], backend: ['Supabase credit/readiness contracts'], access: 'authenticated client', mobile: 'stacked status sections', visualDesignPending: false },
   '/client-v2/utilization': { purpose: 'Credit utilization details', realData: ['utilization data'], actions: ['view', 'open guidance'], backend: ['Supabase client-scoped data'], access: 'authenticated client', mobile: 'no wide tables', visualDesignPending: false },

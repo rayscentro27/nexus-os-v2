@@ -18,6 +18,8 @@ import { FundingReadinessView } from './components/views/FundingReadinessView';
 import { RecommendationsView } from './components/views/RecommendationsView';
 import { ResourcesView } from './components/views/ResourcesView';
 import { RequestReviewView } from './components/views/RequestReviewView';
+import { ProfileView } from './components/views/ProfileView';
+import { SettingsView } from './components/views/SettingsView';
 
 const PortalMain: React.FC = () => {
   const { activeTab, setIsClydeOpen, isClydeOpen, profile, currentLevel, liveReady } = usePortal();
@@ -30,6 +32,10 @@ const PortalMain: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardView />;
+      case 'profile':
+        return <ProfileView />;
+      case 'settings':
+        return <SettingsView />;
       case 'credit-profile':
         return <CreditProfileView />;
       case 'credit-utilization':

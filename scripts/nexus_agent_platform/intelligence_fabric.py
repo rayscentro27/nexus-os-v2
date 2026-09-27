@@ -142,7 +142,7 @@ def run_research_request(request: dict[str, Any], evidence: Iterable[dict[str, A
 def resume_department(request: dict[str, Any], *, next_action: str) -> dict[str, Any]:
     if request.get("research_status") != "READY_TO_RESUME":
         raise ValueError("research-not-ready-to-resume")
-    resumed = {**request, "research_status": "RESUMED", "department_resume": "RESUMED", "next_action": next_action, "resumed_at": _now()}
+    resumed = {**request, "research_status": "RESUMED", "status": "RESUMED", "department_resume": "RESUMED", "next_action": next_action, "resumed_at": _now()}
     persist_research_request(resumed)
     return resumed
 

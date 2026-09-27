@@ -31,6 +31,8 @@ const ROUTE_MAP: Array<[string, string]> = [
   ['/client/request-review', '/client-v2/review'],
   ['/client/funding-access', '/client-v2/funding-access'],
   ['/client/dashboard', '/client-v2/dashboard'],
+  ['/client/profile', '/client-v2/profile'],
+  ['/client/settings', '/client-v2/settings'],
   ['/client/documents', '/client-v2/documents'],
   ['/client/resources', '/client-v2/resources'],
   ['/client/messages', '/client-v2/messages'],
@@ -47,6 +49,8 @@ export const mapRouteToV2 = (route: string): string => {
 
 export const ROUTE_LABELS: Record<string, string> = {
   '/client-v2/dashboard': 'Dashboard',
+  '/client-v2/profile': 'My Profile',
+  '/client-v2/settings': 'Settings',
   '/client-v2/credit-review': 'Credit Review',
   '/client-v2/credit-improvement': 'Credit Improvement',
   '/client-v2/business-foundation': 'Business Foundation',

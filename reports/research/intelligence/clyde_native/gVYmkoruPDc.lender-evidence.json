@@ -1,0 +1,123 @@
+{
+  "schema_version": "nexus.research.lender-evidence.v1",
+  "request_id": "research_request_4c702ee65e9df95ee1be",
+  "handoff_id": "research_handoff_237bb7a35e454ce7a186baac8832fbdd",
+  "video_id": "gVYmkoruPDc",
+  "finding_id": "real-intelligence-gap-closure-gVYmkoruPDc",
+  "need_id": "need_d0c56031662e89bbfe00",
+  "retrieved_at": "2026-09-27",
+  "scope": "Bounded lender-variable verification only; no transcript rerun and no broad funding research.",
+  "evidence": [
+    {
+      "source_class": "OFFICIAL_LENDER",
+      "source_name": "Bank of America",
+      "url": "https://secure.bankofamerica.com/sparta/secure-digital-lending-application/public/business-lending/sign-in/?groupcode=YADV&locale=en_US&producttype=UTERM&requesttype=SBDL&secured=no&subchannel=SBATLD",
+      "source_date": "2026-09-27",
+      "product_scope": "Business Advantage Term Loan",
+      "claims": {
+        "credit": "Personal credit above 700 FICO is typically required.",
+        "time_in_business": "At least 2 years under existing ownership.",
+        "revenue": "$100,000 or more in annual revenue.",
+        "fees_or_apr": "The page does not disclose a universal APR; pricing is account/application-specific.",
+        "collateral": "This product is presented as unsecured; this does not generalize to other products.",
+        "prepayment": "No prepayment term was stated on the reviewed qualification page."
+      },
+      "classification": "LENDER_SPECIFIC_REQUIREMENT",
+      "limitations": "A product qualification page is not a universal lender standard and says terms/pricing may require a banker or logged-in offer."
+    },
+    {
+      "source_class": "OFFICIAL_LENDER",
+      "source_name": "Bank of America",
+      "url": "https://business.bankofamerica.com/en/business-loans",
+      "source_date": "2026-09-27",
+      "product_scope": "Business Advantage Credit Line and Term Loan comparison",
+      "claims": {
+        "revenue": "The unsecured credit line and term loan comparison lists $100,000 in prior-year annual revenue.",
+        "time_in_business": "The unsecured credit line and term loan comparison lists 2 years under existing ownership.",
+        "fees_or_apr": "The comparison lists no cash-advance fees for the credit line and a $150 origination fee for the term loan; the credit line annual fee is waived the first year.",
+        "collateral": "A separate secured credit-line product lists cash security and a $150 annual fee after the first year.",
+        "prepayment": "No general prepayment term was stated on the comparison page."
+      },
+      "classification": "LENDER_SPECIFIC_REQUIREMENT",
+      "limitations": "Requirements and fees vary by product; the page does not support applying one product's terms to another."
+    },
+    {
+      "source_class": "OFFICIAL_LENDER",
+      "source_name": "American Express",
+      "url": "https://www.americanexpress.com/en-us/business/blueprint/help-center/business-line-of-credit/applying/faq.whats-required-to-apply-for-american-express-business-line-of-credit.html",
+      "source_date": "2026-09-27",
+      "product_scope": "American Express Business Line of Credit",
+      "claims": {
+        "credit": "At least 660 FICO at application; the required score may be higher based on relationship, credit history, and other factors.",
+        "time_in_business": "At least 12 months in business.",
+        "revenue": "At least $3,000 in recent average monthly revenue.",
+        "fees_or_apr": "The reviewed eligibility page does not state a universal APR or fee schedule.",
+        "collateral": "The reviewed eligibility page does not state a universal collateral requirement.",
+        "prepayment": "The reviewed eligibility page does not state a prepayment term."
+      },
+      "classification": "LENDER_SPECIFIC_REQUIREMENT",
+      "limitations": "This is a line-of-credit eligibility page and explicitly notes that requirements can vary."
+    },
+    {
+      "source_class": "OFFICIAL_LENDER",
+      "source_name": "OnDeck",
+      "url": "https://www.ondeck.com/faqs",
+      "source_date": "2026-09-27",
+      "product_scope": "OnDeck business term loan and line of credit",
+      "claims": {
+        "collateral": "OnDeck describes its term loan as secured by a general lien on business assets, without requiring a specific asset or value, and backed by a personal guarantee.",
+        "fees_or_apr": "The reviewed FAQ does not provide a universal APR or fee schedule.",
+        "prepayment": "The reviewed FAQ does not state a universal prepayment term."
+      },
+      "classification": "LENDER_SPECIFIC_REQUIREMENT",
+      "limitations": "The FAQ distinguishes the term loan from the unsecured line of credit; collateral and guarantee claims must stay product-specific."
+    },
+    {
+      "source_class": "OFFICIAL_BANK_GUIDANCE",
+      "source_name": "Chase for Business",
+      "url": "https://www.chase.com/business/knowledge-center/grow/how-to-apply-for-business-loan",
+      "source_date": "2026-09-27",
+      "product_scope": "General business-loan application guidance",
+      "claims": {
+        "requirements": "Lenders commonly review financial statements, tax returns, revenue projections, personal financial information, and collateral documentation.",
+        "fees_or_apr": "An approved offer should disclose the interest rate, repayment schedule, fees, collateral, and personal-guarantee requirements; examples of possible charges include origination, closing, prepayment, and late-payment fees.",
+        "collateral_and_guarantee": "Collateral and personal guarantees are product/lender dependent and should be reviewed in the offer."
+      },
+      "classification": "MARKETPLACE_SUMMARY",
+      "limitations": "This is general bank guidance, not a specific approval threshold or promise."
+    },
+    {
+      "source_class": "REPUTABLE_MARKETPLACE_SUMMARY",
+      "source_name": "Nav",
+      "url": "https://www.nav.com/blog/how-to-get-a-business-loan-64286/",
+      "source_date": "2026-09-27",
+      "product_scope": "Market comparison, not a lender offer",
+      "claims": {
+        "credit": "Traditional-bank products commonly use roughly 680+ personal credit, with some products requiring 700+.",
+        "time_in_business": "Traditional-bank products often require 2 or more years.",
+        "revenue": "$100,000 or more is common for many traditional-bank products.",
+        "collateral": "Collateral and personal guarantees may be requested; unsecured does not mean risk-free."
+      },
+      "classification": "MARKETPLACE_SUMMARY",
+      "limitations": "These are market observations and must not be represented as an official lender requirement."
+    }
+  ],
+  "transcript_claim_assessment": {
+    "supported_or_consistent": [
+      "Borrower qualification depends on a combination of credit, revenue/cash flow, time in business, documentation, and product terms.",
+      "Collateral and personal guarantees are lender/product dependent.",
+      "Lender-variable terms must be compared from the actual offer or lender documentation."
+    ],
+    "lender_specific": [
+      "Any exact credit threshold, revenue threshold, fee, collateral, guarantee, or repayment term belongs to the named lender/product only."
+    ],
+    "unverifiable_from_this_bounded_set": [
+      "The transcript's general timeline claims.",
+      "Any universal lender approval threshold or promise.",
+      "Clear Value Lending product availability or commercial claims not independently documented here.",
+      "A universal early-repayment/prepayment rule across lenders."
+    ]
+  },
+  "external_action_performed": false,
+  "consequential_action_performed": false
+}

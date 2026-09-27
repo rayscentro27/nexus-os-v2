@@ -25,6 +25,8 @@ import type { TabType } from '../approved/types/portal'
 
 const IMPLEMENTED_V2_ROUTES = new Set([
   '/client-v2/dashboard',
+  '/client-v2/profile',
+  '/client-v2/settings',
   '/client-v2/credit-review',
   '/client-v2/credit-improvement',
   '/client-v2/documents',
@@ -158,6 +160,8 @@ export function ClientV2Root() {
   const safePath = known ? path : '/client-v2/dashboard'
   const tabByRoute: Record<string, TabType> = {
     '/client-v2/dashboard': 'dashboard',
+    '/client-v2/profile': 'profile',
+    '/client-v2/settings': 'settings',
     '/client-v2/credit-review': 'credit-profile',
     '/client-v2/credit-improvement': 'credit-profile',
     '/client-v2/documents': 'documents',

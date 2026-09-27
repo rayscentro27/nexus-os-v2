@@ -1,5 +1,7 @@
 export type TabType =
   | 'dashboard'
+  | 'profile'
+  | 'settings'
   | 'credit-profile'
   | 'credit-utilization'
   | 'documents'

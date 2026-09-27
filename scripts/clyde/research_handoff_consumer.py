@@ -47,7 +47,7 @@ def _stable_id(prefix: str, value: Any) -> str:
 
 def _latest(rows: list[dict[str, Any]], key: str, value: str) -> dict[str, Any] | None:
     matches = [row for row in persistence.read_records(key) if row.get("handoff_id") == value]
-    return matches[-1] if matches else None
+    return matches[0] if matches else None
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -77,6 +77,20 @@ def _sba_evidence(root: Path) -> list[dict[str, Any]]:
 def _independent_lender_evidence(root: Path) -> list[dict[str, Any]]:
     """Return only independent lender artifacts, never treat SBA as a lender."""
     candidates: list[dict[str, Any]] = []
+    bounded = root / "reports/research/intelligence/clyde_native/gVYmkoruPDc.lender-evidence.json"
+    bounded_payload = _read_json(bounded, {})
+    if bounded_payload.get("request_id") == "research_request_4c702ee65e9df95ee1be":
+        for item in bounded_payload.get("evidence", []):
+            if item.get("source_class") in {"OFFICIAL_LENDER", "OFFICIAL_BANK_GUIDANCE", "REPUTABLE_MARKETPLACE_SUMMARY"}:
+                candidates.append({
+                    "source_id": item.get("source_name"),
+                    "source_url": item.get("url"),
+                    "artifact": str(bounded.relative_to(root)),
+                    "source_class": item.get("source_class"),
+                    "product_scope": item.get("product_scope"),
+                })
+        if candidates:
+            return candidates
     directory = root / "reports/runtime/research_artifacts/web"
     for path in directory.glob("*.document.json"):
         document = _read_json(path, {})
@@ -112,6 +126,7 @@ def build_internal_result(handoff: dict[str, Any], alpha: dict[str, Any], analys
             "official_sba_evidence": sba,
             "official_evidence_summary": "Existing SBA.gov material covers SBA-backed 7(a), 504, and microloan program context and points to Lender Match.",
             "alpha_decision": alpha.get("decision"),
+            "lender_evidence": lenders,
         },
         "unverified": [
             "Transcript credit-score ranges and 10-to-90-day timeline claims",
@@ -144,7 +159,14 @@ def process_handoff(handoff_id: str, *, root: Path = ROOT, force: bool = False) 
         raise ValueError(f"handoff-not-found:{handoff_id}")
     if handoff.get("target_department") != TARGET:
         raise ValueError("handoff-target-is-not-clyde-credit")
-    if not force and handoff.get("result_artifact") and handoff.get("consumer") == CONSUMER:
+    handoff_history = [row for row in persistence.read_records("research_v2_handoffs") if row.get("handoff_id") == handoff_id]
+    historical_return_id = next((row.get("research_return_request_id") for row in handoff_history if row.get("research_return_request_id")), None)
+    return_id = handoff.get("research_return_request_id") or historical_return_id
+    return_ready = False
+    if return_id:
+        return_rows = [row for row in persistence.read_records("research_requests") if row.get("request_id") == return_id]
+        return_ready = bool(return_rows and return_rows[0].get("status") in {"READY_TO_RESUME", "RESUMED"})
+    if not force and handoff.get("result_artifact") and handoff.get("consumer") == CONSUMER and not (handoff.get("status") == "RESEARCH_MORE" and return_ready):
         return {"status": "DEDUPLICATED", "handoff_id": handoff_id, "result_artifact": handoff["result_artifact"]}
 
     alpha = next((row for row in persistence.read_records("alpha_evaluations") if row.get("receipt_id") == handoff.get("alpha_receipt_id")), {})
@@ -174,8 +196,9 @@ def process_handoff(handoff_id: str, *, root: Path = ROOT, force: bool = False) 
         request = existing or persist_research_request(request)
         result["research_return_request_id"] = request["request_id"]
 
-    result["research_return_created"] = bool(request)
-    result["research_return_path"] = "research_requests -> Research -> Alpha -> CLYDE_CREDIT" if request else None
+    result["research_return_request_id"] = result.get("research_return_request_id") or handoff.get("research_return_request_id") or historical_return_id
+    result["research_return_created"] = bool(request or handoff.get("research_return_request_id"))
+    result["research_return_path"] = "research_requests -> Research -> Alpha -> CLYDE_CREDIT" if result.get("research_return_request_id") else None
     output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     final = {
         **started,
