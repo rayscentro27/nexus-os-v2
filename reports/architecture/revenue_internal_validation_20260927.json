@@ -1,0 +1,197 @@
+{
+  "growth_experiment": {
+    "schema_version": "nexus.growth-experiment.v1",
+    "growth_id": "growth_046106c54e774db6abe525c4330e68ed",
+    "fingerprint": "9b16d698b47acdaa5e47cd8363e32089955fd2085096fbfab012280e939b9f85",
+    "business_id": "nexus",
+    "title": "Evidence-backed affiliate readiness content package",
+    "growth_type": "AFFILIATE_CONTENT",
+    "topic": "small-business readiness and commerce tools",
+    "search_intent": "COMMERCIAL_INVESTIGATION",
+    "hypothesis": "A draft evidence-backed comparison can clarify a real small-business problem and create a reviewable affiliate-content opportunity without publishing.",
+    "target_audience": "small-business owners evaluating readiness and operating tools",
+    "target_offer": "internal readiness checklist and tool-comparison draft",
+    "source_opportunity_id": "input-revenue-shopify-affiliate-20260927",
+    "source_research_job_id": null,
+    "source_research_pack_ref": null,
+    "evidence_refs": [
+      "https://help.shopify.com/en/affiliates/about",
+      "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"
+    ],
+    "planned_asset_types": [
+      "LANDING_PAGE_DRAFT",
+      "MARKETING_PLAN",
+      "CREATIVE_BRIEF"
+    ],
+    "baseline": {
+      "source": "phase_l_revenue_truth",
+      "metric": "qualified internal opportunity package",
+      "value": null,
+      "truth_class": "UNKNOWN",
+      "observed_at": null
+    },
+    "primary_metric": "qualified internal opportunity package",
+    "secondary_metrics": [],
+    "measurement_window": "30_days",
+    "expected_direction": "IMPROVE_OR_OBSERVE",
+    "status": "READY_FOR_REVIEW",
+    "risks": [
+      "affiliate terms and economics require current review",
+      "no demand conversion data is connected",
+      "Ray review required before any publication"
+    ],
+    "dependencies": [
+      "current affiliate terms review",
+      "internal content review"
+    ],
+    "approval_required": true,
+    "approval_id": null,
+    "work_order_ids": [],
+    "freshness": {
+      "observed_at": "2026-09-27",
+      "status": "UNKNOWN"
+    },
+    "external_action_performed": false,
+    "created_at": "2026-09-27T20:05:05.797080+00:00",
+    "updated_at": "2026-09-27T20:05:05.797080+00:00"
+  },
+  "persist_result": {
+    "status": "CREATED",
+    "experiment": {
+      "schema_version": "nexus.growth-experiment.v1",
+      "growth_id": "growth_046106c54e774db6abe525c4330e68ed",
+      "fingerprint": "9b16d698b47acdaa5e47cd8363e32089955fd2085096fbfab012280e939b9f85",
+      "business_id": "nexus",
+      "title": "Evidence-backed affiliate readiness content package",
+      "growth_type": "AFFILIATE_CONTENT",
+      "topic": "small-business readiness and commerce tools",
+      "search_intent": "COMMERCIAL_INVESTIGATION",
+      "hypothesis": "A draft evidence-backed comparison can clarify a real small-business problem and create a reviewable affiliate-content opportunity without publishing.",
+      "target_audience": "small-business owners evaluating readiness and operating tools",
+      "target_offer": "internal readiness checklist and tool-comparison draft",
+      "source_opportunity_id": "input-revenue-shopify-affiliate-20260927",
+      "source_research_job_id": null,
+      "source_research_pack_ref": null,
+      "evidence_refs": [
+        "https://help.shopify.com/en/affiliates/about",
+        "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"
+      ],
+      "planned_asset_types": [
+        "LANDING_PAGE_DRAFT",
+        "MARKETING_PLAN",
+        "CREATIVE_BRIEF"
+      ],
+      "baseline": {
+        "source": "phase_l_revenue_truth",
+        "metric": "qualified internal opportunity package",
+        "value": null,
+        "truth_class": "UNKNOWN",
+        "observed_at": null
+      },
+      "primary_metric": "qualified internal opportunity package",
+      "secondary_metrics": [],
+      "measurement_window": "30_days",
+      "expected_direction": "IMPROVE_OR_OBSERVE",
+      "status": "READY_FOR_REVIEW",
+      "risks": [
+        "affiliate terms and economics require current review",
+        "no demand conversion data is connected",
+        "Ray review required before any publication"
+      ],
+      "dependencies": [
+        "current affiliate terms review",
+        "internal content review"
+      ],
+      "approval_required": true,
+      "approval_id": null,
+      "work_order_ids": [],
+      "freshness": {
+        "observed_at": "2026-09-27",
+        "status": "UNKNOWN"
+      },
+      "external_action_performed": false,
+      "created_at": "2026-09-27T20:05:05.797080+00:00",
+      "updated_at": "2026-09-27T20:05:05.797080+00:00"
+    }
+  },
+  "package": {
+    "opportunity": "Shopify affiliate / readiness content package",
+    "customer": "small-business owners researching tools and funding readiness",
+    "customer_problem": "uncertainty about which operating/readiness steps and tools are relevant before taking action",
+    "demand_signal": "official Shopify affiliate program exists; Google SEO guidance supports people-first helpful content, but conversion demand is UNKNOWN",
+    "product_or_service": "draft educational checklist and comparison content",
+    "sell_price": "UNKNOWN",
+    "cost": "UNKNOWN; no spend authorized",
+    "gross_margin_estimate": "UNKNOWN until terms and traffic are measured",
+    "fulfillment": "internal draft using existing Nexus research/marketing/creative capabilities",
+    "competition": "UNKNOWN; requires bounded competitor review",
+    "channel": "organic search draft only",
+    "time_to_test": "internal package now; external test requires Ray approval",
+    "cost_to_test": "zero internal preparation",
+    "nexus_capability_reuse": [
+      "Research evidence routing",
+      "Marketing content brief",
+      "Creative concept generation",
+      "Operations review"
+    ],
+    "main_risks": [
+      "unsupported claims",
+      "affiliate disclosure/compliance",
+      "no connected demand measurement"
+    ],
+    "missing_evidence": [
+      "current program economics",
+      "search demand/conversion evidence",
+      "competitor coverage"
+    ],
+    "certification_testable": true,
+    "growth_id": "growth_046106c54e774db6abe525c4330e68ed",
+    "landing_page_draft": {
+      "status": "DRAFT_ONLY",
+      "headline": "Prepare before you apply or buy",
+      "sections": [
+        "problem",
+        "evidence-backed checklist",
+        "comparison questions",
+        "neutral next step"
+      ],
+      "cta": "Internal readiness review draft",
+      "external_action_performed": false
+    },
+    "marketing_plan": {
+      "audience": "small-business owners",
+      "positioning": "evidence-first preparation without promises",
+      "hooks": [
+        "what to verify before choosing a funding or operating tool",
+        "which claims are lender-specific",
+        "how to build a reviewable readiness file"
+      ],
+      "channel": "organic search draft",
+      "success_metrics": [
+        "internal evidence completeness",
+        "review approval",
+        "future qualified visits if approved"
+      ],
+      "publication": "BLOCKED_PENDING_RAY_REVIEW"
+    },
+    "creative_brief": {
+      "title": "GoClear readiness evidence map",
+      "direction": "baseline, bold, experimental internal concepts",
+      "publication": "BLOCKED"
+    },
+    "validation_plan": {
+      "step_1": "review current terms and competitor evidence",
+      "step_2": "measure internal claim completeness",
+      "step_3": "request Ray review before any public test"
+    }
+  },
+  "experiment_id": "experiment_0c025b8585404ce9869042eb07dbf9c7",
+  "lesson": {
+    "what_we_expected": "The official program and search guidance would support a bounded internal opportunity package, not a revenue claim.",
+    "what_actually_happened": "The package was completed with economics and demand explicitly UNKNOWN and all external steps blocked pending review.",
+    "why_we_think_it_happened": "The available sources prove a legitimate route exists but do not prove traffic, conversion, margin, or approval.",
+    "what_changed_in_nexus_knowledge": "Revenue can assemble a reviewable opportunity without conflating source existence with verified revenue.",
+    "what_to_do_differently_next_time": "Acquire bounded competitor/search-demand and current program-term evidence before requesting an external test."
+  },
+  "external_action_performed": false
+}

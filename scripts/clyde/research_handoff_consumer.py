@@ -58,6 +58,42 @@ def _read_json(path: Path, default: Any) -> Any:
         return default
 
 
+def build_internal_profile_match(profile: dict[str, Any], requirements: dict[str, Any], *, product: str, source_refs: list[str] | None = None) -> dict[str, Any]:
+    """Compare a non-PII internal profile to product evidence only.
+
+    This is an analysis receipt, not an underwriting decision.  Missing or
+    lender-variable fields remain UNKNOWN and never become an approval claim.
+    """
+    gaps: list[str] = []
+    unknowns: list[str] = []
+    matched: list[str] = []
+    for field, expected in requirements.items():
+        actual = profile.get(field)
+        if actual is None:
+            unknowns.append(field)
+        elif expected is True and actual is not True:
+            gaps.append(field)
+        elif expected not in (None, True) and actual != expected:
+            gaps.append(field)
+        else:
+            matched.append(field)
+    state = "GAP" if gaps else ("UNKNOWN" if unknowns else "PASS")
+    return {
+        "schema_version": "nexus.clyde.internal-profile-match.v1",
+        "product": product,
+        "result": state,
+        "matched": matched,
+        "gaps": gaps,
+        "unknowns": unknowns,
+        "why": "Internal evidence comparison only; this does not predict approval or replace lender underwriting.",
+        "remediation": [f"Collect or verify: {field}" for field in [*gaps, *unknowns]],
+        "source_refs": list(source_refs or []),
+        "external_action_performed": False,
+        "customer_application_submitted": False,
+        "created_at": _now(),
+    }
+
+
 def _sba_evidence(root: Path) -> list[dict[str, Any]]:
     artifact = root / "reports/runtime/research_artifacts/web/cert-sba-funding.document.json"
     raw = root / "reports/runtime/research_artifacts/web/cert-sba-funding.normalized.txt"

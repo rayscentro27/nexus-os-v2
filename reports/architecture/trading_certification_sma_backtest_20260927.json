@@ -1,0 +1,42 @@
+{
+  "schema_version": "nexus.trading-certification-backtest.v1",
+  "source": "/tmp/nexus_GOOG.csv",
+  "strategy": "SMA crossover 10/30",
+  "rows": 2148,
+  "date_start": "2004-08-19",
+  "date_end": "2013-03-01",
+  "results": [
+    {
+      "variant": "BASELINE",
+      "total_return_pct": 788.5811,
+      "trade_count": 34,
+      "win_rate_pct": 64.71,
+      "profit_factor": 2.8138,
+      "max_drawdown_pct": 28.0654,
+      "paper_only": true,
+      "live_trading": false
+    },
+    {
+      "variant": "FIXED_STOP_5PCT",
+      "total_return_pct": 788.5811,
+      "trade_count": 39,
+      "win_rate_pct": 61.54,
+      "profit_factor": 2.6785,
+      "max_drawdown_pct": 28.0654,
+      "paper_only": true,
+      "live_trading": false
+    },
+    {
+      "variant": "TAKE_PROFIT_10PCT",
+      "total_return_pct": 788.5811,
+      "trade_count": 67,
+      "win_rate_pct": 64.18,
+      "profit_factor": 2.0051,
+      "max_drawdown_pct": 28.0654,
+      "paper_only": true,
+      "live_trading": false
+    }
+  ],
+  "external_action_performed": false,
+  "live_trading": false
+}

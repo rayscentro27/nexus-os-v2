@@ -1,0 +1,18 @@
+{
+  "schema_version": "nexus.30-day-revenue-pipeline.v1",
+  "campaign": "30_DAY_REVENUE_CAMPAIGN",
+  "goal": "approximately $1,000/month verified net revenue",
+  "status": "ACTIVE_INTERNAL_VALIDATION",
+  "work_items": 3,
+  "experiments": 1,
+  "lessons": 1,
+  "internal_packages_completed": 1,
+  "verified_revenue_to_date": 0,
+  "opportunities": [
+    {"id": "input-revenue-shopify-affiliate-20260927", "status": "INTERNAL_PACKAGE_COMPLETED", "economics": "UNKNOWN", "external_action": "PENDING_RAY"},
+    {"id": "input-revenue-google-seo-20260927", "status": "SUPPORTING_EVIDENCE", "demand": "UNKNOWN", "external_action": "NONE"},
+    {"id": "input-revenue-mobile-detailing-20260927", "status": "STALE_UNVALIDATED", "external_action": "NONE"}
+  ],
+  "next_action": "Acquire bounded competitor and current affiliate-term evidence, then request Ray review before any external test.",
+  "safety": {"paid_actions": 0, "public_launches": 0, "customer_messages": 0, "purchases": 0, "funds_moved": 0}
+}

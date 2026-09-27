@@ -137,13 +137,15 @@ def certification_metrics(*, since: str | None = None) -> dict[str, Any]:
     values = list(latest.values())
     state = lambda *names: sum(1 for row in values if str(row.get("completion_state") or "").upper() in names)
     return {
-        "certification_tests_created": len(values), "certification_tests_claimed": state("CLAIMED", "IN_PROGRESS", "COMPLETED", "EXPERIMENT_FAILED"),
+        "certification_tests_created": len(values), "certification_tests_started": state("IN_PROGRESS", "COMPLETED", "CERTIFICATION_PASS", "PASS_REAL", "PASS_REAL_BOUNDED", "EXPERIMENT_FAILED"), "certification_tests_claimed": state("CLAIMED", "IN_PROGRESS", "COMPLETED", "CERTIFICATION_PASS", "PASS_REAL", "PASS_REAL_BOUNDED", "EXPERIMENT_FAILED"),
         "certification_tests_completed": state("COMPLETED", "CERTIFICATION_PASS", "PASS_REAL", "PASS_REAL_BOUNDED"),
         "certification_tests_failed": state("EXPERIMENT_FAILED"), "certification_tests_blocked": state("BLOCKED_EXTERNAL", "BLOCKED_HUMAN", "INSUFFICIENT_INPUT"),
         "rejects_overridden_to_certification_test": sum(1 for row in values if str(row.get("alpha_decision") or "").upper() == "REJECT"),
         "research_more_overridden_to_certification_test": sum(1 for row in values if str(row.get("alpha_decision") or "").upper() == "RESEARCH_MORE"),
         "department_certification_activity": {d: sum(1 for row in values if str(row.get("department") or "").upper() == d) for d in sorted({str(row.get("department") or "").upper() for row in values if row.get("department")})},
         "experiment_lessons_created": sum(1 for row in values if row.get("lesson")),
+        "lessons_applied": sum(1 for row in values if row.get("lesson") and row.get("policy_or_strategy_change")),
+        "next_tests_created": sum(1 for row in values if row.get("next_test")),
         "experiments_with_no_lesson": sum(1 for row in values if not row.get("lesson")),
         "trading_variants_tested": sum(len(row.get("variants") or []) for row in values if str(row.get("department") or "").upper() == "TRADING"),
         "creative_variants_created": sum(len(row.get("variants") or []) for row in values if str(row.get("department") or "").upper() == "CREATIVE"),

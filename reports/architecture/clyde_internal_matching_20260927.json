@@ -1,0 +1,67 @@
+{
+  "schema_version": "nexus.clyde.certification-match.v1",
+  "profile_type": "non-PII internal fixture",
+  "product": "SBA Lender Match / Shopify affiliate research comparison",
+  "baseline": {
+    "schema_version": "nexus.clyde.internal-profile-match.v1",
+    "product": "internal funding-readiness comparison",
+    "result": "UNKNOWN",
+    "matched": [
+      "business_identity_consistent",
+      "business_plan_present",
+      "funding_amount_known"
+    ],
+    "gaps": [],
+    "unknowns": [
+      "cash_flow_known"
+    ],
+    "why": "Internal evidence comparison only; this does not predict approval or replace lender underwriting.",
+    "remediation": [
+      "Collect or verify: cash_flow_known"
+    ],
+    "source_refs": [
+      "https://www.sba.gov/loans/lender-match/",
+      "https://help.shopify.com/en/affiliates/about"
+    ],
+    "external_action_performed": false,
+    "customer_application_submitted": false,
+    "created_at": "2026-09-27T20:04:48.351437+00:00"
+  },
+  "variant": {
+    "schema_version": "nexus.clyde.internal-profile-match.v1",
+    "product": "internal funding-readiness comparison",
+    "result": "GAP",
+    "matched": [
+      "business_plan_present",
+      "funding_amount_known"
+    ],
+    "gaps": [
+      "business_identity_consistent"
+    ],
+    "unknowns": [
+      "cash_flow_known"
+    ],
+    "why": "Internal evidence comparison only; this does not predict approval or replace lender underwriting.",
+    "remediation": [
+      "Collect or verify: business_identity_consistent",
+      "Collect or verify: cash_flow_known"
+    ],
+    "source_refs": [
+      "https://www.sba.gov/loans/lender-match/",
+      "https://help.shopify.com/en/affiliates/about"
+    ],
+    "external_action_performed": false,
+    "customer_application_submitted": false,
+    "created_at": "2026-09-27T20:04:48.351736+00:00"
+  },
+  "lesson": {
+    "what_we_expected": "A meaningful business-presence change would alter the internal gap analysis while unknown underwriting fields remain unknown.",
+    "what_actually_happened": "Baseline returned GAP with cash-flow unknown; the variant added a business-identity gap without turning unknowns into a rejection.",
+    "why_we_think_it_happened": "The comparison preserves claim-specific evidence and distinguishes a supplied mismatch from missing lender-variable evidence.",
+    "what_changed_in_nexus_knowledge": "Clyde can produce pass/gap/unknown guidance from official and product evidence without making an approval prediction.",
+    "what_to_do_differently_next_time": "Collect lender-specific cash-flow and product-term evidence before making a stronger fit recommendation."
+  },
+  "next_research_request": "Acquire current lender-specific cash-flow, fees, and guarantee terms for a selected product.",
+  "external_action_performed": false,
+  "customer_application_submitted": false
+}
