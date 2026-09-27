@@ -20,6 +20,7 @@ REGISTRY_PATH = ROOT / "data/runtime/research_lane_registry.json"
 SOURCE_REFRESH_STATE_PATH = ROOT / "data/runtime/research_source_refresh_state.json"
 EXECUTION_JOBS_PATH = ROOT / "data/runtime/research_execution_jobs.jsonl"
 PROGRAM_SERVICE_STATE_PATH = ROOT / "data/runtime/research_program_service_state.json"
+PERMANENT_SOURCE_CONFIG = ROOT / "configs/research_permanent_sources.json"
 LANES = (
     ("BUSINESS_MARKET", "Business Market", "P1"),
     ("FUNDING_LENDER", "Funding and Lender", "P1"),
@@ -273,6 +274,49 @@ def select_priority_work(*, worker_id: str = "research_scheduler", blocked_bucke
     _sync_governed_priority_work(queue)
     return queue.claim_next(worker_id=worker_id, allowed_classes=WORK_CLASSES,
                             blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
+
+
+def ensure_permanent_source_work() -> dict[str, Any]:
+    """Project due non-YouTube permanent sources into the existing queue.
+
+    YouTube channels are already selected by the canonical channel watcher.
+    This projection gives TradingView and CardRight a durable, deduplicated
+    queue item without adding another scheduler or source database.
+    """
+    try:
+        config = json.loads(PERMANENT_SOURCE_CONFIG.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {"created": [], "status": "CONFIG_UNAVAILABLE"}
+    queue = default_queue()
+    rows = queue.load().get("items", [])
+    created = []
+    for source in config.get("sources", []):
+        if not isinstance(source, dict) or str(source.get("source_type", "")).upper() == "YOUTUBE_CHANNEL":
+            continue
+        source_id = str(source.get("source_id") or "")
+        if not source_id:
+            continue
+        active = any(str(row.get("source_id")) == source_id and str(row.get("status")) in {"QUEUED", "WAITING", "IN_PROGRESS"} for row in rows)
+        ever_seen = any(str(row.get("source_id")) == source_id for row in rows)
+        if active or ever_seen:
+            continue
+        work_id = f"permanent-source:{source_id}"
+        queue.enqueue(
+            work_id=work_id, work_class="MONITORED", priority=10,
+            lane_id=source.get("lane_id") or "BUSINESS_MARKET",
+            source_type="WEB_PAGE", source_id=source_id, source_url=source.get("canonical_url"),
+            title=source.get("objective") or source_id,
+            question=source.get("objective") or f"Assess current evidence from {source_id}.",
+            requested_by="permanent_source_supervisor", lifecycle="MONITORED",
+            selection_reason="permanent_source_due", objective_id=source_id,
+            department_target=source.get("department"), required_work=True,
+            source_candidates=[{"source_type": "WEB_PAGE", "source_id": source_id, "source_url": source.get("canonical_url"), "title": source.get("objective")}],
+            source_classes=source.get("categories", []), owner="RESEARCH",
+            state="OWNED", next_action="Acquire bounded public evidence and persist source checkpoint.",
+        )
+        created.append(work_id)
+        rows.append({"work_id": work_id, "source_id": source_id, "status": "QUEUED"})
+    return {"created": created, "status": "OK"}
 
 
 def ensure_live_program_work() -> dict[str, Any]:
@@ -640,11 +684,26 @@ def _select_live_service_work(rows: list[dict[str, Any]], blocked_buckets: set[s
 def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[str] | None = None) -> dict[str, Any]:
     _hydrate_refresh_state_from_history()
     ensure_live_program_work()
+    permanent_projection = ensure_permanent_source_work()
     rows = [row for row in ensure_registry() if row.get("enabled")]
     blocked_buckets = {str(bucket).lower() for bucket in (blocked_buckets or set())}
     live_selected = _select_live_service_work(rows, blocked_buckets, _now())
     if live_selected:
         return live_selected
+
+    # Empty queue is a continuation condition, not a terminal scheduler
+    # result.  The previous implementation reached the generic lane fallback
+    # before this purpose-level owner could run, leaving the daemon alive but
+    # producing NO_ACTION_REQUIRED forever despite active permanent goals.
+    queue_rows = default_queue().load().get("items", [])
+    if not any(str(item.get("status") or "").upper() in {"QUEUED", "WAITING", "IN_PROGRESS"} for item in queue_rows):
+        from nexus_agent_platform.research_continuation import continue_when_empty
+        continuation = continue_when_empty(queue=default_queue())
+        if continuation.get("generated"):
+            claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"ASSIGNED"}, blocked_buckets=blocked_buckets)
+            if claimed:
+                claimed.update({"lane_id": "BUSINESS_MARKET", "name": "Goal-directed Research", "selection_reason": "goal_generated", "selected_work_class": "ASSIGNED", "continuation": continuation})
+                return claimed
 
     # A continuously replenished assigned/RESEARCH_MORE stream may not starve
     # standing lanes.  We defer one priority claim whenever an enabled lane is

@@ -1,0 +1,38 @@
+{
+  "schema_version": "nexus.autonomy-recovery-certification.v1",
+  "generated_at": "2026-09-27T20:52:00Z",
+  "root_cause_of_previous_stop": "The canonical lane selector could return an idle/no-source result before invoking the existing goal-aware continuation planner, so a live daemon did not derive next work from permanent objectives.",
+  "exact_stop_transition": "completed useful AI research -> selector no_source_selected/NO_ACTION_REQUIRED -> heartbeat remained active -> no objective-derived queue item was created",
+  "repair": {
+    "existing_owner": "com.nexus.continuous-loop",
+    "empty_queue_recovery": "select_lane invokes research_continuation.continue_when_empty and claims the generated ASSIGNED item",
+    "permanent_sources": "configs/research_permanent_sources.json projected into existing source registry/queue",
+    "duplicate_scheduler_created": false
+  },
+  "real_daemon_evidence": {
+    "launchd_label": "com.nexus.continuous-loop",
+    "keepalive": true,
+    "post_reload_execution_ids": ["research_exec_264e8ec4ba5c49bab9ef", "research_exec_d078386030854aa3a76d"],
+    "required_transitions": ["AI_INVESTIGATION_PLAN", "SOURCE_SELECTED", "AI_RESULT_INTERPRETATION", "EVIDENCE_READY", "COMPLETED"],
+    "codex_supplied_next_prompt": false
+  },
+  "permanent_sources": {
+    "stedman_waiters": {"state": "ACTIVE_RESEARCH", "transcripts_acquired": 2},
+    "luuk_alleman": {"state": "ACTIVE_RESEARCH", "transcript_status": "IP_BLOCKED_BOUNDED_RETRY"},
+    "jt_hustlez": {"state": "ACTIVE_RESEARCH", "transcripts_acquired": 3},
+    "tradingview_editors_picks": {"state": "ACTIVE_RESEARCH", "http_status": 200, "candidate_links_observed": 20, "rules_verified": false},
+    "cardright_user_cc_results": {"state": "WAITING_FOR_SOURCE", "http_status": 403, "bypass_attempted": false}
+  },
+  "systems_notebook": {
+    "objective_id": "systems-permanent-cloud-notebook-worker",
+    "recipe_library": "configs/systems_worker_recipes.json",
+    "diagnostic_recipe": "gpu-environment-diagnostic-v1@1.0.0",
+    "clean_runtime_package": "MATERIALIZED_AND_EXECUTED_LOCALLY",
+    "kaggle_status": "KAGGLE_AUTH_REQUIRED",
+    "remote_control_plane": "DEPLOYED_EXISTING_REMOTE_WORKER_DETECTED",
+    "nova_musetalk_status": "BLOCKED_PENDING_APPROVED_ASSET_PINNED_REVISION_AND_LICENSE_REVIEW",
+    "output_verification": "diagnostic_report.json and run_manifest.json produced; no avatar MP4 claimed",
+    "production_mac_changed": false
+  },
+  "safety": {"paid_actions": 0, "publications": 0, "customer_messages": 0, "live_trades": 0, "funds_moved": 0}
+}

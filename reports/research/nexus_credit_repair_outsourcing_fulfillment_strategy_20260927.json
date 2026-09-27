@@ -1,0 +1,23 @@
+{
+  "schema_version": "nexus.credit-repair-fulfillment-strategy.v1",
+  "request_id": "research_request_credit_repair_fulfillment_20260927",
+  "generated_at": "2026-09-27",
+  "owner": "RESEARCH",
+  "return_target": "CLYDE_CREDIT",
+  "status": "RESEARCH_MORE",
+  "pii_transmitted": false,
+  "provider_shortlist": [
+    {"name": "Credloom", "model": "direct fulfillment / white-label", "public_pricing": [59, 89, 149], "billing": "monthly in arrears", "setup_fee_publicly_stated": 0, "public_sla": "30-day FCRA window; tier-specific escalation", "integration": "white-label portal; case file; API/webhooks not confirmed", "assessment": "DILIGENCE_CANDIDATE"},
+    {"name": "The Credit Connect", "model": "referral", "public_pricing": "not itemized on partner page", "billing": "client billed directly", "setup_fee_publicly_stated": "UNKNOWN", "public_sla": "provider claims contact within one business day; 60-120 day improvement window claim", "integration": "secure client portal; milestone updates", "assessment": "DILIGENCE_CANDIDATE"},
+    {"name": "Credit Logistic", "model": "referral / done-for-you", "public_pricing": "not public; compensation disclosed in onboarding", "billing": "UNKNOWN", "setup_fee_publicly_stated": 0, "public_sla": "milestone/readiness updates; exact SLA unknown", "integration": "partner hub; client portal; high-level updates", "assessment": "DILIGENCE_CANDIDATE"},
+    {"name": "Credit Repair Evolved", "model": "affiliate referral", "public_pricing": "program-specific consumer terms unknown", "commission_claim": {"28-Day Blitz": 400, "700 Protocol": 150, "Foundation Protocol": 50}, "client_ownership": "provider", "integration": "tracked portal/link", "assessment": "LEGAL_DILIGENCE_REQUIRED"},
+    {"name": "Credence Credit", "model": "software / white-label / API", "public_pricing": "not public", "commission_claim": "20% recurring referral commission stated", "integration": "REST API, webhooks, white-label portal", "fulfillment": "not established", "assessment": "PLATFORM_ONLY"},
+    {"name": "Credit Repair Cloud", "model": "software / private-label portal", "public_pricing": [179, 299, 399, 599], "billing": "monthly tiers; 30-day trial stated", "integration": "API, automations, private-label portal", "fulfillment": "software provider says it is software only", "assessment": "PLATFORM_ONLY"}
+  ],
+  "recommended_model": "REFERRAL_FIRST_THEN_COUNSEL_APPROVED_HYBRID",
+  "not_recommended_initially": ["BUILD_INTERNAL", "UNREVIEWED_WHITE_LABEL"],
+  "regulatory_gates": ["CROA", "Telemarketing Sales Rule where applicable", "FCRA/permissible-purpose and dispute substantiation", "state CSO registration/licensing/bond review", "privacy/security/data-retention review", "truthful marketing and no guarantees"],
+  "key_unknowns": ["GoClear target states and exact legal role", "provider entity/state registrations", "written consumer contracts and refund terms", "security/DPA/subprocessors", "independent complaints and enforcement checks", "exact per-client economics and SLA", "API/webhook data minimization"],
+  "next_action": "Clyde compares the non-PII provider matrix; Ray decides target states, outreach, compensation posture, and counsel review before any external contact.",
+  "external_actions_performed": 0
+}

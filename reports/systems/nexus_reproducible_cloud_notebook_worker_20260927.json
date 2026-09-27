@@ -1,0 +1,16 @@
+{
+  "schema_version": "nexus.reproducible-cloud-notebook-worker.v1",
+  "generated_at": "2026-09-27T20:52:00Z",
+  "objective_id": "systems-permanent-cloud-notebook-worker",
+  "recipe_library": [
+    "gpu-environment-diagnostic-v1@1.0.0",
+    "nova-avatar-musetalk-v1@1.0.0",
+    "nova-avatar-latentsync-v1@1.0.0",
+    "nova-avatar-liveportrait-v1@1.0.0"
+  ],
+  "diagnostic": {"clean_runtime_package": "executed", "ffmpeg": "PASS", "disk": "PASS", "torch": "UNAVAILABLE_LOCAL", "gpu": "NOT_CLAIMED", "production_touch": false, "outputs": ["diagnostic_report.json", "run_manifest.json"]},
+  "asset_discovery": {"directory": "~/Downloads", "approved_nova_assets": 0, "unrelated_audio_excluded": 2, "substitution_performed": false},
+  "providers": {"kaggle": "KAGGLE_AUTH_REQUIRED", "remote_control_plane": "DEPLOYED_EXISTING_REMOTE_WORKER_DETECTED", "mac": "LOCAL_CPU_ONLY"},
+  "nova_avatar": {"selected_candidate": "MuseTalk", "status": "BLOCKED_PENDING_PINNED_DEPENDENCY_AND_MODEL_LICENSE_REVIEW", "mp4_created": false, "grounding_evaluation": "NOT_APPLICABLE"},
+  "safety": {"production_mac_changed": false, "production_installation": false, "paid_actions": 0, "secrets_printed": false}
+}

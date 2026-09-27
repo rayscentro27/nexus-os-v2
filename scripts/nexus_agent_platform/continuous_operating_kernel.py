@@ -131,6 +131,33 @@ def build_source_registry() -> list[dict[str, Any]]:
             "next_check": prior_row.get("next_check"),
             "processed_content_identifiers": prior_row.get("processed_content_identifiers", []),
         }
+    permanent_config = _read(ROOT / "configs/research_permanent_sources.json", {})
+    for target in permanent_config.get("sources", []) if isinstance(permanent_config, dict) else []:
+        if not isinstance(target, dict) or not target.get("canonical_url"):
+            continue
+        source_id = str(target.get("source_id") or "src_" + fingerprint(target["canonical_url"]))
+        prior_row = by_id.get(source_id, {})
+        by_id[source_id] = {
+            **prior_row,
+            "source_id": source_id,
+            "source_type": target.get("source_type", "PUBLIC_WEB"),
+            "name": target.get("objective") or source_id,
+            "url_or_safe_identifier": target["canonical_url"],
+            "owner_department": target.get("department", "RESEARCH"),
+            "parent_objective": target.get("objective", "research"),
+            "created_by": "PERMANENT_SOURCE_CONFIG",
+            "monitoring_enabled": True,
+            "monitoring_policy": target.get("refresh_policy", "bounded public read"),
+            "initial_research_policy": "bounded source classification and evidence extraction",
+            "ongoing_research_policy": "process new content and unresolved follow-up questions; never terminalize the source objective",
+            "source_state": target.get("state", "ACTIVE_RESEARCH"),
+            "lane_id": target.get("lane_id"),
+            "categories": target.get("categories", []),
+            "health": prior_row.get("health", "UNVERIFIED"),
+            "last_checked": prior_row.get("last_checked"),
+            "next_check": prior_row.get("next_check"),
+            "processed_content_identifiers": prior_row.get("processed_content_identifiers", []),
+        }
     result = list(by_id.values())
     _write(registry_path, result)
     return result
