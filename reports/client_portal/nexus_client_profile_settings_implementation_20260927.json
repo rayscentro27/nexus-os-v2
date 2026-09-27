@@ -54,7 +54,7 @@
   "typecheck": "PASS",
   "build": "PASS",
   "focused_tests": "PASS: 2 Vitest tests; approved portal Playwright desktop/mobile parity passed; git diff check passed",
-  "netlify_deployment": "PENDING_PUSH",
-  "production_profile": "PENDING_DEPLOYMENT",
-  "production_settings": "PENDING_DEPLOYMENT"
+  "netlify_deployment": "PASS: deployed bundle index-C719fXy7.js served after push",
+  "production_profile": "PASS: /client/profile served and authenticated gate redirected to /client-v2/login",
+  "production_settings": "PASS: /client/settings served and authenticated gate redirected to /client-v2/login"
 }
