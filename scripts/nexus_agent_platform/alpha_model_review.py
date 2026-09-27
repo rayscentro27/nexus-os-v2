@@ -89,6 +89,40 @@ def _normalize_need(judgment: dict[str, Any], package: dict[str, Any], source_re
     return need
 
 
+def _oracle_model_review(prompt: dict[str, Any], request_id: str) -> dict[str, Any]:
+    """Use the already-governed Oracle Hermes transport when OpenRouter is absent.
+
+    The transport owns authentication and remote execution. Alpha only sends a
+    bounded evidence-review prompt and accepts structured JSON back; it never
+    receives credentials or gains arbitrary tool authority.
+    """
+    from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
+
+    message = (
+        "Perform a governed Nexus Alpha review of the supplied public Research evidence. "
+        "Return ONLY one compact JSON object with the required keys. Separate observed "
+        "evidence from inference, do not invent demand or eligibility, and choose one "
+        "allowed decision."
+    )
+    result = run_oracle_hermes(
+        message,
+        f"alpha-review-{request_id}",
+        timeout_seconds=180.0,
+        request_id=request_id,
+        pre_context=json.dumps(prompt, ensure_ascii=True),
+    )
+    return {
+        "provider": "oracle_hermes",
+        "model": result.model,
+        "model_calls": 1 if result.response else 0,
+        "http_status": None,
+        "error": result.error,
+        "latency_ms": result.latency_ms,
+        "judgment": _json_object(result.response or ""),
+        "transport_status": result.status,
+    }
+
+
 def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None = None) -> dict[str, Any]:
     """Review one fresh demand package through the configured real provider."""
     from alpha.alpha_live_research import http_json, load_runtime_env, ssl_context  # noqa: F401
@@ -135,23 +169,37 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         "max_tokens": 1400,
     }
     key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    if not key:
-        return {"status": "BLOCKED", "request_id": request_id, "provider": provider, "model": model, "error": "missing_credential", "model_calls": 0}
-    ok, status, data, error, latency_ms = http_json(
-        "POST", "https://openrouter.ai/api/v1/chat/completions",
-        {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Alpha Governed Review"},
-        payload, timeout=60,
-    )
-    text = ""
-    try:
-        text = str(data["choices"][0]["message"]["content"] or "")
-    except Exception:
+    model_calls = 0
+    status = None
+    error = None
+    latency_ms = None
+    judgment = None
+    if key:
+        ok, status, data, error, latency_ms = http_json(
+            "POST", "https://openrouter.ai/api/v1/chat/completions",
+            {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Alpha Governed Review"},
+            payload, timeout=60,
+        )
+        model_calls = 1 if ok else 0
         text = ""
-    judgment = _json_object(text) if ok else None
+        try:
+            text = str(data["choices"][0]["message"]["content"] or "")
+        except Exception:
+            text = ""
+        judgment = _json_object(text) if ok else None
+    else:
+        oracle = _oracle_model_review(prompt, request_id)
+        provider = oracle["provider"]
+        model = oracle["model"]
+        model_calls = oracle["model_calls"]
+        status = oracle["transport_status"]
+        error = oracle["error"]
+        latency_ms = oracle["latency_ms"]
+        judgment = oracle["judgment"]
     if not judgment or str(judgment.get("decision") or "").upper() not in {"QUALIFY", "RESEARCH_MORE", "REJECT", "PARK"}:
         return {
             "status": "FAILED", "request_id": request_id, "provider": provider, "model": model,
-            "model_calls": 1 if ok else 0, "http_status": status, "error": error or "invalid_structured_review",
+            "model_calls": model_calls, "http_status": status, "error": error or "invalid_structured_review",
             "latency_ms": latency_ms,
         }
 
