@@ -16,6 +16,7 @@ from typing import Any
 from nexus_agent_platform.governed import persistence
 from nexus_agent_platform.research_work_queue import default_queue
 from nexus_agent_platform.alpha_decision_policy import apply_policy
+from nexus_agent_platform.research_followups import build_followup, persist_followup
 
 
 def _now() -> str:
@@ -324,6 +325,16 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             TRIGGER="RESEARCH_GAP", DEPARTMENT=policy["next_owner"], PARENT_GOAL=package.get("parent_goal_id"),
             PROJECT=package.get("project_id") or package.get("objective_id"), EXPECTED_VALUE=policy["recommended_next_step"],
             )
+            # The operational queue projection above is kept for backward
+            # compatibility; the governed follow-up contract supplies the
+            # durable owner, source classes, lineage, and return target.
+            durable = build_followup(finding_id=finding_id, alpha_receipt_id=receipt_id, alpha_request_id=request_id,
+                missing_evidence=policy["unknowns"], question=str(judgment.get("required_followup") or "Resolve the evidence deficiency identified by Alpha."),
+                package=package, parent_goal=package.get("parent_goal_id"), project_id=package.get("project_id") or package.get("objective_id"),
+                source_candidates=[{"source_type":"WEB_PAGE","source_url":ref,"source_id":f"alpha-source-{index}","title":"Existing Alpha evidence reference"} for index, ref in enumerate(source_refs)],
+                work_id=followup.get("work_id"))
+            persist_followup(durable)
+            followup = {**followup, "research_request_id": durable["research_request_id"], "owner": durable["owner"], "fallback_sources": durable["fallback_sources"]}
         receipt["followup_work_id"] = followup.get("work_id")
         receipt["followup_priority"] = 2
         receipt["followup_deduplicated"] = bool(followup.get("deduplicated"))

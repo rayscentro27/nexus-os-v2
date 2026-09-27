@@ -1,0 +1,49 @@
+{
+  "date": "2026-09-27",
+  "root_cause": "RESEARCH_MORE was projected into the queue without a durable owned research request, and queue normalization discarded department ownership metadata.",
+  "repair": {
+    "existing_scheduler_reused": true,
+    "owner": "RESEARCH",
+    "duplicate_projections": "SUPERSEDED_WITH_AUDIT_PRESERVED",
+    "fallback_source_plans": true,
+    "lineage_to_alpha": true
+  },
+  "cases": {
+    "systems": {
+      "finding": "proactive-canary-systems-capability",
+      "initial_decision": "RESEARCH_MORE",
+      "worker_claimed": true,
+      "research_package": "package_929140eea4df5a409edc",
+      "second_alpha_receipt": "alpha_receipt_33de1addbf224fd08f1edf4decaff75c",
+      "final_disposition": "RESEARCH_MORE",
+      "next_owner": "RESEARCH"
+    },
+    "goclear": {
+      "finding": "proactive-canary-goclear-funding",
+      "worker_claimed": true,
+      "research_package": "package_aa154169b6b0bf03fb8b",
+      "second_alpha_receipt": "alpha_receipt_3d562c173a304e0f85fc05a13e3ffa46",
+      "final_disposition": "RESEARCH_MORE"
+    },
+    "revenue": {
+      "finding": "proactive-canary-revenue-opportunity",
+      "worker_claimed": true,
+      "research_package": "package_3e423456af34c4fe05ea",
+      "second_alpha_receipt": "alpha_receipt_9a2fba56b79e409a94f15e6814535b16",
+      "final_disposition": "RESEARCH_MORE"
+    },
+    "trading": {
+      "finding": "proactive-canary-trading-candidate",
+      "original_decision": "REJECT",
+      "source_failure": "HTTP 404 from GitHub fallback",
+      "fallback_attempted": true,
+      "alpha_second_receipt": "alpha_receipt_67fc3e1442354435b876d51d31f066cb",
+      "final_disposition": "TEST",
+      "handoff": "research_handoff_fc0e1a6f2539419bb3ff28b7c422adc1",
+      "concrete_strategy_rules": false,
+      "external_action_allowed": false
+    }
+  },
+  "safety": {"duplicate_scheduler": false, "paid_actions": 0, "publications": 0, "customer_messages": 0, "live_trades": 0, "funds_moved": 0, "production_installations": 0},
+  "tests": {"focused_pytest": "18 passed", "py_compile": "PASS", "git_diff_check": "PASS"}
+}

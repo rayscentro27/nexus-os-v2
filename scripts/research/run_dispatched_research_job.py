@@ -214,7 +214,17 @@ def strategy_changing_fallback(item: dict, *, failure_class: str, error: str, at
         source_url=alternate.get("source_url"), title=alternate.get("title") or item.get("title"),
         source_candidates=candidates[1:], requested_by="research_failure_router",
         objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
-        alpha_followup_required=item.get("alpha_followup_required", False), lifecycle="ONE_TIME",
+        project_id=item.get("project_id"), parent_goal_id=item.get("parent_goal_id"),
+        parent_finding_id=item.get("parent_finding_id"), parent_alpha_receipt_id=item.get("parent_alpha_receipt_id"),
+        parent_alpha_request_id=item.get("parent_alpha_request_id"), parent_handoff_id=item.get("parent_handoff_id"),
+        owner=item.get("owner") or "RESEARCH", department=item.get("department") or item.get("department_target"),
+        department_target=item.get("department_target") or item.get("department"), mission=item.get("mission"),
+        research_mode=item.get("research_mode"), state="OWNED", return_target=item.get("return_target"),
+        why_this_research=item.get("why_this_research") or item.get("WHY_THIS_RESEARCH"),
+        missing_evidence=item.get("missing_evidence"), source_classes=item.get("source_classes"),
+        preferred_sources=item.get("preferred_sources"), fallback_sources=item.get("fallback_sources"),
+        next_action=item.get("next_action"), alpha_followup_required=item.get("alpha_followup_required", False),
+        alpha_eligible=item.get("alpha_eligible", False), alpha_review_required=item.get("alpha_review_required", False), lifecycle="ONE_TIME",
         selection_reason=f"strategy_change_after_{failure_class}", evidence_refs=item.get("evidence_refs") or [],
     )
     return {"work_id": fallback.get("work_id"), "source_id": alternate.get("source_id"),
@@ -516,6 +526,11 @@ def main() -> int:
                 source_text=source_row.get("text", "") if isinstance(source_row, dict) else "",
                 objective_id=item.get("objective_id"),
                 force_rereview=bool(item.get("alpha_followup_required")),
+                followup_context={"finding_id": item.get("parent_finding_id") or item.get("objective_id") or item.get("source_id"),
+                                  "parent_alpha_receipt_id": item.get("parent_alpha_receipt_id"),
+                                  "parent_alpha_request_id": item.get("parent_alpha_request_id") or item.get("parent_request_id"),
+                                  "handoff_target": item.get("department_target"), "department_target": item.get("department_target"),
+                                  "research_mode": item.get("research_mode"), "followup_work_id": item.get("work_id")},
             )
         except Exception as exc:
             alpha_result = {"status": "FAILED_RETRYABLE", "error": str(exc)[:500]}

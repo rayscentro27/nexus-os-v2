@@ -137,7 +137,8 @@ class ResearchWorkQueue:
             "blocker_type": item.get("blocker_type"),
             "parent_request_id": item.get("parent_request_id"),
             "alpha_followup_required": bool(item.get("alpha_followup_required", False)),
-            "department_target": item.get("department_target"),
+            "department_target": item.get("department_target") or item.get("department") or item.get("DEPARTMENT"),
+            "department": item.get("department") or item.get("DEPARTMENT") or item.get("department_target"),
             "marketing_objective_id": item.get("marketing_objective_id"),
             "evidence_refs": list(item.get("evidence_refs", []) or []),
             "selection_reason": item.get("selection_reason"),
@@ -173,6 +174,13 @@ class ResearchWorkQueue:
             "PROJECT": item.get("PROJECT") or item.get("project_id"), "QUESTION": item.get("QUESTION") or item.get("question"),
             "EXPECTED_VALUE": item.get("EXPECTED_VALUE"), "SOURCE_PLAN": list(item.get("SOURCE_PLAN", []) or []),
             "alpha_eligible": bool(item.get("alpha_eligible", False)), "alpha_review_required": bool(item.get("alpha_review_required", False)),
+            "parent_finding_id": item.get("parent_finding_id"), "parent_alpha_receipt_id": item.get("parent_alpha_receipt_id"),
+            "parent_alpha_request_id": item.get("parent_alpha_request_id"), "parent_handoff_id": item.get("parent_handoff_id"),
+            "owner": item.get("owner"), "mission": item.get("mission"), "why_this_research": item.get("why_this_research"),
+            "missing_evidence": list(item.get("missing_evidence", []) or []), "source_classes": list(item.get("source_classes", []) or []),
+            "preferred_sources": list(item.get("preferred_sources", []) or []), "fallback_sources": list(item.get("fallback_sources", []) or []),
+            "return_target": item.get("return_target"), "state": item.get("state"), "last_attempt": item.get("last_attempt"),
+            "next_action": item.get("next_action"), "max_attempts": int(item.get("max_attempts", 3) or 3),
         }
         return result
 

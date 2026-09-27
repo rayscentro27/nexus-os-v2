@@ -117,7 +117,8 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
 def review_assigned_research_output(*, source_id: str, source_title: str,
                                     source_url: str, source_text: str,
                                     objective_id: str | None = None,
-                                    force_rereview: bool = False) -> dict[str, Any]:
+                                    force_rereview: bool = False,
+                                    followup_context: dict[str, Any] | None = None) -> dict[str, Any]:
     """Send one newly completed assigned source through the existing Alpha path.
 
     The scheduled Research router remains responsible for acquisition and V2
@@ -151,6 +152,7 @@ def review_assigned_research_output(*, source_id: str, source_title: str,
                      "source_type": "PUBLIC_WEB", "snippet": (source_text or source_record.get("text") or "")[:1200]}],
         "analysis": {"summary": "Completed assigned Research evidence requires Alpha review.",
                      "recommended_next_action": "preserve evidence boundaries and select a bounded next step"},
+        **(followup_context or {}),
     }
     result = review_demand_package(package)
     return {"status": result.get("status"),
