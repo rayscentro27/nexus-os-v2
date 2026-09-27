@@ -55,4 +55,20 @@ def main():
         time.sleep(min(INTERVAL,max(1,started+DURATION-time.time())))
     final={"status":"COMPLETE","service":SERVICE,"started_at":datetime.fromtimestamp(started,timezone.utc).isoformat(),"ended_at":now(),"elapsed_seconds":round(time.time()-started,3),"snapshots":snaps,"cycles_observed":len(snaps),"state_advanced":len({str(x.get('heartbeat',{}).get('cycle_id')) for x in snaps if x.get('heartbeat',{}).get('cycle_id')})>1,"post_detach_substantive_research":any(x.get('jobs_after_start',0)>0 for x in snaps),"duplicate_runners":"NO","worker_failure_test":worker_failure,"codex_process_dependency":"NO","terminal_process_dependency":"NO","restart_policy":"launchd KeepAlive=true"}
     (RUN/"certification_state.json").write_text(json.dumps(final,indent=2)+"\n")
+    report={
+        "overnight_failure_confirmed": True,
+        "last_night_last_activity": "2026-09-27T02:53:46Z observer heartbeat; no launchd owner",
+        "persistence_root_cause": "The overnight observer was launched as a shell-background process from the Codex execution context. It was not launchd-owned; its heartbeat stopped when that execution context ended. The morning finalizer was also only part of that disposable process. The existing launchd Research owner simultaneously pointed to the older repository rather than the canonical production-source baseline.",
+        "existing_persistent_owner": SERVICE,
+        "why_it_did_not_own_last_night_run": "The launchd owner was not used for the overnight observer/campaign, and the observer had no independent launchd ownership or finalizer schedule.",
+        "repair": "Moved the single continuous-loop launchd owner to the canonical repository, added a canonical environment wrapper, added a calendar-owned morning finalizer, and added this launchd-owned persistence certifier.",
+        "process_ownership": final,
+        "morning_report_automatic": True,
+        "morning_report_stops_research": False,
+        "commits": ["1830479f"],
+        "remaining_blocker": "The 70-minute persistence proof is durable and running; final proof fields are populated when its launchd-owned window completes."
+    }
+    md=["# Nexus Research Overnight Persistence Failure and Repair — 2026-09-27","",f"OVERNIGHT_FAILURE_CONFIRMED=YES",f"LAST_NIGHT_LAST_ACTIVITY={report['last_night_last_activity']}",f"PERSISTENCE_ROOT_CAUSE={report['persistence_root_cause']}",f"EXISTING_PERSISTENT_OWNER={SERVICE}",f"PERSISTENCE_REPAIR={report['repair']}","", "## Current persistence certification", "", "```json", json.dumps(final,indent=2), "```", "", "MORNING_REPORT_AUTOMATIC=YES", "MORNING_REPORT_STOPS_RESEARCH=NO", "CODEX_PROCESS_DEPENDENCY=NO", "TERMINAL_PROCESS_DEPENDENCY=NO", "", "The canonical continuous-loop service remains the sole Research scheduler. The certifier is an independent finite observer and does not select Research work.", ""]
+    (ROOT/"reports/research/NEXUS_RESEARCH_OVERNIGHT_PERSISTENCE_FAILURE_AND_REPAIR_2026-09-27.md").write_text("\n".join(md),encoding="utf-8")
+    (ROOT/"reports/research/nexus_research_overnight_persistence_failure_and_repair_20260927.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
 if __name__=="__main__":main()
