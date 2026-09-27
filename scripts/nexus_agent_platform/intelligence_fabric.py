@@ -15,6 +15,7 @@ from typing import Any, Iterable, Optional
 
 from nexus_agent_platform import alpha_research
 from nexus_agent_platform.governed import persistence
+from nexus_agent_platform.research.claim_verification import assess_evidence, classify_claim
 
 REQUEST_SCHEMA = "nexus.department-research-request.v1"
 RESULT_SCHEMA = "nexus.department-result-feedback.v1"
@@ -124,7 +125,12 @@ def run_research_request(request: dict[str, Any], evidence: Iterable[dict[str, A
         job_id=request["request_id"],
     )
     evidence_rows = [_evidence(item, request["request_id"], index) for index, item in enumerate(evidence)]
-    claim_specs = [{"claim": claim or request["knowledge_gap"], "claim_type": "DEPARTMENT_RESEARCH", "confidence": "MEDIUM", "evidence_refs": [row["evidence_id"] for row in evidence_rows], "source_quality": "INTERNAL_OR_PUBLIC"}]
+    claim_text = claim or request["knowledge_gap"]
+    verification = assess_evidence(claim_text, [
+        {"source": row["source"].get("original_reference"), "source_class": row["source"].get("source_type")}
+        for row in evidence_rows
+    ], request.get("claim_type") or classify_claim(claim_text))
+    claim_specs = [{"claim": claim_text, "claim_type": verification["claim_type"], "confidence": "MEDIUM", "evidence_refs": [row["evidence_id"] for row in evidence_rows], "source_quality": "INTERNAL_OR_PUBLIC", "verification": verification}]
     alpha = alpha_research.run_alpha_research(job, evidence_rows, claim_specs=claim_specs, runtime_root=None)
     pack = alpha["pack"]
     alpha_status = "QUALIFIED" if pack["status"] == "COMPLETE" and pack["findings"] else "MORE_RESEARCH_REQUIRED"

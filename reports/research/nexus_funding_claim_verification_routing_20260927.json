@@ -1,0 +1,33 @@
+{
+  "date": "2026-09-27",
+  "current_verification_architecture": "Research V2 -> Intelligence Fabric -> existing Alpha research -> existing Clyde handoff consumer",
+  "universal_authority_defect_found": true,
+  "sba_overreach_found": false,
+  "lender_generalization_defect_found": true,
+  "claim_classification_implemented": true,
+  "source_class_routing_implemented": true,
+  "evidence_state_model_implemented": true,
+  "observed_approval_pattern_supported": true,
+  "canary": {
+    "claim": "Bank of America Business Advantage Term Loan qualification claim",
+    "claim_type": "LENDER_REQUIREMENT",
+    "source_classes_used": ["OFFICIAL_LENDER", "OFFICIAL_BANK_GUIDANCE", "REPUTABLE_MARKETPLACE_SUMMARY"],
+    "official_source_used": true,
+    "observed_outcome_source_used": false,
+    "multi_source_evidence_used": true,
+    "sba_required": false,
+    "alpha_result": "QUALIFY",
+    "clyde_result": "QUALIFIED_INTERNAL",
+    "output": "reports/research/intelligence/clyde_native/gVYmkoruPDc.clyde-internal.json",
+    "consequential_action_performed": false
+  },
+  "policy": "docs/architecture/NEXUS_FUNDING_CLAIM_VERIFICATION_POLICY_V1.md",
+  "tests": ["tests/test_claim_verification.py", "tests/test_research_v2.py"],
+  "code_changes": [
+    "scripts/nexus_agent_platform/research/claim_verification.py",
+    "scripts/nexus_agent_platform/intelligence_fabric.py",
+    "scripts/nexus_agent_platform/alpha_research.py",
+    "scripts/clyde/research_handoff_consumer.py"
+  ],
+  "duplicate_pipeline_created": false
+}

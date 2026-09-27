@@ -296,7 +296,7 @@ def _claim(spec: dict, evidence_by_id: dict, freshness_requirement: str) -> dict
     freshness = [evidence_by_id[ref]["freshness"] for ref in refs]
     if freshness_requirement == "CURRENT" and all(value == "STALE" for value in freshness):
         confidence = "LOW"
-    return {"claim": normalize_text(str(spec.get("claim", ""))), "claim_type": spec.get("claim_type", "DERIVED_ANALYSIS"), "confidence": confidence, "evidence_refs": refs, "source_count": len(refs), "source_quality": spec.get("source_quality", "UNVERIFIED"), "freshness": freshness, "contradictions": spec.get("contradictions", []), "notes": spec.get("notes", ""), "status": "SUPPORTED" if spec.get("claim") else "UNSUPPORTED"}
+    return {"claim": normalize_text(str(spec.get("claim", ""))), "claim_type": spec.get("claim_type", "DERIVED_ANALYSIS"), "confidence": confidence, "evidence_refs": refs, "source_count": len(refs), "source_quality": spec.get("source_quality", "UNVERIFIED"), "freshness": freshness, "contradictions": spec.get("contradictions", []), "notes": spec.get("notes", ""), "verification": spec.get("verification", {}), "status": "SUPPORTED" if spec.get("claim") else "UNSUPPORTED"}
 
 
 def run_alpha_research(job: dict, evidence: Iterable[dict], *, claim_specs: Optional[Iterable[dict]] = None,

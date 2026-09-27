@@ -1,0 +1,46 @@
+{
+  "project_ref": "iqjwgpnujbeoyaeuwehj",
+  "real_client_profile_table": "public.client_profiles",
+  "real_business_profile_table": "public.business_profile_requirements (workflow table; no separate client business profile table)",
+  "real_settings_table": "public.settings (admin-read key/value only)",
+  "real_preferences_table": null,
+  "client_profile_fields": [
+    "legal_name", "preferred_name", "phone", "mailing_address_line1", "mailing_address_line2", "city", "state", "postal_code",
+    "business_name", "entity_type", "ein_status", "industry", "naics_code", "business_address_line1", "business_address_line2",
+    "business_city", "business_state", "business_postal_code", "time_in_business", "monthly_revenue_range", "funding_goal_range"
+  ],
+  "media_columns": [],
+  "buckets": [
+    {"name": "client-documents", "public": false, "file_size_limit": 10485760},
+    {"name": "creative-assets", "public": false},
+    {"name": "goclear-approved-media", "public": true, "file_size_limit": 52428800}
+  ],
+  "client_documents_bucket_found": true,
+  "avatar_bucket_found": false,
+  "business_logo_bucket_found": false,
+  "general_client_media_bucket_found": false,
+  "client_profile_rls": "self select/update via tenant_memberships client_id + auth.uid(); admin/operator policies also present",
+  "tenant_isolation": true,
+  "profile_update_policy": "client_profiles_self_update is scoped to tenant_memberships tenant_id/client_id and auth.uid()",
+  "storage_policies": {
+    "client_document_upload_own": true,
+    "client_document_read_own": true,
+    "client_document_replace_own": false,
+    "avatar_upload_own": false,
+    "avatar_read_own": false,
+    "avatar_replace_own": false,
+    "business_logo_upload_own": false,
+    "business_logo_read_own": false,
+    "business_logo_replace_own": false
+  },
+  "code_schema_match": true,
+  "code_bucket_assumptions_match": true,
+  "missing_fields_confirmed": ["avatar_path/url", "business_logo_path/url", "website", "business_phone", "formation_date", "client_preferences"],
+  "missing_buckets_confirmed": ["avatar", "business-logo", "client-media"],
+  "existing_capability_missed_by_code": false,
+  "safe_storage_addition_required": false,
+  "safe_schema_addition_required": false,
+  "database_mutations_performed": false,
+  "rls_weakened": false,
+  "client_data_exposed": false
+}

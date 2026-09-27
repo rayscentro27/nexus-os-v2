@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from nexus_agent_platform.governed import persistence  # noqa: E402
 from nexus_agent_platform.intelligence_fabric import build_research_request, persist_research_request  # noqa: E402
+from nexus_agent_platform.research.claim_verification import assess_evidence  # noqa: E402
 
 CONSUMER = "clyde_credit_research_handoff_consumer_v1"
 TARGET = "CLYDE_CREDIT"
@@ -107,6 +108,11 @@ def build_internal_result(handoff: dict[str, Any], alpha: dict[str, Any], analys
     missing = []
     if not lenders:
         missing.append("independent lender evidence for fees, APR-equivalent costs, collateral, guarantees, and early repayment terms")
+    routing = assess_evidence(
+        "Named lender qualification and product-term claims must remain specific to the lender and product.",
+        lenders,
+        "LENDER_REQUIREMENT",
+    )
     return {
         "schema_version": "nexus.clyde.research-intelligence.v1",
         "consumer": CONSUMER,
@@ -128,6 +134,7 @@ def build_internal_result(handoff: dict[str, Any], alpha: dict[str, Any], analys
             "alpha_decision": alpha.get("decision"),
             "lender_evidence": lenders,
         },
+        "verification_routing": routing,
         "unverified": [
             "Transcript credit-score ranges and 10-to-90-day timeline claims",
             "Product-specific fees, APR-equivalent costs, collateral, guarantees, and early-repayment terms",

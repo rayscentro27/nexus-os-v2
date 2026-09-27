@@ -2,7 +2,7 @@
   "alpha_receipt_id": "alpha_receipt_ff30fd24f38f4e34b0d9b092dae94572",
   "consequential_action_performed": false,
   "consumer": "clyde_credit_research_handoff_consumer_v1",
-  "created_at": "2026-09-27T16:18:52.914811+00:00",
+  "created_at": "2026-09-27T16:44:48.047695+00:00",
   "decision": "QUALIFIED_INTERNAL",
   "external_action_allowed": false,
   "final_internal_state": "QUALIFIED_INTERNAL",
@@ -18,7 +18,7 @@
   "lender_evidence_found": true,
   "missing_verification": [],
   "need_id": "need_d0c56031662e89bbfe00",
-  "research_return_created": false,
+  "research_return_created": true,
   "research_return_path": "research_requests -> Research -> Alpha -> CLYDE_CREDIT",
   "research_return_request_id": "research_request_4c702ee65e9df95ee1be",
   "schema_version": "nexus.clyde.research-intelligence.v1",
@@ -38,6 +38,24 @@
     "Product-specific fees, APR-equivalent costs, collateral, guarantees, and early-repayment terms",
     "Clear Value Lending product availability and commercial claims"
   ],
+  "verification_routing": {
+    "claim_type": "LENDER_REQUIREMENT",
+    "evidence_state": "PUBLISHED_REQUIREMENT",
+    "lender_specific_must_remain_product_scoped": true,
+    "matched_source_classes": [
+      "OFFICIAL_LENDER"
+    ],
+    "observed_source_classes": [
+      "OFFICIAL_BANK_GUIDANCE",
+      "OFFICIAL_LENDER",
+      "REPUTABLE_MARKETPLACE_SUMMARY"
+    ],
+    "required_source_classes": [
+      "OFFICIAL_LENDER"
+    ],
+    "sba_absence_invalidates": false,
+    "sba_required": false
+  },
   "verified": {
     "alpha_decision": "QUALIFY",
     "lender_evidence": [
