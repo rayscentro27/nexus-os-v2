@@ -376,6 +376,30 @@ class ResearchWorkQueue:
                 "objective_selection_count": int(objective_counts.get(chosen_key, 0) or 0),
                 "objective_selection_reason": "deterministic_objective_scheduler"}
 
+    def objective_availability_state(self, *, allowed_classes: Iterable[str] | None = None,
+                                     blocked_buckets: Iterable[str] | None = None) -> str:
+        """Return CLAIMABLE, PENDING_BUT_UNAVAILABLE, or NONE deterministically."""
+        self.recover_expired_leases()
+        store = self.load()
+        now = self._now()
+        allowed = {str(value).upper() for value in allowed_classes} if allowed_classes else set(WORK_CLASSES)
+        blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
+        pending_statuses = {"QUEUED", "WAITING", "IN_PROGRESS", "FAILED_RETRYABLE"}
+        pending = False
+        for item in store.get("items", []):
+            if item.get("work_class") not in allowed or item.get("status") not in pending_statuses:
+                continue
+            pending = True
+            if item.get("status") not in {"QUEUED", "WAITING"}:
+                continue
+            due = parse_time(item.get("next_eligible_at"))
+            if due and due > now:
+                continue
+            if blocked and worker_bucket(item) in blocked:
+                continue
+            return "CLAIMABLE"
+        return "PENDING_BUT_UNAVAILABLE" if pending else "NONE"
+
     def claim_next_for_objective(self, *, worker_id: str,
                                  allowed_classes: Iterable[str] | None = None,
                                  blocked_buckets: Iterable[str] | None = None,

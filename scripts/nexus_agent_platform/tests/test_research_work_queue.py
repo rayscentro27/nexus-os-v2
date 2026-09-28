@@ -152,3 +152,36 @@ def test_repeated_retry_becomes_terminal(tmp_path):
     settled = queue.settle(item["work_id"], "FAILED_RETRYABLE", result={"error": "404"})
     assert settled["status"] == "FAILED_FINAL"
     assert queue.select_objective() is None
+
+
+def test_objective_availability_claims_second_objective_when_first_is_leased(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="objective-a", objective_id="A", work_class="ASSIGNED", source_type="WEB_PAGE")
+    queue.enqueue(work_id="objective-b", objective_id="B", work_class="ASSIGNED", source_type="WEB_PAGE")
+    first = queue.claim_next_for_objective(worker_id="worker-a")
+    second = queue.claim_next_for_objective(worker_id="worker-b")
+    assert first["objective_id"] == "A"
+    assert second["objective_id"] == "B"
+
+
+def test_objective_availability_reports_pending_when_all_work_is_occupied(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="occupied", objective_id="A", work_class="ASSIGNED", source_type="WEB_PAGE")
+    item = queue.claim_next_for_objective(worker_id="worker-a")
+    assert item["status"] == "IN_PROGRESS"
+    assert queue.objective_availability_state() == "PENDING_BUT_UNAVAILABLE"
+    assert queue.claim_next_for_objective(worker_id="worker-b") is None
+
+
+def test_objective_availability_reports_none_without_objective_work(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    assert queue.objective_availability_state() == "NONE"
+
+
+def test_monitored_source_lease_is_pending_not_empty(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="youtube-monitor", objective_id="YOUTUBE_OBJECTIVE", work_class="MONITORED",
+                  lane_id="YOUTUBE_CONTENT", source_type="YOUTUBE_VIDEO")
+    item = queue.claim_next_for_objective(worker_id="worker-a", blocked_buckets={"youtube"})
+    assert item is None
+    assert queue.objective_availability_state(blocked_buckets={"youtube"}) == "PENDING_BUT_UNAVAILABLE"

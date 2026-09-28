@@ -272,8 +272,21 @@ def select_priority_work(*, worker_id: str = "research_scheduler", blocked_bucke
     """Claim durable work through the deterministic objective controller."""
     queue = default_queue()
     _sync_governed_priority_work(queue)
-    return queue.claim_next_for_objective(worker_id=worker_id, allowed_classes=WORK_CLASSES,
-                                          blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
+    claimed = queue.claim_next_for_objective(worker_id=worker_id, allowed_classes=WORK_CLASSES,
+                                             blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
+    if claimed:
+        claimed["scheduler_availability_state"] = "CLAIMABLE"
+        return claimed
+    availability = queue.objective_availability_state(allowed_classes=WORK_CLASSES,
+                                                       blocked_buckets=blocked_buckets)
+    if availability != "NONE":
+        return {"scheduler_state": "PENDING_BUT_UNAVAILABLE",
+                "scheduler_availability_state": availability,
+                "selection_reason": "wait_objective_capacity",
+                "fairness_gate": "OBJECTIVE_CONTROLLER",
+                "selected_work_class": "OBJECTIVE_WAIT",
+                "no_source_selected": True}
+    return None
 
 
 def ensure_permanent_source_work() -> dict[str, Any]:
@@ -692,6 +705,12 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
     # scoring. AI may reason inside the claimed task, never across objectives.
     priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
     if priority_work:
+        if priority_work.get("scheduler_state") == "PENDING_BUT_UNAVAILABLE":
+            priority_work.update({"lane_id": "GENERAL_DISCOVERY", "name": "Objective Capacity Wait",
+                                  "selected_at": _now().isoformat(),
+                                  "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
+                                  "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
+            return priority_work
         lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
         lane = next((row for row in rows if row.get("lane_id") == lane_id), None)
         priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
@@ -784,15 +803,19 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         if refresh.get("terminal") and not (context["high"] or context["followups"]):
             continue
         progression_override = bool(context["high"] or context["followups"])
-        duplicate_penalty = 0.0
         if refresh.get("cooling_down") and not progression_override:
-            duplicate_penalty = min(90.0, 35.0 + 10.0 * int(refresh.get("consecutive_duplicate_count", 1) or 1))
+            continue
+        duplicate_penalty = 0.0
         candidates.append((row, context, source_id, refresh,
                            materiality_signal + monitored_source_signal + progression_signal + age_signal - duplicate_penalty,
                            materiality_signal + monitored_source_signal, progression_signal, age_signal, duplicate_penalty))
     if not candidates:
-        candidates = [(row, _lane_context(str(row["lane_id"]), now), "", {}, 0.0, 0.0, 0.0, 0.0, 0.0)
-                      for row in rows if not _source_refresh_snapshot(str(row["lane_id"]), str(row.get("last_source_id", "")), now).get("terminal")]
+        candidates = []
+        for row in rows:
+            refresh = _source_refresh_snapshot(str(row["lane_id"]), str(row.get("last_source_id", "")), now)
+            if refresh.get("terminal") or refresh.get("cooling_down"):
+                continue
+            candidates.append((row, _lane_context(str(row["lane_id"]), now), "", {}, 0.0, 0.0, 0.0, 0.0, 0.0))
     if not candidates:
         # Purpose sits above the queue.  When no eligible source or assigned
         # item remains, inspect active company goals and the Research charter
