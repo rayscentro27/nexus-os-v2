@@ -504,7 +504,10 @@ def main() -> int:
               retry_after="next scheduled wake")
         if fallback:
             event(execution_id, "STRATEGY_CHANGED", worker_id="research_operator_worker", **fallback)
-        settle_queue("WAITING" if fallback else "FAILED_RETRYABLE", result={**result, "fallback": fallback}, blocker_type="SCHEDULED_PROCESSOR_FAILURE")
+        # Once a deterministic alternate exists, the failed source is
+        # superseded so the same failing URL cannot compete on every wake.
+        settle_queue("SUPERSEDED" if fallback else "FAILED_RETRYABLE",
+                     result={**result, "fallback": fallback}, blocker_type="SCHEDULED_PROCESSOR_FAILURE")
         return 1
     queue_status = "COMPLETE" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
     settle_queue(queue_status, result={"final_status": final_status, "source_id": item.get("source_id"),

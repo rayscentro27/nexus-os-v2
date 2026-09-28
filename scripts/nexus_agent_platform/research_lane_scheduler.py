@@ -269,11 +269,11 @@ def mark_source_result(lane_id: str, source_id: str, status: str, *, source_clas
 
 def select_priority_work(*, worker_id: str = "research_scheduler", blocked_buckets: set[str] | None = None,
                          lease_seconds: int = 900) -> dict[str, Any] | None:
-    """Claim durable assigned/follow-up work before legacy lane scoring."""
+    """Claim durable work through the deterministic objective controller."""
     queue = default_queue()
     _sync_governed_priority_work(queue)
-    return queue.claim_next(worker_id=worker_id, allowed_classes=WORK_CLASSES,
-                            blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
+    return queue.claim_next_for_objective(worker_id=worker_id, allowed_classes=WORK_CLASSES,
+                                          blocked_buckets=blocked_buckets, lease_seconds=lease_seconds)
 
 
 def ensure_permanent_source_work() -> dict[str, Any]:
@@ -687,6 +687,21 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
     permanent_projection = ensure_permanent_source_work()
     rows = [row for row in ensure_registry() if row.get("enabled")]
     blocked_buckets = {str(bucket).lower() for bucket in (blocked_buckets or set())}
+
+    # Global objective selection must precede live-program and lane/source
+    # scoring. AI may reason inside the claimed task, never across objectives.
+    priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
+    if priority_work:
+        lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
+        lane = next((row for row in rows if row.get("lane_id") == lane_id), None)
+        priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
+                              "selection_reason": "deterministic_objective_scheduler",
+                              "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
+                              "selected_at": _now().isoformat(), "fairness_gate": "OBJECTIVE_CONTROLLER",
+                              "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
+                              "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
+        return priority_work
+
     live_selected = _select_live_service_work(rows, blocked_buckets, _now())
     if live_selected:
         return live_selected
@@ -700,7 +715,7 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         from nexus_agent_platform.research_continuation import continue_when_empty
         continuation = continue_when_empty(queue=default_queue())
         if continuation.get("generated"):
-            claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"ASSIGNED"}, blocked_buckets=blocked_buckets)
+            claimed = default_queue().claim_next_for_objective(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"ASSIGNED"}, blocked_buckets=blocked_buckets)
             if claimed:
                 claimed.update({"lane_id": "BUSINESS_MARKET", "name": "Goal-directed Research", "selection_reason": "goal_generated", "selected_work_class": "ASSIGNED", "continuation": continuation})
                 return claimed
@@ -718,19 +733,6 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         int(row.get("selection_count", 0) or 0) == min_count and not row.get("backoff_until")
         for row in rows
     )
-    if not fair_rotation_required:
-        priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
-        if priority_work:
-            lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
-            lane = next((row for row in rows if row.get("lane_id") == lane_id), None)
-            priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
-                                  "selection_reason": priority_work.get("selection_reason") or "assigned_work_priority",
-                                  "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
-                                  "selected_at": _now().isoformat(), "fairness_gate": "NOT_REQUIRED",
-                                  "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
-                                  "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
-            return priority_work
-
     def lane_bucket(row: dict[str, Any]) -> str:
         lane_id = str(row.get("lane_id") or "").upper()
         if lane_id == "YOUTUBE_CONTENT":
@@ -798,7 +800,7 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
         from nexus_agent_platform.research_continuation import continue_when_empty
         continuation = continue_when_empty(queue=default_queue())
         if continuation.get("generated"):
-            claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"ASSIGNED"})
+            claimed = default_queue().claim_next_for_objective(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"ASSIGNED"})
             if claimed:
                 claimed.update({"lane_id": "BUSINESS_MARKET", "name": "Goal-directed Research",
                                 "selection_reason": "goal_generated", "selected_work_class": "ASSIGNED",
@@ -808,7 +810,7 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
                 return claimed
         demand_work = _seed_demand_discovery_work(default_queue())
         if demand_work:
-            claimed = default_queue().claim_next(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"DEMAND_DISCOVERY"})
+            claimed = default_queue().claim_next_for_objective(worker_id=f"research_scheduler:{os.getpid()}", allowed_classes={"DEMAND_DISCOVERY"})
             if claimed:
                 claimed.update({"lane_id": "GENERAL_DISCOVERY", "name": "Customer Demand Discovery",
                                 "selection_reason": "customer_demand_discovery", "selected_work_class": "DEMAND_DISCOVERY",

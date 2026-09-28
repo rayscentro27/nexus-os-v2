@@ -111,3 +111,44 @@ def test_demand_discovery_requires_aggregated_evidence(tmp_path, monkeypatch):
     needs = discover_from_questions(rows, queue=queue)
     assert len(needs) == 1
     assert needs[0]["alpha_review_required"] is True
+
+
+def test_objective_controller_selects_and_fairly_rotates_objectives(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="funding-1", objective_id="BUSINESS_FUNDING", work_class="ASSIGNED",
+                  priority=1, source_type="WEB_PAGE", source_id="funding-source")
+    queue.enqueue(work_id="trading-1", objective_id="TRADING_RESEARCH", work_class="ASSIGNED",
+                  priority=1, source_type="WEB_PAGE", source_id="trading-source")
+
+    first = queue.claim_next_for_objective(worker_id="objective-worker")
+    assert first["scheduler_objective_id"] == "BUSINESS_FUNDING"
+    queue.release(first["work_id"], reason="test")
+    second = queue.claim_next_for_objective(worker_id="objective-worker")
+    assert second["scheduler_objective_id"] == "BUSINESS_FUNDING"
+    queue.release(second["work_id"], reason="test")
+    third = queue.claim_next_for_objective(worker_id="objective-worker")
+    assert third["scheduler_objective_id"] == "TRADING_RESEARCH"
+
+
+def test_objective_controller_does_not_reclaim_retry_until_due(tmp_path):
+    now = datetime(2026, 9, 28, tzinfo=timezone.utc)
+    queue = ResearchWorkQueue(tmp_path / "queue.json", now_fn=lambda: now)
+    queue.enqueue(work_id="failing", objective_id="FUNDING", work_class="ASSIGNED",
+                  source_type="WEB_PAGE", source_id="bad", max_attempts=3)
+    item = queue.claim_next_for_objective(worker_id="objective-worker")
+    queue.settle(item["work_id"], "FAILED_RETRYABLE", result={"error": "404"})
+    assert queue.select_objective() is None
+    stored = queue.load()["items"][0]
+    assert stored["next_eligible_at"] is not None
+    assert stored["status"] == "FAILED_RETRYABLE"
+
+
+def test_repeated_retry_becomes_terminal(tmp_path):
+    now = datetime(2026, 9, 28, tzinfo=timezone.utc)
+    queue = ResearchWorkQueue(tmp_path / "queue.json", now_fn=lambda: now)
+    queue.enqueue(work_id="bounded-failure", objective_id="FUNDING", work_class="ASSIGNED",
+                  source_type="WEB_PAGE", source_id="bad", max_attempts=1)
+    item = queue.claim_next_for_objective(worker_id="objective-worker")
+    settled = queue.settle(item["work_id"], "FAILED_RETRYABLE", result={"error": "404"})
+    assert settled["status"] == "FAILED_FINAL"
+    assert queue.select_objective() is None

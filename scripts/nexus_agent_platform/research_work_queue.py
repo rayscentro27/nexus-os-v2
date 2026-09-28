@@ -21,6 +21,9 @@ WORK_CLASSES = ("ASSIGNED", "MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY"
 STATUS = ("QUEUED", "IN_PROGRESS", "WAITING", "COMPLETE", "BLOCKED_EXTERNAL",
           "FAILED_RETRYABLE", "FAILED_FINAL", "PARKED", "MONITORING", "SUPERSEDED")
 CLASS_PRIORITY = {"ASSIGNED": 0, "MONITORED": 4, "DEMAND_DISCOVERY": 6, "GENERAL_DISCOVERY": 7}
+OBJECTIVE_RETRY_BASE_SECONDS = 15 * 60
+OBJECTIVE_RETRY_MAX_SECONDS = 24 * 60 * 60
+OBJECTIVE_FAIRNESS_QUANTUM = 2
 
 
 def concurrency_limits() -> dict[str, int]:
@@ -64,6 +67,17 @@ def parse_time(value: Any) -> datetime | None:
 def stable_id(prefix: str, value: Any) -> str:
     digest = hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()[:20]
     return f"{prefix}_{digest}"
+
+
+def objective_key(item: dict[str, Any]) -> str:
+    """Return the deterministic global scheduling key for one work item."""
+    explicit = str(item.get("objective_id") or item.get("marketing_objective_id") or "").strip()
+    if explicit:
+        return explicit
+    lane = str(item.get("lane_id") or "").strip().upper()
+    if lane:
+        return f"permanent:{lane}"
+    return f"work-class:{str(item.get('work_class') or 'GENERAL_DISCOVERY').upper()}"
 
 
 def _default_store() -> dict[str, Any]:
@@ -306,6 +320,110 @@ class ResearchWorkQueue:
             return dict(item)
         return None
 
+    def select_objective(self, *, allowed_classes: Iterable[str] | None = None,
+                         blocked_buckets: Iterable[str] | None = None) -> dict[str, Any] | None:
+        """Select the next objective without consulting an AI planner."""
+        self.recover_expired_leases()
+        store = self.load()
+        now = self._now()
+        allowed = {str(value).upper() for value in allowed_classes} if allowed_classes else set(WORK_CLASSES)
+        blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for item in store.get("items", []):
+            if item.get("status") not in {"QUEUED", "WAITING"} or item.get("work_class") not in allowed:
+                continue
+            if blocked and worker_bucket(item) in blocked:
+                continue
+            due = parse_time(item.get("next_eligible_at"))
+            if due and due > now:
+                continue
+            groups.setdefault(objective_key(item), []).append(item)
+        if not groups:
+            return None
+
+        objective_counts = store.get("objective_selection_counts") or {}
+        last_objective = str(store.get("last_objective_id") or "")
+        streak = int(store.get("last_objective_streak", 0) or 0)
+        ordered = sorted(groups)
+
+        def objective_sort(key: str) -> tuple[int, int, float, int, str]:
+            rows = groups[key]
+            class_rank = min(CLASS_PRIORITY.get(str(row.get("work_class")), 99) for row in rows)
+            priority = min(int(row.get("priority", 50) or 50) for row in rows)
+            oldest = min(parse_time(row.get("created_at")) or now for row in rows)
+            age_seconds = max(0.0, (now - oldest).total_seconds())
+            served = int(objective_counts.get(key, 0) or 0)
+            return class_rank, priority, -age_seconds, served, key
+
+        chosen_key: str | None = None
+        if last_objective in groups and streak >= OBJECTIVE_FAIRNESS_QUANTUM and len(groups) > 1:
+            start = ordered.index(last_objective)
+            for offset in range(1, len(ordered) + 1):
+                candidate = ordered[(start + offset) % len(ordered)]
+                if candidate in groups:
+                    chosen_key = candidate
+                    break
+        if chosen_key is None:
+            chosen_key = min(ordered, key=objective_sort)
+        rows = sorted(groups[chosen_key], key=lambda row: (
+            CLASS_PRIORITY.get(str(row.get("work_class")), 99),
+            int(row.get("priority", 50) or 50),
+            parse_time(row.get("created_at")) or now,
+            str(row.get("work_id") or ""),
+        ))
+        return {"objective_id": chosen_key, "work_id": rows[0].get("work_id"),
+                "eligible_work_count": len(rows),
+                "objective_selection_count": int(objective_counts.get(chosen_key, 0) or 0),
+                "objective_selection_reason": "deterministic_objective_scheduler"}
+
+    def claim_next_for_objective(self, *, worker_id: str,
+                                 allowed_classes: Iterable[str] | None = None,
+                                 blocked_buckets: Iterable[str] | None = None,
+                                 lease_seconds: int = 900) -> dict[str, Any] | None:
+        """Claim exactly one item from the controller-selected objective."""
+        selection = self.select_objective(allowed_classes=allowed_classes, blocked_buckets=blocked_buckets)
+        if not selection:
+            return None
+        objective_id = selection["objective_id"]
+        store = self.load()
+        now = self._now()
+        allowed = {str(value).upper() for value in allowed_classes} if allowed_classes else set(WORK_CLASSES)
+        blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
+        candidates = []
+        for item in store.get("items", []):
+            if objective_key(item) != objective_id or item.get("status") not in {"QUEUED", "WAITING"}:
+                continue
+            if item.get("work_class") not in allowed or (blocked and worker_bucket(item) in blocked):
+                continue
+            due = parse_time(item.get("next_eligible_at"))
+            if due and due > now:
+                continue
+            candidates.append(item)
+        if not candidates:
+            return None
+        item = min(candidates, key=lambda row: (
+            CLASS_PRIORITY.get(str(row.get("work_class")), 99),
+            int(row.get("priority", 50) or 50),
+            parse_time(row.get("created_at")) or now,
+            str(row.get("work_id") or ""),
+        ))
+        attempt_id = stable_id("attempt", (item["work_id"], iso(now), worker_id))
+        item.update({"status": "IN_PROGRESS", "started_at": item.get("started_at") or iso(now),
+                     "attempt_count": int(item.get("attempt_count", 0)) + 1,
+                     "claimed_by": worker_id, "claimed_at": iso(now),
+                     "lease_expires_at": iso(now + timedelta(seconds=max(30, lease_seconds))),
+                     "attempt_id": attempt_id})
+        counts = dict(store.get("objective_selection_counts") or {})
+        counts[objective_id] = int(counts.get(objective_id, 0) or 0) + 1
+        store["objective_selection_counts"] = counts
+        store["last_objective_streak"] = int(store.get("last_objective_streak", 0) or 0) + 1 if store.get("last_objective_id") == objective_id else 1
+        store["last_objective_id"] = objective_id
+        store["objective_cursor"] = objective_id
+        self._save(store)
+        return {**dict(item), "objective_id": item.get("objective_id") or objective_id,
+                "scheduler_objective_id": objective_id,
+                "scheduler_selection_reason": selection["objective_selection_reason"]}
+
     def settle(self, work_id: str, status: str, *, result: Any = None,
                blocker_type: str | None = None, next_eligible_at: str | None = None) -> dict[str, Any] | None:
         status = str(status).upper()
@@ -320,6 +438,15 @@ class ResearchWorkQueue:
                 for field in ("ai_plan_id", "selected_executor_id", "ai_interpretation"):
                     if field in result:
                         ai_fields[field] = result[field]
+            if status in {"FAILED_RETRYABLE", "WAITING"} and next_eligible_at is None:
+                attempt = int(item.get("attempt_count", 0) or 0)
+                max_attempts = int(item.get("max_attempts", 3) or 3)
+                if attempt >= max_attempts:
+                    status = "FAILED_FINAL"
+                    blocker_type = blocker_type or "MAX_RETRY_ATTEMPTS"
+                else:
+                    delay = min(OBJECTIVE_RETRY_BASE_SECONDS * (2 ** max(0, attempt - 1)), OBJECTIVE_RETRY_MAX_SECONDS)
+                    next_eligible_at = iso(self._now() + timedelta(seconds=delay))
             item.update({"status": status, "last_result": result, "blocker_type": blocker_type,
                          "next_eligible_at": next_eligible_at, "completed_at": iso(self._now()) if status in {"COMPLETE", "BLOCKED_EXTERNAL", "FAILED_FINAL", "PARKED", "SUPERSEDED"} else None,
                          "claimed_by": None, "claimed_at": None, "lease_expires_at": None, "attempt_id": None})
