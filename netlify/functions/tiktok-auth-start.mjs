@@ -1,2 +1,5 @@
-import { config, json, random, pkce, signState, cookie, userFromBearer } from './_tiktok.mjs'
-export async function handler(event) { try { const c = config(); const u = await userFromBearer(event, c); const verifier = random(48); const nonce = random(24); const state = signState(`${nonce}:${u.id}:${u.tenant}:${Date.now()}`, c.clientSecret); const url = new URL('https://www.tiktok.com/v2/auth/authorize/'); url.searchParams.set('client_key', c.clientKey); url.searchParams.set('response_type', 'code'); url.searchParams.set('scope', 'user.info.basic,video.upload,video.publish'); url.searchParams.set('redirect_uri', c.redirectUri); url.searchParams.set('state', state); url.searchParams.set('code_challenge', pkce(verifier)); url.searchParams.set('code_challenge_method', 'S256'); return json(200, { authorization_url: url.toString(), scopes: ['user.info.basic','video.upload','video.publish'], environment: c.runtimeEnv }, { 'set-cookie': cookie('nexus_tiktok_oauth', `${state}.${verifier}`) }) } catch (e) { return json(400, { error: e.message }) } }
+import { json } from './_tiktok.mjs'
+
+export async function handler(_event) {
+  return json(503, { error: 'provider_governance_unavailable', status: 'disabled_fail_closed' })
+}
