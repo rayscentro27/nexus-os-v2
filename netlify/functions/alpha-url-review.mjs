@@ -55,77 +55,10 @@ export async function handler(event) {
     });
   }
   const url = validation.url;
-
-  if (!process.env.FIRECRAWL_API_KEY) {
-    return json(503, {
-      error: "firecrawl_disabled",
-      status: "disabled",
-      extractionProvider: "firecrawl",
-      reason: "FIRECRAWL_API_KEY not configured on server",
-    });
-  }
-
-  try {
-    const firecrawlRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${process.env.FIRECRAWL_API_KEY}`,
-      },
-      body: JSON.stringify({
-        url,
-        formats: ["markdown"],
-        onlyMainContent: true,
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-
-    if (!firecrawlRes.ok) {
-      return json(firecrawlRes.status, {
-        error: `firecrawl_${firecrawlRes.status}`,
-        status: "failed",
-        extractionProvider: "firecrawl",
-      });
-    }
-
-    const data = await firecrawlRes.json();
-    const markdown = data.markdown || data.content || "";
-    const content = markdown.slice(0, MAX_CONTENT_CHARS);
-    const title = data.title || data.metadata?.title || "";
-
-    let finalUrl = url;
-    try {
-      finalUrl = new URL(data.sourceUrl || data.url || url).href;
-    } catch {
-      /* keep original url */
-    }
-
-    let domain = "";
-    try {
-      domain = new URL(finalUrl).hostname;
-    } catch {
-      /* empty */
-    }
-
-    return json(200, {
-      ok: true,
-      title,
-      url: finalUrl,
-      domain,
-      content,
-      extractionProvider: "firecrawl",
-      extractionStatus: "extracted",
-      timestamp: new Date().toISOString(),
-      noSupabaseUsed: true,
-      clientDataUsed: false,
-    });
-  } catch (e) {
-    const reason = e.name === "AbortError" ? "timeout" : e.message || "unknown";
-    return json(502, {
-      error: `firecrawl_${reason}`,
-      status: "failed",
-      extractionProvider: "firecrawl",
-      reason,
-    });
-  }
+  return json(503, {
+    error: "provider_governance_unavailable",
+    status: "disabled_fail_closed",
+    extractionProvider: "none",
+    url,
+  });
 }
