@@ -6,6 +6,7 @@ from typing import Any
 
 from nexus_agent_platform.governed import persistence
 from nexus_agent_platform.research_work_queue import default_queue
+from nexus_agent_platform.research_followup_contract import build_contract, question as contract_question, persist_contract
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -33,20 +34,31 @@ def build_followup(*, finding_id: str, alpha_receipt_id: str, alpha_request_id: 
         candidates = [{"source_type":"WEB_PAGE", "source_id":f"fallback-{i}", "source_url":url, "title":title} for i,(url,title) in enumerate(defaults.get(route["department"], []))]
     created = now()
     request_id = f"research_followup:{alpha_receipt_id}"
-    return {"schema_version": "nexus.research-more-followup.v1", "research_request_id": request_id, "request_id": request_id,
+    originating_goal = project_id or work_order_id or finding_id
+    questions = [contract_question(f"Resolve the specific evidence gap: {gap}", "SOURCE_BACKED_EVIDENCE", route["source_classes"][0] if route["source_classes"] else "PRIMARY_SOURCE", f"Evidence must directly address: {gap}") for gap in missing_evidence]
+    if not questions:
+        questions = [contract_question(question, "SOURCE_BACKED_EVIDENCE", route["source_classes"][0] if route["source_classes"] else "PRIMARY_SOURCE", "Attributable source evidence or explicit NOT_FOUND")]
+    contract = build_contract(requesting_department=route["department"], reason=f"The prior Alpha review identified material evidence gaps: {', '.join(missing_evidence) or question}",
+        research_questions=questions, overall_evidence_required=list(missing_evidence) or [question],
+        decision_unlocked_by_answers="Resume the originating Alpha/department goal with source-backed answers.",
+        return_to_department="ALPHA", return_to_goal_id=originating_goal, parent_goal_id=originating_goal,
+        parent_handoff_id=parent_handoff_id, requesting_worker="alpha_research_followup",
+        subject_type="RESEARCH_FINDING", subject_id=finding_id, priority="P2",
+        due_or_freshness_requirement="CURRENT")
+    return {**contract, "legacy_schema_version": "nexus.research-more-followup.v1", "schema_version": contract["schema_version"], "research_request_id": request_id, "request_id": request_id,
         "work_id": work_id or f"research-followup:{alpha_receipt_id}", "parent_finding_id": finding_id, "parent_alpha_receipt_id": alpha_receipt_id, "parent_alpha_request_id": alpha_request_id,
         "parent_handoff_id": parent_handoff_id, "business_or_nexus": "GOCLEAR" if route["department"] == "CLYDE_CREDIT" else "NEXUS",
         "department": route["department"], "mission": route["mission"], "project_id": project_id, "objective_id": project_id or finding_id,
         "work_order_id": work_order_id, "question": question, "WHY_THIS_RESEARCH": f"Alpha identified a material evidence gap: {question}",
         "why_this_research": f"Alpha identified a material evidence gap: {question}", "missing_evidence": list(missing_evidence),
         "source_classes": route["source_classes"], "preferred_sources": route["preferred_sources"], "fallback_sources": route["fallback_sources"],
-        "source_candidates": candidates, "owner": route["owner"], "state": "OWNED", "status": "OWNED",
+        "source_candidates": candidates, "owner": route["owner"], "state": "OWNED", "legacy_status": "OWNED",
         "attempt_count": 0, "last_attempt": None, "next_action": "Acquire bounded evidence from the preferred source classes; fall back without closing the question.",
         "return_target": route["return_target"], "lane_id": route["lane_id"], "alpha_followup_required": True,
         "research_mode": "REQUESTED_RESEARCH" if route["department"] == "CLYDE_CREDIT" else "NEXUS_DEPARTMENTAL_PROACTIVE",
         "created_at": created, "updated_at": created, "external_action_allowed": False}
 
 def persist_followup(followup: dict[str, Any]) -> dict[str, Any]:
-    persistence.append_record("research_requests", followup)
-    default_queue().upsert({**followup, "status": "QUEUED", "work_class": "ASSIGNED", "source_type": "RESEARCH_OBJECTIVE", "source_id": followup["parent_finding_id"], "title": followup["question"], "selection_reason": "alpha_research_more_followup", "lifecycle": "ONE_TIME", "alpha_eligible": True, "alpha_review_required": True})
+    persist_contract(followup)
+    default_queue().upsert({**followup, "status": "QUEUED", "priority": 50, "work_class": "ASSIGNED", "source_type": "RESEARCH_OBJECTIVE", "source_id": followup["parent_finding_id"], "title": followup["question"], "selection_reason": "alpha_research_more_followup", "lifecycle": "ONE_TIME", "alpha_eligible": True, "alpha_review_required": True})
     return followup

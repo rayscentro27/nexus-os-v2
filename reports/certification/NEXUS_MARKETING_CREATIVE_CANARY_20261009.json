@@ -1,0 +1,140 @@
+{
+  "all_durable_handoffs_have_receipts": true,
+  "all_workflow_jobs_have_receipts": true,
+  "analysis_data_class": "TEST",
+  "analysis_decision": "ITERATE",
+  "approval_pending_count": 1,
+  "approval_state": "PENDING_RAY_APPROVAL",
+  "bounded_failure_canary": {
+    "created": 1,
+    "duplicate_claims": 0,
+    "error_class": "EXPECTED_MISSING_ARTIFACT_CONTRACT",
+    "final_state": "BLOCKED",
+    "initial_claims": 1,
+    "max_attempts": 1,
+    "retry_count": 0
+  },
+  "campaign_id": "campaign-marketing-creative-canary-20261009-20042",
+  "campaign_state": "ITERATION_READY",
+  "campaign_traceability": "PASS",
+  "canary_pass": true,
+  "controller_execution": {
+    "campaign_was_not_rerun": true,
+    "mocked_retry_wait_regression_tests_passed": true,
+    "retry_wait_defect_repaired": true,
+    "summary_emitted_by_original_campaign_process": false,
+    "termination_reason": "CONTROLLER_POST_STAGE_POLLING_EXCEEDED_PER_PROCESS_SUPABASE_READ_BUDGET",
+    "workflow_records_independently_verified": true
+  },
+  "controller_note": "The canary controller initially exceeded its own PostgREST read budget while polling a future retry. The campaign completed; the controller was repaired to sleep once until the bounded retry time and tested with mocked stores. No provider calls occurred.",
+  "correlation_id": "corr_651e94326e9bb8efdec9708b",
+  "creative_revision_count": 1,
+  "creative_v1_assets": 1,
+  "creative_v2_assets": 1,
+  "duplicate_revision_jobs": 0,
+  "durable_handoffs": 9,
+  "durable_handoffs_with_receipts": 9,
+  "durable_job_types": [
+    "RESEARCH_MARKETING_TEST_HANDOFF",
+    "MARKETING_STRATEGY",
+    "CREATIVE_BRIEF_BUILD",
+    "CREATIVE_ASSET_GENERATE",
+    "MARKETING_ASSET_REVIEW",
+    "CREATIVE_ASSET_REVISE",
+    "MARKETING_ASSET_REVIEW",
+    "PERFORMANCE_COLLECT",
+    "MARKETING_PERFORMANCE_ANALYZE"
+  ],
+  "durable_jobs_completed": 9,
+  "durable_jobs_created": 9,
+  "durable_jobs_with_receipts": 9,
+  "external_actions": {
+    "ad_spend": 0,
+    "browser_publishing": 0,
+    "cloud_resource_creations": 0,
+    "email_sends": 0,
+    "paid_provider_calls": 0,
+    "payment_actions": 0,
+    "social_writes": 0,
+    "spend_reservations": 0,
+    "trading_actions": 0
+  },
+  "failure_recovery": "PASS",
+  "generated_at": "2026-10-09T23:42:23.639909+00:00",
+  "historical_counts": {
+    "legacy_credit_analysis_jobs_after": 25,
+    "legacy_credit_analysis_jobs_before": 25,
+    "task_requests_after": 636,
+    "task_requests_before": 636,
+    "unchanged": true
+  },
+  "host_safety": {
+    "browser_automation_started": 0,
+    "dispatcher_running_after": "NO",
+    "heavy_workers_started": 0,
+    "peak_canary_workers": 1,
+    "scheduler_running_after": "NO"
+  },
+  "lease_recovery_observation": {
+    "attempt_count": 2,
+    "duplicate_claims": 0,
+    "last_error_code": "LEASE_EXPIRED",
+    "performance_job_final_state": "COMPLETED",
+    "stale_performance_job_recovered": 1
+  },
+  "marketing_analysis_artifacts": 1,
+  "marketing_creative_handoffs": 2,
+  "marketing_review_decisions": [
+    "REVISE",
+    "ACCEPT"
+  ],
+  "performance_artifacts": 1,
+  "performance_data_class": "TEST",
+  "post_run_verification": {
+    "dispatcher": "OFF",
+    "global_active_durable_jobs": 0,
+    "global_due_durable_jobs": 0,
+    "global_expired_active_leases": 0,
+    "legacy_credit_analysis_jobs": 25,
+    "loaded_nexus_launch_agents": 0,
+    "local_recovery_drift": 0,
+    "orphan_worker_processes": 0,
+    "safe_boot_state": "YES",
+    "scheduler": "OFF",
+    "secret_pattern_hits": 0,
+    "task_requests": 636
+  },
+  "provider_route": {
+    "expected_cost": 0,
+    "provider": "LOCAL_DETERMINISTIC",
+    "provider_call": false,
+    "resource_class": "LIGHTWEIGHT_INTERNAL"
+  },
+  "publication_attempts": 0,
+  "publishing_execution": "BLOCKED_BY_APPROVAL",
+  "publishing_handoff_created": true,
+  "queue_after": {
+    "active_canary_jobs": 0,
+    "orphan_workers": 0,
+    "ready_canary_jobs": 0,
+    "stale_leases": 0
+  },
+  "research_marketing_handoffs": 1,
+  "resource_canary": "PASS",
+  "schema_version": 1,
+  "synthetic_metrics": {
+    "clicks": 0,
+    "conversions": 0,
+    "cost": 0,
+    "cpa": null,
+    "ctr": null,
+    "engagement": 0,
+    "impressions": 0,
+    "leads": 0,
+    "revenue": 0,
+    "roas": null,
+    "views": 0
+  },
+  "test_campaigns_created": 1,
+  "workflow_stage": "ITERATION"
+}

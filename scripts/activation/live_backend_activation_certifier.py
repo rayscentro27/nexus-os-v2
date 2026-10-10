@@ -169,41 +169,11 @@ def fingerprint(value: str | None) -> str | None:
 
 
 def http_json(method: str, url: str, headers: dict[str, str] | None = None, body: Any = None, timeout: int = 20) -> tuple[bool, int | None, Any, str | None, int]:
-    start = time.monotonic()
-    request_headers = {"User-Agent": "nexus-os-v2/1.0", **(headers or {})}
-    data = None
-    if body is not None:
-        data = json.dumps(body).encode()
-        request_headers = {**request_headers, "content-type": "application/json"}
-    req = urllib.request.Request(url, data=data, headers=request_headers, method=method)
     try:
-        try:
-            import certifi  # type: ignore
-            context = ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            context = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=timeout, context=context) as response:
-            raw = response.read().decode("utf-8", errors="ignore")
-            latency = int((time.monotonic() - start) * 1000)
-            try:
-                return True, response.status, json.loads(raw) if raw else {}, None, latency
-            except json.JSONDecodeError:
-                return True, response.status, raw[:500], None, latency
-    except urllib.error.HTTPError as exc:
-        latency = int((time.monotonic() - start) * 1000)
-        return False, exc.code, {}, f"HTTP_{exc.code}", latency
-    except urllib.error.URLError as exc:
-        latency = int((time.monotonic() - start) * 1000)
-        reason = getattr(exc, "reason", exc)
-        reason_text = reason.__class__.__name__
-        if isinstance(reason, ssl.SSLError):
-            reason_text = f"SSL_{reason.reason or reason.__class__.__name__}"
-        elif isinstance(reason, socket.gaierror):
-            reason_text = f"DNS_{reason.errno}"
-        return False, None, {}, f"URLError:{reason_text}", latency
+        from alpha.alpha_live_research import http_json as governed_http_json
+        return governed_http_json(method, url, headers, body, timeout)
     except Exception as exc:  # noqa: BLE001
-        latency = int((time.monotonic() - start) * 1000)
-        return False, None, {}, exc.__class__.__name__, latency
+        return False, None, {}, exc.__class__.__name__, 0
 
 
 def supabase_headers(service: bool = True) -> dict[str, str]:

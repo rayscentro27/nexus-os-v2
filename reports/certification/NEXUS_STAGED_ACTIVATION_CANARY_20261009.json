@@ -1,0 +1,154 @@
+{
+  "campaign_id": "NEXUS_STAGED_ACTIVATION_CANARY_20261009",
+  "created_at": "2026-10-09T22:52:45Z",
+  "dispatcher_idle_observation": {
+    "duplicate_claims": 0,
+    "idle_queue_confirmed": true,
+    "interval_seconds": 120,
+    "jobs_claimed": 0,
+    "providers": 0,
+    "status": "PASS",
+    "workers_started": 0
+  },
+  "duplicate_claim_prevention_under_active_runtime": "PASS_LOCAL_ISOLATED_TESTS",
+  "external_actions": {
+    "browser_automation_starts": 0,
+    "cloud_resource_creations": 0,
+    "email_sends": 0,
+    "paid_provider_calls": 0,
+    "payment_actions": 0,
+    "social_writes": 0,
+    "supabase_control_plane_only": true,
+    "telegram_sends": 0,
+    "trading_actions": 0
+  },
+  "failure_canary_attempt_1": {
+    "attempt_count": 1,
+    "error_code": "WORKER_FAILED",
+    "error_summary": "CONTROLLED_CANARY_FAILURE_ONCE",
+    "external_actions": 0,
+    "job_id": "job_ae638856ff274d3e8c4986f1b64d37b8",
+    "max_attempts": 2,
+    "provider_calls": 0,
+    "receipt_present": false,
+    "retry_scheduled_at": "2026-10-09T22:50:29.998665+00:00",
+    "state": "FAILED_RETRYABLE"
+  },
+  "failure_recovery_canary": {
+    "correlation_id": "37d81c51516144938f8330fcad041ffe",
+    "department": "SYSTEMS",
+    "duplicate_claims": 0,
+    "final_footprint_provider_count": 0,
+    "final_state": "COMPLETED",
+    "initial_claims": 1,
+    "job_id": "job_ae638856ff274d3e8c4986f1b64d37b8",
+    "job_type": "SYSTEMS_FAILURE_CANARY",
+    "receipt_present": true,
+    "retry_count": 1
+  },
+  "final_runtime_state": {
+    "active_operator": "OFF",
+    "certification": "OFF",
+    "dispatcher": "OFF",
+    "legacy_pollers": "OFF",
+    "old_continuous_kernel": "OFF",
+    "pm2_workflow_executors": "OFF",
+    "scheduler": "OFF"
+  },
+  "final_status": "NEXUS_STAGED_ACTIVATION_CANARY_PASS",
+  "focused_tests": {
+    "internal_canary_contract_and_receipt": "2_PASSED",
+    "lease_recovery_and_atomic_claim": "2_PASSED",
+    "worker_import_origin": "PASS"
+  },
+  "host_resource": {
+    "browser_automation_started": 0,
+    "dispatcher_processes_after_shutdown": 0,
+    "heavy_workers_started": 0,
+    "load_average": [
+      1.89,
+      1.97,
+      1.92
+    ],
+    "memory_free_percent": 78,
+    "memory_total_bytes": 8589934592,
+    "scheduler_processes_after_shutdown": 0,
+    "status": "PASS",
+    "worker_processes_after_shutdown": 0
+  },
+  "lease_recovery_under_active_runtime": "PASS_LOCAL_ISOLATED_TESTS",
+  "post_canary_queue": {
+    "duplicate_receipt_groups": 0,
+    "durable_jobs_active": 0,
+    "durable_jobs_due": 0,
+    "enabled_schedules": 0,
+    "legacy_credit_analysis_jobs": 25,
+    "orphan_workers": 0,
+    "stale_leases": 0,
+    "task_requests": 636,
+    "terminal_blocked_pre_fix_diagnostic_jobs": 1
+  },
+  "post_canary_recovery_check": {
+    "active_operator_off": true,
+    "certification_off": true,
+    "dispatcher_off": true,
+    "local_recovery_drift": 0,
+    "old_kernel_off": true,
+    "safe_boot_state": "YES",
+    "scheduler_off": true,
+    "status": "PASS",
+    "verification_time": "2026-10-09T22:54:30Z"
+  },
+  "pre_fix_diagnostic_canary": {
+    "job_id": "job_574f097cc7e24a93adcfa26ac72af74f",
+    "preserved": true,
+    "reason": "worker import shadowed stdlib platform module; footprint completion failed before the worker import-order repair",
+    "state": "BLOCKED"
+  },
+  "pre_start_recovery_check": {
+    "historical_replay_protection": true,
+    "legacy_credit_queue_protection": true,
+    "local_recovery_drift": 0,
+    "provider_registry_intact": true,
+    "safe_boot_state": "YES",
+    "secret_registry_intact": true,
+    "status": "PASS"
+  },
+  "scheduler_only_observation": {
+    "automatic_intervals_observed": 2,
+    "interval_seconds": 300,
+    "jobs_claimed": 0,
+    "jobs_created": 0,
+    "last_exit_code": 0,
+    "providers": 0,
+    "status": "PASS",
+    "workers": 0
+  },
+  "schema_version": 1,
+  "secret_values_in_reports": 0,
+  "status": "IN_PROGRESS",
+  "successful_internal_canary": {
+    "browser_starts": 0,
+    "claimed": 1,
+    "completed": 1,
+    "correlation_id": "133663cc7f534899b5e922aa0378bc1d",
+    "created": 1,
+    "department": "SYSTEMS",
+    "duplicate_claims": 0,
+    "external_writes": 0,
+    "footprint_count": 1,
+    "heavy_workers": 0,
+    "job_id": "job_e8ce1defbfda49afb0d8235830cf1d35",
+    "job_type": "SYSTEMS_INTERNAL_CANARY",
+    "provider_calls": 0,
+    "receipt_count": 1
+  },
+  "worker_limits": {
+    "max_browser_workers": 0,
+    "max_heavy_workers": 0,
+    "max_research_workers": 1,
+    "max_total_active_workers": 2,
+    "observed_peak_workers": 1,
+    "status": "PASS"
+  }
+}

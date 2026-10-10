@@ -1,0 +1,458 @@
+{
+  "ARTIFACT_REFS": [
+    "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+    "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+    "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json",
+    "reports/certification/whole_company/artifacts/trading_51f82e73761598305bf99400.json",
+    "reports/certification/whole_company/artifacts/nova_summary_dbb99d1d403c46817495e768.json"
+  ],
+  "BASELINE": {
+    "branch": "main",
+    "canonical_commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+    "certified_registry_hashes_match": true,
+    "preexisting_marketing_creative_canary_reused": true,
+    "recovery_baseline_hash": "b8803e924f752c1f9b29859213bacc0476844f5355fcb90cbf9e7909bcfacd92"
+  },
+  "CAMPAIGN_ID": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "CORRELATION_IDS": [
+    "corr-nexus-company-cert-20261009-goclear"
+  ],
+  "CURRENT_PHASE": "COMPLETE",
+  "FAILURES": [
+    {
+      "error": "INVALID_CAMPAIGN_TRANSITION:START->CREATIVE_BRIEF",
+      "job_id": "job_feb6032ad3ba4b98a88a6f20dfe5b8d0",
+      "phase": "PHASE_3_MARKETING_CREATIVE_INTEGRATION",
+      "side_effects": "none; no asset generated",
+      "state": "BLOCKED"
+    }
+  ],
+  "HANDOFF_IDS": [
+    "handoff_45c80c552b9a8cc0cddd6958",
+    "handoff_5cc7177bc7ffe41b4b571511",
+    "handoff_3339dfcc5e249c3e4790199f",
+    "handoff_201ddbbb54b5f3256655ea80",
+    "handoff_retry_57935c37d1132e26da761a61",
+    "handoff_27446f0ca9d82ea04ba85301",
+    "handoff_621ebccfe1145560c5b1244d",
+    "handoff_2f9a5f892e3dd2c723ba0340",
+    "handoff_af49c44e00b29ddf578aa2c0"
+  ],
+  "JOB_IDS": [
+    "job_54a1ba8115b94790836a6634f72c6b15",
+    "job_becee6dcda244f25afe1f2c71ca09071",
+    "job_7826db705dcb4de19986f5fac792470e",
+    "job_3e580ee267be408c8d6b2ba5aac2dabb",
+    "job_feb6032ad3ba4b98a88a6f20dfe5b8d0",
+    "job_255fbd83a4c145e79144869c9bb66d52",
+    "job_0c0bc0528a334c769fda7a324510ef69",
+    "job_be543f5e0e9e4d8baa03a94d120c9ad6",
+    "job_0b35262ff24d47bf975ec977d8e9a032",
+    "job_a9f0f2e478f548a7ad6bd8debf2436d0",
+    "job_ba32c3cbe72442af8c4ff0767af85451",
+    "job_6fe7a857040d4859ae59190958cc1733",
+    "job_15e99904b38647ebb2a1e26f0c183f86",
+    "job_9a40d6745afc46e4b8b78da12ae84b16",
+    "job_17379936d8a940059defa344ca149513",
+    "job_61148182fc93413591ceb55420be11f3"
+  ],
+  "LAST_COMPLETED_PHASE": "PHASE_13_CERTIFICATION_DECISION",
+  "NEXT_PHASE": "NONE",
+  "NEXUS_REAL_WORLD_PRODUCTION_CERTIFIED": "NO",
+  "NEXUS_WHOLE_COMPANY_CERTIFIED": "YES",
+  "NEXUS_WHOLE_COMPANY_INTEGRATION_CERTIFIED": "YES",
+  "PHASE_RESULTS": {
+    "PHASE_0_BASELINE_CHECK": {
+      "active_jobs": 0,
+      "active_operator": "OFF",
+      "dispatcher": "OFF",
+      "due_jobs": 0,
+      "environment_registry_hash": null,
+      "evidence": [
+        "reports/recovery/NEXUS_RECOVERY_BASELINE_20261009.json",
+        "reports/certification/NEXUS_RECOVERY_CERTIFICATION_20261009.md",
+        "reports/certification/NEXUS_STAGED_ACTIVATION_CANARY_20261009.json",
+        "reports/certification/NEXUS_MARKETING_CREATIVE_CANARY_20261009.json",
+        "reports/remediation/NEXUS_REMEDIATION_CLOSURE_STATUS_20261009.json"
+      ],
+      "legacy_credit_jobs": 25,
+      "local_recovery_drift": 0,
+      "old_kernel": "OFF",
+      "prior_marketing_creative_certification": "PASS_REUSED",
+      "provider_registry_hash": "53de468ec68dd9a3f204eab946d17f9846cd192433cdc183f5886f66fc8f431b",
+      "recovery_baseline_hash": "ef56cb14afa7f4fb69153915d558f0e70134e0f3c32e20577cddab69c9035030",
+      "result": "PASS",
+      "safe_boot_state": "YES",
+      "scheduler": "OFF",
+      "secret_registry_hash": "ce550b96bf80c82fcdff60a79de0d753390e505ca6ac56ac4029cb373b655321",
+      "stale_leases": 0,
+      "supabase_drift": "ACCEPTABLE_PER_LIVE_CONTROL_PLANE_CERTIFICATION",
+      "task_requests": 636
+    },
+    "PHASE_10_TRACEABILITY_CERTIFICATION": {
+      "artifact_refs": [
+        "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+        "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+        "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json",
+        "reports/certification/whole_company/artifacts/trading_51f82e73761598305bf99400.json",
+        "reports/certification/whole_company/artifacts/nova_summary_dbb99d1d403c46817495e768.json"
+      ],
+      "blocked_attempt_failure_recorded": true,
+      "completed_jobs_with_receipts": 15,
+      "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+      "duplicate_jobs": 0,
+      "evidence": [
+        "reports/certification/whole_company/artifacts/",
+        "targeted live durable-job and footprint queries"
+      ],
+      "handoff_ids": [
+        "handoff_45c80c552b9a8cc0cddd6958",
+        "handoff_5cc7177bc7ffe41b4b571511",
+        "handoff_3339dfcc5e249c3e4790199f",
+        "handoff_201ddbbb54b5f3256655ea80",
+        "handoff_retry_57935c37d1132e26da761a61",
+        "handoff_27446f0ca9d82ea04ba85301",
+        "handoff_621ebccfe1145560c5b1244d",
+        "handoff_2f9a5f892e3dd2c723ba0340",
+        "handoff_af49c44e00b29ddf578aa2c0"
+      ],
+      "job_ids": [
+        "job_54a1ba8115b94790836a6634f72c6b15",
+        "job_becee6dcda244f25afe1f2c71ca09071",
+        "job_7826db705dcb4de19986f5fac792470e",
+        "job_3e580ee267be408c8d6b2ba5aac2dabb",
+        "job_feb6032ad3ba4b98a88a6f20dfe5b8d0",
+        "job_255fbd83a4c145e79144869c9bb66d52",
+        "job_0c0bc0528a334c769fda7a324510ef69",
+        "job_be543f5e0e9e4d8baa03a94d120c9ad6",
+        "job_0b35262ff24d47bf975ec977d8e9a032",
+        "job_a9f0f2e478f548a7ad6bd8debf2436d0",
+        "job_ba32c3cbe72442af8c4ff0767af85451",
+        "job_6fe7a857040d4859ae59190958cc1733",
+        "job_15e99904b38647ebb2a1e26f0c183f86",
+        "job_9a40d6745afc46e4b8b78da12ae84b16",
+        "job_17379936d8a940059defa344ca149513",
+        "job_61148182fc93413591ceb55420be11f3"
+      ],
+      "missing_handoffs": 0,
+      "missing_receipts": 0,
+      "orphan_artifacts": 0,
+      "project_id": "goclear-readiness",
+      "receipt_ids": [
+        "receipt_40d71ad61be344a5939e35bd4c10686d",
+        "receipt_3ca171217da2423db320a193b05fbd23",
+        "receipt_304ed6b9436f4feebc7009d01753bed2",
+        "receipt_f30c06d99d424802a53e26e8a7e3ffa8",
+        "receipt_a8416c658b094c1e86981707aa8e510c",
+        "receipt_c14f28f786e84d7ab32edfa8bbbd2318",
+        "receipt_f8d6c3a4b7d24445a968fda056d8184b",
+        "receipt_9fc25d813d6349bba4f533aa1e616f86",
+        "receipt_96620c7f2dfb43d3a386a2daf7aaa7bc",
+        "receipt_e764748b26de4ef5b568978c9dae86ac",
+        "receipt_d79538d8976c40ce8ba90e309838964c",
+        "receipt_c0892c104a9a414380a180aa84696744",
+        "receipt_f91394c466e84920ba2ee1ab3e14d5f9",
+        "receipt_b3ae55614057493d9928e935c0aa46a9",
+        "receipt_e5a4bc82a1514cf088158d3c1107b458"
+      ],
+      "result": "PASS",
+      "superseded_attempts_preserved": true
+    },
+    "PHASE_11_HOST_RUNTIME_STABILITY": {
+      "active_campaign_workers": 0,
+      "active_operator": "OFF",
+      "browser_automation_processes": 0,
+      "dispatcher": "OFF",
+      "evidence": [
+        "reports/recovery/NEXUS_RECOVERY_CERTIFICATION_20261009.md",
+        "reports/certification/NEXUS_STAGED_ACTIVATION_CANARY_20261009.json"
+      ],
+      "heavy_workers": 0,
+      "load_average_approx": 2.4,
+      "maximum_campaign_worker_concurrency": 1,
+      "memory_free_percent": 79,
+      "old_kernel": "OFF",
+      "ready_campaign_jobs": 0,
+      "result": "PASS",
+      "scheduler": "OFF"
+    },
+    "PHASE_12_POST_CERTIFICATION_RECOVERY": {
+      "active_operator": "OFF",
+      "active_reservations": 0,
+      "campaign_nonterminal_jobs": 0,
+      "dispatcher": "OFF",
+      "historical_task_count": 636,
+      "historical_task_requests_unchanged": true,
+      "legacy_credit_job_count": 25,
+      "legacy_credit_queue_unchanged": true,
+      "live_read_only_check_result": "reports/recovery/NEXUS_RECOVERY_BASELINE_20261009.json",
+      "local_recovery_drift": 0,
+      "old_kernel": "OFF",
+      "orphan_workers": 0,
+      "queued_legacy_credit_jobs": 13,
+      "reconciled_reservations": 16,
+      "recovery_check": "reports/recovery/NEXUS_RECOVERY_CERTIFICATION_20261009.md",
+      "result": "PASS",
+      "safe_boot_state": "YES",
+      "scheduler": "OFF",
+      "stale_leases": 0,
+      "verified_at": "2026-10-10T01:38:22Z"
+    },
+    "PHASE_13_CERTIFICATION_DECISION": {
+      "dispatcher": "OFF",
+      "live_trading_enabled": false,
+      "nexus_whole_company_certified": true,
+      "qualification": "This certifies integrated workflow execution and authority controls using bounded source evidence and internal test performance; it does not certify market demand, borrower eligibility, financing approval, or production marketing performance.",
+      "result": "PASS",
+      "scheduler": "OFF"
+    },
+    "PHASE_1_RESEARCH": {
+      "artifact_ref": "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+      "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+      "focused_test": "test_company_certification_workflow.py PASS",
+      "handoff_id": "handoff_45c80c552b9a8cc0cddd6958",
+      "job_id": "job_54a1ba8115b94790836a6634f72c6b15",
+      "provider_calls": 0,
+      "receipt_id": "receipt_40d71ad61be344a5939e35bd4c10686d",
+      "result": "PASS",
+      "source_age": "2026-09-26; explicitly marked dated and source-only",
+      "spend": 0
+    },
+    "PHASE_2_BUSINESS_ATLAS_FUNDING": {
+      "artifacts": [
+        "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+        "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+        "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json"
+      ],
+      "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+      "funding_authority": "NO_APPLICATION_NO_ELIGIBILITY_APPROVAL",
+      "handoffs": [
+        "handoff_45c80c552b9a8cc0cddd6958",
+        "handoff_3339dfcc5e249c3e4790199f",
+        "handoff_5cc7177bc7ffe41b4b571511"
+      ],
+      "jobs": [
+        {
+          "department": "ATLAS",
+          "job_id": "job_becee6dcda244f25afe1f2c71ca09071",
+          "receipt_id": "receipt_3ca171217da2423db320a193b05fbd23"
+        },
+        {
+          "department": "CLYDE",
+          "job_id": "job_7826db705dcb4de19986f5fac792470e",
+          "receipt_id": "receipt_304ed6b9436f4feebc7009d01753bed2"
+        }
+      ],
+      "provider_calls": 0,
+      "result": "PASS",
+      "spend": 0
+    },
+    "PHASE_3_MARKETING_CREATIVE_INTEGRATION": {
+      "approval_state": "PENDING_RAY_APPROVAL",
+      "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+      "campaign_state": "ITERATION_READY",
+      "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+      "creative_assets_v1_v2": 2,
+      "durable_marketing_jobs": [
+        [
+          "job_3e580ee267be408c8d6b2ba5aac2dabb",
+          "receipt_f30c06d99d424802a53e26e8a7e3ffa8"
+        ],
+        [
+          "job_feb6032ad3ba4b98a88a6f20dfe5b8d0",
+          null
+        ],
+        [
+          "job_255fbd83a4c145e79144869c9bb66d52",
+          "receipt_a8416c658b094c1e86981707aa8e510c"
+        ],
+        [
+          "job_0c0bc0528a334c769fda7a324510ef69",
+          "receipt_c14f28f786e84d7ab32edfa8bbbd2318"
+        ],
+        [
+          "job_be543f5e0e9e4d8baa03a94d120c9ad6",
+          "receipt_f8d6c3a4b7d24445a968fda056d8184b"
+        ],
+        [
+          "job_0b35262ff24d47bf975ec977d8e9a032",
+          "receipt_9fc25d813d6349bba4f533aa1e616f86"
+        ],
+        [
+          "job_a9f0f2e478f548a7ad6bd8debf2436d0",
+          "receipt_96620c7f2dfb43d3a386a2daf7aaa7bc"
+        ],
+        [
+          "job_ba32c3cbe72442af8c4ff0767af85451",
+          "receipt_e764748b26de4ef5b568978c9dae86ac"
+        ],
+        [
+          "job_6fe7a857040d4859ae59190958cc1733",
+          "receipt_d79538d8976c40ce8ba90e309838964c"
+        ]
+      ],
+      "failure_repair": "initial brief job blocked with no artifact side effect; corrected campaign stage seed and retried as new job",
+      "provider_calls": 0,
+      "publication_attempts": 0,
+      "research_atlas_funding_jobs": [
+        "job_54a1ba8115b94790836a6634f72c6b15",
+        "job_becee6dcda244f25afe1f2c71ca09071",
+        "job_7826db705dcb4de19986f5fac792470e"
+      ],
+      "result": "PASS",
+      "revision_count": 1,
+      "spend": 0,
+      "synthetic_performance_class": "TEST",
+      "workflow_stage": "ITERATION"
+    },
+    "PHASE_4_NOVA_COMMUNICATION": {
+      "approval_state": "PENDING_RAY_APPROVAL",
+      "durable_evidence_retrieved": 6,
+      "external_messages": 0,
+      "internal_only": true,
+      "job_id": "job_9a40d6745afc46e4b8b78da12ae84b16",
+      "receipt_id": "receipt_f91394c466e84920ba2ee1ab3e14d5f9",
+      "result": "PASS",
+      "scheduler_authority": false,
+      "superseded_summary_job_id": "job_15e99904b38647ebb2a1e26f0c183f86"
+    },
+    "PHASE_5_TRADING_RESEARCH": {
+      "artifact_ref": "reports/certification/whole_company/artifacts/trading_8b9f7b6f1d8ea18e046be015.json",
+      "backtest_output_ref": "reports/certification/whole_company/artifacts/wick_certification_backtest_job_17379936d8a940059defa344ca149513.json",
+      "broker_order_api_called": false,
+      "expectancy": -0.003230127345119429,
+      "instrument": "EUR_USD",
+      "job_id": "job_17379936d8a940059defa344ca149513",
+      "live_trading_enabled": false,
+      "provider_calls": 0,
+      "receipt_id": "receipt_b3ae55614057493d9928e935c0aa46a9",
+      "result": "PASS",
+      "spend": 0,
+      "timeframe": "H1",
+      "trade_count": 16
+    },
+    "PHASE_6_CROSS_DEPARTMENT_COMPANY_RUN": {
+      "artifact_refs": [
+        "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+        "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+        "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json",
+        "reports/certification/whole_company/artifacts/trading_51f82e73761598305bf99400.json",
+        "reports/certification/whole_company/artifacts/nova_summary_dbb99d1d403c46817495e768.json"
+      ],
+      "authority_note": "Shared project/correlation context; no manual context recreation, external actions, or inferred approval.",
+      "completed_jobs": 15,
+      "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+      "duplicate_jobs": 0,
+      "evidence": [
+        "reports/certification/whole_company/artifacts/"
+      ],
+      "flow": [
+        "RESEARCH",
+        "ATLAS",
+        "CLYDE/FUNDING",
+        "MARKETING",
+        "CREATIVE",
+        "NOVA_EXECUTIVE_SUMMARY",
+        "TRADING_RESEARCH_BRANCH"
+      ],
+      "handoffs": [
+        "handoff_45c80c552b9a8cc0cddd6958",
+        "handoff_5cc7177bc7ffe41b4b571511",
+        "handoff_3339dfcc5e249c3e4790199f",
+        "handoff_201ddbbb54b5f3256655ea80",
+        "handoff_retry_57935c37d1132e26da761a61",
+        "handoff_27446f0ca9d82ea04ba85301",
+        "handoff_621ebccfe1145560c5b1244d",
+        "handoff_2f9a5f892e3dd2c723ba0340",
+        "handoff_af49c44e00b29ddf578aa2c0"
+      ],
+      "job_count": 16,
+      "nonterminal_jobs": 0,
+      "preserved_blocked_attempts": 1,
+      "project_id": "goclear-readiness",
+      "result": "PASS",
+      "unique_job_count": 16
+    },
+    "PHASE_7_WHOLE_COMPANY_FAILURE_RECOVERY": {
+      "duplicate_claims": 0,
+      "evidence": [
+        "scripts/nexus_agent_platform/marketing_creative_workflow.py",
+        "scripts/nexus_agent_platform/tests/test_marketing_creative_workflow.py"
+      ],
+      "failed_job_id": "job_feb6032ad3ba4b98a88a6f20dfe5b8d0",
+      "failure": "INVALID_CAMPAIGN_TRANSITION:START->CREATIVE_BRIEF",
+      "failure_count": 1,
+      "handoff_preserved": true,
+      "provider_calls": 0,
+      "recovery": "Persisted failed attempt; fixed initial stage; submitted a new child job; no asset side effect from failed attempt; retry completed. Receipt attachment was constrained to matching job ID and correction handoff records supersession.",
+      "result": "PASS"
+    },
+    "PHASE_8_COST_RESOURCE_CERTIFICATION": {
+      "browser_workers": 0,
+      "campaign_job_count": 16,
+      "email_actions": 0,
+      "evidence": [
+        "targeted read-only Supabase aggregation for campaign correlation ID"
+      ],
+      "footprints": 16,
+      "gpu_seconds": 0,
+      "heavy_workers": 0,
+      "max_concurrent_workers": 1,
+      "max_cpu_seconds_per_job": 0.135,
+      "model_calls": 0,
+      "paid_provider_calls": 0,
+      "peak_memory_bytes": 31539200,
+      "provider_footprints": 0,
+      "reservations": 16,
+      "result": "PASS",
+      "social_actions": 0,
+      "spend_committed": 0,
+      "spend_reserved": 0,
+      "tokens": 0
+    },
+    "PHASE_9_AUTHORITY_CERTIFICATION": {
+      "broker_order_api_called": false,
+      "evidence": [
+        "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+        "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+        "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json",
+        "reports/certification/whole_company/artifacts/trading_51f82e73761598305bf99400.json",
+        "reports/certification/whole_company/artifacts/nova_summary_dbb99d1d403c46817495e768.json"
+      ],
+      "external_write_authority_used": false,
+      "financing_application": "NONE",
+      "financing_approval": "NONE",
+      "live_trading": "OFF",
+      "publication": "NONE",
+      "publishing_approval": "PENDING_RAY_APPROVAL",
+      "result": "PASS",
+      "scheduler_authority_to_Nova": false
+    }
+  },
+  "RECEIPT_IDS": [
+    "receipt_40d71ad61be344a5939e35bd4c10686d",
+    "receipt_3ca171217da2423db320a193b05fbd23",
+    "receipt_304ed6b9436f4feebc7009d01753bed2",
+    "receipt_f30c06d99d424802a53e26e8a7e3ffa8",
+    "receipt_a8416c658b094c1e86981707aa8e510c",
+    "receipt_c14f28f786e84d7ab32edfa8bbbd2318",
+    "receipt_f8d6c3a4b7d24445a968fda056d8184b",
+    "receipt_9fc25d813d6349bba4f533aa1e616f86",
+    "receipt_96620c7f2dfb43d3a386a2daf7aaa7bc",
+    "receipt_e764748b26de4ef5b568978c9dae86ac",
+    "receipt_d79538d8976c40ce8ba90e309838964c",
+    "receipt_c0892c104a9a414380a180aa84696744",
+    "receipt_f91394c466e84920ba2ee1ab3e14d5f9",
+    "receipt_b3ae55614057493d9928e935c0aa46a9",
+    "receipt_e5a4bc82a1514cf088158d3c1107b458"
+  ],
+  "REPAIRS": [
+    {
+      "change": "Seeded initial campaign workflow_stage=RESEARCH_READY; repaired extant campaign to MARKETING_STRATEGY; preserved failed attempt; retried with new durable child job.",
+      "phase": "PHASE_3_MARKETING_CREATIVE_INTEGRATION"
+    }
+  ],
+  "UPDATED_AT": "2026-10-10T01:37:46.509477+00:00",
+  "USAGE_STOP_SAFE": true,
+  "classification_reason": "Integrated company workflow passed with external production actions intentionally not exercised; marketing data was TEST and Research source evidence does not prove customer demand or borrower eligibility."
+}

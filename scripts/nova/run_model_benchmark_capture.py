@@ -7,12 +7,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
 
 from model_benchmark_capture import normalize_response, serialize_result
+from alpha.alpha_live_research import http_json
 
 
 def main() -> int:
@@ -37,29 +37,20 @@ def main() -> int:
     cases = dataset["turns"][args.offset:args.offset + args.limit if args.limit is not None else None]
     with output.open("w", encoding="utf-8") as handle:
         for case in cases:
-            payload = json.dumps({"model": args.model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": case["question"]}], "temperature": 0.2, "max_tokens": 220}).encode()
+            payload = {"model": args.model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": case["question"]}], "temperature": 0.2, "max_tokens": 220}
             started = time.time()
-            status = None
-            content_type = None
-            completed = subprocess.run(
-                ["curl", "-sS", "--max-time", "60", "-D", "-", "-H", f"Authorization: Bearer {key}", "-H", "Content-Type: application/json", "-d", payload.decode(), "https://openrouter.ai/api/v1/chat/completions"],
-                capture_output=True,
-                check=False,
+            ok, status, data, error, _latency = http_json(
+                "POST", "https://openrouter.ai/api/v1/chat/completions",
+                {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                payload, timeout=60,
             )
-            header_blob, _, raw = completed.stdout.partition(b"\r\n\r\n")
-            if not raw:
-                header_blob, _, raw = completed.stdout.partition(b"\n\n")
-            status_match = __import__("re").search(rb"HTTP/[^ ]+ (\d+)", header_blob)
-            status = int(status_match.group(1)) if status_match else None
-            content_type_match = __import__("re").search(rb"(?im)^content-type:\s*([^\r\n]+)", header_blob)
-            content_type = content_type_match.group(1).decode("ascii", errors="replace") if content_type_match else None
-            if completed.returncode != 0:
-                raw = json.dumps({"transport_error": True, "curl_exit": completed.returncode}).encode()
+            raw = json.dumps(data or ({"error": error} if error else {})).encode()
+            content_type = "application/json"
+            if not ok:
                 status = None
-                content_type = "application/json"
             result = normalize_response(benchmark_case_id=case["id"], provider="openrouter", requested_model=args.model, raw=raw, http_status=status, content_type=content_type, started_at=str(started), completed_at=str(time.time()))
-            if completed.returncode != 0:
-                result["capture_status"] = "HTTP_TRANSPORT_FAILURE"
+            if not ok:
+                result["capture_status"] = "GOVERNOR_DENIED" if str(error or "").startswith("GOVERNOR_DENIED") else "HTTP_TRANSPORT_FAILURE"
                 result["provider_error"] = None
             result["class"] = case["class"]
             result["latency_ms"] = round((time.time() - started) * 1000, 1)

@@ -22,6 +22,8 @@ delete from public.subscription_memberships where tenant_id='tenant_test_goclear
 delete from public.client_profiles where tenant_id='tenant_test_goclear' and client_id='client_test_julius_erving';
 commit;"""
 def build(execute=False,cleanup=False,approval_id=None):
+ if execute or cleanup:
+  raise RuntimeError("live_fake_customer_database_mutation_disabled_until_durable_job_governance")
  rls=read_json(RUNTIME/"production_rls_cli_verification_latest.json",{});approved=approval_id==APPROVAL;ready=rls.get("ok",False) and approved
  action="cleanup" if cleanup else "insert";performed=False;error=None
  if execute and ready:

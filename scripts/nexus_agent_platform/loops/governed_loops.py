@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -253,7 +254,16 @@ def _research(context: Mapping[str, Any]) -> Mapping[str, Any]:
             return {"status": "FAIL", "entrypoint": "private SearXNG adapter"}
         query = quote(question)
         remote_command = f"curl -fsS --max-time 10 'http://127.0.0.1:8888/search?q={query}&format=json'"
-        completed = subprocess.run(["ssh", "-i", str(Path.home() / ".ssh/oracle_vm"), "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "opc@161.153.40.41", remote_command], capture_output=True, text=True, timeout=15, check=False)
+        from nexus_agent_platform.provider_enforcement import execute
+        estimate = {"requests": 1, "operations": 1, "runtime_seconds": 15, "billable": True}
+        try: estimate["cost"] = float(os.environ["NEXUS_ORACLE_ESTIMATED_COST_PER_JOB"])
+        except (KeyError, ValueError): pass
+        try:
+            completed = execute("ORACLE", "private_research_search", "READ_ONLY_REMOTE_SEARCH", estimate,
+                lambda: subprocess.run(["ssh", "-i", str(Path.home() / ".ssh/oracle_vm"), "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "opc@161.153.40.41", remote_command], capture_output=True, text=True, timeout=15, check=False),
+                job_type="PRIVATE_RESEARCH_SEARCH")
+        except Exception:
+            return {"status": "BLOCKED", "entrypoint": "private SearXNG adapter", "reason": "provider_governor_denied"}
         if completed.returncode != 0:
             return {"status": "FAIL", "entrypoint": "private SearXNG adapter"}
         try:

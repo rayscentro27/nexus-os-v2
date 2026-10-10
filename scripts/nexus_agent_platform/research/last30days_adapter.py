@@ -32,7 +32,6 @@ RUN_LOG = ROOT / "data" / "runtime" / "last30days_demand_radar_runs.jsonl"
 WINDOW_DAYS = {"LAST_24_HOURS": 1, "LAST_7_DAYS": 7, "LAST_30_DAYS": 30, "LAST_90_DAYS": 90, "EVERGREEN": 3650}
 WORK_CLASSES = {"DEMAND_DISCOVERY", "GENERAL_DISCOVERY", "MONITORED"}
 SOURCE_TIMEOUTS = {
-    "hackernews": 60,
     "github": 60,
     "reddit": 45,
     "grounding": 45,
@@ -42,15 +41,20 @@ SOURCE_TIMEOUTS = {
 
 def _public_json(url: str, *, accept: str = "application/json", timeout: int = 10) -> dict[str, Any] | list[Any]:
     """Read one public JSON endpoint with a small, verified network bound."""
-    request = urllib.request.Request(url, headers={"User-Agent": "Nexus-Research/2.0", "Accept": accept})
-    try:
-        import certifi
-        context = ssl.create_default_context(cafile=certifi.where())
-    except Exception:
-        context = ssl.create_default_context()
-    with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-        payload = response.read(2_000_000)
-    value = json.loads(payload.decode("utf-8", errors="replace"))
+    def fetch() -> dict[str, Any] | list[Any]:
+        request = urllib.request.Request(url, headers={"User-Agent": "Nexus-Research/2.0", "Accept": accept})
+        try:
+            import certifi
+            context = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            context = ssl.create_default_context()
+        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+            payload = response.read(2_000_000)
+        return json.loads(payload.decode("utf-8", errors="replace"))
+    from nexus_agent_platform.provider_enforcement import execute_public_read
+    host = urllib.parse.urlsplit(url).hostname or ""
+    provider = "GITHUB" if host.endswith("github.com") else "BROWSER_EXTERNAL_SERVICES"
+    value = execute_public_read(provider, "last30days_public_fallback", fetch, response_bytes=2_000_000)
     if not isinstance(value, (dict, list)):
         raise ValueError("public endpoint returned non-JSON object")
     return value
@@ -97,22 +101,6 @@ def _public_source_fallback(source: str, query: str, run_id: str, days: int = 30
             summary = str(row.get("description") or "Repository updated within the research window.")
             signals.append(_public_signal("GITHUB", query, str(row.get("html_url") or ""), name, summary, stamp, run_id, {"stars": row.get("stargazers_count"), "forks": row.get("forks_count")}))
         return signals, "github_public_api_fallback"
-    if source == "hackernews":
-        data = _public_json(f"https://hn.algolia.com/api/v1/search_by_date?query={encoded}&tags=story&hitsPerPage=10")
-        rows = data.get("hits", []) if isinstance(data, dict) else []
-        signals = []
-        for row in rows:
-            stamp = str(row.get("created_at") or "")
-            try:
-                if datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp() < cutoff:
-                    continue
-            except (ValueError, TypeError):
-                continue
-            title = str(row.get("title") or row.get("story_title") or "Hacker News story")
-            url = str(row.get("url") or f"https://news.ycombinator.com/item?id={row.get('objectID')}")
-            summary = str(row.get("story_text") or title)
-            signals.append(_public_signal("HACKERNEWS", query, url, title, summary, stamp, run_id, {"points": row.get("points"), "comments": row.get("num_comments")}))
-        return signals, "hackernews_algolia_public_fallback"
     raise RuntimeError(f"no approved public fallback for {source}")
 
 
@@ -295,7 +283,9 @@ def run_demand_radar(request: dict[str, Any], *, timeout_seconds: int | None = N
         return result
     command = [sys.executable, str(script), query, "--emit=json", "--json-profile=agent", "--no-browser-cookies", "--quick", "--days", str(days), "--max-results", str(min(int(request.get("max_results", 20)), 50)), "--max-per-source", str(min(int(request.get("max_per_source", 8)), 20)), "--save-dir", str(cache_dir)]
     requested_sources = [str(item) for item in (request.get("requested_sources") or []) if item]
-    plan_sources = requested_sources or ["reddit", "youtube", "hackernews", "github", "grounding"]
+    plan_sources = requested_sources or ["reddit", "youtube", "github", "grounding"]
+    if "hackernews" in [source.lower() for source in plan_sources]:
+        raise ValueError("hackernews is not an approved default proactive source")
     configured_weights = request.get("source_weights") or {}
     source_weights = {source: float(configured_weights.get(source, 1)) for source in plan_sources}
     plan_path = cache_dir / f"{run_id}.plan.json"
@@ -389,7 +379,9 @@ def run_demand_radar_sources(request: dict[str, Any], *, source_timeouts: dict[s
     """
     requested = [str(item).lower() for item in (request.get("requested_sources") or []) if item]
     if not requested:
-        requested = ["reddit", "youtube", "hackernews", "github", "grounding"]
+        requested = ["reddit", "youtube", "github", "grounding"]
+    if "hackernews" in requested:
+        raise ValueError("hackernews is not an approved proactive source")
     limits = dict(SOURCE_TIMEOUTS)
     limits.update({str(key).lower(): int(value) for key, value in (source_timeouts or {}).items()})
     runs: list[dict[str, Any]] = []
@@ -430,7 +422,7 @@ def run_demand_radar_sources(request: dict[str, Any], *, source_timeouts: dict[s
     # returns dated source records.
     fallback_runs: list[dict[str, Any]] = []
     failed_sources = {str(error.get("source", "")).lower() for error in errors}
-    fallback_candidates = sorted((failed_sources | {source for source in requested if source in {"github", "hackernews"} and source not in successful}) & {"github", "hackernews"})
+    fallback_candidates = sorted((failed_sources | {source for source in requested if source == "github" and source not in successful}) & {"github"})
     for source in fallback_candidates:
         try:
             fallback_signals, provider = _public_source_fallback(source, str(request.get("query") or ""), str(request.get("request_id") or _stable("last30days", _now())))

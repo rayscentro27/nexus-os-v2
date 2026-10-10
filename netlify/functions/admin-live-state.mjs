@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { requireAdmin } from './_admin-auth.mjs'
-import { canonicalApprovalId, companyCycleId, readLiveControlPlane } from './_supabase-control-plane.mjs'
+import { canonicalApprovalId, companyCycleId, readPendingAdminApprovals } from './_supabase-control-plane.mjs'
 
 const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify(body) })
 const env = (key) => process.env[key] || ''
@@ -16,6 +16,7 @@ const ageSeconds = (value, now) => { const time = value ? Date.parse(value) : Na
 export function liveProjection() {
   const now = Date.now()
   const supervisor = readJson('data/runtime/nexus_supervisor_state.json')
+  const durableJobs = readJson('data/runtime/durable_job_health_latest.json')
   const supervisorHeartbeat = readJson('reports/runtime/nexus_supervisor_heartbeat.json')
   const research = readJson('data/runtime/research_heartbeat.json')
   const department = readJson('reports/runtime/department_work_consumer_heartbeat.json')
@@ -75,6 +76,9 @@ export function liveProjection() {
     departments: { ...snapshot.departments, consumer_status: department ? 'ACTIVE' : 'UNKNOWN', executable_queue_depth: states.READY + states.CLAIMED + states.RUNNING + states.FAILED_RETRYABLE, running_work: states.RUNNING, completions_24h: states.COMPLETED },
     notifications: { status: 'launchd-scheduled', latest: null, morning_digest: 'scheduler-managed' },
     runtime: { supervisor_status: supervisor?.supervisor_status || 'UNKNOWN', supervisor_last_heartbeat: supervisorLast, active_operator: 'launchd-supervised', scheduler: research?.scheduler || 'UNKNOWN', next_wake: research?.next_wake || snapshot.next_wake_at, next_machine_action: research?.next_action || snapshot.next_machine_action },
+    durable_jobs: durableJobs || { runtime_mode: 'DURABLE_JOB_DISPATCHER', status: 'NOT_STARTED', scheduler: 'DISABLED_UNTIL_ACTIVATED', dispatcher: 'DISABLED_UNTIL_ACTIVATED' },
+    resource_spend_governor: durableJobs?.resource_spend_governor || { state: 'NOT_CERTIFIED', providers: [], recent_incidents: [] },
+    runtime_activation: { old_kernel: 'DISABLED', scheduler: 'DISABLED', dispatcher: 'DISABLED' },
     queue_metrics: { total_historical_records: queue.length, executable_queue_depth: states.READY + states.CLAIMED + states.RUNNING + states.FAILED_RETRYABLE, ...states },
     active_goals: { count: Array.isArray(goals) ? goals.length : (Array.isArray(goals?.goals) ? goals.goals.length : null), source: 'canonical runtime aggregate' },
     human_gated_work: states.WAITING_APPROVAL,
@@ -90,9 +94,8 @@ export async function handler(event) {
   try {
     const auth = await requireAdmin(event)
     if (!auth.ok) return json(auth.statusCode, { error: auth.error })
-    const controlPlane = await readLiveControlPlane()
-    const liveApprovals = controlPlane.approvals
-      .filter(row => ['pending', 'approved', 'rejected', 'revise'].includes(row.status))
+    const approvals = await readPendingAdminApprovals()
+    const liveApprovals = approvals
       .map(row => {
         const payload = row.payload || {}
         const approvalId = canonicalApprovalId(row) || row.id
@@ -114,7 +117,7 @@ export async function handler(event) {
       ...base,
       ray_decisions: { ...(base.ray_decisions || {}), count: items.length, items },
       ray_decision_count: items.length,
-      remote_control_plane: { source: 'supabase.approvals+nexus_events', approvals: liveApprovals.length, events: controlPlane.events.length },
+      remote_control_plane: { source: 'supabase.pending_approvals', approvals: liveApprovals.length, events: 'not_loaded_for_dashboard' },
       review_data_source: 'SUPABASE_LIVE_CONTROL_PLANE',
       read_model: 'authenticated_admin_live_runtime_projection',
       authorization: { allowed: true, role: auth.role },

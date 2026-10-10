@@ -79,7 +79,9 @@ def load_runtime_env():
                 continue
             if "=" in line:
                 key, _, val = line.partition("=")
-                env[key.strip()] = val.strip()
+                key = key.strip()
+                if key in {"ALPHA_TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "ALPHA_TELEGRAM_CHAT_ID"}:
+                    env[key] = val.strip().strip("\"'")
     return env
 
 _ENV = None
@@ -121,13 +123,22 @@ def _tg_api(method, params=None, token=None, timeout=20):
 
     url = TELEGRAM_API.format(token=token, method=method)
     try:
-        if params:
-            data = urllib.parse.urlencode(params).encode("utf-8")
-            req = urllib.request.Request(url, data=data)
-        else:
-            req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        def call():
+            req = urllib.request.Request(url, data=urllib.parse.urlencode(params).encode("utf-8") if params else None)
+            with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        if method == "sendMessage":
+            from nexus_agent_platform.provider_enforcement import execute_telegram_delivery
+            return execute_telegram_delivery(params.get("chat_id"), call,
+                job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type=os.environ.get("NEXUS_JOB_TYPE", "ALPHA_TELEGRAM_DELIVERY"),
+                external_ref=lambda value: str((value.get("result") or {}).get("message_id")) if value else None)
+        from nexus_agent_platform.provider_enforcement import execute
+        return execute("TELEGRAM", "bot_api", f"API_{method}",
+            {"requests": 1, "operations": 1, "billable": False}, call,
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type=os.environ.get("NEXUS_JOB_TYPE", "ALPHA_TELEGRAM_RECEIVER"),
+            purpose=f"alpha_telegram:{method}")
     except urllib.error.HTTPError as e:
         body = ""
         try:

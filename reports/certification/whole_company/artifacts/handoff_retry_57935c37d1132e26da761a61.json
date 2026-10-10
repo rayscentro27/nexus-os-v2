@@ -1,0 +1,22 @@
+{
+  "business_id": "goclear",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correction_of": "handoff_201ddbbb54b5f3256655ea80",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:30:17.685457+00:00",
+  "department": "CREATIVE",
+  "from_department": "MARKETING",
+  "handoff_id": "handoff_retry_57935c37d1132e26da761a61",
+  "input_artifact_ref": "strategy_ee722f7ca5e48f78249c9191",
+  "job_id": "job_255fbd83a4c145e79144869c9bb66d52",
+  "output_artifact_ref": "event_7d6b39fe1f4ae26c8fdb7c54",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_a8416c658b094c1e86981707aa8e510c",
+  "status": "COMPLETED_AFTER_REPAIR",
+  "strategy_ref": "strategy_ee722f7ca5e48f78249c9191",
+  "tenant_id": null,
+  "test_campaign": true,
+  "to_department": "CREATIVE",
+  "updated_at": "2026-10-10T01:30:17.685770+00:00",
+  "workflow_stage": "CREATIVE_BRIEF"
+}

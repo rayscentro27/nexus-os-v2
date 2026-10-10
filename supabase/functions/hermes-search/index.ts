@@ -11,6 +11,7 @@ import { isSensitive, json, cors } from '../_shared/firewall.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors() });
+  return json({ error: "governed_durable_job_required", provider_execution_disabled: true }, 503);
 
   const { query = '' } = await req.json().catch(() => ({}));
   if (isSensitive(String(query)))

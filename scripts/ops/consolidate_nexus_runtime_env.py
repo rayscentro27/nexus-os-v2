@@ -144,23 +144,11 @@ def collect_candidates() -> dict[str, list[dict[str, Any]]]:
 
 
 def http_json(method: str, url: str, headers: dict[str, str] | None = None, body: Any = None, timeout: int = 20) -> tuple[bool, int | None, Any, str | None]:
-    data = json.dumps(body).encode() if body is not None else None
-    request_headers = {"User-Agent": "nexus-os-v2/1.0", **(headers or {})}
-    req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
     try:
-        import certifi  # type: ignore
-        context = ssl.create_default_context(cafile=certifi.where())
-    except Exception:
-        context = ssl.create_default_context()
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
-            raw = resp.read().decode(errors="ignore")
-            try:
-                return True, resp.status, json.loads(raw) if raw else {}, None
-            except json.JSONDecodeError:
-                return True, resp.status, raw[:500], None
-    except urllib.error.HTTPError as exc:
-        return False, exc.code, {}, f"HTTP_{exc.code}"
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from alpha.alpha_live_research import http_json as governed_http_json
+        ok, status, data, error, _latency = governed_http_json(method, url, headers, body, timeout)
+        return bool(ok), status, data, error
     except Exception as exc:
         return False, None, {}, exc.__class__.__name__
 

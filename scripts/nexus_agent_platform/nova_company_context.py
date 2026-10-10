@@ -61,6 +61,20 @@ def build_company_context() -> Dict[str, Any]:
     operator = _read(operator_path, {})
     from nexus_agent_platform.research_operational_state import build_research_operational_state
     research_state = build_research_operational_state()
+    try:
+        from nexus_agent_platform.governed import persistence
+        open_research_followups = [row for row in persistence.read_records("research_requests")
+            if row.get("schema_version") == "nexus.research-followup-contract.v1"
+            and str(row.get("status", "")).upper() not in {"CLOSED", "CANCELLED", "RETURNED"}]
+        research_followups = [{"research_request_id": row.get("research_request_id"),
+            "requesting_department": row.get("requesting_department"), "subject": row.get("subject_id"),
+            "reason": row.get("reason_more_research_required"),
+            "questions": [{"question": q.get("question"), "status": q.get("status", "OPEN")} for q in row.get("research_questions", [])],
+            "decision_unlocked_by_answers": row.get("decision_unlocked_by_answers"),
+            "return_to_department": row.get("return_to_department"), "return_to_goal_id": row.get("return_to_goal_id"),
+            "next_action": row.get("next_action"), "status": row.get("status")} for row in open_research_followups[-20:]]
+    except Exception:
+        research_followups = "UNAVAILABLE"
     brief_timestamp = _timestamp(brief, brief_path)
     operator_timestamp = _timestamp(operator, operator_path)
     brief_age = _age_seconds(brief_timestamp)
@@ -99,6 +113,7 @@ def build_company_context() -> Dict[str, Any]:
         "what_changed": brief.get("opportunity_updates", []) if brief_is_current else [],
         "research": {"canonical_alpha": canonical_research, "brief": brief.get("research_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
         "research_operational_state": research_state,
+        "research_followups": research_followups,
         "operations": {"canonical_nexus": canonical_operations, "brief": brief.get("system_health", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
         "business": {
             "top_priority": brief.get("top_priority", {}) if brief_is_current else {},
@@ -158,6 +173,7 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
             )
             if key in research_state
         },
+        "research_followups": context.get("research_followups", "UNAVAILABLE"),
         "capability_awareness": {
             "youtube_research": {
                 "status": "CAN_ROUTE",

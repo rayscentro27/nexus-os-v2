@@ -1,0 +1,53 @@
+{
+  "BASELINE_ID": "NEXUS-CERTIFIED-INTEGRATION-20261009",
+  "BRANCH": "main",
+  "CANONICAL_REPO": "/Users/raymonddavis/nexus-os-v2-canonical",
+  "CERTIFICATION_CLASS": "INTEGRATION",
+  "CERTIFICATION_REPORT": {
+    "path": "reports/certification/NEXUS_WHOLE_COMPANY_CERTIFICATION_20261009.md",
+    "sha256": "d25642623c19bdf32f48d40cedabcfa3f3eb79bb20744a9e33362b985a983039"
+  },
+  "CERTIFICATION_STATE_HASH": "7246bfba2b5a16cf891504810672a5c0dfe2977717eb2223166f28e9fbaf03b5",
+  "COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "COMMIT_MEANING": "Canonical source revision present before the single freeze commit; the freeze commit is a direct child with the authorized subject recorded in the recovery baseline.",
+  "CREATED_AT": "2026-10-10T01:57:43.775677+00:00",
+  "ENVIRONMENT_REGISTRY_HASH": "4776dee36b8d9f7cae32fc7132f34766c29329bd13007461818e2d7376759568",
+  "FREEZE_COMMIT_SUBJECT": "freeze certified Nexus integration baseline",
+  "GITHUB_MAIN_COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "LIVE_TRADING_ENABLED": false,
+  "MARKETING_CREATIVE_REPORT": {
+    "path": "reports/certification/NEXUS_MARKETING_CREATIVE_WORKFLOW_20261009.md",
+    "sha256": "ff05e51fd8c323d1005b6167b132e07ff09e6740cabc67918ff980ac3dcb87b1"
+  },
+  "POST_FREEZE_RECOVERY_CHECK": {
+    "active_operator": "OFF",
+    "critical_recovery_files_match": true,
+    "dispatcher": "OFF",
+    "local_recovery_drift": 0,
+    "old_kernel": "OFF",
+    "provider_registry_intact": true,
+    "result": "PASS",
+    "safe_boot_state": "YES",
+    "scheduler": "OFF",
+    "secret_registry_intact": true,
+    "supabase_read_only_health": "READ_ONLY_SELECT_PASS",
+    "verified_at": "2026-10-10T02:09:13Z"
+  },
+  "PROVIDER_REGISTRY_HASH": "7538ffdd4c9bacb5d552d434a02b87a0da2972ad75eab075d07b81f509da3171",
+  "QUALIFICATION": "Integrated durable workflow and control boundaries passed. Paid provider calls, publication, email, social, browser publishing, GPU use, and broker orders were intentionally not exercised; marketing metrics are DATA_CLASS=TEST and research source evidence does not establish live demand or borrower eligibility.",
+  "REAL_WORLD_PRODUCTION_CERTIFIED": false,
+  "RECOVERY_BASELINE_HASH": "69ec6075edc0dcc40b97ede5da8f38ac6cfda34c6081a423dc2fceeaa2b4c443",
+  "RECOVERY_CERTIFICATION_REPORT": {
+    "path": "reports/recovery/NEXUS_RECOVERY_CERTIFICATION_20261009.md",
+    "sha256": "b7246cd0aad9030a31c312e724b0af1125c5eab1ace56106a1e8430d4baf45e5"
+  },
+  "SECRET_REGISTRY_HASH": "8f9fb593e071422c2d784ae4afb612be5bb67ee80f9d4ccbf17bffd81425e806",
+  "SOURCE_COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "STAGED_ACTIVATION_REPORT": {
+    "path": "reports/certification/NEXUS_STAGED_ACTIVATION_CANARY_20261009.md",
+    "sha256": "24221773f60ff0e9d62a4116b3291b15ec65062918bc677959659c334ab3b5e3"
+  },
+  "SUPABASE_MIGRATION_HEAD": "20261021180000",
+  "SUPABASE_PROJECT_REF": "iqjwgpnujbeoyaeuwehj",
+  "WORKTREE_DIRTY_STATE": "DIRTY; 18,860 paths before freeze; 304 reviewed paths committed; 18,556 unrelated/generated paths preserved after freeze."
+}

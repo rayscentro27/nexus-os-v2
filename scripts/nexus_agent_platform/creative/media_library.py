@@ -60,7 +60,13 @@ class SupabaseCreativeStorageAdapter:
         return f"{self.base}/storage/v1/object/{self.bucket}/{encoded}"
 
     def _curl(self, args: list[str], *, input_data: bytes | None = None) -> tuple[int, bytes, str]:
-        result = subprocess.run(["curl", "-sS", "--max-time", "20", *args], input=input_data, capture_output=True)
+        def request():
+            return subprocess.run(["curl", "-sS", "--max-time", "20", *args], input=input_data, capture_output=True)
+        from nexus_agent_platform.provider_enforcement import execute
+        method = "POST" if "-X" in args and args[args.index("-X") + 1].upper() not in {"GET", "HEAD"} else "READ"
+        action = "STORAGE_WRITE" if method == "POST" or "--upload-file" in args else "STORAGE_READ"
+        result = execute("SUPABASE", "creative_private_storage", action,
+            {"requests": 1, "api_calls": 1, "billable": False, "cost": 0}, request)
         return result.returncode, result.stdout, result.stderr.decode("utf-8", "replace")[:240]
 
     def ensure_private_bucket(self) -> str:
@@ -180,6 +186,18 @@ def review(asset_id: str, decision: str, feedback: str, reviewer: str = "ray") -
     if not media: raise ValueError("unknown-asset")
     status = {"APPROVE": "APPROVED_FOR_NEXT_INTERNAL_STAGE", "REQUEST_REVISION": "REVISION_REQUESTED", "REJECT": "REJECTED_RETAINED", "ARCHIVE": "ARCHIVED"}[decision]
     row = {"schema_version": "nexus.creative-review.v1", "review_id": "review_" + fingerprint, "asset_id": asset_id, "version": media["version"], "reviewer": reviewer, "decision": decision, "feedback": feedback, "timestamp": now(), "publication_triggered": False}
+    if decision == "REJECT":
+        row["rejection"] = {
+            "reason": str(feedback).strip() or "Reviewer rejected the asset without supplied feedback.",
+            "evidence": [{"asset_id": asset_id, "version": media["version"], "review_object_ref": media.get("review_object_ref")}],
+            "failed_criteria": ["REVIEWER_REJECTED_ASSET"],
+            "what_was_tested": "Reviewer assessed the persisted internal asset; publication was not triggered.",
+            "what_was_observed": str(feedback).strip() or "Reviewer supplied no detail beyond the rejection decision.",
+            "what_would_change_the_decision": "Revise the asset to address the recorded feedback and submit the new version for review.",
+            "next_action": "CREATE_REVISION_FROM_REVIEW_FEEDBACK",
+            "next_action_owner": "CREATIVE",
+            "parent_goal_status": str(media.get("parent_goal_status") or "NOT_LINKED").upper(),
+        }
     append_record("creative_reviews", row); append_record("creative_learning", {"schema_version": "nexus.creative-learning.v1", "learning_id": "learning_" + fingerprint, "asset_id": asset_id, "scope": {"territory_id": media.get("territory_id"), "channel": media.get("channel")}, "observation": feedback, "confidence": "HUMAN_REVIEW_OBSERVATION", "decision": decision, "created_at": now()})
     emit_audit_event({"event": "creative_human_review", "asset_id": asset_id, "decision": decision, "publication_triggered": False})
     return {**row, "asset_status": status, "persistence": "CREATED"}

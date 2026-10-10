@@ -200,7 +200,26 @@ def send_approved_email(
             "idempotency_key": idempotency_key,
         }
 
-        response = httpx.post(url, json=payload, headers=headers, timeout=30.0)
+        from nexus_agent_platform.provider_enforcement import authorize_email_action, execute
+        from nexus_agent_platform.resource_spend_governor import GovernanceDenied
+        try:
+            authorize_email_action("CONTROLLED_SEND",
+                workflow_authorized=(taskspec.get("approval_status") == "APPROVED"
+                    and os.environ.get("NEXUS_EMAIL_WORKFLOW_AUTHORIZED", "").lower() == "true"))
+            try: estimated_cost=float(os.environ["NEXUS_RESEND_ESTIMATED_COST_PER_EMAIL"])
+            except (KeyError,ValueError): estimated_cost=None
+            estimate={"requests":1,"operations":1,"emails":1,"billable":True}
+            if estimated_cost is not None: estimate["cost"]=estimated_cost
+            response = execute("EMAIL_PROVIDER", "send_client_email", "CONTROLLED_SEND", estimate,
+                lambda: httpx.post(url, json=payload, headers=headers, timeout=30.0),
+                job_id=idempotency_key, job_type="APPROVED_CLIENT_EMAIL",
+                correlation_id=mission_id,
+                actual_usage=lambda _response:{"requests":1,"operations":1,"emails":1,**({"cost":estimated_cost} if estimated_cost is not None else {})})
+        except GovernanceDenied as exc:
+            return error_result(capability_id=capability_id, capability_version=version,
+                definition_id="", error=f"Email action denied: {exc.code}",
+                status=ResultStatus.UNAVAILABLE.value, handler_id=handler_id,
+                tenant=tenant, trace_id=mission_id)
 
         if response.status_code == 200:
             result_data = response.json()

@@ -60,7 +60,10 @@ def economic_request(*, requesting_department: str, business_reason: str,
                      current_limitation: str, proposed_spend: Any = "UNKNOWN",
                      expected_benefit: Any = "UNKNOWN", alternatives: list[str] | None = None,
                      labs_evidence: Any = "NOT_RUN", measurement_plan: Any = "UNKNOWN",
-                     request_id: str | None = None) -> dict[str, Any]:
+                     request_id: str | None = None,
+                     resource_budget_state: dict[str, Any] | None = None,
+                     campaign_id: str | None = None, project_id: str | None = None,
+                     recommendation: str = "PENDING_FINANCE_REVIEW") -> dict[str, Any]:
     """Create a Finance review request without granting spending authority."""
     department = str(requesting_department).upper()
     if department not in DEPARTMENTS:
@@ -72,8 +75,10 @@ def economic_request(*, requesting_department: str, business_reason: str,
         "current_limitation": current_limitation, "proposed_spend": proposed_spend,
         "expected_benefit": expected_benefit, "alternatives": alternatives or [],
         "labs_evidence": labs_evidence, "measurement_plan": measurement_plan,
-        "economic_analysis": "PENDING_FINANCE_REVIEW", "risk": "PENDING_FINANCE_REVIEW",
-        "payback_if_estimable": "UNKNOWN", "recommended_test_budget": "UNKNOWN",
+        "campaign_id": campaign_id, "project_id": project_id,
+        "economic_analysis": recommendation, "recommendation": recommendation,
+        "resource_budget_state": resource_budget_state or {"status": "UNKNOWN", "providers": []},
+        "risk": "PENDING_FINANCE_REVIEW", "payback_if_estimable": "UNKNOWN", "recommended_test_budget": "UNKNOWN",
         "ray_approval_required": True, "approval_status": "NOT_AUTHORIZED",
         "created_at": now(), "production_mutation": False,
     }

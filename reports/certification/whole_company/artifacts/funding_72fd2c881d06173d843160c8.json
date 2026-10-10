@@ -1,0 +1,23 @@
+{
+  "application_submitted": false,
+  "artifact_id": "funding_72fd2c881d06173d843160c8",
+  "atlas_artifact_ref": "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+  "borrower_readiness": "UNKNOWN",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:12:21.841575+00:00",
+  "current_requirements_verified": false,
+  "department": "CLYDE",
+  "eligibility_or_approval": "NOT_ASSESSED",
+  "evidence_refs": [
+    "https://www.sba.gov/funding-programs/loans"
+  ],
+  "funding_path": "SBA_PROGRAMS_FOR_FUTURE_VERIFICATION",
+  "job_id": "job_7826db705dcb4de19986f5fac792470e",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_304ed6b9436f4feebc7009d01753bed2",
+  "recommendation": "No product match until borrower profile, geography, and current requirements are verified.",
+  "research_artifact_ref": "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+  "schema_version": "nexus.company-certification-funding.v1",
+  "updated_at": "2026-10-10T01:12:23.289239+00:00"
+}

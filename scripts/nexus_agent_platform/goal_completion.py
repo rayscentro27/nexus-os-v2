@@ -115,10 +115,28 @@ def _portfolio_read() -> list[dict[str, Any]]:
 
 
 def _portfolio_write(rows: list[dict[str, Any]]) -> None:
+    from nexus_agent_platform.project_stop_policy import guard_parent_state_write
+    try:
+        prior_rows = {str(row.get("goal_id")): row for row in json.loads(PORTFOLIO_PATH.read_text(encoding="utf-8"))
+                      if isinstance(row, dict)}
+    except (OSError, ValueError, TypeError):
+        prior_rows = {}
+    guarded = []
+    denied = []
+    for row in rows:
+        value, receipt = guard_parent_state_write(collection="goals", proposed=row,
+                                                   prior=prior_rows.get(str(row.get("goal_id"))))
+        guarded.append(value)
+        if receipt:
+            denied.append(receipt)
     PORTFOLIO_PATH.parent.mkdir(parents=True, exist_ok=True)
     temporary = PORTFOLIO_PATH.with_suffix(".tmp")
-    temporary.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.write_text(json.dumps(guarded, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(PORTFOLIO_PATH)
+    if denied:
+        from nexus_agent_platform.governed.persistence import emit_audit_event
+        for receipt in denied:
+            emit_audit_event({"event_type": "PARENT_STOP_DENIED", **receipt})
 
 
 def ensure_company_goal_portfolio() -> list[dict[str, Any]]:
@@ -158,9 +176,72 @@ def ensure_company_goal_portfolio() -> list[dict[str, Any]]:
             "created_at": prior.get("created_at", timestamp), "updated_at": prior.get("updated_at", timestamp),
         }
         rows.append(row)
+    # Receiver-owned child goals are extensions of this canonical portfolio.
+    # Preserve them when the seeded roadmap is refreshed; dropping unknown
+    # rows here used to erase durable department continuation state.
+    seeded_ids = {row[0] for row in ROADMAP_GOALS}
+    for goal_id, prior in existing.items():
+        if goal_id in seeded_ids or not isinstance(prior, dict):
+            continue
+        if str(prior.get("goal_kind") or "").upper() != "HANDOFF_RECEIVER_GOAL":
+            continue
+        rows.append({
+            **prior,
+            "schema_version": "nexus.company-goal-portfolio.v1",
+            "goal_id": goal_id,
+            "status": prior.get("status") or "ACTIVE",
+            "success_criteria": list(prior.get("success_criteria") or []),
+            "dependencies": list(prior.get("dependencies") or []),
+            "active_workstreams": list(prior.get("active_workstreams") or []),
+            "current_evidence": list(prior.get("current_evidence") or []),
+            "missing_criteria": list(prior.get("missing_criteria") or prior.get("success_criteria") or []),
+            "failed_paths": list(prior.get("failed_paths") or []),
+            "candidate_next_paths": list(prior.get("candidate_next_paths") or list(RESOLUTION_LADDER)),
+            "updated_at": prior.get("updated_at") or timestamp,
+        })
     if rows != _portfolio_read():
         _portfolio_write(rows)
     return rows
+
+
+def enforce_active_goal_continuations() -> dict[str, Any]:
+    """Give eligible active goals a real continuation when their action is empty.
+
+    Explicit human/external blockers and future wait-until conditions retain
+    their own state. An empty action alone never suppresses active work.
+    """
+    # Read the portfolio without materializing the seeded roadmap: this guard
+    # must preserve any valid active goal row that is not part of that seed.
+    rows = _portfolio_read()
+    repaired: list[str] = []
+    now = datetime.now(timezone.utc)
+    for row in rows:
+        if str(row.get("status") or "").upper() not in ELIGIBLE_STATUSES:
+            continue
+        current = str(row.get("current_action") or "").strip().upper()
+        following = str(row.get("next_action") or "").strip().upper()
+        if current not in {"", "NONE"} or following not in {"", "NONE"}:
+            continue
+        blocker = str(row.get("blocker_type") or "").upper()
+        if row.get("human_action_required") or blocker.startswith(("HUMAN", "EXTERNAL")):
+            continue
+        wait_until = _read_runtime_json(ROOT / "data/runtime/goal_wait_conditions.json").get(str(row.get("goal_id")), {}).get("wait_until")
+        try:
+            if wait_until and datetime.fromisoformat(str(wait_until).replace("Z", "+00:00")) > now:
+                continue
+        except ValueError:
+            pass
+        department = str(row.get("department") or "").lower()
+        action = "EXECUTE_RESEARCH_CONTRACT" if department == "research" else (
+            "CONTINUE_MISSING_CRITERIA" if row.get("missing_criteria") or row.get("success_criteria") else "VERIFY_RESULT")
+        row["current_action"] = action
+        row["next_action"] = action
+        row["updated_at"] = _now()
+        repaired.append(str(row.get("goal_id")))
+    if repaired:
+        _portfolio_write(rows)
+    return {"pass": True, "repaired_goal_ids": repaired, "eligible_active_goals": sum(
+        str(row.get("status") or "").upper() in ELIGIBLE_STATUSES for row in rows)}
 
 
 def operating_duty_preflight() -> dict[str, Any]:
@@ -702,7 +783,16 @@ def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, A
         else:
             row["last_progress"] = _now()
         row["last_result"] = {"status": result.get("status"), "action": effective_action, "artifact_path": artifact_path, "decision": result.get("decision"), "next_step": result.get("next_action") or (result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else None)}
-        row["next_action"] = result.get("next_action") or result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else result.get("next_action") or "CONTINUE_MISSING_CRITERIA"
+        proposed_next = result.get("next_action") or (result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else None)
+        rejected = str(result.get("decision") or "").upper() == "REJECT"
+        if str(row.get("department") or "").lower() == "trading" and rejected:
+            proposed_next = "ADVANCE_NEXT_CANDIDATE"
+            row["current_action"] = proposed_next
+        elif str(proposed_next or "").upper() in {"NONE", "COMPLETE", "CLOSURE_STALLED"} and row.get("status") in ELIGIBLE_STATUSES:
+            proposed_next = "CONTINUE_MISSING_CRITERIA"
+        row["next_action"] = proposed_next or "CONTINUE_MISSING_CRITERIA"
+        if rejected:
+            row["last_result"]["rejection_reason"] = result.get("rejection_reason") or result.get("reason") or result.get("decision_reason") or "Candidate rejected; parent goal remains active."
         row["updated_at"] = _now()
         # A child receipt is progress, not proof of every parent criterion.
         row["status"] = "ACTIVE" if row.get("status") in ELIGIBLE_STATUSES else row.get("status")
@@ -728,19 +818,36 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         # missing criterion, which made every later cycle repair the planner
         # error instead of the real goal.
         if failure_class == "INVALID_MODEL_PLAN":
-            closure = row.get("closure_session") or {}
-            fixed = {str(x).lower() for x in closure.get("criteria_fixed") or []}
-            existing = closure.get("criteria_remaining") or row.get("missing_criteria") or []
-            concrete = [x.get("criterion") if isinstance(x, dict) else x for x in existing]
-            concrete = [str(x) for x in concrete if str(x).strip()
-                        and "controller-selected downstream action required" not in str(x).lower()]
-            if not concrete:
-                concrete = [str(x) for x in row.get("success_criteria") or [] if str(x).lower() not in fixed]
-            raw = "Initial planner response was invalid; retry the concrete criterion action."
-            criteria = [{"criterion": x, "status": "UNSATISFIED", "reason": raw,
-                         "required_repair": "internal.create_bounded_work_artifact",
-                         "evidence_required": x} for x in concrete]
-            missing = concrete
+            # Planner formatting is an attempt failure, never criterion
+            # evidence. Preserve the parent and its existing criteria; the
+            # AI workforce now performs one schema-feedback retry and a safe
+            # controller-selected fallback when that retry is also malformed.
+            evidence = list(row.get("current_evidence") or [])
+            if receipt_ref and receipt_ref not in evidence:
+                evidence.append(receipt_ref)
+            prior_session = row.get("closure_session") if isinstance(row.get("closure_session"), dict) else {}
+            history = list(row.get("closure_session_history") or [])
+            if prior_session:
+                history.append({**prior_session, "archived_reason": "INVALID_MODEL_PLAN is an attempt failure, not exhausted goal work."})
+            pending = list(row.get("missing_criteria") or row.get("success_criteria") or [])
+            row["closure_session_history"] = history[-8:]
+            row["closure_session"] = {"goal_id": goal_id, "current_round": 0, "max_rounds": int(prior_session.get("max_rounds", 4)),
+                                      "criteria_fixed": list(prior_session.get("criteria_fixed") or []),
+                                      "criteria_remaining": pending, "failed_criteria_current": [],
+                                      "closure_state": "REPLAN_INVALID_MODEL_PLAN"}
+            row.update({"status": "ACTIVE", "current_evidence": evidence[-20:],
+                        "current_action": "REPLAN_INVALID_MODEL_PLAN",
+                        "next_action": "REPLAN_INVALID_MODEL_PLAN",
+                        "last_result": {"status": "FAILED", "action": action,
+                                        "failure_class": failure_class,
+                                        "artifact_path": result.get("artifact_path"),
+                                        "work_item_id": work_item_id,
+                                        "attempt_failure": True,
+                                        "rework_required": pending,
+                                        "replan_feedback": "Use the controller-selected allowlisted action and return the required JSON schema; do not claim goal completion."},
+                        "updated_at": _now()})
+            _portfolio_write(rows)
+            return row
         else:
             raw = review.get("remaining_work") or executor.get("error") or workforce.get("failure_class") or result.get("failure_class") or "Finalization requires bounded rework."
             criteria = list((failure_report.get("criteria") or []))

@@ -1,0 +1,22 @@
+{
+  "artifact_id": "atlas_e35543c1664b9c92da238031",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:12:12.996301+00:00",
+  "customer_problem": "Unvalidated hypothesis; no customer complaint evidence in supplied source.",
+  "decision": "RESEARCH_REQUIRED",
+  "demand_evidence": "MISSING",
+  "department": "ATLAS",
+  "job_id": "job_becee6dcda244f25afe1f2c71ca09071",
+  "next_owner": "CLYDE",
+  "no_financing_or_business_approval": true,
+  "opportunity_status": "NOT_PROMOTED_EVIDENCE_GAPS",
+  "project_id": "goclear-readiness",
+  "promotion_gates_passed": 0,
+  "promotion_gates_required": 8,
+  "receipt_id": "receipt_3ca171217da2423db320a193b05fbd23",
+  "research_artifact_ref": "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+  "revenue_model": "NOT_ESTABLISHED",
+  "schema_version": "nexus.company-certification-atlas.v1",
+  "updated_at": "2026-10-10T01:12:14.022180+00:00"
+}

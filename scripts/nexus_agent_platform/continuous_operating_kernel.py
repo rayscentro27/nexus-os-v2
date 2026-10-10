@@ -14,6 +14,7 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
+from nexus_agent_platform.research.source_contract import source_registry_contract
 
 ROOT = Path(__file__).resolve().parents[2]
 HEARTBEAT_PATH = ROOT / "data/runtime/research_heartbeat.json"
@@ -34,6 +35,17 @@ PROGRAMS = (
     ("COMPETITOR_INTELLIGENCE", "competitor and positioning evidence"),
     ("CAPABILITY_INTELLIGENCE", "tools, models, methods, and version research"),
 )
+
+
+def market_wake_due(last_run_monotonic: float, now_monotonic: float, interval_seconds: int) -> bool:
+    """Return whether the existing market heartbeat interval has elapsed."""
+    return max(0.0, float(now_monotonic) - float(last_run_monotonic)) >= max(1, int(interval_seconds))
+
+
+def idle_research_wake_requires_wait(*, daemon: bool, queue_work_ready: bool,
+                                    batch_started: int, batch_limit: int) -> bool:
+    """Do not spin an empty Research queue while waiting for the next schedule."""
+    return bool(daemon and (not queue_work_ready or int(batch_started) >= max(1, int(batch_limit))))
 
 
 def now() -> str:
@@ -92,16 +104,36 @@ def build_program_registry(*, source_registry: list[dict[str, Any]] | None = Non
 
 
 def build_source_registry() -> list[dict[str, Any]]:
-    """Project curated source config into a durable monitoring registry."""
+    """Project the canonical designated-source mirror into the runtime registry."""
     config_path = ROOT / "configs/youtube_research_channels.json"
     config = _read(config_path, {})
-    targets = config.get("channels", []) if isinstance(config, dict) else []
-    targets += config.get("videos", []) if isinstance(config, dict) else []
+    # Permanent channel monitoring is sourced from the governed Alpha registry.
+    # The legacy JSON remains only as the migration source for one-time video
+    # requests; it cannot silently reintroduce a parallel channel watchlist.
+    from nexus_agent_platform.governed import persistence
+    designated = [row for row in persistence.read_records("alpha_source_registry")
+                  if str(row.get("source_type", "")).upper() == "YOUTUBE_CHANNEL"
+                  and row.get("monitor_mode") == "NEW_CONTENT_ONLY"
+                  and row.get("processing_intent") == "CONTINUOUS"
+                  and row.get("enabled", row.get("status") == "ACTIVE")]
+    channel_targets = []
+    for row in designated:
+        categories = row.get("categories") or row.get("category") or []
+        if isinstance(categories, str): categories = [item for item in categories.split("|") if item]
+        channel_targets.append({**row, "channel_id": row.get("external_channel_id") or row.get("channel_id"),
+                                "url": row.get("canonical_url") or row.get("source_url") or row.get("url"),
+                                "name": row.get("name") or row.get("source_name"),
+                                "categories": categories, "approved_by_ray": True})
+    videos = config.get("videos", []) if isinstance(config, dict) else []
+    targets = channel_targets + videos
     # Alpha already owns the durable source registry.  Extend that canonical
     # file instead of introducing a second source database.
     registry_path = ROOT / "data/runtime/alpha_source_registry.json"
     prior = _read(registry_path, [])
-    by_id = {row.get("source_id"): row for row in prior if isinstance(row, dict)}
+    current_channel_ids = {row.get("source_id") for row in channel_targets}
+    by_id = {row.get("source_id"): row for row in prior if isinstance(row, dict)
+             and (str(row.get("source_type", "")).upper() != "YOUTUBE_CHANNEL"
+                  or row.get("source_id") in current_channel_ids)}
     for target in targets:
         if not isinstance(target, dict) or not target.get("approved_by_ray"):
             continue
@@ -131,10 +163,33 @@ def build_source_registry() -> list[dict[str, Any]]:
             "next_check": prior_row.get("next_check"),
             "processed_content_identifiers": prior_row.get("processed_content_identifiers", []),
         }
+        categories = {str(value).lower() for value in target.get("categories", [])}
+        if categories & {"business_funding", "funding_business_operations"}:
+            primary, purpose, destinations = "BUSINESS_FUNDING", "funding and borrower-readiness evidence", ["CLYDE", "FUNDING"]
+        elif categories & {"business_opportunity_discovery", "entrepreneurship", "services"}:
+            primary, purpose, destinations = "BUSINESS_OPPORTUNITY_DISCOVERY", "business opportunity and service-market discovery", ["BUSINESS_OPPORTUNITY", "MARKETING"]
+        elif categories & {"ai_engineering", "agentic_software", "systems_research", "jev_technology"}:
+            primary, purpose, destinations = "SYSTEMS_AI_TOOLS", "systems and AI-tool capability research", ["SYSTEMS"]
+        elif categories & {"credit_repair", "business_credit"}:
+            primary, purpose, destinations = "CREDIT_APPROVAL_INTELLIGENCE", "observational credit and approval intelligence", ["CLYDE"]
+        else:
+            primary, purpose, destinations = "MARKETING_CUSTOMER_DEMAND", "customer, content, and market-demand research", ["MARKETING"]
+        by_id[source_id].update(source_registry_contract(
+            source_id=source_id, name=target.get("name") or target.get("channel_name") or url,
+            source_type=kind, url=url, primary_category=primary, purpose=purpose,
+            destinations=destinations,
+            identity="channel_id/video_id/published_at/transcript_hash/content_hash",
+        ))
+    canonical_channel_urls = {str(row.get("url") or "").rstrip("/").removesuffix("/videos").lower()
+                              for row in channel_targets}
     permanent_config = _read(ROOT / "configs/research_permanent_sources.json", {})
     for target in permanent_config.get("sources", []) if isinstance(permanent_config, dict) else []:
         if not isinstance(target, dict) or not target.get("canonical_url"):
             continue
+        if str(target.get("source_type", "")).upper() == "YOUTUBE_CHANNEL":
+            legacy_url = str(target["canonical_url"]).rstrip("/").removesuffix("/videos").lower()
+            if legacy_url in canonical_channel_urls:
+                continue
         source_id = str(target.get("source_id") or "src_" + fingerprint(target["canonical_url"]))
         prior_row = by_id.get(source_id, {})
         by_id[source_id] = {
@@ -158,6 +213,27 @@ def build_source_registry() -> list[dict[str, Any]]:
             "next_check": prior_row.get("next_check"),
             "processed_content_identifiers": prior_row.get("processed_content_identifiers", []),
         }
+        permanent_categories = {str(value).lower() for value in target.get("categories", [])}
+        if permanent_categories & {"strategy", "indicator", "risk_management"}:
+            permanent_primary = "TRADING_STRATEGY_RESEARCH"
+        elif permanent_categories & {"business_funding", "funding_business_operations"}:
+            permanent_primary = "BUSINESS_FUNDING"
+        elif permanent_categories & {"credit_card_intelligence", "observed_approval_pattern", "credit_repair"}:
+            permanent_primary = "CREDIT_APPROVAL_INTELLIGENCE"
+        elif permanent_categories & {"business_opportunity_discovery", "entrepreneurship", "services"}:
+            permanent_primary = "BUSINESS_OPPORTUNITY_DISCOVERY"
+        elif permanent_categories & {"ai_engineering", "agentic_software", "systems_research", "jev_technology"}:
+            permanent_primary = "SYSTEMS_AI_TOOLS"
+        else:
+            permanent_primary = "OTHER"
+        by_id[source_id].update(source_registry_contract(
+            source_id=source_id, name=target.get("objective") or source_id,
+            source_type=target.get("source_type", "PUBLIC_WEB"), url=target["canonical_url"],
+            primary_category=permanent_primary,
+            purpose=target.get("objective") or "bounded public research",
+            destinations=[target.get("department", "RESEARCH")],
+            identity="canonical_url/content_hash",
+        ))
     result = list(by_id.values())
     _write(registry_path, result)
     return result
@@ -277,6 +353,23 @@ def run_cycle(cycle_fn: Callable[[], dict[str, Any]], *, cycle_id: str | None = 
                "selection_reason": result.get("selection_reason"),
                "lane_identity_status": "PRESENT" if result.get("selected_lane_id") else "NOT_EMITTED_BY_UPSTREAM_SCHEDULER",
                "result": result, "single_final_outcome": True}
+    operating_mode = _read(ROOT / "configs/nexus_operating_mode.json", {})
+    weekend = operating_mode.get("weekend_mode") if isinstance(operating_mode, dict) else None
+    weekend_enabled = isinstance(weekend, dict) and weekend.get("enabled") is True
+    heartbeat["weekend_mode_enabled"] = weekend_enabled
+    receipt["weekend_mode_enabled"] = weekend_enabled
+    if weekend_enabled:
+        try:
+            from nexus_agent_platform.weekend_report import generate_weekend_report
+            report = generate_weekend_report(heartbeat=heartbeat, receipt=receipt)
+            receipt["weekend_report"] = report
+            heartbeat["weekend_report_generator"] = "ACTIVE" if report.get("latest_written") else "DEGRADED"
+            heartbeat["weekend_report_latest_path"] = report.get("latest_path")
+        except Exception as exc:  # reporting must not prevent the operating cycle
+            heartbeat["weekend_report_generator"] = "DEGRADED"
+            heartbeat["weekend_report_error"] = f"{type(exc).__name__}: {str(exc)[:240]}"
+            receipt["weekend_report"] = {"latest_written": False, "error": heartbeat["weekend_report_error"]}
+        _write(HEARTBEAT_PATH, heartbeat)
     _write(RECEIPT_PATH, receipt)
     return receipt
 

@@ -910,16 +910,50 @@ def ingest_legacy_opportunity(candidate: Dict[str, Any], *, source: str = "task_
     return persist_governed_opportunity(opportunity, event="legacy_imported")
 
 
-def transition_governed_opportunity(opportunity_id: str, next_status: str, *, actor: str = "nexus_opportunity_engine", approval_id: Optional[str] = None, work_order_id: Optional[str] = None) -> Dict[str, Any]:
+def transition_governed_opportunity(opportunity_id: str, next_status: str, *, actor: str = "nexus_opportunity_engine", approval_id: Optional[str] = None, work_order_id: Optional[str] = None, rejection: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     current = get_governed_opportunity(opportunity_id)
     if not current:
         raise ValueError("opportunity not found")
     next_status = next_status.upper()
-    if next_status not in GOVERNED_OPPORTUNITY_STATUSES or next_status not in _GOVERNED_TRANSITIONS[current.get("status", "")]:
+    requested_status = next_status
+    stop_policy_receipt = None
+    if next_status in {"REJECTED", "REJECTED_WITH_EVIDENCE", "CANCELLED", "TERMINATED", "ABANDONED", "FAILED_FINAL"}:
+        from nexus_agent_platform.project_stop_policy import parent_stop_fallback, ray_stop_authorized
+        authorized_decision = str((rejection or {}).get("ray_stop_decision") or
+                                  {"REJECTED": "REJECT", "REJECTED_WITH_EVIDENCE": "REJECT",
+                                   "CANCELLED": "CANCEL", "TERMINATED": "TERMINATE",
+                                   "ABANDONED": "STOP", "FAILED_FINAL": "STOP"}[requested_status])
+        if not ray_stop_authorized(actor=actor, approval_id=approval_id,
+                                   decision=authorized_decision, project_id=str(opportunity_id)):
+            stop_policy_receipt = parent_stop_fallback(proposed_status=requested_status,
+                                                       next_owner="ATLAS_OPPORTUNITY")
+            # The rejected approach is a child outcome. Preserve the current
+            # opportunity lifecycle and route the parent objective into
+            # replanning; do not manufacture a Ray gate for an AI proposal.
+            next_status = str(current.get("status") or "NEEDS_RESEARCH")
+    if next_status not in GOVERNED_OPPORTUNITY_STATUSES or (next_status != current.get("status", "") and next_status not in _GOVERNED_TRANSITIONS[current.get("status", "")]):
         raise ValueError(f"invalid opportunity transition: {current.get('status')} -> {next_status}")
+    if next_status == "REJECTED":
+        required = ("reason", "evidence", "failed_criteria", "what_was_tested", "what_was_observed",
+                    "what_would_change_the_decision", "next_action", "next_action_owner", "parent_goal_status")
+        missing = [key for key in required if key not in (rejection or {}) or (rejection or {}).get(key) in (None, "", [])]
+        if missing:
+            raise ValueError("rejection_contract_required:" + ",".join(missing))
     updated = {**current, "status": next_status, "updated_at": _utc_now(), "approval_id": approval_id or current.get("approval_id"), "work_order_id": work_order_id or current.get("work_order_id")}
+    if next_status == "REJECTED":
+        updated["rejection"] = dict(rejection or {})
+    if stop_policy_receipt:
+        updated["stop_request"] = {**stop_policy_receipt,
+            "proposed_rejection": dict(rejection or {}), "requested_at": _utc_now()}
+        # Keep the parent opportunity active and preserve the attempted stop as
+        # audit evidence. A child rejection/failed experiment cannot terminate
+        # the parent project or create an unauthorized Ray gate.
+        updated.update({key: value for key, value in stop_policy_receipt.items()
+                        if key in {"project_status", "execution_state", "next_action_id",
+                                   "next_owner", "next_action_type", "next_action_reason",
+                                   "return_owner_after_decision", "continue_research", "requires_ray"}})
     persistence.append_record("opportunities", updated)
-    _record_opportunity_event("status_changed", updated, previous_status=current.get("status"), extra={"actor": actor})
+    _record_opportunity_event("status_changed", updated, previous_status=current.get("status"), extra={"actor": actor, "rejection": updated.get("rejection")})
     return updated
 
 

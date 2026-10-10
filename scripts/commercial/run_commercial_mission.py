@@ -22,8 +22,11 @@ def write(name, value):
     OUT.mkdir(parents=True, exist_ok=True); (OUT / name).write_text(json.dumps(value, indent=2) + "\n")
 
 def direct_source(url):
-    p = subprocess.run(["curl", "-L", "--fail", "--max-time", "20", "-A", "NexusCommercialResearch/1.0", "-sS", url], capture_output=True, timeout=25, check=False)
-    text = p.stdout.decode("utf-8", "replace") if p.returncode == 0 else ""
+    from nexus_agent_platform.provider_enforcement import execute_public_read
+    def fetch():
+        p = subprocess.run(["curl", "-L", "--fail", "--max-time", "20", "-A", "NexusCommercialResearch/1.0", "-sS", url], capture_output=True, timeout=25, check=False)
+        return p.stdout.decode("utf-8", "replace") if p.returncode == 0 else ""
+    text = execute_public_read("BROWSER_EXTERNAL_SERVICES", "commercial_public_research", fetch, response_bytes=30000)
     return {"url": url, "retrieved_at": now(), "status": "RETRIEVED" if text else "UNAVAILABLE", "content_hash": fp(text[:30000]), "excerpt": " ".join(text.split())[:1200] if text else None}
 
 def main():

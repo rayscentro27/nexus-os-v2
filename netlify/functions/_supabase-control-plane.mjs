@@ -30,3 +30,20 @@ export async function readLiveControlPlane() {
   ])
   return { approvals: Array.isArray(approvals) ? approvals : [], events: Array.isArray(events) ? events : [] }
 }
+
+// The admin status page needs only pending human decisions. Historical events
+// are available in the dedicated event view; fetching hundreds of payload
+// JSONB rows on each dashboard refresh was unnecessary repeated egress.
+export async function readPendingAdminApprovals() {
+  const now = Date.now()
+  if (pendingAdminCache && now - pendingAdminCache.cachedAt < 30000) return pendingAdminCache.rows
+  const rows = await supabaseRequest('approvals?select=id,created_at,lane,item_type,item_id,status,title,summary,payload,approved_by,decided_at&status=eq.pending&order=created_at.desc&limit=50')
+  const safeRows = Array.isArray(rows) ? rows : []
+  pendingAdminCache = { cachedAt: now, rows: safeRows }
+  return safeRows
+}
+
+// Small per-function-instance TTL cache deduplicates simultaneous Admin views.
+// It is memory-only, bounded to the latest 50 pending approvals, and contains
+// no credentials or client document contents.
+let pendingAdminCache = null

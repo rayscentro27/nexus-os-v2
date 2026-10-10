@@ -23,7 +23,12 @@ COLLECTIONS = ("approvals", "work_orders", "recommendations", "audit", "queue", 
 
 # Trading completion records are deliberately kept in the same governed append-only
 # store while remaining additive to the historical collection tuple.
-EXTRA_COLLECTIONS = {"trading_champion_board", "trading_cost_models", "trading_options_watch", "trading_degradation", "trading_recommendations", "trading_multi_mode", "trading_instruments", "trading_runtime_states", "trading_events", "trading_outcome_observations", "research_runtime_states", "research_lanes", "research_discovery_clusters", "research_opportunity_synthesis", "research_intelligence_intake", "research_market_intelligence", "research_market_watch", "research_special_projects", "research_recovery_incidents", "research_stage_receipts", "alpha_health_states", "alpha_decision_receipts", "alpha_rejection_history", "alpha_decision_overrides", "systems_health_states", "systems_services", "systems_incidents", "systems_recovery_receipts", "systems_ai_analyses", "systems_worker_jobs", "systems_worker_receipts", "systems_worker_recipes", "certification_experiments", "certification_inputs", "labs_candidates", "labs_experiments", "labs_model_capabilities", "labs_health_states", "upgrade_requests", "upgrade_decisions", "upgrade_health_states", "upgrade_rollback_receipts", "finance_truth_snapshots", "finance_project_economics", "finance_goal_snapshots", "finance_alerts", "finance_service_cost_baseline", "finance_token_rollups", "finance_certification_carryover", "customer_service_cases", "customer_service_case_events", "customer_service_followups", "customer_service_escalations", "customer_service_health", "marketing_opportunities", "marketing_campaigns", "marketing_leads", "marketing_health", "marketing_certification_carryover", "creative_tasks", "creative_provider_receipts", "creative_health", "creative_certification_carryover", "creative_prompt_architect_receipts"}
+EXTRA_COLLECTIONS = {"trading_champion_board", "trading_cost_models", "trading_options_watch", "trading_degradation", "trading_recommendations", "trading_multi_mode", "trading_instruments", "trading_runtime_states", "trading_events", "trading_outcome_observations", "research_runtime_states", "research_lanes", "research_discovery_clusters", "research_opportunity_synthesis", "research_intelligence_intake", "research_market_intelligence", "research_market_watch", "research_special_projects", "research_recovery_incidents", "research_stage_receipts", "alpha_health_states", "alpha_decision_receipts", "alpha_rejection_history", "alpha_decision_overrides", "systems_health_states", "systems_services", "systems_incidents", "systems_recovery_receipts", "systems_ai_analyses", "systems_worker_jobs", "systems_worker_receipts", "systems_worker_recipes", "certification_experiments", "certification_inputs", "labs_candidates", "labs_experiments", "labs_model_capabilities", "labs_health_states", "upgrade_requests", "upgrade_decisions", "upgrade_health_states", "upgrade_rollback_receipts", "finance_truth_snapshots", "finance_project_economics", "finance_goal_snapshots", "finance_alerts", "finance_service_cost_baseline", "finance_token_rollups", "finance_certification_carryover", "customer_service_cases", "customer_service_case_events", "customer_service_followups", "customer_service_escalations", "customer_service_health", "marketing_opportunities", "marketing_campaigns", "marketing_leads", "marketing_health", "marketing_certification_carryover", "creative_tasks", "creative_provider_receipts", "creative_health", "creative_certification_carryover", "creative_prompt_architect_receipts", "department_information_items", "department_evaluations", "organizational_learning", "department_research_requests"}
+
+
+# NotebookLM-backed Research results are append-only governed evidence too.
+EXTRA_COLLECTIONS.add("research_notebooklm_findings")
+EXTRA_COLLECTIONS.add("company_workflow_observability")
 
 
 def governed_data_dir() -> Path:
@@ -56,13 +61,33 @@ def _ensure(path: Path) -> None:
 
 def append_record(collection: str, record: Dict[str, Any]) -> Dict[str, Any]:
     """Append an immutable record to the collection."""
+    value = dict(record)
+    stop_receipt = None
+    if collection in {"goals", "opportunities", "business_ideas", "marketing_projects",
+                      "creative_campaigns", "research_special_projects", "upgrade_requests"}:
+        from nexus_agent_platform.project_stop_policy import guard_parent_state_write
+        identity_key = next((key for key in ("goal_id", "opportunity_id", "project_id", "business_idea_id", "id") if value.get(key)), None)
+        prior = None
+        if identity_key:
+            prior = next((row for row in read_records(collection)
+                          if str(row.get(identity_key) or "") == str(value.get(identity_key))), None)
+        value, stop_receipt = guard_parent_state_write(collection=collection, proposed=value, prior=prior)
     path = collection_path(collection)
     _ensure(path)
     with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
+        fh.write(json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n")
         fh.flush()
         os.fsync(fh.fileno())
-    return record
+    if stop_receipt and collection != "audit":
+        audit_path = collection_path("audit")
+        _ensure(audit_path)
+        event = {"event_id": new_id("aud"), "created_at": _now(), "event_type": "PARENT_STOP_DENIED",
+                 **stop_receipt}
+        with audit_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+    return value
 
 
 def read_records(collection: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:

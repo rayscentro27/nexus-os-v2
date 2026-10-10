@@ -77,3 +77,10 @@ def test_overlapping_run_is_skipped(tmp_path):
         assert acquired
         with recovery.single_run_lock(lock) as second:
             assert second is False
+
+
+def test_stale_pid_text_in_unlocked_lockfile_does_not_block_recovery(tmp_path):
+    lock = tmp_path / "recovery.lock"
+    lock.write_text("999999999\n", encoding="utf-8")
+    with recovery.single_run_lock(lock) as acquired:
+        assert acquired is True

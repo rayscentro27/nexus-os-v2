@@ -203,6 +203,7 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
     plan = _json_content(plan_call)
     usage = {"planning": plan_call.get("usage", {}), "review": {}}
     if plan_call.get("error") or not plan or plan.get("next_action") != required_action:
+        plan_failure = (str(plan_call.get("error") or "planner response missing required JSON fields or controller-selected action")[:500])
         # A malformed planner response is a worker-attempt failure, not a
         # parent-goal failure.  Give the controller one bounded, materially
         # different recovery attempt with compact context before returning the
@@ -213,7 +214,7 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
             {"role": "system", "content": (
                 "Recover an invalid bounded plan. Return JSON only with the same required keys. "
                 "next_action must be exactly " + required_action + ". Use only the supplied evidence; "
-                "do not claim unsupported facts or completion."
+                "do not claim unsupported facts or completion. Validation feedback: " + plan_failure
             )},
             {"role": "user", "content": json.dumps(recovery_objective, sort_keys=True)},
         ], max_tokens=900 if required_action in {FINAL_ACTION, PRODUCTIVE_ACTION} else 300)
@@ -239,11 +240,49 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
                     "criteria_satisfied": list(objective.get("success_criteria") or []),
                     "human_action": "Review the internal Admin control-center package before external use."}
         else:
+            usage["plan_validation_failure"] = {
+                "expected_schema": ["objective_id", "next_action", "rationale", "completion_check", "needs_human"],
+                "expected_next_action": required_action,
+                "reason": plan_failure,
+                "initial_response": str(plan_call.get("content") or "")[:2000],
+                "recovery_reason": str(recovery_call.get("error") or "recovery response failed schema/action validation")[:500],
+                "recovery_response": str(recovery_call.get("content") or "")[:2000],
+            }
+            if required_action == FINAL_ACTION:
+                # A malformed model plan cannot justify finalization. Route to
+                # an explicitly incomplete internal work artifact so the goal
+                # remains actionable and the final review gate stays closed.
+                required_action = PRODUCTIVE_ACTION
+                objective["allowed_action"] = PRODUCTIVE_ACTION
+                pending = list(objective.get("missing_criteria") or objective.get("success_criteria") or [])
+                plan = {
+                    "next_action": PRODUCTIVE_ACTION,
+                    "rationale": "Deterministic recovery after invalid planner output; this artifact records pending work and does not claim criteria complete.",
+                    "deliverable_type": "invalid_plan_recovery_work_order",
+                    "deliverable_title": f"Bounded recovery work for {objective.get('goal_id') or 'active goal'}",
+                    "deliverable_summary": "Internal continuation record created because the model plan failed validation.",
+                    "deliverable_content": {"status": "INCOMPLETE", "pending_criteria": pending,
+                                            "evidence_refs": list(objective.get("current_evidence") or []),
+                                            "next_step": "Replan the first pending criterion with the controller-selected allowlisted action.",
+                                            "external_action_performed": False},
+                    "evidence_refs": [],
+                    "criteria_satisfied": [],
+                    "recommended_next_action": "REPLAN_INVALID_MODEL_PLAN",
+                }
+                finding = {**finding, "productive_action": PRODUCTIVE_ACTION}
+                usage["deterministic_recovery"] = {"used": True, "action": PRODUCTIVE_ACTION}
+            else:
+                plan = {"next_action": required_action,
+                        "rationale": "Deterministic fallback to the controller-selected allowlisted action after bounded model replan failed."}
+                usage["deterministic_recovery"] = {"used": True, "action": required_action}
+        if not plan:
             receipt = {"schema_version": "nexus.ai-workforce-receipt.v1", "receipt_id": receipt_id,
                        "execution_mode": "REAL", "status": "FAILED", "failure_class": "INVALID_MODEL_PLAN",
                        "objective": objective, "model": plan_call.get("model", _model()),
                        "model_invocation": True, "plan": plan,
                        "recovery_plan": recovery_plan,
+                       "plan_validation_failure": {"expected_schema": ["objective_id", "next_action", "rationale", "completion_check", "needs_human"],
+                                                   "actual_plan": str(plan_call.get("content") or "")[:2000], "reason": plan_failure},
                        "planner_recovery_error": str(recovery_call.get("error") or "INVALID_MODEL_PLAN")[:300],
                        "usage": usage,
                        "started_at": started, "completed_at": _now()}
@@ -311,12 +350,18 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
                "plan": plan, "executor": "allowlisted:" + required_action, "execution": execution,
                "ai_review": review, "usage": usage, "remaining_work": review.get("remaining_work"),
                "started_at": started, "completed_at": _now(), "external_side_effects": False}
+    if usage.get("plan_validation_failure"):
+        receipt["failure_class"] = "INVALID_MODEL_PLAN"
+        receipt["plan_validation_failure"] = usage["plan_validation_failure"]
     if execution.get("status") != "PASS" or (required_action == FINAL_ACTION and not execution.get("finalized")) or review.get("verified") is not True:
         receipt["finalization_failure"] = failure_report
     receipt["receipt_path"] = _write_receipt(receipt)
     return {"status": receipt["status"], "action": "ai.plan_and_verify", "artifact_path": receipt["receipt_path"],
             "output_hash": receipt_id, "execution_mode": "REAL", "external_side_effects": False,
             "ai_model_invoked": True, "ai_plan": plan, "ai_review": review, "executor_result": execution,
+            "failure_class": "INVALID_MODEL_PLAN" if usage.get("plan_validation_failure") else None,
+            "plan_validation_failure": usage.get("plan_validation_failure"),
+            "planner_recovery": usage.get("deterministic_recovery"),
             "finalization_failure": failure_report if "finalization_failure" in receipt else None,
             "next_action": plan.get("recommended_next_action") or plan.get("next_action"),
             "receipt_path": receipt["receipt_path"]}

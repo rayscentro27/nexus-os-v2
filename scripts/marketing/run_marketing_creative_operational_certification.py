@@ -42,7 +42,9 @@ def load_runtime_env() -> None:
         line = raw.strip()
         if line and not line.startswith("#") and "=" in line:
             key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+            key = key.strip()
+            if key in {"RESEND_API_KEY", "RESEND_FROM_EMAIL", "RESEND_TO_EMAIL", "NEXUS_DURABLE_JOB_ID", "NEXUS_CORRELATION_ID", "NEXUS_DEPARTMENT", "NEXUS_JOB_TYPE", "NEXUS_APPROVED_TEST_RECIPIENTS", "MARKETING_CREATIVE_SEND_TEST_EMAIL"}:
+                os.environ.setdefault(key, value.strip().strip("'\""))
 from nexus_foundation.contracts import (  # noqa: E402
     assign_work_order, build_work_order, complete_work_order, transition_work_order,
 )
@@ -141,22 +143,41 @@ def send_controlled_email(copy: dict[str, Any], landing: dict[str, Any]) -> dict
     key, sender, recipient = os.environ.get("RESEND_API_KEY", ""), os.environ.get("RESEND_FROM_EMAIL", ""), os.environ.get("RESEND_TO_EMAIL", "")
     if not (key and sender and recipient):
         return {"status": "BLOCKED_EXTERNAL", "reason": "approved Resend test configuration incomplete", "provider": "resend"}
+    from scripts.nexus_agent_platform.provider_enforcement import authorize_email_action, execute
+    from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    approved_recipients={x.strip().casefold() for x in os.environ.get("NEXUS_APPROVED_TEST_RECIPIENTS","").split(",") if x.strip()}
+    try:
+        authorize_email_action("TEST_SEND",approved_test_recipient=recipient.casefold() in approved_recipients)
+    except GovernanceDenied as exc:
+        return {"status":"HUMAN_APPROVAL_REQUIRED","reason":exc.code,"provider":"resend"}
     payload = json.dumps({"from": sender, "to": [recipient], "subject": str(copy.get("email_subject") or "Free Small Business Operations Checklist"), "html": f"<p>{str(copy.get('subhead') or 'A practical educational checklist for small-business operations.')}</p><p><a href=\"https://goclearonline.cc{landing['url_path']}?utm_source=email&utm_medium=certification&utm_campaign={CAMPAIGN_ID}\">{str(copy.get('CTA') or 'Open the checklist')}</a></p><p>Internal certification only. No business outcome is promised.</p>"}).encode()
     request = urllib.request.Request("https://api.resend.com/emails", data=payload, method="POST", headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "Idempotency-Key": f"nexus-{CAMPAIGN_ID}-test-email"})
     try:
-        with urllib.request.urlopen(request, timeout=20, context=ssl.create_default_context()) as response:
-            body = json.loads(response.read().decode() or "{}")
+        try: estimated_cost=float(os.environ["NEXUS_RESEND_ESTIMATED_COST_PER_EMAIL"])
+        except (KeyError,ValueError): estimated_cost=None
+        estimate={"requests":1,"operations":1,"emails":1,"billable":True}
+        if estimated_cost is not None: estimate["cost"]=estimated_cost
+        body=execute("EMAIL_PROVIDER","resend_email","TEST_SEND",estimate,
+            lambda: (lambda response: json.loads(response.read().decode() or "{}"))(urllib.request.urlopen(request, timeout=20, context=ssl.create_default_context())),
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type="MARKETING_TEST_EMAIL",
+            actual_usage=lambda _: {"requests":1,"operations":1,"emails":1,**({"cost":estimated_cost} if estimated_cost is not None else {})},
+            external_ref=lambda result:result.get("id"))
         provider_id = body.get("id")
         result = {"provider": "resend", "status": "PASS_REAL" if provider_id else "FAILED_REAL", "provider_message_id": provider_id, "recipient_class": "configured_controlled_test_recipient", "delivery_status": "PROVIDER_ACCEPTED_ONLY"}
         if provider_id:
             verify = urllib.request.Request(f"https://api.resend.com/emails/{provider_id}", headers={"Authorization": f"Bearer {key}"})
             try:
-                with urllib.request.urlopen(verify, timeout=20, context=ssl.create_default_context()) as response:
-                    status_body = json.loads(response.read().decode() or "{}")
+                status_body=execute("EMAIL_PROVIDER","resend_status","READ",{"requests":1,"operations":1,"billable":False},
+                    lambda: (lambda response: json.loads(response.read().decode() or "{}"))(urllib.request.urlopen(verify, timeout=20, context=ssl.create_default_context())),
+                    job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                    job_type="MARKETING_TEST_EMAIL_STATUS",actual_usage=lambda _:{"requests":1,"operations":1})
                 result["delivery_status"] = status_body.get("last_event") or status_body.get("status") or "PROVIDER_STATUS_READ"
             except Exception as exc:
                 result["delivery_status_error"] = type(exc).__name__
         return result
+    except GovernanceDenied as exc:
+        return {"status":"HUMAN_APPROVAL_REQUIRED","reason":exc.code,"provider":"resend"}
     except urllib.error.HTTPError as exc:
         return {"provider": "resend", "status": "FAILED_REAL", "http_status": exc.code, "reason": "provider_rejected_test_send"}
     except Exception as exc:

@@ -16,14 +16,16 @@ from typing import Any, Iterable, Optional
 from nexus_agent_platform import alpha_research
 from nexus_agent_platform.governed import persistence
 from nexus_agent_platform.research.claim_verification import assess_evidence, classify_claim
+from nexus_agent_platform.research_followup_contract import build_contract, question as contract_question, validate_contract, persist_contract
+from nexus_agent_platform.research_followup_contract import build_evidence_packet
 
-REQUEST_SCHEMA = "nexus.department-research-request.v1"
+REQUEST_SCHEMA = "nexus.research-followup-contract.v1"
 RESULT_SCHEMA = "nexus.department-result-feedback.v1"
 
 DEPARTMENTS = (
     "ALPHA", "HERMES_NOVA", "SYSTEMS", "SYSTEMS_ENGINEERING", "CREATIVE", "MARKETING", "CUSTOMER_SERVICE", "TRADING",
     "SEO", "CLYDE_CREDIT", "FUNDING", "FINANCE", "BUSINESS_OPPORTUNITY",
-    "TRADING_RESEARCH",
+    "TRADING_RESEARCH", "OPPORTUNITIES", "UPGRADE_CONTROL", "LEDGER_FINANCE", "ATLAS_OPPORTUNITY",
 )
 REQUEST_STATES = {"RECEIVED", "RESEARCHING", "ALPHA_REVIEW", "FOLLOW_UP_REQUIRED", "READY_TO_RESUME", "RESUMED", "BLOCKED"}
 RESULT_STATES = {"SUCCESS", "FAILURE", "PARTIAL"}
@@ -44,7 +46,11 @@ def build_research_request(*, department: str, question: str, knowledge_gap: str
                            desired_evidence: Optional[list[str]] = None,
                            risk_consequence: str = "UNKNOWN",
                            freshness_requirement: str = "CURRENT",
-                           priority: str = "P2_REVENUE", next_action: str = "") -> dict[str, Any]:
+                           priority: str = "P2_REVENUE", next_action: str = "",
+                           research_questions: Optional[list[dict[str, Any]]] = None,
+                           decision_unlocked_by_answers: str = "Resume the originating department goal with evidence-backed decision.",
+                           parent_handoff_id: str | None = None, subject_type: str = "GOAL",
+                           subject_id: str | None = None) -> dict[str, Any]:
     department = str(department).upper()
     if department not in DEPARTMENTS:
         raise ValueError("unknown-department")
@@ -53,6 +59,13 @@ def build_research_request(*, department: str, question: str, knowledge_gap: str
     created_at = _now()
     reason = str(reason_needed or "Knowledge is required to continue the originating objective.").strip()
     evidence = list(desired_evidence or ["source-backed finding", "freshness", "uncertainty"])
+    questions = research_questions or [contract_question(str(question), "SOURCE_BACKED_FINDING", "OFFICIAL_OR_PRIMARY_WHEN_AVAILABLE", str(knowledge_gap))]
+    contract = build_contract(requesting_department=department, reason=reason, research_questions=questions,
+        overall_evidence_required=evidence, decision_unlocked_by_answers=decision_unlocked_by_answers,
+        return_to_department=department, return_to_goal_id=parent_goal_id or objective_id,
+        parent_goal_id=parent_goal_id or objective_id, parent_handoff_id=parent_handoff_id,
+        requesting_worker="intelligence_fabric", subject_type=subject_type, subject_id=subject_id or objective_id or parent_goal_id,
+        priority=priority, due_or_freshness_requirement=freshness_requirement)
     payload = {
         "schema_version": REQUEST_SCHEMA,
         "request_id": _id("research_request", (department, objective_id, question, knowledge_gap)),
@@ -86,6 +99,8 @@ def build_research_request(*, department: str, question: str, knowledge_gap: str
         "result_artifact": None,
         "alpha_validation_status": "NOT_STARTED",
         "downstream_destination": "department_resume",
+        **contract,
+        "request_id": contract["research_request_id"],
     }
     return payload
 
@@ -95,8 +110,31 @@ def persist_research_request(request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("invalid-research-request")
     if request.get("research_status") not in REQUEST_STATES:
         raise ValueError("invalid-research-request-state")
+    if request.get("decision") == "MORE_RESEARCH_REQUIRED" and not request.get("research_questions"):
+        raise ValueError("more-research-required-needs-structured-contract")
+    if request.get("schema_version") == REQUEST_SCHEMA:
+        validate_contract(request)
     request = {**request, "updated_at": request.get("updated_at") or _now()}
-    persistence.append_record("research_requests", request)
+    if request.get("schema_version") == REQUEST_SCHEMA:
+        state_alias = str(request.get("research_status") or request.get("status") or "RECEIVED").upper()
+        request["status"] = {"RESEARCHING": "IN_RESEARCH", "READY_TO_RESUME": "ANSWERED",
+            "FOLLOW_UP_REQUIRED": "PARTIAL", "RESUMED": "RETURNED", "BLOCKED": "PARTIAL",
+            "RECEIVED": "OPEN", "ALPHA_REVIEW": "IN_RESEARCH"}.get(state_alias, state_alias if state_alias in {"OPEN", "IN_RESEARCH", "PARTIAL", "ANSWERED", "RETURNED", "CLOSED", "CANCELLED"} else "PARTIAL")
+    previous = persistence.get_record("research_requests", request.get("research_request_id") or request.get("request_id"), key="research_request_id")
+    if request.get("schema_version") == REQUEST_SCHEMA and not previous:
+        persist_contract(request)
+    else:
+        persistence.append_record("research_requests", request)
+        if request.get("schema_version") == REQUEST_SCHEMA:
+            try:
+                from nexus_agent_platform import supabase_knowledge
+                client = supabase_knowledge.supabase
+                if client is not None and client.configured():
+                    client.rest("PATCH", f"department_research_requests?request_id=eq.{request['research_request_id']}",
+                        body={"status": request.get("status", request.get("research_status")), "contract_payload": request,
+                              "updated_at": request["updated_at"]}, prefer="return=minimal")
+            except Exception:
+                pass
     persistence.emit_audit_event({"event": "department_research_request_recorded", "request_id": request["request_id"], "department": request["department"], "objective_id": request.get("objective_id"), "external_action_performed": False})
     return request
 
@@ -135,20 +173,48 @@ def run_research_request(request: dict[str, Any], evidence: Iterable[dict[str, A
     pack = alpha["pack"]
     alpha_status = "QUALIFIED" if pack["status"] == "COMPLETE" and pack["findings"] else "MORE_RESEARCH_REQUIRED"
     result_ref = alpha["receipt"]["receipt_id"]
-    updated = {**request, "research_status": "READY_TO_RESUME" if alpha_status == "QUALIFIED" else "FOLLOW_UP_REQUIRED", "alpha_status": alpha_status, "result_reference": result_ref, "next_action": "Resume originating department objective." if alpha_status == "QUALIFIED" else "Investigate the evidence deficiency through targeted Research.", "status": "READY_TO_RESUME" if alpha_status == "QUALIFIED" else "FOLLOW_UP_REQUIRED", "result_artifact": result_ref, "alpha_validation_status": alpha_status, "downstream_destination": "department_resume"}
+    contract_request = request.get("schema_version") == REQUEST_SCHEMA and bool(request.get("research_questions"))
+    updated = {**request, "research_status": "READY_TO_RESUME" if alpha_status == "QUALIFIED" or contract_request else "FOLLOW_UP_REQUIRED", "alpha_status": alpha_status, "result_reference": result_ref, "next_action": "Return the question-level evidence packet to the originating department for a sufficiency decision." if contract_request and alpha_status != "QUALIFIED" else "Resume originating department objective." if alpha_status == "QUALIFIED" else "Investigate a specifically evidenced deficiency through targeted Research.", "status": "ANSWERED" if alpha_status == "QUALIFIED" else "PARTIAL", "result_artifact": result_ref, "alpha_validation_status": alpha_status, "downstream_destination": "department_resume"}
     follow_up = None
-    if alpha_status != "QUALIFIED":
-        follow_up = build_research_request(department=request["department"], objective_id=request.get("objective_id", ""), parent_goal_id=request.get("parent_goal_id", ""), work_order_id=request.get("work_order_id", ""), question=f"Follow up on: {request['question']}", knowledge_gap="Resolve the evidence deficiency identified by Alpha.", reason_needed="Alpha found insufficient evidence.", desired_evidence=request.get("desired_evidence"), risk_consequence=request.get("risk_consequence", "UNKNOWN"), freshness_requirement=request.get("freshness_requirement", "CURRENT"), priority=request.get("priority", "P2_REVENUE"))
-        persist_research_request(follow_up)
-        updated["follow_up_request_id"] = follow_up["request_id"]
+    if alpha_status != "QUALIFIED" and not contract_request:
+        gap_items = [str(item) for item in pack.get("missing_evidence", []) if str(item).strip()]
+        narrowed = [contract_question(f"Resolve the specific evidence gap: {gap}", "SOURCE_BACKED_FACT", "OFFICIAL_OR_PRIMARY_WHEN_AVAILABLE", f"Attributable evidence directly addresses: {gap}") for gap in gap_items[:6]]
+        if not narrowed:
+            narrowed = [contract_question(f"Cross-check a distinct source for: {request['question']}", "INDEPENDENT_CROSS_CHECK", "INDEPENDENT_PRIMARY_OR_REPUTABLE", "A source independent of prior evidence, or explicit NOT_FOUND")]
+        follow_up = build_research_request(department=request["department"], objective_id=request.get("objective_id", ""), parent_goal_id=request.get("parent_goal_id", ""), work_order_id=request.get("work_order_id", ""), question=narrowed[0]["question"], knowledge_gap="Resolve only the listed evidence deficiencies from the preceding Research result.", reason_needed="Alpha found specific unresolved evidence gaps; this request narrows them and preserves the same originating goal.", desired_evidence=[q["question"] for q in narrowed], research_questions=narrowed, decision_unlocked_by_answers=request.get("decision_unlocked_by_answers", "Resume the same originating department goal with the verified answers."), parent_handoff_id=request.get("parent_handoff_id"), priority=request.get("priority", "P2_REVENUE"), freshness_requirement=request.get("freshness_requirement", "CURRENT"))
+        existing = [r for r in persistence.read_records("research_requests") if r.get("return_to_goal_id") == follow_up.get("return_to_goal_id") and r.get("schema_version") == "nexus.department-research-request.v1"]
+        same_questions = {tuple(sorted(q.get("question", "").lower() for q in r.get("research_questions", []))) for r in existing}
+        if tuple(sorted(q["question"].lower() for q in narrowed)) in same_questions:
+            follow_up = None
+            updated["next_action"] = "DO_NOT_REPEAT_IDENTICAL_RESEARCH; request a new evidence class or proceed with explicit assumptions"
+            updated["research_loop_dedupe"] = "IDENTICAL_QUESTION_SET_SUPPRESSED"
+        else:
+            persist_research_request(follow_up)
+            updated["follow_up_request_id"] = follow_up["request_id"]
     persist_research_request(updated)
-    return {"request": updated, "alpha": alpha, "alpha_decision": alpha_status, "follow_up": follow_up}
+    evidence_packet = None
+    if request.get("schema_version") == REQUEST_SCHEMA and request.get("research_questions"):
+        question_results = []
+        for item in request["research_questions"]:
+            status = "ANSWERED" if len(request["research_questions"]) == 1 and alpha_status == "QUALIFIED" and evidence_rows else "PARTIAL" if evidence_rows else "NOT_FOUND"
+            question_results.append({"question_id": item["question_id"], "status": status,
+                "answer": "; ".join(str(e.get("content", {}).get("normalized_text_or_markdown", ""))[:500] for e in evidence_rows),
+                "confidence": "MEDIUM" if evidence_rows else "UNKNOWN",
+                "sources": [e["source"].get("original_reference") for e in evidence_rows],
+                "facts": [str(e.get("content", {}).get("normalized_text_or_markdown", ""))[:500] for e in evidence_rows],
+                "assumptions": [], "unknowns": [] if status == "ANSWERED" else [item["question"]], "contradictions": []})
+        evidence_packet = build_evidence_packet(request, question_results,
+            overall_summary="Alpha reviewed the available bounded evidence; question status reflects evidence sufficiency at this stage.",
+            remaining_unknowns=[] if alpha_status == "QUALIFIED" else [item["question"] for item in request["research_questions"]],
+            recommended_next_action=updated["next_action"])
+    return {"request": updated, "alpha": alpha, "alpha_decision": alpha_status, "follow_up": follow_up,
+            "evidence_packet": evidence_packet}
 
 
 def resume_department(request: dict[str, Any], *, next_action: str) -> dict[str, Any]:
     if request.get("research_status") != "READY_TO_RESUME":
         raise ValueError("research-not-ready-to-resume")
-    resumed = {**request, "research_status": "RESUMED", "status": "RESUMED", "department_resume": "RESUMED", "next_action": next_action, "resumed_at": _now()}
+    resumed = {**request, "research_status": "RESUMED", "status": "RETURNED", "department_resume": "RESUMED", "next_action": next_action, "resumed_at": _now()}
     persist_research_request(resumed)
     return resumed
 

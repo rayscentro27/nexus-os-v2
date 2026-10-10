@@ -33,11 +33,14 @@ def test_all_departments_can_request_alpha_review_and_resume():
         assert resumed["objective_id"] == request["objective_id"]
 
 
-def test_weak_evidence_creates_targeted_follow_up_without_failing_parent():
+def test_weak_evidence_returns_partial_packet_to_same_goal_without_blind_repeat():
     request = fabric.build_research_request(department="MARKETING", objective_id="goal-revenue", question="Which evidence is missing for this channel?", knowledge_gap="Need independently verified demand evidence.")
     result = fabric.run_research_request(request, [], claim="This claim has no evidence.")
     assert result["alpha_decision"] == "MORE_RESEARCH_REQUIRED"
-    assert result["follow_up"]["department"] == "MARKETING"
+    assert result["follow_up"] is None
+    assert result["evidence_packet"]["status"] == "PARTIAL"
+    assert result["evidence_packet"]["return_to_goal_id"] == "goal-revenue"
+    assert result["request"]["research_status"] == "READY_TO_RESUME"
     assert result["request"]["objective_id"] == "goal-revenue"
 
 

@@ -77,18 +77,23 @@ class TryPostProvider:
             headers={**self._headers(), "Content-Type": "application/json"},
             data=json.dumps(dict(payload or {})).encode() if method != "GET" else None,
         )
-        try:
-            with self._opener(request, timeout=self.config.timeout_seconds) as response:
-                status = int(response.status)
-                raw = response.read(65536)
-                body: Any = json.loads(raw.decode()) if raw else None
-                result = "PASS_REAL" if 200 <= status < 300 else self._status_result(status)
-                return self._receipt(operation, result, http_status=status, response=self._sanitize_response(body))
-        except urllib.error.HTTPError as exc:
-            category = self._status_result(exc.code)
-            return self._receipt(operation, category, http_status=int(exc.code))
-        except (OSError, urllib.error.URLError, TimeoutError) as exc:
-            return self._receipt(operation, "SERVICE_DOWN", error_class=type(exc).__name__)
+        from nexus_agent_platform.provider_enforcement import execute
+        action = "READ" if method == "GET" else ("DRAFT" if operation == "create_draft" else "PUBLIC_POST")
+        def invoke():
+            try:
+                with self._opener(request, timeout=self.config.timeout_seconds) as response:
+                    status = int(response.status)
+                    raw = response.read(65536)
+                    body: Any = json.loads(raw.decode()) if raw else None
+                    result = "PASS_REAL" if 200 <= status < 300 else self._status_result(status)
+                    return self._receipt(operation, result, http_status=status, response=self._sanitize_response(body))
+            except urllib.error.HTTPError as exc:
+                return self._receipt(operation, self._status_result(exc.code), http_status=int(exc.code))
+            except (OSError, urllib.error.URLError, TimeoutError) as exc:
+                return self._receipt(operation, "SERVICE_DOWN", error_class=type(exc).__name__)
+        return execute("SOCIAL_MEDIA_EXTERNAL_ACTIONS", "trypost", action,
+            {"requests": 1, "operations": 1, "billable": False}, invoke,
+            job_id=f"trypost-{operation}-{time.time_ns()}", job_type="TRYPOST_" + operation.upper())
 
     @staticmethod
     def _status_result(status: int) -> str:
@@ -157,7 +162,16 @@ class TryPostProvider:
     def _mutation_gate(self, operation: str) -> dict[str, Any] | None:
         if not self.config.allow_external_mutations:
             return self._receipt(operation, "EXTERNAL_ACTION_GATED", reason="mutations disabled pending social-auth and Upgrade Control approval")
-        return self._auth_required(operation)
+        if required := self._auth_required(operation):
+            return required
+        from nexus_agent_platform.provider_enforcement import authorize_social_action
+        workflow = __import__("os").environ.get("NEXUS_TRYPOST_WORKFLOW_AUTHORIZED", "").lower() == "true"
+        ray = __import__("os").environ.get("NEXUS_TRYPOST_RAY_APPROVED", "").lower() == "true"
+        try:
+            authorize_social_action("PUBLIC_POST", workflow_authorized=workflow, ray_approved=ray)
+        except Exception as exc:
+            return self._receipt(operation, "HUMAN_APPROVAL_REQUIRED", reason=getattr(exc, "code", type(exc).__name__))
+        return None
 
     def create_draft(self, payload: Mapping[str, Any]) -> dict[str, Any]:
         if required := self._auth_required("create_draft"):

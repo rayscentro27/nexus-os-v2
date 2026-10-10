@@ -7,7 +7,7 @@ from nexus_agent_platform.demand_discovery import discover_from_questions
 from nexus_agent_platform.research_work_queue import ResearchWorkQueue, concurrency_limits, worker_bucket
 
 
-def test_assigned_work_drains_before_monitor_and_discovery(tmp_path):
+def test_fresh_monitored_source_precedes_proactive_and_fifo_breaks_ties(tmp_path):
     queue = ResearchWorkQueue(tmp_path / "queue.json")
     queue.enqueue(work_id="assigned-1", work_class="ASSIGNED", priority=1, source_type="WEB_PAGE", source_id="a")
     queue.enqueue(work_id="assigned-2", work_class="ASSIGNED", priority=2, source_type="WEB_PAGE", source_id="b")
@@ -15,13 +15,13 @@ def test_assigned_work_drains_before_monitor_and_discovery(tmp_path):
     queue.enqueue(work_id="discovery-1", work_class="DEMAND_DISCOVERY", priority=1, source_type="WEB_PAGE", source_id="d")
 
     first = queue.claim_next(worker_id="test")
-    assert first["work_id"] == "assigned-1"
+    assert first["work_id"] == "monitored-1"
     queue.settle(first["work_id"], "COMPLETE", result={"ok": True})
     second = queue.claim_next(worker_id="test")
-    assert second["work_id"] == "assigned-2"
+    assert second["work_id"] == "assigned-1"
     queue.settle(second["work_id"], "COMPLETE", result={"ok": True})
     third = queue.claim_next(worker_id="test")
-    assert third["work_id"] == "monitored-1"
+    assert third["work_id"] == "discovery-1"
 
 
 def test_expired_lease_is_recoverable(tmp_path):
@@ -64,22 +64,34 @@ def test_claim_skips_full_worker_bucket(tmp_path):
     assert claimed["work_id"] == "web"
 
 
-def test_priority_quantum_allows_lower_classes_to_progress(tmp_path):
+def test_live_priority_precedes_fifo_and_preserves_fifo_within_tier(tmp_path):
     queue = ResearchWorkQueue(tmp_path / "queue.json")
-    for index in range(6):
-        queue.enqueue(work_id=f"assigned-{index}", work_class="ASSIGNED", priority=1, source_type="WEB_PAGE")
-    queue.enqueue(work_id="monitored", work_class="MONITORED", priority=50, source_type="WEB_PAGE")
-    queue.enqueue(work_id="demand", work_class="DEMAND_DISCOVERY", priority=50, source_type="DEMAND_QUERY")
-    queue.enqueue(work_id="general", work_class="GENERAL_DISCOVERY", priority=50, source_type="WEB_PAGE")
+    queue.enqueue(work_id="late-high-priority", work_class="ASSIGNED", priority=1, source_type="WEB_PAGE")
+    queue.enqueue(work_id="old-monitored", work_class="MONITORED", priority=50, source_type="WEB_PAGE")
+    queue.enqueue(work_id="old-demand", work_class="DEMAND_DISCOVERY", priority=50, source_type="DEMAND_QUERY")
+    queue.enqueue(work_id="old-general", work_class="GENERAL_DISCOVERY", priority=50, source_type="WEB_PAGE")
+    queue.migrate_fifo()
 
     selected = []
-    for index in range(20):
+    for index in range(4):
         item = queue.claim_next(worker_id=f"fair-{index}")
         selected.append(item["work_class"])
-        queue.release(item["work_id"], reason="fairness_test")
+        queue.settle(item["work_id"], "COMPLETE", result={"fifo_test": True})
 
-    assert selected[:5] == ["ASSIGNED"] * 5
-    assert {"MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY"}.issubset(selected)
+    assert selected == ["MONITORED", "ASSIGNED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY"]
+
+
+def test_historical_backlog_is_inert_until_explicit_reactivation(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="old-backfill", work_class="ASSIGNED", source_type="YOUTUBE_CHANNEL",
+                  request_type="YOUTUBE_CHANNEL", question="continue historical backfill",
+                  status="FAILED_RETRYABLE", priority_tier="HISTORICAL_BACKLOG")
+    assert queue.claim_next(worker_id="live") is None
+    reopened = queue.reactivate_historical("old-backfill", requested_by="Ray", reason="explicit historical review")
+    assert reopened and reopened["status"] == "QUEUED"
+    assert reopened["historical_reactivation"]["reason"] == "explicit historical review"
+    claimed = queue.claim_next(worker_id="live")
+    assert claimed and claimed["work_id"] == "old-backfill"
 
 
 def test_superseded_is_terminal_and_not_reclaimable(tmp_path):
@@ -150,7 +162,8 @@ def test_repeated_retry_becomes_terminal(tmp_path):
                   source_type="WEB_PAGE", source_id="bad", max_attempts=1)
     item = queue.claim_next_for_objective(worker_id="objective-worker")
     settled = queue.settle(item["work_id"], "FAILED_RETRYABLE", result={"error": "404"})
-    assert settled["status"] == "FAILED_FINAL"
+    assert settled["status"] == "FAILED_RETRYABLE"
+    assert settled["retry_exhausted"] is True
     assert queue.select_objective() is None
 
 

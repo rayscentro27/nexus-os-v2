@@ -68,8 +68,23 @@ class ModalRemoteWorkerProvider:
     def submit(self, job: dict) -> dict:
         if not self.shared_secret:
             raise RuntimeError("NEXUS_REMOTE_WORKER_SHARED_SECRET is required for signed Modal jobs")
+        durable_job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+        if not durable_job_id or str(job.get("job_id") or "") != durable_job_id:
+            from ..resource_spend_governor import GovernanceDenied
+            raise GovernanceDenied("HUMAN_APPROVAL_REQUIRED", "DURABLE_JOB_ID_REQUIRED_OR_MISMATCH")
         timestamp = str(int(time.time()))
-        result = self._function(self.function_name).remote(job, timestamp, sign_request(job, self.shared_secret, timestamp))
+        from ..provider_enforcement import execute
+        estimate = {"requests": 1, "operations": 1, "runtime_seconds": self.timeout,
+                    "billable": True}
+        try:
+            estimate["cost"] = float(os.environ["NEXUS_MODAL_ESTIMATED_COST_PER_JOB"])
+        except (KeyError, ValueError):
+            pass
+        result = execute("MODAL", "remote_worker", "REMOTE_WORKER_SUBMIT", estimate,
+            lambda: self._function(self.function_name).remote(job, timestamp, sign_request(job, self.shared_secret, timestamp)),
+            job_id=durable_job_id,
+            job_type=str(job.get("job_type") or job.get("capability") or "REMOTE_WORKER"),
+            project_id=job.get("project_id"), correlation_id=job.get("correlation_id"))
         valid, reason = validate_result(result)
         if not valid:
             raise ValueError(f"invalid remote result: {reason}")
@@ -89,7 +104,10 @@ class ModalRemoteWorkerProvider:
         return {"job_id": job_id, "status": "NOT_AVAILABLE", "reason": "synchronous bounded Modal function"}
 
     def health(self) -> dict:
-        return self._function("health_check").remote()
+        from ..provider_enforcement import execute
+        return execute("MODAL", "remote_worker_health", "READ_ONLY_HEALTH", {"requests": 1, "operations": 1},
+                       lambda: self._function("health_check").remote(),
+                       job_type="REMOTE_WORKER_HEALTH")
 
 
 def provider_from_environment() -> ModalRemoteWorkerProvider:

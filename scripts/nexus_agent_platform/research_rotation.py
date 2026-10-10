@@ -9,7 +9,7 @@ from nexus_agent_platform.governed.persistence import read_records
 ROOT = Path(__file__).resolve().parents[2]
 STATE = ROOT / "data" / "runtime" / "research_rotation_state.json"
 MAX_CONSECUTIVE = 2
-DEFAULT_LANES = ["SEO_SEARCH_DEMAND", "AFFILIATE_REVENUE", "GOCLEAR_BUSINESS", "CREDIT_REPAIR", "FUNDING_LENDER", "GRANTS_GOVERNMENT", "MERCHANDISE_POD", "REAL_ESTATE_AI", "YOUTUBE_ASSIGNED", "TRADING_MARKETS", "AI_NEXUS", "BUSINESS_MARKET"]
+DEFAULT_LANES = ["SEO_SEARCH_DEMAND", "AFFILIATE_REVENUE", "GOCLEAR_BUSINESS", "CREDIT_REPAIR", "FUNDING_LENDER", "GRANTS_GOVERNMENT", "MERCHANDISE_POD", "REAL_ESTATE_AI", "YOUTUBE_ASSIGNED", "TRADING_MARKETS", "AI_NEXUS", "BUSINESS_MARKET", "VIRAL_TREND_DISCOVERY"]
 
 def _now() -> str: return datetime.now(timezone.utc).isoformat()
 def _load() -> dict[str, Any]:

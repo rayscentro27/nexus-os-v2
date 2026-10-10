@@ -226,7 +226,16 @@ def _crawl_with_crawl4ai(url: str, timeout_seconds: int) -> dict:
                 "html": getattr(result, "html", None) or "",
                 "error_message": getattr(result, "error_message", None),
             }
-    return asyncio.run(asyncio.wait_for(run(), timeout=timeout_seconds + 5))
+    from nexus_agent_platform.provider_enforcement import execute
+    return execute("BROWSER_EXTERNAL_SERVICES", "public_evidence_crawl", "READ_ONLY_BROWSER",
+        {"requests": 1, "operations": 1, "browser_actions": 1,
+         "runtime_seconds": timeout_seconds + 5, "billable": False},
+        lambda: asyncio.run(asyncio.wait_for(run(), timeout=timeout_seconds + 5)),
+        job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+        job_type=os.environ.get("NEXUS_JOB_TYPE", "EVIDENCE_INGESTION"),
+        actual_usage=lambda result: {"requests": 1, "operations": 1, "browser_actions": 1,
+            "runtime_seconds": timeout_seconds,
+            "bytes": len(str(result.get("markdown") or "").encode()) + len(str(result.get("html") or "").encode())})
 
 
 def _write_artifact(result: dict, root: Path, receipt_dir: Path, handoff: Path) -> dict:

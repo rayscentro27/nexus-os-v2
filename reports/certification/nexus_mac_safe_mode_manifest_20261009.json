@@ -1,0 +1,659 @@
+{
+  "manifest_version": "nexus.mac.safe-mode.v1",
+  "created_at": "2026-10-09",
+  "checkout": "/Users/raymonddavis/nexus-os-v2-canonical",
+  "safe_mode": true,
+  "components": [
+    {
+      "component": "org.chromium.chromoting",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd plist; no disabled override confirmed",
+      "purpose": "Vendor/system background service.",
+      "current_safe_mode_state": "enabled/not disabled; not observed loaded",
+      "normal_intended_state": "PASSIVE_VENDOR",
+      "reason_retained_or_disabled": "Vendor/system process outside Nexus workflow path.",
+      "future_activation_stage": "INVESTIGATE"
+    },
+    {
+      "component": "org.chromium.chromoting.broker",
+      "runtime_type": "LaunchDaemon",
+      "startup_mechanism": "launchd plist; no disabled override confirmed",
+      "purpose": "Vendor/system background service.",
+      "current_safe_mode_state": "enabled/not disabled; not observed loaded",
+      "normal_intended_state": "PASSIVE_VENDOR",
+      "reason_retained_or_disabled": "Vendor/system process outside Nexus workflow path.",
+      "future_activation_stage": "INVESTIGATE"
+    },
+    {
+      "component": "ai.hermes.gateway",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "ai.nexus.control-center",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "ai.nexus.email-pipeline",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "cf.hermes.gateway",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.activation.continuous-loop",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.active-operator-hourly",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.active-operator-v2",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.auto-executor",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.autonomy-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.cloudflare-tunnel",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.continuous-loop",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.continuous-ops-daily",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.coordination-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.daily-operating",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.demo-trading-loop",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.evening-closeout",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.hermes-status",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.mac-mini-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.monetization-research",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.monitoring-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.nexus-mcp-bridge",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.oanda-practice-trading",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.ollama",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.ops-control-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.orchestrator",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.recovery-check-v2",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.recovery-check",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.research-morning-report",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.research-persistence-certifier",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.research-signal-bridge",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.research-two-hour-report",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.research-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.signal-review",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.signal-router",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.strategy-lab",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.telegram-alpha",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.telegram-hermes-nova",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.telegram-hermes-v2",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.telegram-hermes",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.telegram-operator",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.temporal-server",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.temporal-worker",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "JOB_ONLY",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "JOB_ONLY"
+    },
+    {
+      "component": "com.nexus.tournament",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.trading-engine",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.wp9-company-cycle",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.nexus.youtube-channel-poller",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.raymonddavis.nexus.control-center",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.raymonddavis.nexus.dashboard",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.raymonddavis.nexus.hermes-mobile",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.raymonddavis.nexus",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.raymonddavis.nexus.scheduler",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.raymonddavis.nexus.telegram",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "com.PM2",
+      "runtime_type": "LaunchAgent",
+      "startup_mechanism": "launchd disabled override",
+      "purpose": "Nexus workflow, integration, or legacy runtime from plist name.",
+      "current_safe_mode_state": "disabled",
+      "normal_intended_state": "LEGACY_DISABLED",
+      "reason_retained_or_disabled": "Disabled to prevent Nexus execution, task creation, provider calls, or tunnel/browser workers during safe mode.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "User crontab",
+      "runtime_type": "cron",
+      "startup_mechanism": "user crontab",
+      "purpose": "Scheduled shell commands",
+      "current_safe_mode_state": "empty",
+      "normal_intended_state": "none for Nexus workflow",
+      "reason_retained_or_disabled": "Captured crontab was empty.",
+      "future_activation_stage": "INVESTIGATE"
+    },
+    {
+      "component": "System cron locations",
+      "runtime_type": "cron",
+      "startup_mechanism": "/etc/crontab and /etc/cron.*",
+      "purpose": "System scheduled commands",
+      "current_safe_mode_state": "no traditional cron files found; macOS periodic folders contain OS schedules only",
+      "normal_intended_state": "OS maintenance only",
+      "reason_retained_or_disabled": "No Nexus workflow entries found in inspected locations.",
+      "future_activation_stage": "ALWAYS_ON_PASSIVE"
+    },
+    {
+      "component": "PM2 God Daemon",
+      "runtime_type": "process supervisor",
+      "startup_mechanism": "PM2 launch agent com.PM2 and pm2.raymonddavis",
+      "purpose": "Previously supervised Nexus watcher/executor loops",
+      "current_safe_mode_state": "stopped; PM2 launch labels disabled; current process list empty",
+      "normal_intended_state": "disabled",
+      "reason_retained_or_disabled": "Legacy restart loops referenced missing modules; no Nexus process should resurrect.",
+      "future_activation_stage": "LEGACY_DISABLED"
+    },
+    {
+      "component": "Chrome Remote Desktop",
+      "runtime_type": "remote access service",
+      "startup_mechanism": "vendor launchd daemon",
+      "purpose": "Remote observation/access",
+      "current_safe_mode_state": "running; retained for access; no Nexus workflow execution",
+      "normal_intended_state": "passive remote access",
+      "reason_retained_or_disabled": "Required to access and observe the Mac; not linked to Nexus workflows.",
+      "future_activation_stage": "ALWAYS_ON_PASSIVE"
+    },
+    {
+      "component": "Interactive Google Chrome",
+      "runtime_type": "user application",
+      "startup_mechanism": "user session",
+      "purpose": "Normal interactive browser",
+      "current_safe_mode_state": "running; browser automation absent",
+      "normal_intended_state": "user controlled",
+      "reason_retained_or_disabled": "Normal user software; no Playwright/CDP/Nexus browser worker observed.",
+      "future_activation_stage": "ALWAYS_ON_PASSIVE"
+    },
+    {
+      "component": "Codex app-server daemon",
+      "runtime_type": "user process",
+      "startup_mechanism": "existing app-server process observed after reboot",
+      "purpose": "Codex control plane",
+      "current_safe_mode_state": "running; left untouched per explicit instruction not to interact with daemon",
+      "normal_intended_state": "outside Nexus runtime",
+      "reason_retained_or_disabled": "Not Nexus; not started or restarted during this task.",
+      "future_activation_stage": "INVESTIGATE"
+    },
+    {
+      "component": "Tailscale network extension",
+      "runtime_type": "system extension / VPN",
+      "startup_mechanism": "macOS system extension",
+      "purpose": "Remote access tunnel",
+      "current_safe_mode_state": "running; no Nexus workflow process or execution authority observed",
+      "normal_intended_state": "passive remote access",
+      "reason_retained_or_disabled": "Retained for observation access; not a Nexus executor.",
+      "future_activation_stage": "ALWAYS_ON_PASSIVE"
+    },
+    {
+      "component": "User shell startup files",
+      "runtime_type": "shell startup",
+      "startup_mechanism": "~/.zshrc, ~/.bash_profile, ~/.profile",
+      "purpose": "NVM/path setup and shell environment import",
+      "current_safe_mode_state": "present; no Nexus workflow launch command found in captured contents",
+      "normal_intended_state": "interactive shell configuration",
+      "reason_retained_or_disabled": "No autonomous process start command observed.",
+      "future_activation_stage": "INVESTIGATE"
+    },
+    {
+      "component": "Cloudflared brew service",
+      "runtime_type": "brew service",
+      "startup_mechanism": "Homebrew services",
+      "purpose": "Cloudflare tunnel",
+      "current_safe_mode_state": "not running (brew status none)",
+      "normal_intended_state": "disabled until reviewed",
+      "reason_retained_or_disabled": "No active tunnel required for safe observation.",
+      "future_activation_stage": "INVESTIGATE"
+    },
+    {
+      "component": "Docker/Podman containers",
+      "runtime_type": "container runtime",
+      "startup_mechanism": "Docker/Podman restart policies",
+      "purpose": "Potential containerized runtime",
+      "current_safe_mode_state": "Docker daemon unavailable; no Podman binary",
+      "normal_intended_state": "none for safe mode",
+      "reason_retained_or_disabled": "No active containers observed.",
+      "future_activation_stage": "INVESTIGATE"
+    }
+  ],
+  "component_count": 65
+}

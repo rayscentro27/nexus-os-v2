@@ -16,16 +16,31 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+try:
+    from temporalio import activity
+except ImportError:
+    class _ActivityUnavailable:
+        @staticmethod
+        def defn(function):
+            return function
+    activity = _ActivityUnavailable()
+
 from nexus_agent_platform.runtime.paths import get_nexus_repo_root
 
 
 # ─── Canonical Runtime Configuration ──────────────────────────
 
 def _load_canonical_runtime() -> None:
-    """Load canonical Nexus runtime environment if not already loaded."""
+    """Load only this activity module's declared service credentials/context."""
     if os.environ.get("_NEXUS_RUNTIME_LOADED"):
         return
     runtime_env = "/Users/raymonddavis/.config/nexus/runtime.env"
+    allowed = {
+        "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "TELEGRAM_BOT_TOKEN",
+        "NEXUS_TELEGRAM_BOT_TOKEN", "TELEGRAM_ALLOWED_CHAT_IDS",
+        "NEXUS_DURABLE_JOB_ID", "NEXUS_CORRELATION_ID", "NEXUS_DEPARTMENT",
+        "NEXUS_JOB_TYPE", "NEXUS_PROJECT_ID", "NEXUS_TEMPORAL_EMAIL_WORKFLOW_AUTHORIZED",
+    }
     if os.path.isfile(runtime_env):
         try:
             with open(runtime_env) as f:
@@ -35,7 +50,7 @@ def _load_canonical_runtime() -> None:
                         continue
                     key, value = line.split("=", 1)
                     key = key.strip().removeprefix("export ").strip()
-                    if key and not os.environ.get(key):
+                    if key in allowed and not os.environ.get(key):
                         os.environ[key] = value.strip().strip("'").strip('"')
         except Exception:
             pass
@@ -126,15 +141,21 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
             "accept": "application/json",
             "content-type": "application/json",
         }
-        async with httpx.AsyncClient(verify=ssl_ctx) as client:
-            response = await client.get(url, headers=headers, timeout=30.0)
-            if response.status_code != 200:
-                raise RuntimeError(f"Supabase query failed: HTTP {response.status_code}")
-            definitions = response.json()
-
-            runs_url = f"{supabase_url}/rest/v1/nexus_process_runs?select=id,status,started_at,completed_at,heartbeat_at,items_attempted,items_succeeded,items_failed,output_location,error_code,error_message,trace_id,metadata,process_id&order=created_at.desc&limit=40"
-            runs_response = await client.get(runs_url, headers=headers, timeout=30.0)
-            runs = runs_response.json() if runs_response.status_code == 200 else []
+        async def read_status():
+            async with httpx.AsyncClient(verify=ssl_ctx) as client:
+                response = await client.get(url, headers=headers, timeout=30.0)
+                if response.status_code != 200:
+                    raise RuntimeError(f"Supabase query failed: HTTP {response.status_code}")
+                definitions = response.json()
+                runs_url = f"{supabase_url}/rest/v1/nexus_process_runs?select=id,status,started_at,completed_at,heartbeat_at,items_attempted,items_succeeded,items_failed,output_location,error_code,error_message,trace_id,metadata,process_id&order=created_at.desc&limit=40"
+                runs_response = await client.get(runs_url, headers=headers, timeout=30.0)
+                runs = runs_response.json() if runs_response.status_code == 200 else []
+                return definitions, runs
+        from nexus_agent_platform.provider_enforcement import execute_async
+        definitions, runs = await execute_async("SUPABASE", "temporal_report_status", "READ",
+            {"requests": 2, "api_calls": 2, "billable": False, "cost": 0}, read_status,
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            correlation_id=os.environ.get("NEXUS_CORRELATION_ID"))
 
         return {
             "definitions": definitions,
@@ -150,11 +171,17 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
             "Content-Type": "application/json",
             "Prefer": "count=exact",
         }
-        async with httpx.AsyncClient(verify=ssl_ctx) as client:
-            response = await client.get(url, headers=headers, timeout=30.0)
-            if response.status_code != 200:
-                raise RuntimeError(f"Supabase query failed: HTTP {response.status_code}")
-            profiles = response.json()
+        async def read_profiles():
+            async with httpx.AsyncClient(verify=ssl_ctx) as client:
+                response = await client.get(url, headers=headers, timeout=30.0)
+                if response.status_code != 200:
+                    raise RuntimeError(f"Supabase query failed: HTTP {response.status_code}")
+                return response.json()
+        from nexus_agent_platform.provider_enforcement import execute_async
+        profiles = await execute_async("SUPABASE", "temporal_client_count", "READ",
+            {"requests": 1, "api_calls": 1, "billable": False, "cost": 0}, read_profiles,
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            correlation_id=os.environ.get("NEXUS_CORRELATION_ID"))
 
         # Filter to production
         production = [p for p in profiles if p.get("tenant_id") == "goclear"]
@@ -277,8 +304,16 @@ async def deliver_telegram_report_activity(delivery_target: str, rendered: str) 
         "parse_mode": "Markdown",
     }
 
+    from nexus_agent_platform.provider_enforcement import authorize_telegram_action, execute_async
+    action = authorize_telegram_action(delivery_target)
     async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=payload, timeout=15.0)
+        response = await execute_async("TELEGRAM", "bot_delivery", action,
+            {"requests": 1, "operations": 1, "messages": 1, "billable": False},
+            lambda: client.post(url, json=payload, timeout=15.0),
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type="TEMPORAL_TELEGRAM_DELIVERY",
+            correlation_id=os.environ.get("NEXUS_CORRELATION_ID") or delivery_target,
+            actual_usage=lambda _response: {"requests": 1, "operations": 1, "messages": 1})
 
     if response.status_code == 200:
         result = response.json()
@@ -315,8 +350,15 @@ async def send_email_activity(recipient: str, subject: str, body: str, idempoten
         "idempotency_key": idempotency_key,
     }
 
+    from nexus_agent_platform.provider_enforcement import authorize_email_action, execute_async
+    workflow_authorized = os.environ.get("NEXUS_TEMPORAL_EMAIL_WORKFLOW_AUTHORIZED", "").lower() == "true"
+    authorize_email_action("CONTROLLED_SEND", workflow_authorized=workflow_authorized)
     async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=payload, headers=headers, timeout=30.0)
+        response = await execute_async("EMAIL_PROVIDER", "send_client_email", "CONTROLLED_SEND",
+            {"requests": 1, "operations": 1, "emails": 1, "billable": True},
+            lambda: client.post(url, json=payload, headers=headers, timeout=30.0),
+            job_id=idempotency_key, job_type="TEMPORAL_EMAIL_ACTIVITY", correlation_id=idempotency_key,
+            actual_usage=lambda _response: {"requests": 1, "operations": 1, "emails": 1})
 
     if response.status_code == 200:
         result = response.json()

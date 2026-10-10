@@ -1210,13 +1210,23 @@ def run_system_health_loop(
     previous_state: Optional[Dict[str, Any]] = None,
     explicit_premium_escalation: bool = False,
 ) -> LoopRunResult:
-    return _run_with_capabilities(
+    result = _run_with_capabilities(
         system_health_loop_spec,
         trigger,
         ai_call=ai_call,
         previous_state=previous_state,
         explicit_premium_escalation=explicit_premium_escalation,
     )
+    # Add company-function health to the existing Systems loop. This is a
+    # deterministic read over canonical case/heartbeat/queue state; it does
+    # not create a new scheduler or Research queue.
+    try:
+        from nexus_agent_platform.company_workflow import audit_company_workflow_health
+        result.result["company_workflow_health"] = audit_company_workflow_health()
+    except Exception as exc:
+        result.result["company_workflow_health"] = {"status": "DEGRADED",
+            "reason": type(exc).__name__}
+    return result
 
 
 def run_opportunity_discovery_loop(

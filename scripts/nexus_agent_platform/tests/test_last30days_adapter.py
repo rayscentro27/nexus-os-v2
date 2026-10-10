@@ -1,4 +1,5 @@
 import json
+import pytest
 
 import nexus_agent_platform.research.last30days_adapter as adapter
 from nexus_agent_platform.research.last30days_adapter import health, run_demand_radar
@@ -47,9 +48,14 @@ def test_source_specific_runner_preserves_healthy_partial_results(monkeypatch):
 
     monkeypatch.setattr(adapter, "run_demand_radar", fake_run)
     result = adapter.run_demand_radar_sources({
-        "request_id": "partial-test", "query": "funding", "requested_sources": ["hackernews", "youtube"],
-    }, source_timeouts={"hackernews": 1, "youtube": 1})
+        "request_id": "partial-test", "query": "funding", "requested_sources": ["github", "youtube"],
+    }, source_timeouts={"github": 1, "youtube": 1})
     assert result["status"] == "PASS"
     assert result["result_count"] == 1
-    assert result["source_status"] == {"hackernews": "OK"}
+    assert result["source_status"] == {"github": "OK"}
     assert result["errors"][0]["source"] == "youtube"
+
+
+def test_hackernews_is_not_a_default_or_explicit_proactive_source():
+    with pytest.raises(ValueError, match="not an approved proactive source"):
+        adapter.run_demand_radar_sources({"query": "small business customer needs", "requested_sources": ["hackernews"]})

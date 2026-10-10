@@ -27,6 +27,7 @@ from nexus_agent_platform.research.last30days_adapter import run_demand_radar_so
 from nexus_agent_platform.research_v2_bridge import build_research_package  # noqa: E402
 from nexus_agent_platform.governed import persistence  # noqa: E402
 from nexus_agent_platform.research.source_semantics import annotate, autonomous_discovery_allowed  # noqa: E402
+from nexus_agent_platform.research.source_contract import source_category, TRADING, FUNDING  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
 from research_v2_control_plane import planner_tick  # noqa: E402
@@ -113,17 +114,19 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 "QUESTION": queued.get("QUESTION"), "EXPECTED_VALUE": queued.get("EXPECTED_VALUE"),
                 "SOURCE_PLAN": queued.get("SOURCE_PLAN", [])}
     if lane_id == "YOUTUBE_CONTENT":
-        config = json.loads((ROOT / "configs/youtube_research_channels.json").read_text(encoding="utf-8"))
-        channels = [row for row in config.get("channels", []) if row.get("enabled") and row.get("approved_by_ray")]
+        from research.youtube_channel_registry import enabled_channels
+        channels = enabled_channels()
         if not channels:
-            raise RuntimeError("approved YouTube channel watchlist is empty")
+            raise RuntimeError("canonical designated YouTube source registry is empty")
         mission_target = os.environ.get("NEXUS_MISSION_TARGET_ID", "")
-        channel = next((row for row in channels if str(row.get("channel_id")) == mission_target), None)
+        channel = next((row for row in channels
+                        if str(row.get("external_channel_id") or row.get("channel_id")) == mission_target), None)
         channel = channel or channels[int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(channels)]
         # Use the durable channel id for the bounded RSS fallback.  Handle
         # pages remain the canonical display URL but are not required for
         # metadata discovery.
-        discovery_url = f"https://www.youtube.com/channel/{channel['channel_id']}"
+        channel_id = channel.get("external_channel_id") or channel.get("channel_id")
+        discovery_url = f"https://www.youtube.com/channel/{channel_id}"
         videos = select_channel_videos(discovery_url, 3)
         if not videos:
             raise RuntimeError(f"no eligible videos discovered for channel {channel['name']}")
@@ -141,7 +144,7 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                 continue
         return annotate({"source_type": "YOUTUBE_VIDEO", "source_id": video["video_id"], "source_url": video["url"],
                 "title": video.get("title", video["video_id"]), "author": channel["name"],
-                "channel_id": channel.get("channel_id"), "channel_url": channel["url"],
+                "channel_id": channel_id, "channel_url": channel.get("canonical_url") or channel.get("url"),
                 "discovery_method": video.get("discovery_method", "YOUTUBE_RSS"),
                 "category": "YOUTUBE_CONTENT", "selection_reason": "approved_channel_watchlist",
                 "lifecycle": "ONE_TIME" if os.environ.get("NEXUS_MISSION_ITEM_ID") else "MONITORED"})
@@ -247,6 +250,13 @@ def run_selected_capability(item: dict, route_result: dict, execution_id: str) -
     source_type = str(item.get("source_type") or "").upper()
     if source_type in {"GITHUB_REPOSITORY", "SEO_RESEARCH"}:
         return None
+    # A broad demand adapter is never a valid fallback for a governed
+    # TradingView or funding item.  The post-acquisition fidelity gate remains
+    # authoritative, but refusing this route here prevents source identity
+    # from being overwritten before that gate can inspect the evidence.
+    governed_category = source_category(item)
+    if governed_category in {TRADING, FUNDING}:
+        return None
     selected = (route_result.get("selected_executor") or {}).get("executor_id", "")
     if "last30days" not in str(selected).lower() and "demand_radar" not in str(selected).lower():
         return None
@@ -280,6 +290,16 @@ def run_selected_capability(item: dict, route_result: dict, execution_id: str) -
             objective_id=str(item["objective_id"]), query=query, sources=source_rows,
             radar=radar, cycle_id=str(item.get("company_cycle_id") or ""),
         )
+    # Last30Days has its own durable governed Research source/package store.
+    # Confirm the source rows by URL and the objective package before the
+    # common worker accepts that persistence route; do not mislabel it as a
+    # Supabase write.
+    durable_rows = {str(row.get("source_url")): row for row in persistence.read_records("research_v2_sources") if row.get("source_url")}
+    durable_source_urls = [str(row.get("url")) for row in source_rows if row.get("url")]
+    durable_sources_confirmed = bool(durable_source_urls) and all(url in durable_rows for url in durable_source_urls)
+    durable_package_confirmed = bool(package and any(row.get("research_package_id") == package.get("research_package_id")
+                                                    for row in persistence.read_records("research_v2_packages")))
+    durable_memory_write_confirmed = durable_sources_confirmed and durable_package_confirmed
     return {
         "final_status": "FULLY_PROCESSED" if signals else "PARTIAL_EVIDENCE",
         "processor": "last30days_demand_radar",
@@ -290,7 +310,10 @@ def run_selected_capability(item: dict, route_result: dict, execution_id: str) -
         "v2": {"research_package_id": (package or {}).get("research_package_id"),
                "source": source_rows[0] if source_rows else {}},
         "result": {"research_item_id": (package or {}).get("research_package_id")},
-        "radar": radar,
+        "radar": radar, "ingestion_status": "DURABLE_MEMORY" if durable_memory_write_confirmed else None,
+        "durable_memory_write_confirmed": durable_memory_write_confirmed,
+        "durable_source_count": len(durable_source_urls) if durable_sources_confirmed else 0,
+        "durable_package_id": (package or {}).get("research_package_id") if durable_package_confirmed else None,
     }
 
 
@@ -304,11 +327,74 @@ def main() -> int:
     # part of the durable execution trace too; emitting them before reading
     # the queue item made otherwise objective-backed work appear unlinked.
     work_id = os.environ.get("NEXUS_WORK_ID", "")
+    queued_context = {}
     if work_id:
         queued_context = next((row for row in default_queue().load().get("items", []) if row.get("work_id") == work_id), {})
         for env_key, field in (("NEXUS_OBJECTIVE_ID", "objective_id"), ("NEXUS_PARENT_REQUEST_ID", "parent_request_id"), ("NEXUS_MARKETING_OBJECTIVE_ID", "marketing_objective_id")):
             if queued_context.get(field) and not os.environ.get(env_key):
                 os.environ[env_key] = str(queued_context[field])
+    if work_id and queued_context.get("request_type") == "FEEDER_GAP_CLOSURE":
+        # Notebook-backed public-source gaps use the existing dispatched Research
+        # worker and authenticated NotebookLM CLI. The operator enforces source
+        # quality, dedupe, import/index confirmation, and durable feeder return.
+        event(execution_id, "CLAIMED", worker_id="research_operator_worker", work_id=work_id,
+              research_method=queued_context.get("recommended_research_method"))
+        event(execution_id, "RUNNING", worker_id="research_operator_worker", processor="notebook_source_expansion")
+        try:
+            if not queued_context.get("notebook_reference"):
+                # Older queue records may predate notebook routing metadata.
+                # Rehydrate that immutable reference from authoritative feeder state.
+                from nexus_agent_platform import feeder_runtime as feeder_module
+                source_id = str(queued_context.get("source_id") or queued_context.get("parent_request_id") or "")
+                # Feeder source records store the external NotebookLM reference
+                # in notebook_reference. notebook_id belongs to the research
+                # gap table, not nexus_feeder_sources.
+                source_rows = feeder_module._request(f"nexus_feeder_sources?source_id=eq.{source_id}&select=notebook_reference")
+                if source_rows:
+                    queued_context["notebook_reference"] = source_rows[0].get("notebook_reference")
+                    queued_context["notebook_id"] = queued_context["notebook_reference"]
+            if not queued_context.get("notebook_reference"):
+                raise RuntimeError("NOTEBOOK_REFERENCE_MISSING")
+            from notebook_source_expansion import run_notebook_gap_operator
+            result = run_notebook_gap_operator(queued_context)
+            complete = result.get("gap_state") == "COMPLETED" and result.get("supabase_persistence_pass") is True
+            queue_status = "COMPLETE" if complete else ("BLOCKED_EXTERNAL" if result.get("recovery_workflow") else "FAILED_RETRYABLE")
+            default_queue().settle(work_id, queue_status,
+                                   result={**result, "final_status": "NOTEBOOK_RESEARCH_COMPLETE" if complete else "NOTEBOOK_RESEARCH_INCOMPLETE"},
+                                   blocker_type=None if complete else "NOTEBOOK_EVIDENCE_INSUFFICIENT")
+            event(execution_id, "COMPLETED" if complete else "FAILED_RETRYABLE", worker_id="research_operator_worker",
+                  work_id=work_id, **{k: result.get(k) for k in ("research_session_id", "research_method", "sources_imported", "indexing_pass", "notebook_reanalysis_pass", "gap_state", "evidence_state", "return_to_feeder")})
+            print(json.dumps(result, indent=2, default=str))
+            return 0 if complete else 1
+        except Exception as exc:
+            error = str(exc)[:500]
+            recovery = ("NOTEBOOK_CLI_RECOVERY" if "NOTEBOOKLM_CLI" in error or "doctor" in error.lower() else
+                        "NOTEBOOK_RESEARCH_RECOVERY" if "PASS_LIMIT_REACHED" in error else
+                        "NOTEBOOK_IMPORT_RECOVERY" if "SOURCE_IMPORT" in error else
+                        "NOTEBOOK_INDEXING_RECOVERY" if "SOURCE_WAIT" in error or "INDEX" in error else
+                        "RESEARCH_RETURN_RECOVERY" if "PERSISTENCE" in error or "READBACK" in error else
+                        "NOTEBOOK_RESEARCH_RECOVERY")
+            blocked = "PASS_LIMIT_REACHED" in error or "NOTEBOOK_REFERENCE_MISSING" in error
+            queue_status = "BLOCKED_EXTERNAL" if blocked else "FAILED_RETRYABLE"
+            default_queue().settle(work_id, queue_status, result={"error": error, "recovery_workflow": recovery}, blocker_type="NOTEBOOK_RESEARCH_FAILURE")
+            event(execution_id, queue_status, worker_id="research_operator_worker", work_id=work_id,
+                  error=error, recovery_workflow=recovery)
+            return 1
+    if work_id and queued_context.get("research_processor") == "notebooklm_research_worker":
+        # Proactive sources use the same NotebookLM worker, quality checks,
+        # persistence, and handoff lifecycle as assigned Research items.
+        # The FIFO scheduler already owns the claim. Process that lease rather
+        # than asking the worker to claim it a second time.
+        from research.notebooklm_research_adapter import get_adapter
+        from research.notebooklm_research_worker import process_claim
+        result = process_claim(work_item=queued_context, adapter=get_adapter(), queue=default_queue())
+        event(execution_id, "NOTEBOOKLM_PROACTIVE_PROCESSOR", worker_id="research_operator_worker",
+              work_id=work_id, result_status="PASS" if result.get("queue_status") == "COMPLETE" else "DEGRADED",
+              processor="notebooklm_research_worker.process_claim",
+              outcome=result.get("outcome"), queue_status=result.get("queue_status"),
+              failure_code=result.get("failure_code"))
+        print(json.dumps(result, indent=2, default=str))
+        return 0 if result.get("queue_status") == "COMPLETE" else 1
     event(execution_id, "CLAIMED", worker_id="research_operator_worker", attempt_count=1)
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
     try:
@@ -357,6 +443,17 @@ def main() -> int:
 
     try:
         item = select_scheduled_item(lane_id, execution_id)
+        if queued_context.get("queue_sequence") is not None:
+            item["queue_sequence"] = queued_context.get("queue_sequence")
+        # Preserve the capability chosen by the durable objective planner.
+        # The generic source selector has no source URL for an objective, so
+        # downgrading it to RESEARCH_OBJECTIVE here previously discarded its
+        # required_tool and failed with an empty-URL ingestion attempt.
+        for field in ("required_tool", "required_capability", "required_capabilities",
+                      "expected_output", "source_candidates", "objective_id", "parent_goal_id",
+                      "work_id", "question", "why_it_matters", "unknown_to_resolve", "evidence_gaps"):
+            if queued_context.get(field) not in (None, "", []):
+                item[field] = queued_context[field]
     except TimeoutError as exc:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=str(exc)[:500], failure_class="SOURCE_SELECTION_TIMEOUT",
@@ -386,11 +483,23 @@ def main() -> int:
     for env_key, field in (("NEXUS_OBJECTIVE_ID", "objective_id"), ("NEXUS_PARENT_REQUEST_ID", "parent_request_id"), ("NEXUS_MARKETING_OBJECTIVE_ID", "marketing_objective_id")):
         if item.get(field):
             os.environ[env_key] = str(item[field])
-    # The investigator is deliberately before acquisition. It plans against
-    # the objective and certified capability registry; processors still own
-    # all evidence acquisition and persistence.
-    ai_plan_result = investigate(item)
-    ai_route_result = route(item, ai_plan_result.get("plan", {})) if ai_plan_result.get("status") == "PASS_REAL" else {"status": "FAILED_REAL", "why_selected": ai_plan_result.get("reason")}
+    # FIFO queue assignments are complete before dispatch. The worker must not
+    # ask an AI planner to choose a different project, source, or capability.
+    # Keep the legacy investigator available for non-FIFO compatibility calls,
+    # but make the production queue path a direct assignment execution.
+    fifo_assignment = os.environ.get("NEXUS_FIFO_QUEUE") == "1"
+    if fifo_assignment:
+        required_tool = item.get("required_tool") or item.get("required_capability") or item.get("source_type")
+        ai_plan_result = {"status": "FIFO_ASSIGNMENT", "plan_id": None, "model_calls": 0,
+                          "plan": {"required_tool": required_tool, "source_locked": True}}
+        ai_route_result = {"status": "FIFO_ASSIGNMENT", "required_capabilities": [required_tool] if required_tool else [],
+                           "selected_executor": {"executor_id": required_tool or "assigned_processor"},
+                           "why_selected": "durable_fifo_assignment"}
+    else:
+        # The legacy investigator is deliberately retained for compatibility
+        # callers outside the production FIFO path.
+        ai_plan_result = investigate(item)
+        ai_route_result = route(item, ai_plan_result.get("plan", {})) if ai_plan_result.get("status") == "PASS_REAL" else {"status": "FAILED_REAL", "why_selected": ai_plan_result.get("reason")}
     item["ai_plan_id"] = ai_plan_result.get("plan_id")
     item["required_capabilities"] = ai_route_result.get("required_capabilities", [])
     item["selected_executor_id"] = (ai_route_result.get("selected_executor") or {}).get("executor_id")
@@ -459,6 +568,23 @@ def main() -> int:
             record_item_result(mission_item_id, status="FAILED_RETRYABLE", result={"error": str(exc)[:500]}, next_action="retry bounded mission item")
         return 1
     final_status = result.get("final_status", "FAILED_RETRYABLE")
+    ingestion_status = result.get("ingestion_status")
+    durable_memory_confirmed = result.get("durable_memory_write_confirmed") is True and ingestion_status == "DURABLE_MEMORY"
+    supabase_confirmed = ingestion_status in {"INGESTED", "INGESTED_EXISTING"} and (result.get("supabase_write_confirmed") or ingestion_status == "INGESTED_EXISTING")
+    if not (durable_memory_confirmed or supabase_confirmed):
+        error = result.get("error") or (result.get("canonical_ingestion") or {}).get("error") or "canonical Supabase ingestion was not verified"
+        event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
+              error=str(error)[:500], failure_class="CANONICAL_INGESTION_NOT_VERIFIED",
+              supabase_source_id=result.get("supabase_source_id"), ingestion_status=ingestion_status)
+        settle_queue("FAILED_RETRYABLE", result={"final_status": "FAILED_RETRYABLE", "error": str(error)[:500], "ingestion_status": ingestion_status}, blocker_type="CANONICAL_INGESTION_NOT_VERIFIED")
+        return 1
+    # Queue completion is now tied to the verified canonical source write.
+    # Interpretation, Alpha, and department work are downstream of this point.
+    if work_id:
+        settle_queue("COMPLETE", result={"final_status": "INGESTED" if supabase_confirmed else "DURABLE_MEMORY",
+                                          "ingestion_status": ingestion_status,
+                                          "supabase_source_id": result.get("supabase_source_id"),
+                                          "durable_package_id": result.get("durable_package_id")})
     try:
         for receipt in stage_receipts(item, result):
             persistence.append_record("research_stage_receipts", receipt)
@@ -472,8 +598,20 @@ def main() -> int:
           ai_model_calls=ai_interpretation.get("model_calls", 0), information_gain=ai_interpretation.get("information_gain"),
           objective_progress=ai_interpretation.get("objective_progress"), remaining_gaps=ai_interpretation.get("remaining_gaps"),
           recommended_followup=ai_interpretation.get("recommended_followup"), ready_for_alpha=ai_interpretation.get("ready_for_alpha"))
+    learning = {
+        "what_was_researched": item.get("question") or item.get("title") or item.get("source_url"),
+        "what_nexus_learned": ai_interpretation.get("information_gain") or ai_interpretation.get("objective_progress"),
+        "key_findings": (result.get("result") or {}).get("key_findings") or (result.get("result") or {}).get("findings") or result.get("summary"),
+        "new_information": ai_interpretation.get("information_gain"),
+        "duplicate_status": result.get("duplicate_status") or ("DUPLICATE_SKIPPED" if final_status == "DUPLICATE_UNCHANGED" else "NEW"),
+        "why_it_matters": ai_interpretation.get("objective_progress") or (result.get("result") or {}).get("executive_summary"),
+        "unresolved_questions": ai_interpretation.get("remaining_gaps"),
+        "next_action": ai_interpretation.get("recommended_followup"),
+        "current_pipeline_stage": "DUPLICATE" if final_status == "DUPLICATE_UNCHANGED" else "READY_FOR_ALPHA" if ai_interpretation.get("ready_for_alpha") else "EVIDENCE_READY",
+    }
+    event(execution_id, "RESEARCH_LEARNING_RECORD", worker_id="research_operator_worker", **learning)
     if mission_item:
-        mission_status = "COMPLETED" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE", "DUPLICATE_UNCHANGED"} else "FAILED_RETRYABLE"
+        mission_status = "COMPLETED" if final_status in {"INGESTED", "INGESTED_EXISTING", "FULLY_PROCESSED", "PARTIAL_EVIDENCE", "DUPLICATE_UNCHANGED"} else "FAILED_RETRYABLE"
         record_item_result(mission_item_id, status=mission_status, result={"final_status": final_status, "source_id": item.get("source_id"), "research_package_id": (result.get("v2") or {}).get("research_package_id")}, next_action="continue next mission item" if mission_status == "COMPLETED" else "retry after backoff")
     # Refresh bookkeeping is advisory scheduling state.  A serialization or
     # filesystem fault here must never turn a completed Research result into a
@@ -486,7 +624,7 @@ def main() -> int:
         event(execution_id, "SOURCE_REFRESH_STATE_DEGRADED", worker_id="research_operator_worker",
               error=str(exc)[:500], next_action="continue; hydrate refresh state from execution history")
     event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker",
-          result_status="PASS" if final_status in {"FULLY_PROCESSED", "DUPLICATE_UNCHANGED"} else "DEGRADED",
+          result_status="PASS" if final_status in {"FULLY_PROCESSED", "DUPLICATE_UNCHANGED", "INGESTED", "INGESTED_EXISTING"} else "DEGRADED",
           content_count=1 if result.get("raw_acquired") else 0, final_status=final_status,
           processor=result.get("processor"), summary_created=result.get("summary_created", False),
           extraction_created=result.get("extraction_created", False), scored=result.get("scored", False),
@@ -496,6 +634,14 @@ def main() -> int:
           research_package_id=(result.get("v2") or {}).get("research_package_id"), research_mode=item.get("research_mode"),
           alpha_eligible=item.get("alpha_eligible", False), department_target=item.get("department_target"),
           project_id=item.get("project_id") or item.get("PROJECT"))
+    if final_status == "CATEGORY_MISMATCH":
+        mark_lane_backoff(lane_id, result.get("category_mismatch", "source/objective category mismatch"))
+        fallback = strategy_changing_fallback(item, failure_class="CATEGORY_MISMATCH", error=result.get("category_mismatch", "source/objective category mismatch"), attempt=int(os.environ.get("NEXUS_ATTEMPT_COUNT", "1")))
+        event(execution_id, "CATEGORY_MISMATCH", worker_id="research_operator_worker",
+              category_mismatch=result.get("category_mismatch"), fallback=fallback)
+        settle_queue("SUPERSEDED" if fallback else "FAILED_RETRYABLE",
+                     result={**result, "fallback": fallback}, blocker_type="CATEGORY_MISMATCH")
+        return 1
     if final_status.startswith("FAILED"):
         mark_lane_backoff(lane_id, result.get("error", "scheduled processor failed"))
         fallback = strategy_changing_fallback(item, failure_class="SCHEDULED_PROCESSOR_FAILURE", error=result.get("error", "scheduled processor failed"), attempt=int(os.environ.get("NEXUS_ATTEMPT_COUNT", "1")))
@@ -509,34 +655,7 @@ def main() -> int:
         settle_queue("SUPERSEDED" if fallback else "FAILED_RETRYABLE",
                      result={**result, "fallback": fallback}, blocker_type="SCHEDULED_PROCESSOR_FAILURE")
         return 1
-    queue_status = "COMPLETE" if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} else "MONITORING" if final_status == "DUPLICATE_UNCHANGED" else "FAILED_RETRYABLE"
-    settle_queue(queue_status, result={"final_status": final_status, "source_id": item.get("source_id"),
-                                       "research_package_id": (result.get("v2") or {}).get("research_package_id"),
-                                       "ai_plan_id": item.get("ai_plan_id"), "selected_executor_id": item.get("selected_executor_id"),
-                                       "ai_interpretation": ai_interpretation})
-    alpha_result = {"status": "SKIPPED", "reason": "monitoring_or_duplicate"}
-    # Assigned objective/follow-up work is an Alpha-eligible handoff.  Keep
-    # routine monitoring cheap, but do not let evidence-ready assigned work
-    # disappear after persistence.  The bridge is bounded and restart-safe.
-    alpha_eligible = bool(item.get("alpha_eligible") or item.get("alpha_review_required") or
-                          item.get("research_mode") in {"REQUESTED_RESEARCH", "GOCLEAR_PROACTIVE", "NEXUS_DEPARTMENTAL_PROACTIVE"})
-    if final_status in {"FULLY_PROCESSED", "PARTIAL_EVIDENCE"} and (selected_work_class in {"ASSIGNED", "DEMAND_DISCOVERY"} or alpha_eligible):
-        source_row = ((result.get("v2") or {}).get("source") or {})
-        try:
-            alpha_result = review_assigned_research_output(
-                source_id=item.get("source_id", ""), source_title=item.get("title", ""),
-                source_url=item.get("source_url", ""),
-                source_text=source_row.get("text", "") if isinstance(source_row, dict) else "",
-                objective_id=item.get("objective_id"),
-                force_rereview=bool(item.get("alpha_followup_required")),
-                followup_context={"finding_id": item.get("parent_finding_id") or item.get("objective_id") or item.get("source_id"),
-                                  "parent_alpha_receipt_id": item.get("parent_alpha_receipt_id"),
-                                  "parent_alpha_request_id": item.get("parent_alpha_request_id") or item.get("parent_request_id"),
-                                  "handoff_target": item.get("department_target"), "department_target": item.get("department_target"),
-                                  "research_mode": item.get("research_mode"), "followup_work_id": item.get("work_id")},
-            )
-        except Exception as exc:
-            alpha_result = {"status": "FAILED_RETRYABLE", "error": str(exc)[:500]}
+    alpha_result = {"status": "NOT_STARTED", "reason": "downstream_after_mechanical_ingestion"}
     event(execution_id, "COMPLETED", worker_id="research_operator_worker",
           work_id=item.get("work_id"), objective_id=item.get("objective_id"), parent_request_id=item.get("parent_request_id"),
           research_package_id=(result.get("v2") or {}).get("research_package_id"),
@@ -546,6 +665,26 @@ def main() -> int:
           research_mode=item.get("research_mode"), alpha_eligible=item.get("alpha_eligible", False),
           department_target=item.get("department_target"), project_id=item.get("project_id") or item.get("PROJECT"),
           next_action="continue next scheduled research wake")
+    try:
+        from nexus_agent_platform.supabase_knowledge import persist_finding_and_route
+        information_route = persist_finding_and_route(item=item, result={**result, "ai_interpretation": ai_interpretation}, alpha=alpha_result)
+        event(execution_id, "DEPARTMENT_INFORMATION_ROUTED", worker_id="research_operator_worker",
+              information_route_status=information_route.get("status"), finding_id=information_route.get("finding_id"),
+              classification=information_route.get("classification"), inboxes=information_route.get("inboxes"))
+        from nexus_agent_platform.supabase_knowledge import process_expert_information_item
+        for inbox in information_route.get("inboxes") or []:
+            if inbox.get("status", "PENDING") == "PENDING":
+                expert_result = process_expert_information_item(
+                    information_item_id=inbox.get("information_item_id"),
+                    disposition="LEARN_ONLY",
+                    reason="Expert reviewed canonical Research evidence and stored domain learning.",
+                )
+                event(execution_id, "DEPARTMENT_EXPERT_ASSESSMENT", worker_id="research_operator_worker",
+                      expert_id=inbox.get("expert_id"), information_item_id=inbox.get("information_item_id"),
+                      expert_status=expert_result.get("status"), assessment_id=expert_result.get("assessment_id"),
+                      memory_records_loaded=expert_result.get("memory_records_loaded"))
+    except Exception as exc:
+        event(execution_id, "DEPARTMENT_INFORMATION_ROUTING_DEGRADED", worker_id="research_operator_worker", error=str(exc)[:300])
     try:
         return_department_request(item, package_id=(result.get("v2") or {}).get("research_package_id"), alpha_result=alpha_result)
     except Exception as exc:

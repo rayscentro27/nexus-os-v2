@@ -1,0 +1,91 @@
+{
+  "approval_state": "PENDING_RAY_APPROVAL",
+  "artifact_id": "nova_summary_dbb99d1d403c46817495e768",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:20:37.412479+00:00",
+  "department": "NOVA",
+  "evidence_summary": "Official SBA source describes funding paths; it does not demonstrate customer demand or establish a specific borrower's eligibility.",
+  "external_actions": {
+    "email": "NOT_AUTHORIZED",
+    "publication": "BLOCKED_BY_APPROVAL",
+    "social": "NOT_AUTHORIZED",
+    "spend": "NOT_AUTHORIZED",
+    "trading": "NOT_AUTHORIZED"
+  },
+  "job_id": "job_61148182fc93413591ceb55420be11f3",
+  "marketing_campaign_state": "ITERATION_READY",
+  "marketing_stage": "ITERATION",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_e5a4bc82a1514cf088158d3c1107b458",
+  "recommendation": "Hold for Ray review; audience demand is unvalidated and financing eligibility is unknown.",
+  "scheduler_authority": false,
+  "schema_version": "nexus.company-certification-nova-summary.v1",
+  "source_artifacts": [
+    {
+      "approval_state": null,
+      "artifact_id": "research_19c64baebd0364e40a99a49f",
+      "artifact_ref": "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+      "decision": null,
+      "department": "RESEARCH",
+      "workflow_stage": null
+    },
+    {
+      "approval_state": null,
+      "artifact_id": "atlas_e35543c1664b9c92da238031",
+      "artifact_ref": "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+      "decision": "RESEARCH_REQUIRED",
+      "department": "ATLAS",
+      "workflow_stage": null
+    },
+    {
+      "approval_state": null,
+      "artifact_id": "funding_72fd2c881d06173d843160c8",
+      "artifact_ref": "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json",
+      "decision": "No product match until borrower profile, geography, and current requirements are verified.",
+      "department": "CLYDE",
+      "workflow_stage": null
+    },
+    {
+      "approval_state": null,
+      "artifact_id": null,
+      "artifact_ref": "strategy_ee722f7ca5e48f78249c9191",
+      "decision": null,
+      "department": "MARKETING",
+      "workflow_stage": "MARKETING_STRATEGY"
+    },
+    {
+      "approval_state": "INTERNAL_DRAFT",
+      "artifact_id": "brief_83fe8aac90b542868404c3e47f5ba73e",
+      "artifact_ref": "brief_23ae2ffabbc5ece9a38f39d2",
+      "decision": null,
+      "department": "CREATIVE",
+      "workflow_stage": "CREATIVE_BRIEF"
+    },
+    {
+      "approval_state": null,
+      "artifact_id": "analysis_a7e7e02c36a48863af9180f1",
+      "artifact_ref": "analysis_a7e7e02c36a48863af9180f1",
+      "decision": "ITERATE",
+      "department": "MARKETING",
+      "workflow_stage": "MARKETING_ANALYSIS"
+    },
+    {
+      "approval_state": "PENDING_RAY_APPROVAL",
+      "artifact_id": null,
+      "artifact_ref": "handoff_2f9a5f892e3dd2c723ba0340",
+      "decision": null,
+      "department": "MARKETING",
+      "workflow_stage": "PUBLISHING_READY"
+    },
+    {
+      "approval_state": null,
+      "artifact_id": "trading_51f82e73761598305bf99400",
+      "artifact_ref": "reports/certification/whole_company/artifacts/trading_51f82e73761598305bf99400.json",
+      "decision": "RESEARCH_ONLY; historical replay is not live or paper execution proof. Preserve LIVE_TRADING=OFF.",
+      "department": "TRADING",
+      "workflow_stage": null
+    }
+  ],
+  "updated_at": "2026-10-10T01:20:38.219319+00:00"
+}

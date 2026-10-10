@@ -22,7 +22,10 @@ ORACLE_HERMES = "/opt/hermes/.venv/bin/hermes"
 ORACLE_HOME = "/opt/data/profiles/nova_nexus"
 ORACLE_MODEL = "openai/gpt-4o-mini"
 ORACLE_PROFILE = "nova_nexus"
-ORACLE_TOOLSET = "nexus_mcp_remote"
+# Hermes -t is an explicit allowlist. Include the Nexus MCP server, the
+# configured You.com MCP server, and Hermes' native web tools so structured
+# Research turns can search/extract through the governed tool layer.
+ORACLE_TOOLSET = "nexus_mcp_remote,you-com,web"
 SESSION_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,160}$")
 
 
@@ -371,8 +374,9 @@ def _conversation_correction_prompt(message: str, response: str) -> str:
     return instruction + "\nUser message: " + message[:3000] + "\nDraft to improve: " + response[:4000]
 
 
-def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float = 180.0,
-                      request_id: str | None = None, pre_context: str | None = None) -> OracleHermesResult:
+def _run_oracle_hermes_unchecked(message: str, session_id: str, *, timeout_seconds: float = 180.0,
+                      request_id: str | None = None, pre_context: str | None = None,
+                      structured_task: bool = False) -> OracleHermesResult:
     if not isinstance(message, str) or not message.strip():
         raise OracleHermesUnavailable("empty_message")
     if not SESSION_RE.fullmatch(session_id or ""):
@@ -396,8 +400,8 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         )
         return completed, round((time.monotonic() - started) * 1000, 1)
     try:
-        prompt = _executive_prompt(message)
-        objective_context = _objective_grounding_context(message)
+        prompt = message if structured_task else _executive_prompt(message)
+        objective_context = None if structured_task else _objective_grounding_context(message)
         if objective_context:
             prompt += (
                 "\n\nAUTHORITATIVE OBJECTIVE-SCOPED EVIDENCE (read before answering; do not replace "
@@ -419,6 +423,8 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         return OracleHermesResult(None, "UNAVAILABLE", "empty_oracle_response", elapsed)
     native_session_match = re.search(r"session_id:\s*([A-Za-z0-9_.:-]+)", completed.stderr or "")
     native_session_id = native_session_match.group(1) if native_session_match else None
+    if structured_task:
+        return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id)
     halt = any(marker in response.lower() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts"))
     if halt:
         recovery_prompt = (
@@ -455,3 +461,26 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
             if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
                 return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="CONVERSATION_CORRECTION", hermes_session_id=native_session_id)
     return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id)
+
+
+def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float = 180.0,
+                      request_id: str | None = None, pre_context: str | None = None,
+                      structured_task: bool = False) -> OracleHermesResult:
+    """Governor boundary for every Oracle Hermes SSH invocation."""
+    from nexus_agent_platform.provider_enforcement import execute
+    from nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    estimate = {"requests": 1, "operations": 1, "runtime_seconds": timeout_seconds, "billable": True}
+    try: estimate["cost"] = float(os.environ["NEXUS_ORACLE_ESTIMATED_COST_PER_JOB"])
+    except (KeyError, ValueError): pass
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+    try:
+        return execute("ORACLE", "hermes_worker", "REMOTE_WORKER", estimate,
+            lambda: _run_oracle_hermes_unchecked(message, session_id, timeout_seconds=timeout_seconds,
+                request_id=request_id, pre_context=pre_context, structured_task=structured_task),
+            job_id=job_id, job_type=os.environ.get("NEXUS_JOB_TYPE", "ORACLE_HERMES"),
+            correlation_id=request_id or session_id,
+            actual_usage=lambda result: {"requests": 1, "operations": 1,
+                "runtime_seconds": max(0.0, float(result.elapsed_ms or 0) / 1000),
+                **({"cost": estimate["cost"]} if "cost" in estimate else {})})
+    except GovernanceDenied as exc:
+        return OracleHermesResult(None, "UNAVAILABLE", "governor_" + exc.code.lower(), 0.0)

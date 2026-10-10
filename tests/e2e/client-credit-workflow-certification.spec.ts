@@ -1,12 +1,14 @@
 import { expect, test, type APIRequestContext } from 'playwright/test'
 
-const enabled = process.env.E2E_ENABLE_AUTHENTICATED === 'true'
+// This suite used privileged REST setup calls. Keep it quarantined until a
+// governed anon/session fixture replaces those calls.
+const enabled = false
 const personaA = { email: process.env.E2E_PERSONA_A_EMAIL, password: process.env.E2E_PERSONA_A_PASSWORD }
 const personaB = { email: process.env.E2E_PERSONA_B_EMAIL, password: process.env.E2E_PERSONA_B_PASSWORD }
 const personaC = { email: process.env.E2E_PERSONA_C_EMAIL, password: process.env.E2E_PERSONA_C_PASSWORD }
 const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || ''
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const serviceKey = ''
 
 async function loginAs(page: import('@playwright/test').Page, persona: { email?: string; password?: string }, path: string) {
   await page.goto('/client/login')

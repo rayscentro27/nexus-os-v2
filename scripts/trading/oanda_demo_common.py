@@ -52,12 +52,10 @@ def request(method: str, path: str, payload: dict | None = None, query: dict | N
         url += "?" + urllib.parse.urlencode(query)
     body = json.dumps(payload).encode() if payload is not None else None
     headers = {"Authorization": f"Bearer {env['token']}", "Accept-Datetime-Format": "RFC3339", "Content-Type": "application/json"}
-    req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=25, context=context()) as response:
-            return True, response.status, json.loads(response.read().decode() or "{}"), None
-    except urllib.error.HTTPError as exc:
-        return False, exc.code, {}, f"HTTP_{exc.code}"
+        from alpha.alpha_live_research import http_json
+        ok, status, data, error, _latency = http_json(method, url, headers, payload, timeout=25)
+        return bool(ok), status, data if isinstance(data, dict) else {}, error
     except Exception as exc:
         return False, None, {}, exc.__class__.__name__
 

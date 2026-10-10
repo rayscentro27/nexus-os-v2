@@ -698,6 +698,8 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
     _hydrate_refresh_state_from_history()
     ensure_live_program_work()
     permanent_projection = ensure_permanent_source_work()
+    from nexus_agent_platform.goal_completion import enforce_active_goal_continuations
+    enforce_active_goal_continuations()
     rows = [row for row in ensure_registry() if row.get("enabled")]
     blocked_buckets = {str(bucket).lower() for bucket in (blocked_buckets or set())}
 
@@ -706,20 +708,22 @@ def select_lane(*, reason: str = "due_fairness_rotation", blocked_buckets: set[s
     priority_work = select_priority_work(worker_id=f"research_scheduler:{os.getpid()}", blocked_buckets=blocked_buckets)
     if priority_work:
         if priority_work.get("scheduler_state") == "PENDING_BUT_UNAVAILABLE":
-            priority_work.update({"lane_id": "GENERAL_DISCOVERY", "name": "Objective Capacity Wait",
-                                  "selected_at": _now().isoformat(),
+            # A future retry window or a full category bucket is not a reason
+            # to suppress unrelated due work or the empty-queue continuation.
+            # Keep the item untouched and let the normal source/goal selector
+            # find a different bounded action. Live leases remain protected by
+            # blocked_buckets and the queue's claim logic.
+            priority_work = None
+        else:
+            lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
+            lane = next((row for row in rows if row.get("lane_id") == lane_id), None)
+            priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
+                                  "selection_reason": "deterministic_objective_scheduler",
+                                  "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
+                                  "selected_at": _now().isoformat(), "fairness_gate": "OBJECTIVE_CONTROLLER",
                                   "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
                                   "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
             return priority_work
-        lane_id = str(priority_work.get("lane_id") or priority_work.get("category") or "BUSINESS_MARKET").upper()
-        lane = next((row for row in rows if row.get("lane_id") == lane_id), None)
-        priority_work.update({"lane_id": lane_id, "name": (lane or {}).get("name", lane_id.replace("_", " ").title()),
-                              "selection_reason": "deterministic_objective_scheduler",
-                              "selected_work_class": priority_work["work_class"], "priority_contract_rank": 0,
-                              "selected_at": _now().isoformat(), "fairness_gate": "OBJECTIVE_CONTROLLER",
-                              "research_cycle_limit": RESEARCH_CYCLE_LIMIT,
-                              "research_runtime_stop_condition": RESEARCH_RUNTIME_STOP_CONDITION})
-        return priority_work
 
     live_selected = _select_live_service_work(rows, blocked_buckets, _now())
     if live_selected:

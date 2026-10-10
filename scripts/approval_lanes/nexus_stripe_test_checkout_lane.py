@@ -68,6 +68,24 @@ def approve_and_create_session(item_id):
         return None
     with open(packet_path) as f:
         packet = json.load(f)
+    # A local approval packet is not itself a durable job or a provider
+    # authorization. Fail closed until an explicitly approved durable job
+    # owns this checkout action.
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+    correlation_id = os.environ.get("NEXUS_CORRELATION_ID")
+    department = os.environ.get("NEXUS_DEPARTMENT")
+    approval_id = os.environ.get("NEXUS_APPROVAL_ID")
+    if (not job_id or not correlation_id or not department or not approval_id
+            or packet.get("governed_job_id") != job_id
+            or packet.get("approval_id") != approval_id
+            or packet.get("approved_by_ray") is not True
+            or packet.get("current_status") not in {"APPROVED", "APPROVED_BY_RAY"}):
+        packet["current_status"] = "GOVERNOR_DENIED"
+        packet["next_action"] = "Create an explicitly approved durable job and use the governed Stripe adapter."
+        with open(packet_path, "w") as f:
+            json.dump(packet, f, indent=2)
+        print(json.dumps({"status": "governor_denied", "item_id": item_id}))
+        return packet
     stripe_key = os.environ.get("STRIPE_SECRET_KEY")
     if not stripe_key:
         packet["current_status"] = "APPROVED_BUT_ENV_MISSING"
@@ -79,19 +97,26 @@ def approve_and_create_session(item_id):
     try:
         import requests
         cd = packet["checkout_data"]
-        resp = requests.post(
-            "https://api.stripe.com/v1/checkout/sessions",
-            auth=(stripe_key, ""),
-            data={
+        from nexus_agent_platform.provider_enforcement import execute
+        cd = packet["checkout_data"]
+        def create_session():
+            return requests.post(
+                "https://api.stripe.com/v1/checkout/sessions",
+                auth=(stripe_key, ""),
+                data={
                 "mode": "subscription",
                 "line_items[0][price]": cd["price_id"],
                 "line_items[0][quantity]": "1",
                 "success_url": cd["success_url"],
                 "cancel_url": cd["cancel_url"],
                 "customer_email": cd["test_email"]
-            },
-            timeout=10
-        )
+                },
+                timeout=10
+            )
+        resp = execute("STRIPE", "checkout", "CREATE_TEST_CHECKOUT_SESSION",
+            {"requests": 1, "operations": 1, "cost": None, "billable": True},
+            create_session, job_id=job_id, job_type=os.environ.get("NEXUS_JOB_TYPE", "STRIPE_TEST_CHECKOUT"),
+            correlation_id=correlation_id, purpose=f"stripe_test_checkout:{item_id}")
         result = resp.json()
         if resp.status_code == 200:
             packet["current_status"] = "CHECKOUT_SESSION_CREATED"

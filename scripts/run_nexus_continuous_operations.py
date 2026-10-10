@@ -593,14 +593,28 @@ def newsletter_test(drafts: list[dict], integrations: dict) -> dict:
         missing = ["RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL"]
         return {"created": True, "sent": False, "status": "email_send_blocked_missing_ray_email", "missing_env_names": missing, "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
 
+    if not os.environ.get("NEXUS_DURABLE_JOB_ID"):
+        return {"created": True, "sent": False, "recipient_configured": True,
+                "status": "durable_job_identity_required",
+                "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
     api_key = sb.ENV["RESEND_API_KEY"]
     from_email = sb.ENV["RESEND_FROM_EMAIL"]
-    ok, resp = secret_post("https://api.resend.com/emails", {
-        "from": from_email,
-        "to": [email],
-        "subject": "TEST - GoClear/Apex $97 readiness review",
-        "text": draft,
-    }, {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+    from nexus_agent_platform.provider_enforcement import execute
+    from nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    try:
+        ok, resp = execute("EMAIL_PROVIDER", "resend_email", "TEST_SEND",
+            {"requests": 1, "operations": 1, "emails": 1, "billable": True},
+            lambda: secret_post("https://api.resend.com/emails", {
+                "from": from_email, "to": [email],
+                "subject": "TEST - GoClear/Apex $97 readiness review", "text": draft,
+            }, {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}),
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type="EMAIL_TEST_SEND", external_ref=lambda response: response[1].get("id") if response[0] else None,
+            actual_usage=lambda response: {"requests": 1, "operations": 1, "emails": 1})
+    except GovernanceDenied as exc:
+        return {"created": True, "sent": False, "recipient_configured": True,
+                "status": "human_approval_required", "governor_code": exc.code,
+                "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
     result = {"created": True, "sent": ok, "recipient_configured": True, "status": "sent" if ok else "failed", "message_id": resp.get("id") if ok else None, "error": None if ok else resp.get("error")}
     if sb.configured():
         sb.event("communication", "resend_test_email", "success" if ok else "failed", "Resend test email", result["status"], payload={"sent": ok, "message_id": result["message_id"]})

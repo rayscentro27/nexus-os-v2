@@ -3,6 +3,9 @@ import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 
 const base = process.env.HERMES_TEST_BASE || 'http://127.0.0.1:4201/?ui-smoke=1';
+const target = new URL(base);
+if (process.env.NEXUS_E2E_APPROVED !== '1' || !process.env.NEXUS_DURABLE_JOB_ID || !process.env.NEXUS_CORRELATION_ID || !process.env.NEXUS_APPROVAL_ID) throw new Error('E2E_DISABLED_REQUIRES_APPROVED_DURABLE_JOB');
+if (!['127.0.0.1', 'localhost', '::1'].includes(target.hostname)) throw new Error('BROWSER_EXTERNAL_TARGET_DENIED');
 const server = process.env.HERMES_TEST_BASE ? null : spawn('./node_modules/.bin/vite', ['--port', '4201', '--host', '127.0.0.1'], { stdio: 'ignore' });
 const results = {};
 

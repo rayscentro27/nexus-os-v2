@@ -1,0 +1,23 @@
+{
+  "approval_state": "NOT_AUTHORIZED",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:18:52.028475+00:00",
+  "from_department": "TRADING",
+  "handoff_id": "handoff_621ebccfe1145560c5b1244d",
+  "input_artifact_ref": "reports/certification/whole_company/artifacts/trading_51f82e73761598305bf99400.json",
+  "job_id": "job_17379936d8a940059defa344ca149513",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_b3ae55614057493d9928e935c0aa46a9",
+  "recommendation": "Retain as research evidence only; no order authority or live-trading approval.",
+  "to_department": "NOVA",
+  "updated_at": "2026-10-10T01:18:53.003398+00:00",
+  "what_remains": [
+    "independent data-quality and out-of-sample validation"
+  ],
+  "what_was_completed": [
+    "existing research-to-Mercury handoff reviewed",
+    "one deterministic offline historical replay completed"
+  ],
+  "workflow_stage": "TRADING_RESEARCH_TO_EXECUTIVE_REVIEW"
+}

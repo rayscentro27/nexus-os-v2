@@ -16,6 +16,7 @@ never printed). No Telegram, no scheduling, no retries.
 from __future__ import annotations
 
 import json
+import os
 import ssl
 import urllib.error
 import urllib.parse
@@ -131,7 +132,28 @@ def publish(post_id: str, *, real_publish: bool = False) -> dict:
               ", ".join(blockers), payload={"post_id": post_id})
         return {"ok": False, "mode": "real", "blocker": ", ".join(blockers)}
 
-    ok, resp = _graph_post_feed(page_id, caption, token)
+    from nexus_agent_platform.provider_enforcement import authorize_social_action
+    from nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    try:
+        authorize_social_action("PUBLIC_POST", workflow_authorized=appr == "approved" and bool((account or {}).get("publish_enabled")))
+    except GovernanceDenied as exc:
+        _receipt(post_id, "blocked", error=exc.code)
+        event("social", "facebook_publish_action_denied", "failed", "Facebook action denied", exc.code, payload={"post_id": post_id})
+        return {"ok": False, "mode": "real", "blocker": exc.code}
+
+    from nexus_agent_platform.provider_enforcement import execute
+    try:
+        durable_job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+        ok, resp = execute("SOCIAL_MEDIA_EXTERNAL_ACTIONS", "facebook_publish", "PUBLIC_POST",
+            {"requests": 1, "operations": 1, "browser_actions": 1, "billable": True},
+            lambda: _graph_post_feed(page_id, caption, token), job_id=durable_job_id,
+            job_type="SOCIAL_PUBLICATION", project_id=post.get("project_id"),
+            correlation_id=post.get("approval_id") or post_id,
+            actual_usage=lambda _result: {"requests": 1, "operations": 1, "browser_actions": 1})
+    except GovernanceDenied as exc:
+        _receipt(post_id, "blocked", error=exc.code)
+        event("social", "facebook_publish_governor_denied", "failed", "Facebook publication denied by governor", exc.code, payload={"post_id": post_id})
+        return {"ok": False, "mode": "real", "blocker": exc.code, "governor_state": exc.state}
     if ok and isinstance(resp, dict) and resp.get("id"):
         post_fb_id = resp["id"]
         permalink = f"https://www.facebook.com/{post_fb_id.replace('_', '/posts/')}"

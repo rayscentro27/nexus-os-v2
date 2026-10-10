@@ -20,7 +20,7 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
-from scripts.nexus_agent_platform import credential_control_plane as credentials
+from nexus_agent_platform import credential_control_plane as credentials
 
 
 CREDENTIAL_ID = "credential.webull.openapi.prod.v1"
@@ -143,14 +143,15 @@ class WebullProvider:
         if body_string:
             headers["content-type"] = "application/json"
         request = urllib.request.Request(url, data=body_string.encode("utf-8") if body_string else None, headers=headers, method=method.upper())
-        try:
+        def send() -> tuple[int, Any]:
+          try:
             with urllib.request.urlopen(request, timeout=self.timeout, context=_tls_context()) as response:
                 raw = response.read()
                 try:
                     return response.status, json.loads(raw.decode("utf-8"))
                 except (UnicodeDecodeError, json.JSONDecodeError) as exc:
                     raise WebullProviderError("INVALID_PROVIDER_RESPONSE", "Webull returned a non-JSON response", http_status=response.status) from exc
-        except urllib.error.HTTPError as exc:
+          except urllib.error.HTTPError as exc:
             error_class = {
                 401: "AUTH_REJECTED",
                 403: "PERMISSION_OR_MARKET_DATA_SUBSCRIPTION",
@@ -167,8 +168,10 @@ class WebullProvider:
             except (UnicodeDecodeError, json.JSONDecodeError, OSError):
                 pass
             raise WebullProviderError(error_class, "Webull read request rejected", http_status=exc.code, provider_code=provider_code, provider_message=provider_message) from exc
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+          except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise WebullProviderError("NETWORK_FAILURE", "Webull read request was not reachable") from exc
+        from nexus_agent_platform.provider_enforcement import execute_public_read
+        return execute_public_read("WEBULL", "market_data_read", send, response_bytes=1_000_000)
 
     def health(self) -> dict[str, Any]:
         try:
@@ -181,7 +184,19 @@ class WebullProvider:
         return {
             "provider": "WEBULL",
             "environment": self.environment,
-            "market_data": {"snapshot": True, "historical_bars": True, "streaming": "NOT_ENABLED"},
+            # The upstream API documents historical bars, but this adapter
+            # currently implements only snapshots. Keep entitlement and
+            # adapter support distinct so callers do not route a replay to a
+            # capability Nexus cannot actually invoke.
+            "market_data": {
+                "snapshot": "ADAPTER_IMPLEMENTED",
+                "historical_bars": {
+                    "provider_api": "DOCUMENTED",
+                    "adapter": "READ_ONLY_METHOD_AVAILABLE",
+                    "entitlement": "UNVERIFIED",
+                },
+                "streaming": "NOT_ENABLED",
+            },
             "account_metadata": "READ_ONLY_ENDPOINT_AVAILABLE",
             "paper_capability": "DISCOVER_ONLY_NOT_EXECUTED",
             "execution": {"place_order": "DENIED", "modify_order": "DENIED", "cancel_order": "DENIED", "funds": "DENIED", "account_mutation": "DENIED", "live_trading": "DENIED"},
@@ -197,6 +212,35 @@ class WebullProvider:
             query_params={"symbols": symbol.upper(), "category": "US_STOCK", "extend_hour_required": "false", "overnight_required": "false"},
         )
         return {"provider": "WEBULL", "status": "PASS_REAL", "http_status": status, "symbol": symbol.upper(), "payload": payload, "values_included": False}
+
+    def historical_bars(self, symbol: str, interval: str = "M30", count: int = 300,
+                        *, last_time: str | None = None) -> dict[str, Any]:
+        """Read one bounded page of official historical stock bars.
+
+        Entitlement is provider/account specific and is not inferred from the
+        existence of this API method. The caller must record HTTP status,
+        terms, and returned range before using the bars as case evidence.
+        """
+        normalized_symbol = str(symbol or "").upper()
+        normalized_interval = str(interval or "").upper()
+        allowed_intervals = {"M1", "M5", "M15", "M30", "M60", "M120", "M240", "D", "W", "M", "Y"}
+        max_count = 1650 if normalized_interval == "M1" else 1200
+        if not normalized_symbol or not normalized_symbol.replace(".", "").replace("-", "").isalnum():
+            raise ValueError("invalid stock symbol")
+        if normalized_interval not in allowed_intervals:
+            raise ValueError("unsupported Webull historical bar interval")
+        if isinstance(count, bool) or not 1 <= int(count) <= max_count:
+            raise ValueError(f"count must be between 1 and {max_count}")
+        query = {"symbol": normalized_symbol, "category": "US_STOCK",
+                 "interval": normalized_interval, "count": str(int(count))}
+        if last_time:
+            query["last_time"] = str(last_time)
+        status, payload = self._request(
+            "GET", "/market-data/stocks/bars/get", query_params=query)
+        return {"provider": "WEBULL", "status": "PASS_REAL", "http_status": status,
+                "environment": self.environment, "symbol": normalized_symbol,
+                "interval": normalized_interval, "requested_count": int(count),
+                "payload": payload, "values_included": True}
 
     def account_metadata(self) -> dict[str, Any]:
         status, payload = self._request("GET", "/trading/accounts/list")

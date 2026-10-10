@@ -29,7 +29,7 @@ from nexus_agent_platform.temporary_worker_framework import (
 ROOT = Path(__file__).resolve().parents[2]
 RECIPE_PATH = ROOT / "configs" / "systems_worker_recipes.json"
 SYSTEMS_OBJECTIVE_ID = "systems-permanent-cloud-notebook-worker"
-EXPECTED_ASSET_NAMES = {"nova_master.jpg", "nova_master.jpeg", "nova_master.png", "nova_source.mp4"}
+EXPECTED_ASSET_NAMES = {"nova_reference.png", "nova_master.jpg", "nova_master.jpeg", "nova_master.png", "nova_source.mp4"}
 AUDIO_SUFFIXES = {".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg"}
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 EXPECTED_AUDIO_NAMES = {"nova_audio.wav", "nova_audio.mp3", "nova_source.wav", "nova_source.mp3", "nova_voice.wav", "nova_voice.mp3", "nova_test.wav", "nova_test.mp3"}
@@ -48,29 +48,42 @@ def load_recipe(recipe_id: str) -> dict[str, Any]:
 
 
 def discover_approved_assets(source_dir: Path | None = None) -> dict[str, Any]:
-    """Hash likely Nova assets; never silently select arbitrary media."""
-    directory = (source_dir or Path.home() / "Downloads").expanduser().resolve()
+    """Resolve the registered Nova reference; never require Downloads at runtime."""
+    recipe = load_recipe("nova-avatar-musetalk-v1")
+    canonical_reference = Path(str(recipe.get("canonical_reference_image") or "")).expanduser()
+    if not canonical_reference.is_absolute():
+        canonical_reference = ROOT / canonical_reference
+    canonical_reference = canonical_reference.resolve()
+    directory = (source_dir.expanduser().resolve() if source_dir else canonical_reference.parent)
     candidates: list[dict[str, Any]] = []
-    if directory.exists():
-        for path in sorted(directory.iterdir()):
-            if not path.is_file():
-                continue
-            suffix = path.suffix.lower()
-            if path.name.lower() not in EXPECTED_ASSET_NAMES and path.name.lower() not in EXPECTED_AUDIO_NAMES:
-                continue
-            candidates.append({
-                "name": path.name,
-                "path": str(path),
-                "kind": "audio" if suffix in AUDIO_SUFFIXES else ("video" if suffix == ".mp4" else "image"),
-                "mime_type": mimetypes.guess_type(path.name)[0] or "application/octet-stream",
-                "size": path.stat().st_size,
-                "sha256": sha256_file(path),
-                "approved_name_match": path.name.lower() in EXPECTED_ASSET_NAMES or path.name.lower() in EXPECTED_AUDIO_NAMES,
-            })
+    paths: list[Path] = [canonical_reference] if canonical_reference.is_file() else []
+    if source_dir and directory.exists():
+        paths.extend(sorted(directory.iterdir()))
+    seen: set[Path] = set()
+    for path in paths:
+        path = path.resolve()
+        if path in seen or not path.is_file():
+            continue
+        seen.add(path)
+        suffix = path.suffix.lower()
+        if path != canonical_reference and path.name.lower() not in EXPECTED_ASSET_NAMES and path.name.lower() not in EXPECTED_AUDIO_NAMES:
+            continue
+        approved_reference = path == canonical_reference and recipe.get("reference_image_sha256") == sha256_file(path)
+        if path == canonical_reference and not approved_reference:
+            continue
+        candidates.append({
+            "name": path.name,
+            "path": str(path),
+            "kind": "audio" if suffix in AUDIO_SUFFIXES else ("video" if suffix == ".mp4" else "image"),
+            "mime_type": mimetypes.guess_type(path.name)[0] or "application/octet-stream",
+            "size": path.stat().st_size,
+            "sha256": sha256_file(path),
+            "approved_name_match": approved_reference or path.name.lower() in EXPECTED_ASSET_NAMES or path.name.lower() in EXPECTED_AUDIO_NAMES,
+        })
     return {
         "source_dir": str(directory),
         "assets": candidates,
-        "approved_assets_present": any(item["approved_name_match"] for item in candidates),
+        "approved_assets_present": any(item["approved_name_match"] and item["kind"] != "audio" for item in candidates),
         "audio_present": any(item["kind"] == "audio" for item in candidates),
         "substitution_performed": False,
         "discovered_at": _now(),

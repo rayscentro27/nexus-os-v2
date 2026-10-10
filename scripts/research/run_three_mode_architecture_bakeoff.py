@@ -124,6 +124,11 @@ def _diagnostic(exc: Exception, *, stage: str, http_status: int | None = None) -
 
 
 def fetch(url: str) -> tuple[str, str | None, str | None, float, dict[str, Any]]:
+    from nexus_agent_platform.provider_enforcement import execute_public_read
+    return execute_public_read("BROWSER_EXTERNAL_SERVICES", "research_architecture_bakeoff", lambda: _fetch_unchecked(url))
+
+
+def _fetch_unchecked(url: str) -> tuple[str, str | None, str | None, float, dict[str, Any]]:
     started = time.monotonic()
     request = urllib.request.Request(url, headers={"User-Agent": "NexusResearchArchitectureExperiment/1.0", "Accept": "text/html,application/json,application/rss+xml"})
     try:

@@ -1,0 +1,230 @@
+{
+  "blocker_classes": {
+    "blocks_activation": [
+      "Supabase deployed autonomous execution unknown",
+      "GitHub remote workflow/App authority unknown",
+      "Cloudflare and remote cloud autonomous execution unknown"
+    ],
+    "blocks_production": [
+      "Meta exposed credential provider-side revocation pending",
+      "Netlify production site/deploy commit unknown"
+    ],
+    "nonblocking": "Not established for any environment with unknown autonomous authority",
+    "provider_only": [
+      "Oracle",
+      "Modal",
+      "Hugging Face",
+      "Kaggle",
+      "Cloudflare/R2 resource use pending account mapping"
+    ]
+  },
+  "campaign": "NEXUS_TRACK_B_EXTERNAL_CONTROL_PLANE_CLOSURE",
+  "certification_resumed": false,
+  "cloudflare_wrangler": {
+    "account_resources": "UNKNOWN_EXTERNAL_ADMIN_METADATA",
+    "canonical_config_files": [],
+    "canonical_project_dependency": false,
+    "dry_run": "NOT_CONFIGURED_YET",
+    "future_goclear_owner_candidate": "CLOUDFLARE; no migration performed",
+    "nexuslive_config_files": "Not verified; bounded scan aborted due filesystem/CLI stalls",
+    "npm_view_version": "NOT_RUN; local npm metadata commands stalled",
+    "npx_version": "NOT_RUN to avoid implicit package download",
+    "whoami": "NOT_RUN; no local Wrangler installation/config to authenticate through",
+    "wrangler_in_path": false
+  },
+  "drift_adapters": {
+    "cloudflare": "NOT_IMPLEMENTED",
+    "github": "NOT_IMPLEMENTED",
+    "monitor_authority": {
+      "can_call_paid_provider": false,
+      "can_create_business_work": false,
+      "can_deploy": false,
+      "can_enable_runtime": false,
+      "can_restart": false
+    },
+    "netlify": "NOT_IMPLEMENTED",
+    "oracle_modal_hf_kaggle": "NOT_IMPLEMENTED",
+    "supabase": "NOT_IMPLEMENTED"
+  },
+  "external_admin_access": {
+    "cloudflare_r2": "NO_ACCOUNT_METADATA_ACCESS_VERIFIED",
+    "github": "ADMIN_APP_AND_REMOTE_ACTIONS_METADATA_UNAVAILABLE_FROM_CURRENT_SESSION",
+    "meta": "PROVIDER_SIDE_REVOCATION_REQUIRES_ACCOUNT_OWNER_ACTION",
+    "netlify": "BLOCKED_OR_UNRELIABLE: CLI version/status/sites queries hung; query processes were stopped; no deployment mutation",
+    "oracle_modal_hf_kaggle": "NO_ACCOUNT_RESOURCE_METADATA_VERIFIED",
+    "supabase": "EXTERNAL_ADMIN_METADATA_UNAVAILABLE_FROM_CURRENT_SESSION"
+  },
+  "final_status": "NEXUS_TRACK_B_NOT_READY",
+  "generated_at": "2026-10-09",
+  "github": {
+    "autonomous_execution": "No scheduled path found in locally tracked canonical workflows; remote repository state not verified",
+    "canonical_repo_source": "no tracked .github/workflows files in current Git index",
+    "canonical_tracked_workflow_files": 0,
+    "remote_admin_actions_history_environments_webhooks_apps_runners": "UNKNOWN",
+    "secondary_nexuslive_workflow": "render-remotion-short.yml; workflow_dispatch only; contents:read; GitHub-hosted ubuntu runner; renders MP4 artifact; no secrets, external publish, or schedule declared in local source"
+  },
+  "meta_credential": {
+    "canonical_client_source_pattern_scan": "No VITE-prefixed Meta/Gemini/Google private key names found in scanned src/netlify/public source paths",
+    "exposure": "PUBLIC_SECRET_EXPOSURE_CONFIRMED",
+    "local_source_repair": "PREVIOUSLY_VERIFIED",
+    "new_credential_server_side_only": "NOT_VERIFIED",
+    "old_credential_revoked": false,
+    "old_identity_local_quarantine": "NOT_REVERIFIED_IN_THIS_PASS; prior local build artifacts are forensic evidence and the identity remains compromised",
+    "rotation_action": "Human/provider account action required; no token values or provider calls used"
+  },
+  "netlify": {
+    "auth": "UNKNOWN; status query hung",
+    "cli_available": true,
+    "cli_binary": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/netlify",
+    "cli_version": "UNKNOWN; netlify --version hung",
+    "deployment_authority": "Local canonical netlify.toml says GitHub main auto-deploy is enabled at site level; remote state unverified. CLI deploy not used.",
+    "duplicate_paths": "UNKNOWN; build hooks/manual deploy/admin metadata inaccessible",
+    "local_source_functions_tracked": 19,
+    "production_branch": "UNKNOWN",
+    "production_commit": "UNKNOWN",
+    "production_commit_sync": "UNKNOWN",
+    "production_domain": "UNKNOWN",
+    "production_repo": "UNKNOWN",
+    "production_site": "UNKNOWN",
+    "reliability": "UNRELIABLE_IN_THIS_SESSION"
+  },
+  "provider_registry_cross_reference": {
+    "canonical_static_registry_total": 155,
+    "limitations": "Registry scanner is incomplete for Netlify Functions and remote deployment metadata; these rows are source candidates, not deployed-state proof.",
+    "remote_candidates": [
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.5db2cd4cc21be160",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/hermes-chat/index.ts",
+        "function": "module_scope",
+        "governance": "LEGACY_DISABLED",
+        "provider": "GEMINI"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.60da8b2db226bb81",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/hermes-chat/index.ts",
+        "function": "module_scope",
+        "governance": "LEGACY_DISABLED",
+        "provider": "GOOGLE_WORKSPACE"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.c39be15dfac125f1",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/hermes-chat/index.ts",
+        "function": "callOpenRouter",
+        "governance": "LEGACY_DISABLED",
+        "provider": "OPENROUTER"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.ed54e5f5922c154d",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/hermes-chat/index.ts",
+        "function": "callOpenRouterNative",
+        "governance": "LEGACY_DISABLED",
+        "provider": "OPENROUTER"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.17fea63bb0745af0",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/hermes-chat/index.ts",
+        "function": "module_scope",
+        "governance": "LEGACY_DISABLED",
+        "provider": "OPENROUTER"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.3c4bf14d6d280dac",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/goclear-followup-trigger/index.ts",
+        "function": "json",
+        "governance": "LEGACY_DISABLED",
+        "provider": "RESEND"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.697371b7fe1550f2",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/goclear-marketing-send/index.ts",
+        "function": "json",
+        "governance": "LEGACY_DISABLED",
+        "provider": "RESEND"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.0209bd8648eb3ee0",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/send-client-email/index.ts",
+        "function": "module_scope",
+        "governance": "BYPASS",
+        "provider": "RESEND"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.2e45a97482b9ad41",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/create-invited-checkout/index.ts",
+        "function": "module_scope",
+        "governance": "LEGACY_DISABLED",
+        "provider": "STRIPE"
+      },
+      {
+        "active": "UNKNOWN",
+        "caller_id": "caller.788657ba0316128b",
+        "deployed": "UNKNOWN",
+        "file": "supabase/functions/create-stripe-checkout/index.ts",
+        "function": "resolveStripeRuntime",
+        "governance": "LEGACY_DISABLED",
+        "provider": "STRIPE"
+      }
+    ],
+    "remote_surface_candidate_total": 10,
+    "remote_surface_distribution": {
+      "SUPABASE_EDGE": 10
+    },
+    "remote_surface_governance_distribution": {
+      "BYPASS": 1,
+      "LEGACY_DISABLED": 9
+    }
+  },
+  "remote_resources": {
+    "autonomous_execution": "UNKNOWN; cannot certify absent from local account records",
+    "cloudflare_workers_pages_cron_r2": "UNKNOWN_EXTERNAL_ADMIN_METADATA",
+    "hugging_face": "UNKNOWN_EXTERNAL_ADMIN_METADATA",
+    "kaggle": "UNKNOWN_EXTERNAL_ADMIN_METADATA",
+    "modal": "UNKNOWN_EXTERNAL_ADMIN_METADATA",
+    "oracle": "UNKNOWN_EXTERNAL_ADMIN_METADATA"
+  },
+  "runtime_activation_performed": false,
+  "safe_mode": {
+    "active_operator": "OFF",
+    "certification_resumed": false,
+    "dispatcher": "OFF",
+    "old_continuous_kernel": "OFF",
+    "scheduler": "OFF"
+  },
+  "schema_version": 1,
+  "secret_consumers": {
+    "remote_secret_name_metadata": "UNKNOWN_EXTERNAL_ADMIN_METADATA",
+    "secret_values_read": false,
+    "unknown_remote_secret_consumers": "EXTERNALLY_INACCESSIBLE; exact systems enumerated in external blocker register"
+  },
+  "secret_values_in_reports": 0,
+  "supabase": {
+    "autonomous_execution": "UNKNOWN; management catalog, pg_cron, webhooks, triggers, Edge auth/deployed versions not inspected",
+    "deployed_status": "UNKNOWN",
+    "local_edge_function_files_tracked": 19,
+    "provider_registry_candidate_callsites": 10,
+    "provider_registry_governance_counts": {
+      "BYPASS": 1,
+      "LEGACY_DISABLED": 9
+    },
+    "queue_credit_report_after_upload": "deployed definition/state unverified"
+  },
+  "track_b_zero_unknown_pass": false
+}

@@ -16,6 +16,10 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { chromium } from 'playwright';
 
+if (process.env.NEXUS_E2E_APPROVED !== '1' || !process.env.NEXUS_DURABLE_JOB_ID || !process.env.NEXUS_CORRELATION_ID || !process.env.NEXUS_APPROVAL_ID) {
+  throw new Error('E2E_DISABLED_REQUIRES_APPROVED_DURABLE_JOB');
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT = join(__dirname, '..', '..');

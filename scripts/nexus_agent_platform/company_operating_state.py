@@ -88,6 +88,19 @@ def build_company_operating_state() -> dict[str, Any]:
     if stale_health:
         blockers.append({"summary": "Some legacy telemetry/read-model sources are stale.", "impact": "Executive visibility is degraded for those sources; the canonical supervisor and Research heartbeat remain separately readable.", "sources": stale_health})
     next_work = heartbeat.get("next_action") or operator_hb.get("next_scheduled_run") or "UNKNOWN"
+    completed_goals = [g for g in goals if str(g.get("status") or "").upper() in {"COMPLETED", "GOAL_COMPLETED"}]
+    active_goals = [g for g in goals if str(g.get("status") or "").upper() in {"ACTIVE", "READY", "QUEUED", "WAITING_RETRY", "WAITING_DEPENDENCY"}]
+    stalled_goals = [g for g in goals if str(g.get("status") or "").upper() in {"STALLED", "BLOCKED"}]
+    waiting_human_goals = [g for g in goals if str(g.get("status") or "").upper() == "WAITING_HUMAN"]
+    company_goals = {
+        "completed": [{"goal_id": g.get("goal_id"), "department": g.get("department"), "evidence": g.get("completion_evidence")} for g in completed_goals],
+        "active": [{"goal_id": g.get("goal_id"), "department": g.get("department"), "stage": g.get("current_stage"), "next_action": g.get("next_action")} for g in active_goals],
+        "stalled": [{"goal_id": g.get("goal_id"), "department": g.get("department"), "blockers": g.get("blockers") or g.get("missing_criteria")} for g in stalled_goals],
+        "waiting_human": [{"goal_id": g.get("goal_id"), "department": g.get("department"), "exact_action": g.get("exact_action_required"), "resume_stage": g.get("resume_stage")} for g in waiting_human_goals],
+        "value_output": [{"goal_id": g.get("goal_id"), "department": g.get("department"), "result": g.get("last_result") or g.get("completion_evidence")} for g in goals if g.get("last_result") or g.get("completion_evidence")],
+        "next_actions": [{"goal_id": g.get("goal_id"), "department": g.get("department"), "action": g.get("next_action")} for g in active_goals if g.get("next_action")],
+        "source": "company_goal_portfolio",
+    }
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "system_health": {"state": "OPERATIONAL_WITH_TELEMETRY_DEGRADED" if stale_health else "OPERATIONAL", "supervisor": "RUNNING" if _loaded_supervisor() else "UNKNOWN", "stale_sources": stale_health, "source": "live_runtime_status+launchd"},
@@ -96,6 +109,7 @@ def build_company_operating_state() -> dict[str, Any]:
         "current_work": current_work,
         "recent_completions": sorted(advanced, key=lambda x: str(x.get("at") or ""), reverse=True)[:6],
         "departments": departments,
+        "company_goals": company_goals,
         "queued_next": {"action": next_work, "next_wake": heartbeat.get("next_wake"), "source": "research_heartbeat"},
         "blockers": blockers,
         "ray_action": "UNKNOWN" if not operator else "NONE_EVIDENCED",

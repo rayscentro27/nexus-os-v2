@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
 from typing import Any, Dict, List, Optional
 
 log = logging.getLogger(__name__)
@@ -46,11 +47,29 @@ class LlmGatewayAdapter:
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """Send a completion request via LiteLLM or fallback."""
-        if self._enabled:
-            return await self._litellm_completion(
-                model, messages, temperature, max_tokens, tools, **kwargs
-            )
-        return await self._fallback_completion(model, messages, temperature, max_tokens, **kwargs)
+        from nexus_agent_platform.provider_enforcement import execute_async
+        provider=os.getenv("NEXUS_LLM_PROVIDER", "OPENROUTER" if not self._enabled else "UNKNOWN_LITELLM_PROVIDER").upper()
+        job_id=os.getenv("NEXUS_DURABLE_JOB_ID")
+        estimate={"requests":1,"operations":1,"tokens":max(0,int(max_tokens)),"billable":not model.lower().endswith(":free")}
+        if not estimate["billable"]: estimate["cost"]=0.0
+        async def invoke():
+            if self._enabled:
+                return await self._litellm_completion(model,messages,temperature,max_tokens,tools,**kwargs)
+            return await self._fallback_completion(model,messages,temperature,max_tokens,**kwargs)
+        def actual_usage(result):
+            usage=result.get("usage") or {}
+            value={"requests":1,"operations":1,"tokens":int(usage.get("total_tokens") or max_tokens)}
+            if usage.get("cost") is not None: value["cost"]=float(usage["cost"])
+            return value
+        try:
+            return await execute_async(provider,"llm_completion","COMPLETION",estimate,invoke,
+                job_id=job_id,job_type=os.getenv("NEXUS_JOB_TYPE","ADHOC_LLM_COMPLETION"),
+                correlation_id=os.getenv("NEXUS_CORRELATION_ID") or job_id,actual_usage=actual_usage)
+        except Exception as exc:
+            from nexus_agent_platform.resource_spend_governor import GovernanceDenied
+            if isinstance(exc,GovernanceDenied):
+                return {"content":"","model":model,"usage":{},"tool_calls":[],"error":"GOVERNANCE_DENIED","error_detail":exc.code,"governor_state":exc.state}
+            raise
 
     async def _litellm_completion(
         self, model: str, messages: List[Dict[str, str]],

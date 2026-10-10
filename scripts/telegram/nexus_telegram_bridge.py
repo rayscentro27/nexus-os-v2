@@ -881,7 +881,7 @@ def get_bot_token():
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     if token:
         return token
-    
+
     # Fallback: try launchctl
     try:
         import subprocess
@@ -893,7 +893,7 @@ def get_bot_token():
             return result.stdout.strip()
     except:
         pass
-    
+
     print("TELEGRAM_TOKEN_MISSING")
     return None
 
@@ -901,13 +901,22 @@ def telegram_api_call(token, method, params=None):
     """Call Telegram Bot API method. Returns JSON response or None."""
     url = TELEGRAM_API.format(token=token, method=method)
     try:
-        if params:
-            data = urllib.parse.urlencode(params).encode("utf-8")
-            req = urllib.request.Request(url, data=data)
-        else:
-            req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        def call():
+            req = urllib.request.Request(url, data=urllib.parse.urlencode(params).encode("utf-8") if params else None)
+            with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        if method == "sendMessage":
+            from nexus_agent_platform.provider_enforcement import execute_telegram_delivery
+            return execute_telegram_delivery(params.get("chat_id"), call,
+                job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type=os.environ.get("NEXUS_JOB_TYPE", "NEXUS_TELEGRAM_DELIVERY"),
+                external_ref=lambda value: str((value.get("result") or {}).get("message_id")) if value else None)
+        from nexus_agent_platform.provider_enforcement import execute
+        return execute("TELEGRAM", "bot_api", f"API_{method}",
+            {"requests": 1, "operations": 1, "billable": False}, call,
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type=os.environ.get("NEXUS_JOB_TYPE", "NEXUS_TELEGRAM_RECEIVER"),
+            purpose=f"nexus_telegram:{method}")
     except urllib.error.HTTPError as e:
         body = ""
         try:
@@ -1569,44 +1578,44 @@ def process_telegram_updates(token, dry_run=False):
 
         last_id = load_last_update_id()
         params = {"offset": last_id + 1, "limit": 10, "timeout": 0}
-    
+
         resp = telegram_api_call(token, "getUpdates", params)
         if not resp:
             return "TELEGRAM_API_ERROR"
-    
+
         if not resp.get("ok"):
             return "TELEGRAM_API_NOT_OK"
-    
+
         updates = resp.get("result", [])
         if not updates:
             return "NO_NEW_UPDATES"
-    
+
         processed = 0
         skipped_unauthorized = 0
         max_update_id = last_id
-    
+
         for update in updates:
             uid = update.get("update_id", 0)
             if uid > max_update_id:
                 max_update_id = uid
-        
+
             message = update.get("message") or update.get("edited_message") or {}
             chat = message.get("chat", {})
             chat_id = chat.get("id")
             text = message.get("text", "")
             mission = create_mission(uid, bot_id, chat_id, text or "")
-        
+
             # Ignore non-text messages
             if not text:
                 update_mission(mission, "ROUTING_FAILED", error="non_text_update")
                 continue
-        
+
             # Authorization check
             if chat_id not in ALLOWED_CHAT_IDS:
                 skipped_unauthorized += 1
                 update_mission(mission, "UNAUTHORIZED", error="chat_not_authorized")
                 continue
-        
+
             update_mission(mission, "AUTHORIZED")
 
             with execution_run(
@@ -1622,7 +1631,7 @@ def process_telegram_updates(token, dry_run=False):
                 # Process command
                 result = process_command(text, mission=mission)
                 processed += 1
-        
+
             if dry_run:
                 update_mission(mission, "RESPONSE_COMPOSED")
                 print(f"[DRY-RUN] Would reply to chat {mask_chat_id(chat_id)}: {result[:100]}...")
@@ -1637,7 +1646,7 @@ def process_telegram_updates(token, dry_run=False):
                     update_mission(mission, "COMPLETED")
                 else:
                     update_mission(mission, "DELIVERY_FAILED", error="telegram_send_message_failed")
-            
+
                 # Write receipt
                 write_live_polling_receipt({
                     "type": "live_command",
@@ -1650,11 +1659,11 @@ def process_telegram_updates(token, dry_run=False):
                     "reply_length": len(result),
                     "reply_preview": result[:200]
                 })
-    
+
         # Save the latest update_id
         if max_update_id > last_id:
             save_last_update_id(max_update_id)
-    
+
         return f"PROCESSED {processed} | SKIPPED {skipped_unauthorized} unauthorized | LAST_UPDATE_ID {max_update_id}"
 
 # --- Conversation Context ---
@@ -4089,11 +4098,11 @@ def main():
         if not token:
             print("TELEGRAM_TOKEN_MISSING")
             sys.exit(1)
-        
+
         dry_run = "--dry-run-poll" in args
         status = process_telegram_updates(token, dry_run=dry_run)
         print(f"Telegram bridge: {status}")
-        
+
         if status.startswith("PROCESSED"):
             write_activation_report()
     elif "--dry-run" in args:

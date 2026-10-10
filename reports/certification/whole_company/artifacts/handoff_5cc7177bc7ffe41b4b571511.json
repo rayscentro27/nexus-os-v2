@@ -1,0 +1,26 @@
+{
+  "approval_state": "NOT_AUTHORIZED",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:12:12.996737+00:00",
+  "from_department": "ATLAS",
+  "handoff_id": "handoff_5cc7177bc7ffe41b4b571511",
+  "input_artifact_ref": "reports/certification/whole_company/artifacts/atlas_e35543c1664b9c92da238031.json",
+  "job_id": "job_becee6dcda244f25afe1f2c71ca09071",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_3ca171217da2423db320a193b05fbd23",
+  "recommendation": "Provide funding-path information only; borrower readiness and eligibility remain unknown.",
+  "to_department": "CLYDE",
+  "updated_at": "2026-10-10T01:12:14.022691+00:00",
+  "what_remains": [
+    "customer validation",
+    "business model",
+    "cost structure",
+    "risk review"
+  ],
+  "what_was_completed": [
+    "opportunity gates evaluated",
+    "no promotion without demand evidence"
+  ],
+  "workflow_stage": "ATLAS_TO_CLYDE"
+}

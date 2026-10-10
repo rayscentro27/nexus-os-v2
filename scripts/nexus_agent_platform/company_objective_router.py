@@ -56,74 +56,44 @@ def build_root_objective(text: str, *, conversation_message_id: str | int | None
 
 
 def route_company_objective(text: str, *, conversation_message_id: str | int | None = None) -> dict[str, Any]:
-    """Return a durable, context-preserving company work plan for one objective."""
+    """Resolve only the owners required by the requested work and evidence."""
     clean = re.sub(r"\s+", " ", text.strip())[:500]
     root_objective = build_root_objective(text, conversation_message_id=conversation_message_id)
     intent = classify_intent(clean)
     base = resolve(clean)
-    steps: list[dict[str, Any]] = []
-    approvals: list[str] = []
-
-    if _contains(clean, "create a campaign", "campaign for", "make one version funny"):
-        steps = [
-            {"order": 1, "owner": "RESEARCH_ALPHA", "specialist": "ALPHA", "action": "reuse_current_audience_and_pattern_intelligence", "authority": "read_only"},
-            {"order": 2, "owner": "MARKETING_CREATIVE", "specialist": "GROWTH", "action": "define_strategy_hooks_offer_and_cta", "authority": "draft_only"},
-            {"order": 3, "owner": "MARKETING_CREATIVE", "specialist": "CREATIVE", "action": "generate_video_image_and_social_variations", "authority": "draft_only"},
-            {"order": 4, "owner": "OPERATIONS", "specialist": "JAX", "action": "bind_landing_page_and_funnel_handoff", "authority": "internal_execution"},
-            {"order": 5, "owner": "GOVERNANCE_REVIEW", "specialist": "NOVA", "action": "assemble_admin_review_package", "authority": "human_review"},
-        ]
-        approvals = ["Ray approval before publication, paid traffic, or external outreach."]
-    elif intent == "OPPORTUNITY_INTAKE" or _contains(clean, "idea", "opportunity"):
-        steps = [
-            {"order": 1, "owner": "RESEARCH_ALPHA", "specialist": "ALPHA", "action": "research_and_challenge_opportunity", "authority": "read_only"},
-            {"order": 2, "owner": "OPERATIONS", "specialist": "NOVA", "action": "create_company_objective_and_work_order", "authority": "internal_execution"},
-            {"order": 3, "owner": "CREDIT_BUSINESS_FUNDING", "specialist": "ALPHA", "action": "model_economics_and_risk_if_relevant", "authority": "internal_review"},
-            {"order": 4, "owner": "MARKETING_CREATIVE", "specialist": "GROWTH", "action": "prepare_draft_offer_and_campaign_if_test_warrants", "authority": "draft_only"},
-            {"order": 5, "owner": "GOVERNANCE_REVIEW", "specialist": "NOVA", "action": "assemble_ray_review_package", "authority": "human_review"},
-        ]
-        approvals = ["Ray approval before external store, paid service, advertising, contract, or publication."]
-    elif intent == "TRADING_PREMARKET" or _contains(clean, "market open", "premarket", "pre-market"):
-        steps = [
-            {"order": 1, "owner": "RESEARCH_ALPHA", "specialist": "TRADING_ENGINE", "action": "read_current_practice_market_data_and_prepare_watchlist", "authority": "read_only"},
-            {"order": 2, "owner": "RESEARCH_ALPHA", "specialist": "ALPHA", "action": "challenge_setup_and_regime_assumptions", "authority": "advisory"},
-            {"order": 3, "owner": "GOVERNANCE_REVIEW", "specialist": "NOVA", "action": "surface_waiting_signal_or_risk_rejection", "authority": "human_review"},
-        ]
-        approvals = ["No live order is permitted; paper execution only until a separate explicit standing authority exists."]
-    elif intent == "RESEARCH" and _contains(clean, "low-cost", "low cost", "business opportunity"):
-        steps = [
-            {"order": 1, "owner": "RESEARCH_ALPHA", "specialist": "ALPHA", "action": "discover_and_verify_low_cost_opportunities", "authority": "read_only"},
-            {"order": 2, "owner": "CREDIT_BUSINESS_FUNDING", "specialist": "ALPHA", "action": "compare_startup_cost_margin_and_risk", "authority": "internal_review"},
-            {"order": 3, "owner": "OPERATIONS", "specialist": "NOVA", "action": "return_recommendation_and_next_bounded_test", "authority": "internal_execution"},
-        ]
-        approvals = ["Ray approval before external spend, account creation, or launch."]
-    elif _contains(clean, "grant"):
-        steps = [
-            {"order": 1, "owner": "RESEARCH_ALPHA", "specialist": "ALPHA", "action": "discover_and_verify_current_grants", "authority": "read_only"},
-            {"order": 2, "owner": "CREDIT_BUSINESS_FUNDING", "specialist": "CLYDE", "action": "match_requirements_to_client_evidence", "authority": "internal_review"},
-            {"order": 3, "owner": "DOCUMENTS", "specialist": "CLYDE", "action": "prepare_document_checklist", "authority": "human_review"},
-        ]
-        approvals = ["Ray/client approval before any application submission or external communication."]
-    elif _contains(clean, "client", "restaurant", "customer"):
-        steps = [
-            {"order": 1, "owner": "CLIENT_LIFECYCLE", "specialist": "CLYDE", "action": "recover_client_goal_stage_and_next_action", "authority": "human_authority_required"},
-            {"order": 2, "owner": "CREDIT_BUSINESS_FUNDING", "specialist": "CLYDE", "action": "readiness_and_funding_gap_analysis", "authority": "internal_review"},
-            {"order": 3, "owner": "DOCUMENTS", "specialist": "CLYDE", "action": "document_request_and_status_plan", "authority": "human_review"},
-            {"order": 4, "owner": "GOVERNANCE_REVIEW", "specialist": "NOVA", "action": "human_handoff_and_approval_gate", "authority": "human_review"},
-        ]
-        approvals = ["Client-specific production mutation and external communications require separate authority."]
-    else:
-        steps = [{"order": 1, "owner": "GOVERNANCE_REVIEW", "specialist": "NOVA", "action": "clarify_or_queue_unresolved_objective", "authority": "human_review"}]
-        approvals = ["Objective remains unresolved; no department execution is claimed."]
-
+    lower = clean.lower()
+    requested: list[tuple[str, str, str, str]] = []
+    rules = (
+        (r"\b(research|discover|verify|source evidence|trend evidence|competitor evidence|audience evidence)\b", "RESEARCH_ALPHA", "ALPHA", "resolve_evidence_question", "read_only"),
+        (r"\b(business opportunity|business idea|affiliate opportunity|revenue model|customer need|commercial viability|opportunity)\b", "ATLAS_OPPORTUNITY", "OPPORTUNITY_ENGINE", "evaluate_commercial_candidate", "internal_review"),
+        (r"\b(economic|economics|commission|payout|break-even|unit economics|acquisition cost)\b", "FINANCE", "FINANCE", "evaluate_evidenced_economics", "internal_review"),
+        (r"\b(claim|disclosure|compliance|guaranteed|eligibility wording)\b", "COMPLIANCE", "COMPLIANCE_ENGINE", "review_or_repair_supported_claims", "internal_review"),
+        (r"\b(campaign|positioning|audience segmentation|channel strategy|funnel|content plan|marketing)\b", "MARKETING_CREATIVE", "GROWTH", "prepare_campaign_strategy", "draft_only"),
+        (r"\b(asset production|produce asset|image|video|creative asset|typography|visual execution)\b", "MARKETING_CREATIVE", "CREATIVE", "produce_or_revise_requested_asset", "draft_only"),
+        (r"\b(trading|trading strategy|trading indicator|entry signal|exit signal|backtest)\b", "TRADING", "TRADING_ENGINE", "develop_or_test_trading_candidate", "paper_only"),
+        (r"\b(technology|capability|experiment|benchmark|prototype)\b", "LABS", "LABS", "run_bounded_capability_experiment", "internal_experiment"),
+        (r"\b(incident|restore|production health|operational capability)\b", "SYSTEMS", "SYSTEMS", "restore_and_verify_safe_capability", "internal_reversible"),
+    )
+    seen: set[tuple[str, str]] = set()
+    for pattern, owner, specialist, action, authority in rules:
+        if re.search(pattern, lower):
+            key=(owner,action)
+            if key not in seen:
+                requested.append((owner,specialist,action,authority)); seen.add(key)
+    if not requested:
+        requested=[(base.get("department","GOVERNANCE_REVIEW"),base.get("specialist","NOVA"),base.get("action","clarify_or_queue_unresolved_objective"),base.get("authority","human_review"))]
+    steps=[{"order":i,"owner":owner,"specialist":specialist,"action":action,"authority":authority} for i,(owner,specialist,action,authority) in enumerate(requested,1)]
+    approvals=["Ray approval before Creative generation, external publication, paid traffic, financial execution, client submission, or irreversible action."]
     return {
-        "schema_version": "nexus.company-objective-plan.v1",
-        "objective": clean,
-        "root_objective": root_objective,
-        "intent_class": intent,
-        "canonical_route": base,
-        "steps": steps,
-        "handoff_order": [step["owner"] for step in steps],
-        "approval_boundaries": approvals,
-        "continuation": "Parent objective remains open until every step has a receipt or a governed blocker.",
-        "outcome_integrity": "Plans and test results are not business outcomes; unknown metrics remain UNKNOWN.",
+        "schema_version":"nexus.company-objective-plan.v1",
+        "objective":clean,
+        "root_objective":root_objective,
+        "intent_class":intent,
+        "canonical_route":{"department":steps[0]["owner"],"basis":"WORK_REQUIRED_AND_DEPARTMENT_MISSION"},
+        "steps":steps,
+        "handoff_order":[step["owner"] for step in steps],
+        "routing_basis":{"work_required":clean,"current_goal_considered":True,"handoff_evidence_considered":"when supplied by downstream handoff contract","fixed_chain":False},
+        "approval_boundaries":approvals,
+        "continuation":"Parent objective remains open until every required decision has evidence and a receipt or a governed blocker.",
+        "outcome_integrity":"Plans and test results are not business outcomes; unknown metrics remain UNKNOWN.",
     }

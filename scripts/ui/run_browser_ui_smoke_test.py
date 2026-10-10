@@ -6,6 +6,8 @@ from activation_common import write_report
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--json',action='store_true'); ap.add_argument('--url',default='http://127.0.0.1:4174/?ui-smoke=1#command'); a=ap.parse_args()
+    from browser_target_guard import require_local_browser_target
+    require_local_browser_target(a.url)
     steps=[]
     try:
         from playwright.sync_api import sync_playwright

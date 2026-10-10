@@ -1,0 +1,25 @@
+{
+  "approval_state": "NOT_AUTHORIZED",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:11:45.263649+00:00",
+  "from_department": "RESEARCH",
+  "handoff_id": "handoff_45c80c552b9a8cc0cddd6958",
+  "input_artifact_ref": "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+  "job_id": "job_54a1ba8115b94790836a6634f72c6b15",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_40d71ad61be344a5939e35bd4c10686d",
+  "recommendation": "Assess as an unvalidated educational opportunity; do not promote or imply demand.",
+  "to_department": "ATLAS",
+  "updated_at": "2026-10-10T01:11:46.496603+00:00",
+  "what_remains": [
+    "customer interviews",
+    "current program requirements",
+    "geography and borrower profile"
+  ],
+  "what_was_completed": [
+    "bounded official-source synthesis",
+    "source provenance and limits recorded"
+  ],
+  "workflow_stage": "RESEARCH_TO_ATLAS"
+}

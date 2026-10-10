@@ -12,6 +12,10 @@ class EmptyQueue:
         self.claimed = True
         return {"work_id": "goal-objective-1", "status": "IN_PROGRESS"}
 
+    def claim_next_for_objective(self, **kwargs):
+        self.claimed = True
+        return {"work_id": "goal-objective-1", "status": "IN_PROGRESS"}
+
 
 def test_empty_queue_invokes_purpose_continuation(monkeypatch):
     queue = EmptyQueue()

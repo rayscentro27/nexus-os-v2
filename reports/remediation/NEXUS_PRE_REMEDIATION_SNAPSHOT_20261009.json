@@ -1,0 +1,1699 @@
+{
+  "created_at_local": "Fri Oct  9 10:35:45 MST 2026",
+  "checkout": "/Users/raymonddavis/nexus-os-v2-canonical",
+  "git_status_before": [
+    "## main...origin/main",
+    " M configs/connector_registry.json",
+    " M configs/creative_avatar_registry.json",
+    " M configs/nexus_credential_registry.json",
+    " M configs/nexus_operating_mode.json",
+    " M configs/notebooklm_automation_registry.json",
+    " M configs/research_permanent_sources.json",
+    " M configs/systems_worker_recipes.json",
+    " M data/runtime/active_operator_work_item_state.json",
+    " M data/runtime/company_goal_portfolio.json",
+    " M data/runtime/forex_scanner_state.json",
+    " M data/runtime/nexus_capability_registry.json",
+    " M data/runtime/research_source_refresh_state.json",
+    " M data/runtime/telegram_conversation_context.json",
+    " M netlify/functions/_supabase-control-plane.mjs",
+    " M netlify/functions/admin-live-state.mjs",
+    " M ops/launchd/com.nexus.active-operator-v2.plist",
+    " M ops/launchd/com.nexus.continuous-loop.plist",
+    " M reports/certification/nexus_active_operator_v1_latest.json",
+    " M reports/certification/nexus_active_operator_v1_latest.md",
+    " M reports/manual_publish/notebooklm_access_audit_latest.md",
+    " M reports/manual_publish/notebooklm_notebook_list_latest.md",
+    " M reports/manual_publish/oanda_demo_readonly_check_latest.md",
+    " M reports/research/NEXUS_CONTINUOUS_INTELLIGENCE_SESSION_2026-09-18.md",
+    " M reports/research/two_hour/latest.json",
+    " M reports/research/two_hour/latest.md",
+    " M reports/runtime/nexus_active_operator_heartbeat_latest.json",
+    " M reports/runtime/nexus_active_operator_runner_latest.md",
+    " M requirements-agent-platform.txt",
+    " M scripts/activation/list_notebooklm_notebooks.py",
+    " M scripts/activation/notebooklm_connector_common.py",
+    " M scripts/activation/operating_cycle_common.py",
+    " M scripts/alpha/alpha_telegram_worker.py",
+    " M scripts/approval_lanes/nexus_customer_email_lane.py",
+    " M scripts/marketing/run_marketing_creative_operational_certification.py",
+    " M scripts/nexus_agent_platform/ai_workforce_executor.py",
+    " M scripts/nexus_agent_platform/alpha_decision_policy.py",
+    " M scripts/nexus_agent_platform/bridge/[REDACTED:SECURE_EVIDENCE_REFERENCE]_cli.py",
+    " M scripts/nexus_agent_platform/company_objective_router.py",
+    " M scripts/nexus_agent_platform/company_operating_state.py",
+    " M scripts/nexus_agent_platform/continuous_operating_kernel.py",
+    " M scripts/nexus_agent_platform/contracts/actions.py",
+    " M scripts/nexus_agent_platform/creative/gpu.py",
+    " M scripts/nexus_agent_platform/creative/media_library.py",
+    " M scripts/nexus_agent_platform/creative/studio.py",
+    " M scripts/nexus_agent_platform/evidence_ingestion.py",
+    " M scripts/nexus_agent_platform/finance/foundation.py",
+    " M scripts/nexus_agent_platform/goal_completion.py",
+    " M scripts/nexus_agent_platform/governed/persistence.py",
+    " M scripts/nexus_agent_platform/intelligence_fabric.py",
+    " M scripts/nexus_agent_platform/loops/governed_loops.py",
+    " M scripts/nexus_agent_platform/loops/review.py",
+    " M scripts/nexus_agent_platform/loops/runtime.py",
+    " M scripts/nexus_agent_platform/marketing_ai_orchestrator.py",
+    " M scripts/nexus_agent_platform/nova_company_context.py",
+    " M scripts/nexus_agent_platform/opportunities/engine.py",
+    " M scripts/nexus_agent_platform/project_advancement.py",
+    " M scripts/nexus_agent_platform/providers/modal_provider.py",
+    " M scripts/nexus_agent_platform/providers/trypost_provider.py",
+    " M scripts/nexus_agent_platform/providers/webull_provider.py",
+    " M scripts/nexus_agent_platform/research/last30days_adapter.py",
+    " M scripts/nexus_agent_platform/research_continuation.py",
+    " M scripts/nexus_agent_platform/research_followups.py",
+    " M scripts/nexus_agent_platform/research_lane_scheduler.py",
+    " M scripts/nexus_agent_platform/research_operational_state.py",
+    " M scripts/nexus_agent_platform/research_rotation.py",
+    " M scripts/nexus_agent_platform/research_work_queue.py",
+    " M scripts/nexus_agent_platform/systems_consumer.py",
+    " M scripts/nexus_agent_platform/systems_notebook_worker.py",
+    " M scripts/nexus_agent_platform/tests/test_intelligence_fabric.py",
+    " M scripts/nexus_agent_platform/tests/test_last30days_adapter.py",
+    " M scripts/nexus_agent_platform/tests/test_modal_provider.py",
+    " M scripts/nexus_agent_platform/tests/test_phase15_health_contract.py",
+    " M scripts/nexus_agent_platform/tests/test_research_autonomy_continuation.py",
+    " M scripts/nexus_agent_platform/tests/test_research_work_queue.py",
+    " M scripts/nexus_agent_platform/tests/test_webull_provider.py",
+    " M scripts/nexus_agent_platform/workflows/litellm_adapter.py",
+    " M scripts/nexus_agent_platform/workflows/temporal_activities.py",
+    " M scripts/nova/nova_telegram_worker.py",
+    " M scripts/operations/nexus_active_operator_runner.py",
+    " M scripts/operations/nexus_hermes_telegram_worker.py",
+    " M scripts/ops/check_remote_stack_health.py",
+    " M scripts/ops/test_check_remote_stack_health.py",
+    " M scripts/r29_1/execute_governed_template_canary.py",
+    " M scripts/research/ray_source_intake.py",
+    " M scripts/research/run_dispatched_research_job.py",
+    " M scripts/research/scheduled_research_router.py",
+    " M scripts/research/youtube_full_pipeline.py",
+    " M scripts/run_continuous_operating_kernel.py",
+    " M scripts/run_nexus_continuous_operations.py",
+    " M scripts/social/_supabase.py",
+    " M scripts/social/facebook_publisher.py",
+    " M scripts/social/facebook_token_status.py",
+    " M scripts/telegram/nexus_telegram_bridge.py",
+    " M scripts/wp9_company_scheduler.py",
+    " M src/admin/AdminSurfacePage.jsx",
+    " M src/admin/CanonicalAdminPages.jsx",
+    " M src/admin/LiveCompanyIntelligence.jsx",
+    " M src/client-v2/approved/generated.scoped.css",
+    " M src/components/CommandCenter.jsx",
+    " M src/components/GoclearBetaProjectionPanel.jsx",
+    " M src/components/RayReviewCard.jsx",
+    " M src/components/RayReviewCenter.jsx",
+    " M src/components/SystemHealthPanel.jsx",
+    " M src/components/sections.tsx",
+    " M src/lib/executive/executiveCommandCenterAdapter.ts",
+    " M src/lib/executive/executiveTypes.ts",
+    " M src/operator/OperatorConsole.tsx",
+    " M src/operator/operator.css",
+    " M src/services/db.ts",
+    " M tests/executive_command_center_adapter.test.ts",
+    "?? artifacts/nova/",
+    "?? artifacts/research/",
+    "?? artifacts/trading/",
+    "?? assets/",
+    "?? config/mercury_strategy_development_lab.json",
+    "?? config/research/",
+    "?? configs/company_department_success_criteria.json",
+    "?? configs/expert_registry.json",
+    "?? configs/launchd/com.nexus.dispatcher.plist",
+    "?? configs/launchd/com.nexus.scheduler.plist",
+    "?? configs/nova_tts/",
+    "?? configs/research/",
+    "?? configs/research_evidence_contracts.json",
+    "?? configs/research_live_input_priority.json",
+    "?? configs/research_source_manifest.example.json",
+    "?? data/runtime/.research_work_queue.json.95412.tmp",
+    "?? data/runtime/.research_work_queue.json.96016.tmp",
+    "?? data/runtime/active_operator_work_orders.json",
+    "?? data/runtime/alpha_research/",
+    "?? data/runtime/alpha_source_registry.json",
+    "?? data/runtime/company_case_directive_runtime.jsonl",
+    "?? data/runtime/department_handoff_state.json",
+    "?? data/runtime/durable_job_health_latest.json",
+    "?? data/runtime/forex_candle_cache.json",
+    "?? data/runtime/job_egress/",
+    "?? data/runtime/last30days_demand_radar_latest.json",
+    "?? data/runtime/last30days_demand_radar_runs.jsonl",
+    "?? data/runtime/marketing_creative/",
+    "?? data/runtime/nexus_loops/",
+    "?? data/runtime/nexus_worker_registry.json",
+    "?? data/runtime/notebooklm_proactive_research.json",
+    "?? data/runtime/notebooklm_research_results.jsonl",
+    "?? data/runtime/nova_material_events.jsonl",
+    "?? data/runtime/oracle_cost_monitor_latest.json",
+    "?? data/runtime/process_registry_spool.jsonl",
+    "?? data/runtime/productivity_audit_state.json",
+    "?? data/runtime/real_intelligence_certification_runner.py",
+    "?? data/runtime/real_intelligence_certification_state.json",
+    "?? data/runtime/research_ai_orchestration/",
+    "?? data/runtime/research_architecture_real_abc/",
+    "?? data/runtime/research_execution_jobs.jsonl",
+    "?? data/runtime/research_heartbeat.json",
+    "?? data/runtime/research_lane_registry.json",
+    "?? data/runtime/research_overnight/",
+    "?? data/runtime/research_persistence_certification_20260927/",
+    "?? data/runtime/research_program_registry.json",
+    "?? data/runtime/research_program_service_state.json",
+    "?? data/runtime/research_sources_wake_budget.json",
+    "?? data/runtime/research_v2_program_registry.json",
+    "?? data/runtime/research_v2_runtime_ticks.jsonl",
+    "?? data/runtime/research_work_queue.json",
+    "?? data/runtime/seo_operational_state_latest.json",
+    "?? data/runtime/supabase_egress_guard.json",
+    "?? data/runtime/systems_nightly_run_pointer.json",
+    "?? data/runtime/systems_workflow_runs.jsonl",
+    "?? data/runtime/wick_sequence_oanda_eurusd_h1_2026-10-06.json",
+    "?? data/runtime/wick_sequence_oanda_eurusd_h1_fresh_20261007.json",
+    "?? data/runtime/wick_sequence_oanda_eurusd_m15_2026-10-06.json",
+    "?? data/runtime/wick_sequence_oanda_eurusd_m15_fresh_20261007.json",
+    "?? data/runtime/wick_sequence_oanda_eurusd_m30_2026-10-06.json",
+    "?? data/runtime/wick_sequence_oanda_eurusd_m30_oos_pre_20261006.json",
+    "?? data/runtime/youtube_backfill_state.json",
+    "?? deploy/huggingface-asr-worker/",
+    "?? deploy/kaggle-asr-worker/",
+    "?? deploy/modal/nova_chattts_modal.py",
+    "?? deploy/modal/nova_f5tts_modal.py",
+    "?? deploy/modal/nova_gpu_probe.py",
+    "?? deploy/modal/nova_musetalk_canary.py",
+    "?? deploy/modal/nova_musetalk_python_runtime_snapshot.lock.txt",
+    "?? deploy/modal/nova_musetalk_runtime.lock.json",
+    "?? deploy/modal/nova_portrait_renderer_canary.py",
+    "?? docs/architecture/NEXUS_COMPANY_WORKFLOW_MAP_V1.md",
+    "?? docs/architecture/NEXUS_FEEDER_INTELLIGENCE_WORKFLOW_V1.md",
+    "?? docs/architecture/NEXUS_SYSTEMS_NIGHTLY_AUDIT_WORKFLOW_V1.md",
+    "?? docs/contracts/",
+    "?? docs/systems/",
+    "?? prototype/status_checker/",
+    "?? public/nova-avatar-lab.html",
+    "?? public/runtime/research-cases.json",
+    "?? reports/architecture/NEXUS_ACTIVE_CASE_CONTINUATION_INVARIANT_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_AFTERNOON_WALKAWAY_COMPLETION_2026-10-02.json",
+    "?? reports/architecture/NEXUS_AFTERNOON_WALKAWAY_COMPLETION_2026-10-02.md",
+    "?? reports/architecture/NEXUS_AFTERNOON_WALKAWAY_COMPLETION_2026-10-02.txt",
+    "?? reports/architecture/NEXUS_AUTONOMOUS_COMPANY_WEEKEND_READINESS_2026-10-02.txt",
+    "?? reports/architecture/NEXUS_COMPANY_CASE_COMPLETION_AND_RAY_DECISION_SYSTEM_2026-10-06.md",
+    "?? reports/architecture/NEXUS_COMPANY_WORKFLOW_CONTINUITY_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_CONTINUOUS_COMPANY_EXECUTION_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_CROSS_DEPARTMENT_EXECUTION_CANARY_2026-10-02.json",
+    "?? reports/architecture/NEXUS_CROSS_DEPARTMENT_EXECUTION_CANARY_2026-10-02.md",
+    "?? reports/architecture/NEXUS_CROSS_DEPARTMENT_EXECUTION_CANARY_2026-10-02.txt",
+    "?? reports/architecture/NEXUS_DEPARTMENT_OWNERSHIP_AND_CONTINUATION_CLOSURE_2026-10-02.json",
+    "?? reports/architecture/NEXUS_DEPARTMENT_OWNERSHIP_AND_CONTINUATION_CLOSURE_2026-10-02.md",
+    "?? reports/architecture/NEXUS_EXECUTION_COMPLETION_REPAIR_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_FEEDER_CONTINUOUS_EXECUTION_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_FRIDAY_RESEARCH_READINESS_WEEKEND_ACTIVATION_2026-10-02.json",
+    "?? reports/architecture/NEXUS_FRIDAY_RESEARCH_READINESS_WEEKEND_ACTIVATION_2026-10-02.md",
+    "?? reports/architecture/NEXUS_FRIDAY_RESEARCH_READINESS_WEEKEND_ACTIVATION_2026-10-02.txt",
+    "?? reports/architecture/NEXUS_INFORMATION_FLOW_AND_DEPARTMENT_LEARNING_2026-09-28.json",
+    "?? reports/architecture/NEXUS_INFORMATION_FLOW_AND_DEPARTMENT_LEARNING_2026-09-28.md",
+    "?? reports/architecture/NEXUS_LABS_UPGRADE_CONTROL_SUPABASE_ACTIVATION_2026-10-01.json",
+    "?? reports/architecture/NEXUS_LABS_UPGRADE_CONTROL_SUPABASE_ACTIVATION_2026-10-01.md",
+    "?? reports/architecture/NEXUS_LEGACY_TERMINAL_WORKFLOW_CUTOVER_2026-10-06.md",
+    "?? reports/architecture/NEXUS_NOTEBOOK_INTELLIGENCE_AND_AUTONOMOUS_FOLLOWUP_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_NOTEBOOK_RESEARCH_PLAYBOOK_SYSTEM_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_NOTEBOOK_SUPABASE_MERCURY_LINEAGE_AND_FEEDBACK_AUDIT_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_NO_STOP_NOTEBOOK_PLAYBOOK_EXECUTION_REPAIR_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_POST_YOU_AUTONOMOUS_PROACTIVE_VERIFICATION_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_PROACTIVE_AND_TRADINGVIEW_RESEARCH_PRODUCTION_2026-10-04.txt",
+    "?? reports/architecture/NEXUS_PROACTIVE_HERMES_TOOL_LAYER_UNIFICATION_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_PROACTIVE_RESEARCH_ROTATION_REPAIR_2026-10-04.txt",
+    "?? reports/architecture/NEXUS_RESEARCH_CASE_DEVELOPMENT_ENGINE_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_RESEARCH_FOLLOWUP_CONTRACT_PREWEEKEND_2026-10-02.json",
+    "?? reports/architecture/NEXUS_RESEARCH_FOLLOWUP_CONTRACT_PREWEEKEND_2026-10-02.md",
+    "?? reports/architecture/NEXUS_RESEARCH_FOLLOWUP_CONTRACT_PREWEEKEND_2026-10-02.txt",
+    "?? reports/architecture/NEXUS_RESEARCH_LEARNING_DEPARTMENT_HISTORY_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_RESEARCH_TOOL_LAYER_PRODUCTION_2026-10-04.txt",
+    "?? reports/architecture/NEXUS_SUPABASE_SPECIALIZED_EXPERT_ACTIVATION_2026-09-28.json",
+    "?? reports/architecture/NEXUS_SUPABASE_SPECIALIZED_EXPERT_ACTIVATION_2026-09-28.md",
+    "?? reports/architecture/NEXUS_SUPABASE_SPECIALIZED_EXPERT_ARCHITECTURE_2026-09-28.json",
+    "?? reports/architecture/NEXUS_SUPABASE_SPECIALIZED_EXPERT_ARCHITECTURE_2026-09-28.md",
+    "?? reports/architecture/NEXUS_SYSTEMS_CLOSED_STATE_WORKFLOW_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_SYSTEMS_NIGHTLY_AUDIT_CERTIFICATION_2026-10-06.md",
+    "?? reports/architecture/NEXUS_WEEKEND_ACTIVATION_2026-10-02.json",
+    "?? reports/architecture/NEXUS_WEEKEND_ACTIVATION_2026-10-02.md",
+    "?? reports/architecture/NEXUS_WEEKEND_ACTIVATION_2026-10-02.txt",
+    "?? reports/architecture/NEXUS_WEEKEND_PRODUCTIVE_AUTONOMY_REPAIR_2026-10-04.txt",
+    "?? reports/architecture/NEXUS_YOUTUBE_NOTEBOOKLM_RECONCILIATION_2026-10-05.txt",
+    "?? reports/architecture/NEXUS_YOU_MCP_PRODUCTION_EXECUTION_REPAIR_2026-10-05.txt",
+    "?? reports/audits/",
+    "?? reports/certification/activation_manifest_candidate_20261008.json",
+    "?? reports/certification/business_intelligence_workflows_v1_latest.json",
+    "?? reports/certification/nexus_mac_crash_timeline_20261009.md",
+    "?? reports/certification/nexus_mac_safe_mode_manifest_20261009.json",
+    "?? reports/certification/nexus_whole_company_campaign_202610.json",
+    "?? reports/certification/nexus_whole_company_capability_ledger_20261008.json",
+    "?? reports/certification/nexus_whole_company_environment_baseline_20261008.json",
+    "?? reports/certification/nexus_whole_company_improvement_audit_20261008.md",
+    "?? reports/certification/post_crash_safe_mode/",
+    "?? reports/certification/provider_entry_points_20261008.md",
+    "?? reports/nova/NEXUS_NOVA_CANDIDATE_B_GUARD_RECERTIFICATION_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_CHAT_TTS_MODAL_CANARY_2026-10-03.txt",
+    "?? reports/nova/NEXUS_NOVA_CHAT_TTS_MODAL_CANARY_ATTEMPT_1.txt",
+    "?? reports/nova/NEXUS_NOVA_F5_CANDIDATE_A_PRIVATE_TEST_LOCK_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_F5_REFERENCE_VOICE_CANARY_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_IDENTITY_LIP_PRESERVATION_2026-10-03.txt",
+    "?? reports/nova/NEXUS_NOVA_LIP_COLOR_CORRECTION_2026-10-03.txt",
+    "?? reports/nova/NEXUS_NOVA_LIP_MOTION_RECOVERY_2026-10-03.txt",
+    "?? reports/nova/NEXUS_NOVA_LIP_PIPELINE_LOCK_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_LIVEPORTRAIT_HIGHRES_QUALITY_2026-10-05.txt",
+    "?? reports/nova/NEXUS_NOVA_LIVE_PORTRAIT_MOTION_CANARY_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_MOUTH_ANCHOR_CORRECTION_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_PORTRAIT_RENDERER_CANARY_2026-10-04.txt",
+    "?? reports/nova/NEXUS_NOVA_PRODUCTION_TTS_ACTIVATION_2026-10-03.txt",
+    "?? reports/nova/NEXUS_NOVA_REAL_GPU_AVATAR_CANARY_2026-10-02.json",
+    "?? reports/nova/NEXUS_NOVA_REAL_GPU_AVATAR_CANARY_2026-10-02.md",
+    "?? reports/nova/NEXUS_NOVA_REAL_GPU_AVATAR_CANARY_2026-10-02.txt",
+    "?? reports/nova/NEXUS_NOVA_VOICE_AND_LIP_TUNING_2026-10-02.txt",
+    "?? reports/nova/NOVA_PORTRAIT_QUALITY_DIAGNOSIS_2026-10-05.txt",
+    "?? reports/nova/NOVA_VOICE_REFERENCE_ANALYSIS.txt",
+    "?? reports/research/NEXUS_CONTENT_TREND_MONETIZATION_V1_2026-09-29.json",
+    "?? reports/research/NEXUS_CONTENT_TREND_MONETIZATION_V1_2026-09-29.md",
+    "?? reports/research/NEXUS_DISTRIBUTED_ASR_RESEARCH_PRODUCTION_2026-09-29.json",
+    "?? reports/research/NEXUS_DISTRIBUTED_ASR_RESEARCH_PRODUCTION_2026-09-29.md",
+    "?? reports/research/NEXUS_KAGGLE_GPU_ASR_CERTIFICATION_2026-09-29.json",
+    "?? reports/research/NEXUS_KAGGLE_GPU_ASR_CERTIFICATION_2026-09-29.md",
+    "?? reports/research/NEXUS_MAC_KAGGLE_HF_ASR_BENCHMARK_2026-09-29.json",
+    "?? reports/research/NEXUS_MAC_KAGGLE_HF_ASR_BENCHMARK_2026-09-29.md",
+    "?? reports/research/NEXUS_MAC_PRIMARY_YOUTUBE_ASR_AND_HF_PREP_2026-09-29.json",
+    "?? reports/research/NEXUS_MAC_PRIMARY_YOUTUBE_ASR_AND_HF_PREP_2026-09-29.md",
+    "?? reports/research/NEXUS_MARKET_INTELLIGENCE_HEARTBEAT_2026-09-29.json",
+    "?? reports/research/NEXUS_MARKET_INTELLIGENCE_HEARTBEAT_2026-09-29.md",
+    "?? reports/research/NEXUS_MARKET_INTELLIGENCE_HEARTBEAT_SELF_START_2026-09-29.json",
+    "?? reports/research/NEXUS_MARKET_INTELLIGENCE_HEARTBEAT_SELF_START_2026-09-29.md",
+    "?? reports/research/NEXUS_MONETIZATION_INTELLIGENCE_V1_2026-09-29.json",
+    "?? reports/research/NEXUS_MONETIZATION_INTELLIGENCE_V1_2026-09-29.md",
+    "?? reports/research/NEXUS_PROACTIVE_RESEARCH_AI_INTERPRETATION_V1_2026-09-29.json",
+    "?? reports/research/NEXUS_PROACTIVE_RESEARCH_AI_INTERPRETATION_V1_2026-09-29.md",
+    "?? reports/research/NEXUS_PROACTIVE_RESEARCH_V1_2026-09-29.json",
+    "?? reports/research/NEXUS_PROACTIVE_RESEARCH_V1_2026-09-29.md",
+    "?? reports/research/NEXUS_PROACTIVE_RESEARCH_V1_CANARIES_2026-09-29.json",
+    "?? reports/research/NEXUS_PROACTIVE_RESEARCH_V1_CANARIES_2026-09-29.md",
+    "?? reports/research/NEXUS_RESEARCH_ACTIVITY_AUDIT_2026-09-29.json",
+    "?? reports/research/NEXUS_RESEARCH_ACTIVITY_AUDIT_2026-09-29.md",
+    "?? reports/research/NEXUS_RESEARCH_FAILURE_BREAKDOWN_2026-09-29.json",
+    "?? reports/research/NEXUS_RESEARCH_FAILURE_BREAKDOWN_2026-09-29.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-09-27.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-09-28.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-09-29.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-09-30.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-01.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-02.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-03.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-04.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-05.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-06.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-07.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-08.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_INTELLIGENCE_2026-10-09.md",
+    "?? reports/research/NEXUS_RESEARCH_OVERNIGHT_PERSISTENCE_FAILURE_AND_REPAIR_2026-09-27.md",
+    "?? reports/research/NEXUS_RESEARCH_PRODUCTION_PATH_GAP_CLOSURE_2026-09-26.md",
+    "?? reports/research/NEXUS_RESEARCH_REAL_ABC_INTELLIGENCE_COMPARISON_2026-09-26.md",
+    "?? reports/research/NEXUS_RESEARCH_REAL_INTELLIGENCE_CERTIFICATION_2026-09-26.md",
+    "?? reports/research/NEXUS_RESEARCH_TO_ACTION_RECOVERY_2026-09-28.json",
+    "?? reports/research/NEXUS_RESEARCH_TO_ACTION_RECOVERY_2026-09-28.md",
+    "?? reports/research/NEXUS_SUPABASE_CENTRAL_WORKER_COORDINATION_2026-09-29.json",
+    "?? reports/research/NEXUS_SUPABASE_CENTRAL_WORKER_COORDINATION_2026-09-29.md",
+    "?? reports/research/NEXUS_UNIVERSAL_RESEARCH_FIFO_ACTIVATION_2026-09-28.json",
+    "?? reports/research/NEXUS_UNIVERSAL_RESEARCH_FIFO_ACTIVATION_2026-09-28.md",
+    "?? reports/research/NEXUS_YOUTUBE_ASR_AND_CHANNEL_BACKFILL_RECOVERY_2026-09-28.json",
+    "?? reports/research/NEXUS_YOUTUBE_ASR_AND_CHANNEL_BACKFILL_RECOVERY_2026-09-28.md",
+    "?? reports/research/NEXUS_YOUTUBE_TRANSCRIPTION_RECOVERY_2026-09-28.json",
+    "?? reports/research/NEXUS_YOUTUBE_TRANSCRIPTION_RECOVERY_2026-09-28.md",
+    "?? reports/research/RESEARCH_LEARNING_AND_ACTION_TRACE_2026-09-28.json",
+    "?? reports/research/RESEARCH_LEARNING_AND_ACTION_TRACE_2026-09-28.md",
+    "?? reports/research/RESEARCH_QUEUE_DRAIN_DETAIL_2026-09-28.md",
+    "?? reports/research/architecture_comparison/",
+    "?? reports/research/intelligence/alpha_native_canary/",
+    "?? reports/research/intelligence/certification_windows/",
+    "?? reports/research/intelligence/permanent_source_ingest_20260927.json",
+    "?? reports/research/intelligence/youtube/",
+    "?? reports/research/nexus_research_overnight_intelligence_20260927.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20260928.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20260929.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20260930.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261001.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261002.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261003.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261004.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261005.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261006.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261007.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261008.json",
+    "?? reports/research/nexus_research_overnight_intelligence_20261009.json",
+    "?? reports/research/nexus_research_overnight_persistence_failure_and_repair_20260927.json",
+    "?? reports/research/nexus_research_production_path_gap_closure_20260926.json",
+    "?? reports/research/nexus_research_real_abc_intelligence_comparison_20260926.json",
+    "?? reports/research/nexus_research_real_intelligence_certification_20260926.json",
+    "?? reports/research/proactive_alpha_department_canary.json",
+    "?? reports/research/proactive_canaries_latest.json",
+    "?? reports/research/two_hour/2026-09-27_1035.json",
+    "?? reports/research/two_hour/2026-09-27_1035.md",
+    "?? reports/research/two_hour/2026-09-27_1117.json",
+    "?? reports/research/two_hour/2026-09-27_1117.md",
+    "?? reports/research/two_hour/2026-09-27_1121.json",
+    "?? reports/research/two_hour/2026-09-27_1121.md",
+    "?? reports/research/two_hour/2026-09-27_1122.json",
+    "?? reports/research/two_hour/2026-09-27_1122.md",
+    "?? reports/research/two_hour/2026-09-27_1123.json",
+    "?? reports/research/two_hour/2026-09-27_1123.md",
+    "?? reports/research/two_hour/2026-09-27_1143.json",
+    "?? reports/research/two_hour/2026-09-27_1143.md",
+    "?? reports/research/two_hour/2026-09-27_1144.json",
+    "?? reports/research/two_hour/2026-09-27_1144.md",
+    "?? reports/research/two_hour/2026-09-27_1200.json",
+    "?? reports/research/two_hour/2026-09-27_1200.md",
+    "?? reports/research/two_hour/2026-09-27_1215.json",
+    "?? reports/research/two_hour/2026-09-27_1215.md",
+    "?? reports/research/two_hour/2026-09-27_1217.json",
+    "?? reports/research/two_hour/2026-09-27_1217.md",
+    "?? reports/research/two_hour/2026-09-27_1218.json",
+    "?? reports/research/two_hour/2026-09-27_1218.md",
+    "?? reports/research/two_hour/2026-09-27_1248.json",
+    "?? reports/research/two_hour/2026-09-27_1248.md",
+    "?? reports/research/two_hour/2026-09-27_1306.json",
+    "?? reports/research/two_hour/2026-09-27_1306.md",
+    "?? reports/research/two_hour/2026-09-27_1307.json",
+    "?? reports/research/two_hour/2026-09-27_1307.md",
+    "?? reports/research/two_hour/2026-09-27_1400.json",
+    "?? reports/research/two_hour/2026-09-27_1400.md",
+    "?? reports/research/two_hour/2026-09-27_1600.json",
+    "?? reports/research/two_hour/2026-09-27_1600.md",
+    "?? reports/research/two_hour/2026-09-27_1800.json",
+    "?? reports/research/two_hour/2026-09-27_1800.md",
+    "?? reports/research/two_hour/2026-09-27_2000.json",
+    "?? reports/research/two_hour/2026-09-27_2000.md",
+    "?? reports/research/two_hour/2026-09-27_2200.json",
+    "?? reports/research/two_hour/2026-09-27_2200.md",
+    "?? reports/research/two_hour/2026-09-28_0000.json",
+    "?? reports/research/two_hour/2026-09-28_0000.md",
+    "?? reports/research/two_hour/2026-09-28_0200.json",
+    "?? reports/research/two_hour/2026-09-28_0200.md",
+    "?? reports/research/two_hour/2026-09-28_0400.json",
+    "?? reports/research/two_hour/2026-09-28_0400.md",
+    "?? reports/research/two_hour/2026-09-28_0600.json",
+    "?? reports/research/two_hour/2026-09-28_0600.md",
+    "?? reports/research/two_hour/2026-09-28_0800.json",
+    "?? reports/research/two_hour/2026-09-28_0800.md",
+    "?? reports/research/two_hour/2026-09-28_1202.json",
+    "?? reports/research/two_hour/2026-09-28_1202.md",
+    "?? reports/research/two_hour/2026-09-28_1400.json",
+    "?? reports/research/two_hour/2026-09-28_1400.md",
+    "?? reports/research/two_hour/2026-09-28_1600.json",
+    "?? reports/research/two_hour/2026-09-28_1600.md",
+    "?? reports/research/two_hour/2026-09-28_1800.json",
+    "?? reports/research/two_hour/2026-09-28_1800.md",
+    "?? reports/research/two_hour/2026-09-28_2000.json",
+    "?? reports/research/two_hour/2026-09-28_2000.md",
+    "?? reports/research/two_hour/2026-09-28_2200.json",
+    "?? reports/research/two_hour/2026-09-28_2200.md",
+    "?? reports/research/two_hour/2026-09-29_0000.json",
+    "?? reports/research/two_hour/2026-09-29_0000.md",
+    "?? reports/research/two_hour/2026-09-29_0200.json",
+    "?? reports/research/two_hour/2026-09-29_0200.md",
+    "?? reports/research/two_hour/2026-09-29_0400.json",
+    "?? reports/research/two_hour/2026-09-29_0400.md",
+    "?? reports/research/two_hour/2026-09-29_0600.json",
+    "?? reports/research/two_hour/2026-09-29_0600.md",
+    "?? reports/research/two_hour/2026-09-29_0800.json",
+    "?? reports/research/two_hour/2026-09-29_0800.md",
+    "?? reports/research/two_hour/2026-09-29_1000.json",
+    "?? reports/research/two_hour/2026-09-29_1000.md",
+    "?? reports/research/two_hour/2026-09-29_1200.json",
+    "?? reports/research/two_hour/2026-09-29_1200.md",
+    "?? reports/research/two_hour/2026-09-29_1400.json",
+    "?? reports/research/two_hour/2026-09-29_1400.md",
+    "?? reports/research/two_hour/2026-09-29_1600.json",
+    "?? reports/research/two_hour/2026-09-29_1600.md",
+    "?? reports/research/two_hour/2026-09-29_1800.json",
+    "?? reports/research/two_hour/2026-09-29_1800.md",
+    "?? reports/research/two_hour/2026-09-29_2001.json",
+    "?? reports/research/two_hour/2026-09-29_2001.md",
+    "?? reports/research/two_hour/2026-09-29_2200.json",
+    "?? reports/research/two_hour/2026-09-29_2200.md",
+    "?? reports/research/two_hour/2026-09-30_0000.json",
+    "?? reports/research/two_hour/2026-09-30_0000.md",
+    "?? reports/research/two_hour/2026-09-30_0200.json",
+    "?? reports/research/two_hour/2026-09-30_0200.md",
+    "?? reports/research/two_hour/2026-09-30_0400.json",
+    "?? reports/research/two_hour/2026-09-30_0400.md",
+    "?? reports/research/two_hour/2026-09-30_0600.json",
+    "?? reports/research/two_hour/2026-09-30_0600.md",
+    "?? reports/research/two_hour/2026-09-30_0800.json",
+    "?? reports/research/two_hour/2026-09-30_0800.md",
+    "?? reports/research/two_hour/2026-09-30_1000.json",
+    "?? reports/research/two_hour/2026-09-30_1000.md",
+    "?? reports/research/two_hour/2026-09-30_1200.json",
+    "?? reports/research/two_hour/2026-09-30_1200.md",
+    "?? reports/research/two_hour/2026-09-30_1400.json",
+    "?? reports/research/two_hour/2026-09-30_1400.md",
+    "?? reports/research/two_hour/2026-09-30_1600.json",
+    "?? reports/research/two_hour/2026-09-30_1600.md",
+    "?? reports/research/two_hour/2026-09-30_1800.json",
+    "?? reports/research/two_hour/2026-09-30_1800.md",
+    "?? reports/research/two_hour/2026-09-30_2000.json",
+    "?? reports/research/two_hour/2026-09-30_2000.md",
+    "?? reports/research/two_hour/2026-09-30_2200.json",
+    "?? reports/research/two_hour/2026-09-30_2200.md",
+    "?? reports/research/two_hour/2026-10-01_0000.json",
+    "?? reports/research/two_hour/2026-10-01_0000.md",
+    "?? reports/research/two_hour/2026-10-01_0201.json",
+    "?? reports/research/two_hour/2026-10-01_0201.md",
+    "?? reports/research/two_hour/2026-10-01_0400.json",
+    "?? reports/research/two_hour/2026-10-01_0400.md",
+    "?? reports/research/two_hour/2026-10-01_0600.json",
+    "?? reports/research/two_hour/2026-10-01_0600.md",
+    "?? reports/research/two_hour/2026-10-01_0800.json",
+    "?? reports/research/two_hour/2026-10-01_0800.md",
+    "?? reports/research/two_hour/2026-10-01_1001.json",
+    "?? reports/research/two_hour/2026-10-01_1001.md",
+    "?? reports/research/two_hour/2026-10-01_1402.json",
+    "?? reports/research/two_hour/2026-10-01_1402.md",
+    "?? reports/research/two_hour/2026-10-01_1600.json",
+    "?? reports/research/two_hour/2026-10-01_1600.md",
+    "?? reports/research/two_hour/2026-10-01_1800.json",
+    "?? reports/research/two_hour/2026-10-01_1800.md",
+    "?? reports/research/two_hour/2026-10-01_2002.json",
+    "?? reports/research/two_hour/2026-10-01_2002.md",
+    "?? reports/research/two_hour/2026-10-01_2200.json",
+    "?? reports/research/two_hour/2026-10-01_2200.md",
+    "?? reports/research/two_hour/2026-10-02_0000.json",
+    "?? reports/research/two_hour/2026-10-02_0000.md",
+    "?? reports/research/two_hour/2026-10-02_0200.json",
+    "?? reports/research/two_hour/2026-10-02_0200.md",
+    "?? reports/research/two_hour/2026-10-02_0400.json",
+    "?? reports/research/two_hour/2026-10-02_0400.md",
+    "?? reports/research/two_hour/2026-10-02_0600.json",
+    "?? reports/research/two_hour/2026-10-02_0600.md",
+    "?? reports/research/two_hour/2026-10-02_0804.json",
+    "?? reports/research/two_hour/2026-10-02_0804.md",
+    "?? reports/research/two_hour/2026-10-02_1000.json",
+    "?? reports/research/two_hour/2026-10-02_1000.md",
+    "?? reports/research/two_hour/2026-10-02_1200.json",
+    "?? reports/research/two_hour/2026-10-02_1200.md",
+    "?? reports/research/two_hour/2026-10-02_1400.json",
+    "?? reports/research/two_hour/2026-10-02_1400.md",
+    "?? reports/research/two_hour/2026-10-02_1600.json",
+    "?? reports/research/two_hour/2026-10-02_1600.md",
+    "?? reports/research/two_hour/2026-10-02_1800.json",
+    "?? reports/research/two_hour/2026-10-02_1800.md",
+    "?? reports/research/two_hour/2026-10-02_2000.json",
+    "?? reports/research/two_hour/2026-10-02_2000.md",
+    "?? reports/research/two_hour/2026-10-02_2200.json",
+    "?? reports/research/two_hour/2026-10-02_2200.md",
+    "?? reports/research/two_hour/2026-10-03_0000.json",
+    "?? reports/research/two_hour/2026-10-03_0000.md",
+    "?? reports/research/two_hour/2026-10-03_0200.json",
+    "?? reports/research/two_hour/2026-10-03_0200.md",
+    "?? reports/research/two_hour/2026-10-03_0400.json",
+    "?? reports/research/two_hour/2026-10-03_0400.md",
+    "?? reports/research/two_hour/2026-10-03_0600.json",
+    "?? reports/research/two_hour/2026-10-03_0600.md",
+    "?? reports/research/two_hour/2026-10-03_0800.json",
+    "?? reports/research/two_hour/2026-10-03_0800.md",
+    "?? reports/research/two_hour/2026-10-03_1000.json",
+    "?? reports/research/two_hour/2026-10-03_1000.md",
+    "?? reports/research/two_hour/2026-10-03_1200.json",
+    "?? reports/research/two_hour/2026-10-03_1200.md",
+    "?? reports/research/two_hour/2026-10-03_1400.json",
+    "?? reports/research/two_hour/2026-10-03_1400.md",
+    "?? reports/research/two_hour/2026-10-03_1600.json",
+    "?? reports/research/two_hour/2026-10-03_1600.md",
+    "?? reports/research/two_hour/2026-10-03_1800.json",
+    "?? reports/research/two_hour/2026-10-03_1800.md",
+    "?? reports/research/two_hour/2026-10-03_2000.json",
+    "?? reports/research/two_hour/2026-10-03_2000.md",
+    "?? reports/research/two_hour/2026-10-03_2200.json",
+    "?? reports/research/two_hour/2026-10-03_2200.md",
+    "?? reports/research/two_hour/2026-10-04_0000.json",
+    "?? reports/research/two_hour/2026-10-04_0000.md",
+    "?? reports/research/two_hour/2026-10-04_0200.json",
+    "?? reports/research/two_hour/2026-10-04_0200.md",
+    "?? reports/research/two_hour/2026-10-04_0400.json",
+    "?? reports/research/two_hour/2026-10-04_0400.md",
+    "?? reports/research/two_hour/2026-10-04_0600.json",
+    "?? reports/research/two_hour/2026-10-04_0600.md",
+    "?? reports/research/two_hour/2026-10-04_0800.json",
+    "?? reports/research/two_hour/2026-10-04_0800.md",
+    "?? reports/research/two_hour/2026-10-04_1000.json",
+    "?? reports/research/two_hour/2026-10-04_1000.md",
+    "?? reports/research/two_hour/2026-10-04_1200.json",
+    "?? reports/research/two_hour/2026-10-04_1200.md",
+    "?? reports/research/two_hour/2026-10-04_1400.json",
+    "?? reports/research/two_hour/2026-10-04_1400.md",
+    "?? reports/research/two_hour/2026-10-04_1600.json",
+    "?? reports/research/two_hour/2026-10-04_1600.md",
+    "?? reports/research/two_hour/2026-10-04_1800.json",
+    "?? reports/research/two_hour/2026-10-04_1800.md",
+    "?? reports/research/two_hour/2026-10-04_2000.json",
+    "?? reports/research/two_hour/2026-10-04_2000.md",
+    "?? reports/research/two_hour/2026-10-04_2200.json",
+    "?? reports/research/two_hour/2026-10-04_2200.md",
+    "?? reports/research/two_hour/2026-10-05_0000.json",
+    "?? reports/research/two_hour/2026-10-05_0000.md",
+    "?? reports/research/two_hour/2026-10-05_0200.json",
+    "?? reports/research/two_hour/2026-10-05_0200.md",
+    "?? reports/research/two_hour/2026-10-05_0400.json",
+    "?? reports/research/two_hour/2026-10-05_0400.md",
+    "?? reports/research/two_hour/2026-10-05_0600.json",
+    "?? reports/research/two_hour/2026-10-05_0600.md",
+    "?? reports/research/two_hour/2026-10-05_0800.json",
+    "?? reports/research/two_hour/2026-10-05_0800.md",
+    "?? reports/research/two_hour/2026-10-05_1000.json",
+    "?? reports/research/two_hour/2026-10-05_1000.md",
+    "?? reports/research/two_hour/2026-10-05_1200.json",
+    "?? reports/research/two_hour/2026-10-05_1200.md",
+    "?? reports/research/two_hour/2026-10-05_1400.json",
+    "?? reports/research/two_hour/2026-10-05_1400.md",
+    "?? reports/research/two_hour/2026-10-05_1600.json",
+    "?? reports/research/two_hour/2026-10-05_1600.md",
+    "?? reports/research/two_hour/2026-10-05_1800.json",
+    "?? reports/research/two_hour/2026-10-05_1800.md",
+    "?? reports/research/two_hour/2026-10-05_2000.json",
+    "?? reports/research/two_hour/2026-10-05_2000.md",
+    "?? reports/research/two_hour/2026-10-05_2200.json",
+    "?? reports/research/two_hour/2026-10-05_2200.md",
+    "?? reports/research/two_hour/2026-10-06_0000.json",
+    "?? reports/research/two_hour/2026-10-06_0000.md",
+    "?? reports/research/two_hour/2026-10-06_0200.json",
+    "?? reports/research/two_hour/2026-10-06_0200.md",
+    "?? reports/research/two_hour/2026-10-06_0400.json",
+    "?? reports/research/two_hour/2026-10-06_0400.md",
+    "?? reports/research/two_hour/2026-10-06_0600.json",
+    "?? reports/research/two_hour/2026-10-06_0600.md",
+    "?? reports/research/two_hour/2026-10-06_0800.json",
+    "?? reports/research/two_hour/2026-10-06_0800.md",
+    "?? reports/research/two_hour/2026-10-06_1001.json",
+    "?? reports/research/two_hour/2026-10-06_1001.md",
+    "?? reports/research/two_hour/2026-10-06_1200.json",
+    "?? reports/research/two_hour/2026-10-06_1200.md",
+    "?? reports/research/two_hour/2026-10-06_1400.json",
+    "?? reports/research/two_hour/2026-10-06_1400.md",
+    "?? reports/research/two_hour/2026-10-06_1600.json",
+    "?? reports/research/two_hour/2026-10-06_1600.md",
+    "?? reports/research/two_hour/2026-10-06_1800.json",
+    "?? reports/research/two_hour/2026-10-06_1800.md",
+    "?? reports/research/two_hour/2026-10-06_2001.json",
+    "?? reports/research/two_hour/2026-10-06_2001.md",
+    "?? reports/research/two_hour/2026-10-06_2200.json",
+    "?? reports/research/two_hour/2026-10-06_2200.md",
+    "?? reports/research/two_hour/2026-10-07_0000.json",
+    "?? reports/research/two_hour/2026-10-07_0000.md",
+    "?? reports/research/two_hour/2026-10-07_0200.json",
+    "?? reports/research/two_hour/2026-10-07_0200.md",
+    "?? reports/research/two_hour/2026-10-07_0400.json",
+    "?? reports/research/two_hour/2026-10-07_0400.md",
+    "?? reports/research/two_hour/2026-10-07_0600.json",
+    "?? reports/research/two_hour/2026-10-07_0600.md",
+    "?? reports/research/two_hour/2026-10-07_0800.json",
+    "?? reports/research/two_hour/2026-10-07_0800.md",
+    "?? reports/research/two_hour/2026-10-07_1000.json",
+    "?? reports/research/two_hour/2026-10-07_1000.md",
+    "?? reports/research/two_hour/2026-10-07_1200.json",
+    "?? reports/research/two_hour/2026-10-07_1200.md",
+    "?? reports/research/two_hour/2026-10-07_1400.json",
+    "?? reports/research/two_hour/2026-10-07_1400.md",
+    "?? reports/research/two_hour/2026-10-07_1600.json",
+    "?? reports/research/two_hour/2026-10-07_1600.md",
+    "?? reports/research/two_hour/2026-10-07_1800.json",
+    "?? reports/research/two_hour/2026-10-07_1800.md",
+    "?? reports/research/two_hour/2026-10-07_2000.json",
+    "?? reports/research/two_hour/2026-10-07_2000.md",
+    "?? reports/research/two_hour/2026-10-07_2200.json",
+    "?? reports/research/two_hour/2026-10-07_2200.md",
+    "?? reports/research/two_hour/2026-10-08_0000.json",
+    "?? reports/research/two_hour/2026-10-08_0000.md",
+    "?? reports/research/two_hour/2026-10-08_0200.json",
+    "?? reports/research/two_hour/2026-10-08_0200.md",
+    "?? reports/research/two_hour/2026-10-08_0400.json",
+    "?? reports/research/two_hour/2026-10-08_0400.md",
+    "?? reports/research/two_hour/2026-10-08_0600.json",
+    "?? reports/research/two_hour/2026-10-08_0600.md",
+    "?? reports/research/two_hour/2026-10-08_0800.json",
+    "?? reports/research/two_hour/2026-10-08_0800.md",
+    "?? reports/research/two_hour/2026-10-08_1000.json",
+    "?? reports/research/two_hour/2026-10-08_1000.md",
+    "?? reports/research/two_hour/2026-10-08_1200.json",
+    "?? reports/research/two_hour/2026-10-08_1200.md",
+    "?? reports/research/two_hour/2026-10-08_1400.json",
+    "?? reports/research/two_hour/2026-10-08_1400.md",
+    "?? reports/research/two_hour/2026-10-08_1600.json",
+    "?? reports/research/two_hour/2026-10-08_1600.md",
+    "?? reports/research/two_hour/2026-10-08_1801.json",
+    "?? reports/research/two_hour/2026-10-08_1801.md",
+    "?? reports/research/two_hour/2026-10-08_2000.json",
+    "?? reports/research/two_hour/2026-10-08_2000.md",
+    "?? reports/research/two_hour/2026-10-08_2200.json",
+    "?? reports/research/two_hour/2026-10-08_2200.md",
+    "?? reports/research/two_hour/2026-10-09_0000.json",
+    "?? reports/research/two_hour/2026-10-09_0000.md",
+    "?? reports/research/two_hour/2026-10-09_0200.json",
+    "?? reports/research/two_hour/2026-10-09_0200.md",
+    "?? reports/research/two_hour/2026-10-09_0400.json",
+    "?? reports/research/two_hour/2026-10-09_0400.md",
+    "?? reports/research/two_hour/2026-10-09_0600.json",
+    "?? reports/research/two_hour/2026-10-09_0600.md",
+    "?? reports/trading/NEXUS_MERCURY_STRATEGY_SYNTHESIS_EwvmM_ocnc4_2026-10-05.txt",
+    "?? reports/trading/NEXUS_YOUTUBE_STRATEGY_CASE_EwvmM_ocnc4_2026-10-05.txt",
+    "?? reports/trading/WICK_EURUSD_M30_EMA200_CONTROLLED_RESULT_2026-10-06.md",
+    "?? reports/weekend/",
+    "?? scripts/activation/build_feeder_morning_report.py",
+    "?? scripts/nexus_agent_platform/campaign_governance.py",
+    "?? scripts/nexus_agent_platform/company_routing_contract.py",
+    "?? scripts/nexus_agent_platform/company_workflow.py",
+    "?? scripts/nexus_agent_platform/content_intelligence.py",
+    "?? scripts/nexus_agent_platform/department_learning.py",
+    "?? scripts/nexus_agent_platform/dispatcher_once.py",
+    "?? scripts/nexus_agent_platform/downstream_continuation.py",
+    "?? scripts/nexus_agent_platform/durable_jobs.py",
+    "?? scripts/nexus_agent_platform/feeder_runtime.py",
+    "?? scripts/nexus_agent_platform/finance/job_handlers.py",
+    "?? scripts/nexus_agent_platform/information_flow.py",
+    "?? scripts/nexus_agent_platform/job_health.py",
+    "?? scripts/nexus_agent_platform/job_worker_once.py",
+    "?? scripts/nexus_agent_platform/knowledge_reconciliation.py",
+    "?? scripts/nexus_agent_platform/marketing_creative_workflow.py",
+    "?? scripts/nexus_agent_platform/marketing_supabase_state.py",
+    "?? scripts/nexus_agent_platform/mechanical_ingestion.py",
+    "?? scripts/nexus_agent_platform/nova_avatar_bridge.py",
+    "?? scripts/nexus_agent_platform/nova_avatar_service.py",
+    "?? scripts/nexus_agent_platform/nova_tts/",
+    "?? scripts/nexus_agent_platform/nova_tts_adapter.py",
+    "?? scripts/nexus_agent_platform/phase15/common.py",
+    "?? scripts/nexus_agent_platform/phase15/keep_running.py",
+    "?? scripts/nexus_agent_platform/phase15/research_decisions.py",
+    "?? scripts/nexus_agent_platform/proactive_discovery.py",
+    "?? scripts/nexus_agent_platform/proactive_objectives.py",
+    "?? scripts/nexus_agent_platform/project_stop_policy.py",
+    "?? scripts/nexus_agent_platform/provider_capability_lookup.py",
+    "?? scripts/nexus_agent_platform/provider_enforcement.py",
+    "?? scripts/nexus_agent_platform/remote_control_plane.py",
+    "?? scripts/nexus_agent_platform/research/source_contract.py",
+    "?? scripts/nexus_agent_platform/research_followup_contract.py",
+    "?? scripts/nexus_agent_platform/research_quality.py",
+    "?? scripts/nexus_agent_platform/research_sources_trace.py",
+    "?? scripts/nexus_agent_platform/research_tool_layer.py",
+    "?? scripts/nexus_agent_platform/resource_spend_governor.py",
+    "?? scripts/nexus_agent_platform/scheduler_once.py",
+    "?? scripts/nexus_agent_platform/supabase_egress_guard.py",
+    "?? scripts/nexus_agent_platform/supabase_knowledge.py",
+    "?? scripts/nexus_agent_platform/systems_research_options_health.py",
+    "?? scripts/nexus_agent_platform/systems_workflow.py",
+    "?? scripts/nexus_agent_platform/tests/test_active_operator_autostart_guard.py",
+    "?? scripts/nexus_agent_platform/tests/test_dispatcher_workflow_events.py",
+    "?? scripts/nexus_agent_platform/tests/test_durable_jobs.py",
+    "?? scripts/nexus_agent_platform/tests/test_host_resource_guard.py",
+    "?? scripts/nexus_agent_platform/tests/test_marketing_creative_workflow.py",
+    "?? scripts/nexus_agent_platform/tests/test_phase15_shared_contracts.py",
+    "?? scripts/nexus_agent_platform/tests/test_proactive_objective_policy.py",
+    "?? scripts/nexus_agent_platform/tests/test_provider_enforcement.py",
+    "?? scripts/nexus_agent_platform/tests/test_research_quality_model.py",
+    "?? scripts/nexus_agent_platform/tests/test_research_tool_layer.py",
+    "?? scripts/nexus_agent_platform/tests/test_resource_spend_governor.py",
+    "?? scripts/nexus_agent_platform/tradingview_public_source.py",
+    "?? scripts/nexus_agent_platform/transcript_artifacts.py",
+    "?? scripts/nexus_agent_platform/viral_trend_research.py",
+    "?? scripts/nexus_agent_platform/weekend_report.py",
+    "?? scripts/nova/extract_musetalk_lip_landmarks.swift",
+    "?? scripts/nova/extract_nova_face_landmarks.swift",
+    "?? scripts/nova/nova_identity_preservation.py",
+    "?? scripts/nova/nova_lip_color_pipeline.py",
+    "?? scripts/nova/nova_lip_motion_recovery.py",
+    "?? scripts/nova/run_f5_candidate_a_confirmation.py",
+    "?? scripts/nova/run_nova_avatar_service_canary.py",
+    "?? scripts/nova/run_nova_chattts_modal_canary.py",
+    "?? scripts/nova/run_nova_f5tts_modal_canary.py",
+    "?? scripts/nova/run_nova_lip_color_correction.py",
+    "?? scripts/nova/run_nova_lip_motion_recovery.py",
+    "?? scripts/nova/run_nova_lip_pipeline_regression.py",
+    "?? scripts/nova/run_nova_liveportrait_canary.py",
+    "?? scripts/nova/run_nova_mouth_anchor_recovery.py",
+    "?? scripts/nova/run_nova_portrait_highres_canary.py",
+    "?? scripts/nova/run_nova_portrait_quality_canary.py",
+    "?? scripts/nova/run_nova_portrait_speaking_canary.py",
+    "?? scripts/operations/department_handoff_continuation.py",
+    "?? scripts/operations/nexus_handoff.py",
+    "?? scripts/research/asr_worker_router.py",
+    "?? scripts/research/company_case_contracts.py",
+    "?? scripts/research/faster_whisper_worker.py",
+    "?? scripts/research/migrate_research_backlog_to_fifo.py",
+    "?? scripts/research/notebook_playbook_runner.py",
+    "?? scripts/research/notebook_playbooks.py",
+    "?? scripts/research/notebook_source_expansion.py",
+    "?? scripts/research/notebooklm_research_adapter.py",
+    "?? scripts/research/notebooklm_research_worker.py",
+    "?? scripts/research/proactive_research_memory.py",
+    "?? scripts/research/pulse_runtime.py",
+    "?? scripts/research/research_case_engine.py",
+    "?? scripts/research/research_profiles.py",
+    "?? scripts/research/research_sources.py",
+    "?? scripts/research/research_status.py",
+    "?? scripts/research/run_content_trend_monetization_v1.py",
+    "?? scripts/research/run_mac_primary_five_canary.py",
+    "?? scripts/research/run_market_intelligence_heartbeat.py",
+    "?? scripts/research/run_monetization_intelligence_v1.py",
+    "?? scripts/research/run_proactive_ai_interpretation_v1.py",
+    "?? scripts/research/run_proactive_research_v1.py",
+    "?? scripts/research/run_tradingview_research_cycle.py",
+    "?? scripts/research/youtube_backfill.py",
+    "?? scripts/research/youtube_channel_registry.py",
+    "?? scripts/research/youtube_notebooklm_reconciliation.py",
+    "?? scripts/trading/alpaca_options_capability_check.py",
+    "?? scripts/trading/benchmark_mercury_pynecore.py",
+    "?? scripts/trading/mercury_options_strategy_lab.py",
+    "?? scripts/trading/mercury_strategy_development_lab.py",
+    "?? scripts/trading/mercury_strategy_synthesis.py",
+    "?? scripts/trading/options_data_adapter.py",
+    "?? scripts/trading/trading_experiment_engine.py",
+    "?? src/admin/BusinessIntelligenceWorkflows.jsx",
+    "?? src/admin/MercuryStrategyDevelopmentLabPanel.jsx",
+    "?? src/admin/NotebookLMResearchAutomationSettings.jsx",
+    "?? src/admin/PulseAdminWorkspace.jsx",
+    "?? src/admin/businessIntelligenceWorkflows.css",
+    "?? src/admin/mercuryStrategyDevelopmentLab.css",
+    "?? src/admin/pulseAdminWorkspace.css",
+    "?? src/components/FeederOpportunityIntakePanel.jsx",
+    "?? src/components/feederIntake.css",
+    "?? src/lib/businessIntelligenceStore.ts",
+    "?? src/lib/businessIntelligenceWorkflows.ts",
+    "?? src/lib/feederIntake.ts",
+    "?? src/lib/optionsStrategyLab.ts",
+    "?? supabase/migrations/20260911170000_r28_guest_access_communications.sql",
+    "?? supabase/migrations/20260928180000_shared_knowledge_specialized_experts.sql",
+    "?? supabase/migrations/20261002120000_research_proactive_memory.sql",
+    "?? supabase/migrations/20261003100000_structured_research_followup_contract.sql",
+    "?? supabase/migrations/20261007120000_business_intelligence_workflows_v1.sql",
+    "?? supabase/migrations/20261007133000_research_notebook_expansion_options_data_v1.sql",
+    "?? supabase/migrations/20261007145000_research_notebooklm_automation_v1.sql",
+    "?? supabase/migrations/20261008120000_mercury_strategy_development_lab_v1.sql",
+    "?? supabase/migrations/20261008150000_feeder_transcript_artifact_references.sql",
+    "?? supabase/migrations/20261008160000_nexus_durable_job_dispatcher_v1.sql",
+    "?? supabase/migrations/20261009120000_mercury_options_strategy_lab_v1.sql",
+    "?? supabase/migrations/20261010120000_mercury_postgrest_schema_refresh.sql",
+    "?? supabase/migrations/20261011120000_mercury_options_feeder_template.sql",
+    "?? supabase/migrations/20261012120000_mercury_options_lab_settings.sql",
+    "?? supabase/migrations/20261013120000_options_practice_variations.sql",
+    "?? supabase/migrations/20261014120000_mercury_experience_schema_completion.sql",
+    "?? supabase/migrations/20261015120000_mercury_candidate_rank_column.sql",
+    "?? supabase/migrations/20261016120000_autonomous_feeder_intake_runtime_v1.sql",
+    "?? supabase/migrations/20261017120000_feeder_duplicate_audit_rows.sql",
+    "?? supabase/migrations/20261018120000_feeder_runtime_settings.sql",
+    "?? supabase/migrations/20261019120000_pulse_trend_market_intelligence_v1.sql",
+    "?? supabase/migrations/20261019130000_pulse_notebook_questionnaire_complete.sql",
+    "?? supabase/migrations/20261019140000_pulse_trend_history_interval_growth.sql",
+    "?? supabase/migrations/20261019150000_pulse_signal_cluster_id.sql",
+    "?? supabase/migrations/20261020160000_nexus_durable_job_privilege_minimization.sql",
+    "?? supabase/migrations/20261021120000_nexus_resource_spend_governor_v1.sql",
+    "?? supabase/migrations/20261021123000_nexus_resource_spend_budget_scope_fix.sql",
+    "?? supabase/migrations/20261021124500_nexus_resource_creation_spend_gate.sql",
+    "?? supabase/migrations/20261021130000_nexus_resource_creation_job_scope.sql",
+    "?? supabase/migrations/20261021140000_nexus_durable_job_budget_envelope.sql",
+    "?? supabase/migrations/20261021150000_nexus_resource_budget_job_enforcement.sql",
+    "?? supabase/migrations/20261021160000_nexus_telegram_governor_default_deny.sql",
+    "?? tests/business_intelligence_workflows_v1.real.test.ts",
+    "?? tests/business_intelligence_workflows_v1.test.ts",
+    "?? tests/options_strategy_lab.test.ts",
+    "?? tests/test_company_case_contracts.py",
+    "?? tests/test_company_workflow_nonterminal.py",
+    "?? tests/test_feeder_runtime.py",
+    "?? tests/test_feeder_transcript_decoupling.py",
+    "?? tests/test_full_kernel_wake_mock.py",
+    "?? tests/test_market_heartbeat_call_budget.py",
+    "?? tests/test_notebook_source_expansion.py",
+    "?? tests/test_options_data_adapter.py",
+    "?? tests/test_proactive_memory_compact.py",
+    "?? tests/test_pulse_runtime.py",
+    "?? tests/test_research_case_control_read.py",
+    "?? tests/test_research_sources_trace.py",
+    "?? tests/test_status_checker_canary.py",
+    "?? tests/test_supabase_egress_guard.py",
+    "?? tests/test_trading_experiment_engine.py",
+    "?? tests/test_transcript_artifacts.py"
+  ],
+  "launchd_plists": [
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.strategy-lab.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.coordination-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.activation.continuous-loop.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.ops-control-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-persistence-certifier.plist",
+      "label": "com.nexus.research-persistence-certifier",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]"
+      ],
+      "run_at_load": true,
+      "keep_alive": false,
+      "start_interval": null,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.signal-review.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-two-hour-report.plist",
+      "label": "com.nexus.research-two-hour-report",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "--window-hours",
+        "[ARGUMENT_REDACTED]",
+        "--output",
+        "[ARGUMENT_REDACTED]"
+      ],
+      "run_at_load": false,
+      "keep_alive": false,
+      "start_interval": null,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.tournament.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-operator.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.evening-closeout.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.temporal-server.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.recovery-check.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.ollama.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.monitoring-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.dashboard.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/ai.nexus.email-pipeline.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.autonomy-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.oanda-practice-trading.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/ai.nexus.control-center.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.control-center.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.hermes-status.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-alpha.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.active-operator-v2.plist",
+      "label": "com.nexus.active-operator-v2",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "--once"
+      ],
+      "run_at_load": false,
+      "keep_alive": false,
+      "start_interval": 900,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.nexus-mcp-bridge.plist",
+      "label": "com.nexus.nexus-mcp-bridge",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]"
+      ],
+      "run_at_load": true,
+      "keep_alive": true,
+      "start_interval": null,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-hermes-v2.plist",
+      "label": "com.nexus.telegram-hermes-v2",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "--once"
+      ],
+      "run_at_load": false,
+      "keep_alive": false,
+      "start_interval": 60,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.daily-operating.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.continuous-loop.plist",
+      "label": "com.nexus.continuous-loop",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "--daemon",
+        "--interval-seconds",
+        "[ARGUMENT_REDACTED]"
+      ],
+      "run_at_load": true,
+      "keep_alive": true,
+      "start_interval": null,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.demo-trading-loop.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.telegram.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.active-operator-hourly.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.monetization-research.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.signal-router.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.auto-executor.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.wp9-company-cycle.plist",
+      "label": "com.nexus.wp9-company-cycle",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "--scheduled"
+      ],
+      "run_at_load": false,
+      "keep_alive": false,
+      "start_interval": null,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.continuous-ops-daily.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-morning-report.plist",
+      "label": "com.nexus.research-morning-report",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]"
+      ],
+      "run_at_load": false,
+      "keep_alive": false,
+      "start_interval": null,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-signal-bridge.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-hermes.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.cloudflare-tunnel.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.trading-engine.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-hermes-nova.plist",
+      "label": "com.nexus.telegram-hermes-nova",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]"
+      ],
+      "run_at_load": true,
+      "keep_alive": false,
+      "start_interval": 30,
+      "disabled_metadata_only": "state not inferred from plist"
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.hermes-mobile.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.mac-mini-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.youtube-channel-poller.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.orchestrator.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.temporal-worker.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.scheduler.plist",
+      "parse": "unreadable or invalid",
+      "program": null,
+      "program_arguments": []
+    },
+    {
+      "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.recovery-check-v2.plist",
+      "label": "com.nexus.recovery-check-v2",
+      "program": null,
+      "program_arguments": [
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "[ARGUMENT_REDACTED]",
+        "--once",
+        "--execute-approved"
+      ],
+      "run_at_load": false,
+      "keep_alive": false,
+      "start_interval": 10800,
+      "disabled_metadata_only": "state not inferred from plist"
+    }
+  ],
+  "credential_file_metadata_only": [
+    {
+      "path": "/Users/raymonddavis/nexuslive/.env",
+      "owner_uid": 501,
+      "group_gid": 20,
+      "mode": "0o644",
+      "mtime_epoch": 1777222615,
+      "size_bytes": 1407
+    },
+    {
+      "path": "/Users/raymonddavis/.nexus/gmail_credentials.json",
+      "owner_uid": 501,
+      "group_gid": 20,
+      "mode": "0o644",
+      "mtime_epoch": 1776792866,
+      "size_bytes": 416
+    },
+    {
+      "path": "/Users/raymonddavis/.hermes/hermes-office/.env",
+      "owner_uid": 501,
+      "group_gid": 20,
+      "mode": "0o644",
+      "mtime_epoch": 1780603136,
+      "size_bytes": 338
+    },
+    {
+      "path": "/Users/raymonddavis/.config/nexus/runtime.env",
+      "owner_uid": 501,
+      "group_gid": 20,
+      "mode": "0o600",
+      "mtime_epoch": 1788394671,
+      "size_bytes": 3047
+    }
+  ],
+  "hermes_cron_metadata": {
+    "exists": true,
+    "path": "/Users/raymonddavis/.hermes/cron/jobs.json",
+    "records": [
+      {
+        "name": "safe-watchdog-ops-snapshot",
+        "enabled": true,
+        "schedule": {
+          "kind": "cron",
+          "expr": "0 9 * * *",
+          "display": "0 9 * * *"
+        },
+        "delivery": null
+      },
+      {
+        "name": "safe-watchdog-attention",
+        "enabled": true,
+        "schedule": {
+          "kind": "cron",
+          "expr": "0 8 * * *",
+          "display": "0 8 * * *"
+        },
+        "delivery": null
+      }
+    ]
+  },
+  "openclaw_cron_metadata": {
+    "exists": true,
+    "path": "/Users/raymonddavis/.openclaw/cron/jobs.json",
+    "records": [
+      {
+        "name": "ai-employee-report-2026-04-10-1853",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T01:53:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-1923",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T02:23:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-1953",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T02:53:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2023",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T03:23:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2053",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T03:53:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2123",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T04:23:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2153",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T04:53:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2223",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T05:23:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2253",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T05:53:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-2323",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T06:23:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2026-04-10-1853",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T01:53:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "to": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 1/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T01:57:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 2/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T02:27:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 3/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T02:57:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 4/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T03:27:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 5/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T03:57:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 6/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T04:27:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 7/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T04:57:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 8/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T05:27:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 9/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T05:57:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "AI employee half-hour report 10/10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T06:27:00.000Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-1",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T01:58:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-2",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T02:28:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-3",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T02:58:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-4",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T03:28:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-5",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T03:58:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-6",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T04:28:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-7",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T04:58:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-8",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T05:28:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-9",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T05:58:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      },
+      {
+        "name": "ai-employee-report-10",
+        "enabled": false,
+        "schedule": {
+          "kind": "at",
+          "at": "2026-04-11T06:28:17.219Z"
+        },
+        "delivery": {
+          "mode": "announce",
+          "channel": "origin"
+        }
+      }
+    ]
+  },
+  "pm2_state": "per supplied audit: stopped; dump and backup contain empty arrays; do not save/rewrite",
+  "supabase_deployment_metadata": "per supplied audit: bounded REST/OpenAPI/Auth/Storage metadata available; management catalog/deployment state unavailable",
+  "checkout_relationships": {
+    "canonical": "/Users/raymonddavis/nexus-os-v2-canonical",
+    "secondary": "/Users/raymonddavis/nexus-os-v2",
+    "legacy": "/Users/raymonddavis/nexuslive"
+  },
+  "planned_mutations": [
+    {
+      "item": "credential permission hardening for three identified mode-0644 files",
+      "before_state": "owner/mode/mtime/consumer references captured before chmod",
+      "intended_after_state": "0600 if current owner and use validate",
+      "rollback_method": "restore captured mode only if service dependency proves required; never restore world access without safer service repair"
+    },
+    {
+      "item": "canonical Python runtime and launch configuration",
+      "before_state": "secondary checkout venv referenced by launch definitions",
+      "intended_after_state": "canonical-owned interpreter/environment after dependency verification",
+      "rollback_method": "restore saved plist/runtime paths"
+    },
+    {
+      "item": "provider/query/eligibility code changes",
+      "before_state": "working tree already contains extensive pre-existing modifications; full git status preserved",
+      "intended_after_state": "only narrow reviewed diffs after auditing current local changes",
+      "rollback_method": "reverse only this campaign’s patch; preserve pre-existing work"
+    },
+    {
+      "item": "staged runtime activation",
+      "before_state": "safe mode; scheduler/dispatcher off",
+      "intended_after_state": "only after all gates and explicit clean checks; return off after stage",
+      "rollback_method": "disable/unload only newly activated scheduler/dispatcher; no old runtime restart"
+    }
+  ]
+}

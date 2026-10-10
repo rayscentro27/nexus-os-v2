@@ -85,7 +85,7 @@ def apply_policy(package: dict[str, Any], judgment: dict[str, Any]) -> dict[str,
         why = "Build certification mode authorizes a bounded internal experiment; this is not production or external approval."
         testable = testable or unknowns
     next_owner = str(package.get("handoff_target") or package.get("department_target") or package.get("department") or "RESEARCH").upper()
-    return {
+    result = {
         "model_decision": model_decision, "decision": decision, "why": why,
         "evidence_for": evidence_for, "evidence_against": evidence_against, "unknowns": unknowns,
         "hard_blockers": blockers, "soft_risks": list(judgment.get("soft_risks") or judgment.get("deficiencies") or []),
@@ -94,6 +94,19 @@ def apply_policy(package: dict[str, Any], judgment: dict[str, Any]) -> dict[str,
         **testability,
         "ray_policy_rules_applied": ["hard safety gates are automatic stops", "uncertainty is not rejection", "low-cost reversible tests are eligible", "Alpha is advisory; Ray remains final business authority"],
     }
+    if decision == "REJECT":
+        result["rejection"] = {
+            "reason": why,
+            "evidence": evidence_for + evidence_against or [{"status": "NOT_PROVIDED", "detail": "No evidence references were supplied."}],
+            "failed_criteria": blockers or ["NO_SUPPORTED_HYPOTHESIS_OR_TEST_PROFILE"],
+            "what_was_tested": "Applied the deterministic hard-safety and testability policy to the supplied package and judgment; no external action was performed.",
+            "what_was_observed": blockers or unknowns or ["No supported hypothesis or test profile was present."],
+            "what_would_change_the_decision": ("Remove the identified safety blocker through an authorized, evidence-backed change and re-run policy review." if blockers else "Provide a source-grounded hypothesis or bounded test profile that satisfies the documented testability criteria."),
+            "next_action": result["recommended_next_step"],
+            "next_action_owner": next_owner,
+            "parent_goal_status": str(package.get("parent_goal_status") or "NOT_LINKED").upper(),
+        }
+    return result
 
 def record_ray_override(*, evaluation_id: str, decision: str, reason: str, authorized_by: str = "RAY", next_owner: str = "") -> dict[str, Any]:
     decision = str(decision).upper()

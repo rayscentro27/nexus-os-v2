@@ -62,13 +62,17 @@ def verify_provider_status(values: dict[str, str], report: dict[str, object]) ->
     )
     try:
         import certifi
-        with urllib.request.urlopen(request, timeout=20, context=ssl.create_default_context(cafile=certifi.where())) as response:
-            body = json.loads(response.read().decode() or "{}")
-            state = body.get("last_event") or body.get("status") or "provider_message_read"
-            report.update({"delivery_evidence": "PASS_REAL", "delivery_observation": state, "status_http": response.status})
-            write_report(report)
-            print(json.dumps({k: report.get(k) for k in ("status", "template_id", "send_count", "delivery_evidence", "delivery_observation", "duplicate_protection", "secrets_included")}, indent=2))
-            return 0
+        from scripts.nexus_agent_platform.provider_enforcement import execute
+        body=execute("EMAIL_PROVIDER","resend_status","READ",{"requests":1,"operations":1,"billable":False},
+            lambda: (lambda response:(response.status,json.loads(response.read().decode() or "{}")))(urllib.request.urlopen(request, timeout=20, context=ssl.create_default_context(cafile=certifi.where()))),
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),job_type="R29_TEST_EMAIL_STATUS",
+            actual_usage=lambda _:{"requests":1,"operations":1})
+        response_status,status_body=body
+        state = status_body.get("last_event") or status_body.get("status") or "provider_message_read"
+        report.update({"delivery_evidence": "PASS_REAL", "delivery_observation": state, "status_http": response_status})
+        write_report(report)
+        print(json.dumps({k: report.get(k) for k in ("status", "template_id", "send_count", "delivery_evidence", "delivery_observation", "duplicate_protection", "secrets_included")}, indent=2))
+        return 0
     except Exception as exc:
         report.update({"delivery_evidence": "PROVIDER_ACCEPTED_ONLY", "delivery_observation": "STATUS_UNAVAILABLE", "status_error_class": type(exc).__name__})
         write_report(report)
@@ -116,6 +120,17 @@ def main() -> int:
         base.update({"status": "FAIL", "failure_class": "protected_provider_configuration_missing"})
         write_report(base)
         return 1
+    approved_recipients={x.strip().casefold() for x in os.environ.get("NEXUS_APPROVED_TEST_RECIPIENTS","").split(",") if x.strip()}
+    if os.environ.get("NEXUS_R29_TEST_EMAIL_APPROVED") != "true" or recipient.casefold() not in approved_recipients:
+        base.update({"status":"HUMAN_APPROVAL_REQUIRED","failure_class":"test_recipient_or_workflow_permission_missing"})
+        write_report(base)
+        return 1
+    from scripts.nexus_agent_platform.provider_enforcement import authorize_email_action, execute
+    from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    try:
+        authorize_email_action("TEST_SEND",approved_test_recipient=True)
+    except GovernanceDenied as exc:
+        base.update({"status":"HUMAN_APPROVAL_REQUIRED","failure_class":exc.code});write_report(base);return 1
 
     payload = json.dumps({
         "from": sender,
@@ -134,12 +149,21 @@ def main() -> int:
     )
     try:
         import certifi
-        with urllib.request.urlopen(request, timeout=20, context=ssl.create_default_context(cafile=certifi.where())) as response:
-            body = json.loads(response.read().decode() or "{}")
+        try: estimated_cost=float(os.environ["NEXUS_RESEND_ESTIMATED_COST_PER_EMAIL"])
+        except (KeyError,ValueError): estimated_cost=None
+        estimate={"requests":1,"operations":1,"emails":1,"billable":True}
+        if estimated_cost is not None: estimate["cost"]=estimated_cost
+        status,body=execute("EMAIL_PROVIDER","resend_email","TEST_SEND",estimate,
+            lambda: (lambda response: (response.status,json.loads(response.read().decode() or "{}")))(urllib.request.urlopen(request, timeout=20, context=ssl.create_default_context(cafile=certifi.where()))),
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type="R29_TEST_EMAIL",actual_usage=lambda _:{"requests":1,"operations":1,"emails":1,**({"cost":estimated_cost} if estimated_cost is not None else {})},
+            external_ref=lambda value:value[1].get("id"))
+        response_status=status
+        if response_status == 200:
             message_id = body.get("id")
             base.update({
-                "status": "PASS_REAL" if response.status == 200 and message_id else "FAIL",
-                "provider_http_status": response.status,
+                "status": "PASS_REAL" if message_id else "FAIL",
+                "provider_http_status": response_status,
                 "provider_message_id_present": bool(message_id),
                 "provider_message_id": message_id,
                 "send_count": 1,
@@ -147,6 +171,8 @@ def main() -> int:
                 "duplicate_protection": "PASS_REAL_FIXED_IDEMPOTENCY_KEY",
                 "external_side_effect": "one_test_email",
             })
+    except GovernanceDenied as exc:
+        base.update({"status":"HUMAN_APPROVAL_REQUIRED","failure_class":exc.code})
     except urllib.error.HTTPError as exc:
         base.update({"status": "FAIL", "provider_http_status": exc.code, "failure_class": "provider_rejection"})
     except Exception as exc:

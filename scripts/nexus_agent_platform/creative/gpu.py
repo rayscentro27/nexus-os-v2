@@ -26,15 +26,33 @@ def _hash(value: Any) -> str:
 def workflow_hash() -> str:
     return _hash({"workflow_id": WORKFLOW_ID, "version": WORKFLOW_VERSION, "nodes": ["CheckpointLoaderSimple", "CLIPTextEncode", "EmptyLatentImage", "KSampler", "VAEDecode", "SaveImage"]})
 
-def build_image_job(*, brief_id: str, growth_id: str, opportunity_id: str | None, prompt: str, negative_prompt: str, seed: int = 184729, tenant: str = "goclear", job_id: str | None = None, evidence_refs: list[str] | None = None) -> Dict[str, Any]:
+def build_image_job(*, brief_id: str, growth_id: str, opportunity_id: str | None, prompt: str, negative_prompt: str, creative_prompt_id: str | None = None, seed: int = 184729, tenant: str = "goclear", job_id: str | None = None, evidence_refs: list[str] | None = None) -> Dict[str, Any]:
+    from nexus_agent_platform.campaign_governance import prompt_generation_gate
+    if not creative_prompt_id:
+        raise PermissionError("ray_approved_creative_prompt_required")
+    approval = prompt_generation_gate(creative_prompt_id)
+    if not approval.get("allowed"):
+        raise PermissionError("creative_prompt_not_ray_approved")
+    if prompt != approval.get("exact_creative_prompt"):
+        raise PermissionError("generation_prompt_must_match_ray_approved_exact_prompt")
     if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > MAX_PROMPT: raise ValueError("prompt-bounded")
     if len(negative_prompt) > MAX_NEGATIVE: raise ValueError("negative-prompt-bounded")
     if not 0 <= seed <= 2**32 - 1: raise ValueError("seed-bounded")
-    return build_remote_job(capability=CAPABILITY, adapter=ADAPTER, job_id=job_id or new_id("gpu-image"), tenant_context={"tenant": tenant, "business": "goclear"}, source={"source_type": "creative_brief", "creative_brief_id": brief_id, "growth_id": growth_id, "opportunity_id": opportunity_id, "evidence_refs": list(evidence_refs or [])[:8]}, policy={"public_only": True, "no_external_processing": True, "custom_nodes": "NONE", "public_ui": False}, limits={"timeout_seconds": 180, "width": 1024, "height": 1024, "steps": 20, "images": 1, "output_format": "png"}, correlation={"workflow_id": WORKFLOW_ID, "workflow_version": WORKFLOW_VERSION, "workflow_hash": workflow_hash(), "model_id": MODEL_ID, "model_version": MODEL_VERSION, "model_hash": MODEL_HASH, "prompt": prompt.strip(), "negative_prompt": negative_prompt.strip(), "seed": seed})
+    durable_job_id = job_id or os.environ.get("NEXUS_DURABLE_JOB_ID")
+    if not durable_job_id: raise PermissionError("durable_job_identity_required_for_creative_generation")
+    return build_remote_job(capability=CAPABILITY, adapter=ADAPTER, job_id=durable_job_id, tenant_context={"tenant": tenant, "business": "goclear"}, source={"source_type": "creative_brief", "creative_brief_id": brief_id, "growth_id": growth_id, "opportunity_id": opportunity_id, "creative_prompt_id": creative_prompt_id, "approved_prompt_sha256": approval.get("exact_prompt_sha256"), "evidence_refs": list(evidence_refs or [])[:8]}, policy={"public_only": True, "no_external_processing": True, "custom_nodes": "NONE", "public_ui": False}, limits={"timeout_seconds": 180, "width": 1024, "height": 1024, "steps": 20, "images": 1, "output_format": "png"}, correlation={"workflow_id": WORKFLOW_ID, "workflow_version": WORKFLOW_VERSION, "workflow_hash": workflow_hash(), "model_id": MODEL_ID, "model_version": MODEL_VERSION, "model_hash": MODEL_HASH, "prompt": prompt.strip(), "negative_prompt": negative_prompt.strip(), "seed": seed})
 
 def validate_image_job(job: Dict[str, Any]) -> tuple[bool, str]:
     if not isinstance(job, dict) or job.get("schema_version") != JOB_SCHEMA: return False, "unsupported-schema"
     if job.get("capability") != CAPABILITY or job.get("adapter") != ADAPTER: return False, "capability-not-allowed"
+    source = job.get("source") or {}
+    prompt_id = source.get("creative_prompt_id")
+    if not prompt_id: return False, "ray-approved-creative-prompt-required"
+    from nexus_agent_platform.campaign_governance import prompt_generation_gate
+    approval = prompt_generation_gate(prompt_id)
+    prompt_hash = hashlib.sha256(str((job.get("correlation") or {}).get("prompt", "")).encode()).hexdigest()
+    if not approval.get("allowed") or approval.get("exact_prompt_sha256") != source.get("approved_prompt_sha256") or prompt_hash != source.get("approved_prompt_sha256"):
+        return False, "creative-prompt-approval-missing-or-stale"
     if (job.get("correlation") or {}).get("workflow_id") != WORKFLOW_ID: return False, "unknown-workflow"
     if (job.get("correlation") or {}).get("model_id") != MODEL_ID: return False, "unknown-model"
     limits = job.get("limits") or {}

@@ -178,6 +178,7 @@ function sourceChangedBeforeAfter(before, after) {
 }
 
 async function main() {
+  throw new Error('NEXUS_HERMES_ADAPTER_DISABLED_UNTIL_GOVERNED_DURABLE_JOB_BRIDGE')
   const args = parseArgs(process.argv);
   if (PROHIBITED_TASK_TYPES.has(args.taskType)) {
     throw new Error(`prohibited task type: ${args.taskType}`);

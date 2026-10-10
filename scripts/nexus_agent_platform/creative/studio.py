@@ -83,7 +83,17 @@ def validate_creative_brief(brief: Dict[str, Any]) -> list[str]:
     required = ("creative_brief_id", "business_id", "title", "objective", "evidence_refs", "asset_types", "measurement_metric")
     issues = [f"missing:{key}" for key in required if not brief.get(key)]
     if brief.get("schema_version") != CREATIVE_BRIEF_SCHEMA: issues.append("schema_version")
-    claim_text = json.dumps({key: value for key, value in brief.items() if key not in {"message", "prohibited_claims"}}, default=str)
+    # Check fields that make or describe the offer. Brand constraints and
+    # prohibited-claim lists commonly quote the forbidden phrase negatively;
+    # scanning those guardrails as if they were campaign claims rejects safe
+    # briefs such as "No guaranteed funding claims".
+    message = brief.get("message") if isinstance(brief.get("message"), dict) else {}
+    claim_fields = {key: brief.get(key) for key in (
+        "title", "objective", "audience", "target_audience", "target_offer",
+        "offer", "primary_cta", "secondary_cta", "campaign_objective",
+    )}
+    claim_fields["message"] = {key: message.get(key) for key in ("problem", "promise", "key_points", "objections", "proof")}
+    claim_text = json.dumps(claim_fields, default=str)
     if _BANNED.search(claim_text): issues.append("prohibited_claim")
     if brief.get("external_action_performed") is not False: issues.append("external_action")
     return issues
@@ -107,6 +117,8 @@ def _asset_base(brief: Dict[str, Any], asset_type: str, payload: Dict[str, Any],
 
 def build_copy_asset(brief: Dict[str, Any]) -> Dict[str, Any]:
     payload = {"headline_options": ["Funding readiness starts before you apply.", "Build a clearer readiness path."], "body": "Organize your business profile, documents, and credit readiness before you apply. Use a structured review to see what is ready and what still needs attention.", "cta": brief["primary_cta"], "disclaimer": "Education and readiness only. No guaranteed funding or approval.", "claims_requiring_source": [], "internal_only": True}
+    if brief.get("revision_feedback"):
+        payload["revision_applied"] = str(brief["revision_feedback"])[:1000]
     asset = _asset_base(brief, "LANDING_PAGE_COPY", payload)
     asset["quality_score"] = 92
     asset["quality_findings"] = ["evidence_refs_retained", "no_guarantee_claims", "cta_present", "disclaimer_present"]

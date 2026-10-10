@@ -8,7 +8,7 @@ import { loadRuntimeEnv } from '../ops/nexusRuntimeEnv.mjs';
 const ROOT = process.cwd();
 const REPORT = path.join(ROOT, 'NEXUS_LIVE_BACKEND_CERTIFICATION.md');
 
-function readEnvFile(file) {
+function readEnvFile(file, allowedKeys = new Set()) {
   if (!fs.existsSync(file)) return {};
   const out = {};
   for (const raw of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
@@ -19,20 +19,24 @@ function readEnvFile(file) {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    out[key.trim()] = value;
+    const normalizedKey = key.trim();
+    if (allowedKeys.has(normalizedKey)) out[normalizedKey] = value;
   }
   return out;
 }
 
 function loadEnv() {
-  const values = loadRuntimeEnv({ override: true });
+  const values = loadRuntimeEnv({ override: true, allowedKeys: ['VITE_SUPABASE_ANON_KEY'] });
   // Synthetic certification credentials are deliberately kept in the
   // ignored E2E file, not the general company runtime environment.  Load
   // them only for this explicitly authenticated certification path.
   if (process.env.E2E_ENABLE_AUTHENTICATED === 'true') {
-    Object.assign(values, readEnvFile(path.join(ROOT, '.env.e2e.local')));
+    const allowedE2EKeys = new Set(['E2E_ENABLE_AUTHENTICATED', 'E2E_CERT_ADMIN_EMAIL', 'E2E_CERT_ADMIN_PASSWORD',
+      'E2E_PERSONA_A_EMAIL', 'E2E_PERSONA_A_PASSWORD', 'E2E_PERSONA_B_EMAIL', 'E2E_PERSONA_B_PASSWORD',
+      'E2E_PERSONA_C_EMAIL', 'E2E_PERSONA_C_PASSWORD', 'E2E_PERSONA_D_EMAIL', 'E2E_PERSONA_D_PASSWORD']);
+    Object.assign(values, readEnvFile(path.join(ROOT, '.env.e2e.local'), allowedE2EKeys));
   }
-  Object.assign(values, process.env);
+  if (process.env.E2E_ENABLE_AUTHENTICATED === 'true') values.E2E_ENABLE_AUTHENTICATED = 'true';
   return values;
 }
 
@@ -45,7 +49,8 @@ function maskEmail(email) {
 const env = loadEnv();
 const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
 const anonKey = env.VITE_SUPABASE_ANON_KEY;
-const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+// Service-role authentication is intentionally unavailable to certification.
+const serviceKey = '';
 
 const accounts = [
   { key: 'CERT_ADMIN', label: 'nexus-cert-admin', role: 'admin', tenantId: 'nexus-cert-admin', clientId: null },

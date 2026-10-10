@@ -28,6 +28,82 @@ SYSTEMS_PROVIDER = "openrouter"
 SYSTEMS_MODEL = "openai/gpt-4o-mini"
 
 
+def resume_company_case_directive(case_id: str, directive_id: str) -> dict[str, Any]:
+    """Resume one persisted Company Case Systems directive through this consumer.
+
+    The bounded Webull recovery is read-only: it checks the existing credential
+    resolver metadata, performs no key mutation, and routes the result back to
+    Research so the parent objective can continue through an alternate data path.
+    """
+    from research import research_case_engine as cases
+    case = cases.get_case(case_id)
+    if not case:
+        return {"status": "NOT_FOUND", "case_id": case_id}
+    directive = next((row for row in case.get("department_requests", [])
+        if row.get("request_id") == directive_id and row.get("department") == "SYSTEMS"), None)
+    if not directive:
+        return {"status": "DIRECTIVE_NOT_FOUND", "case_id": case_id, "directive_id": directive_id}
+    if str(directive.get("status") or "").upper() not in {"OPEN", "CLAIMED", "IN_PROGRESS"}:
+        return {"status": "NOT_EXECUTABLE", "directive_status": directive.get("status")}
+    history = {}
+    try:
+        from nexus_agent_platform.department_learning import lookup_department_learning
+        history = lookup_department_learning("SYSTEMS", topic_terms=["Webull", "credential", "Wick"], limit=50)
+    except Exception as exc:
+        history = {"status": "UNAVAILABLE", "reason": type(exc).__name__, "records": []}
+    try:
+        from nexus_agent_platform.credential_control_plane import resolve
+        credential = resolve("credential.webull.openapi.prod.v1")
+        components = {key: bool(value.get("selected")) for key, value in credential.get("components", {}).items()}
+        credential_result = {"status": credential.get("result"), "source_classification": credential.get("source_classification"),
+            "component_presence": components, "source_found": credential.get("source_found"),
+            "environment": credential.get("environment"), "credential_reference": "credential.webull.openapi.prod.v1"}
+    except Exception as exc:
+        credential_result = {"status": "RESOLVER_ERROR", "error_class": type(exc).__name__,
+            "credential_reference": "credential.webull.openapi.prod.v1"}
+    complete = all(credential_result.get("component_presence", {}).values())
+    auth = "NOT_RUN_MISSING_CREDENTIAL" if not complete else "NOT_RUN_REQUIRES_AUTH_CANARY"
+    findings = ("Existing canonical Webull PaperTrade OpenAPI credential resolver found no App Key or App Secret values/references in its configured environment, env-file, Netlify metadata, or canonical Keychain paths." if not complete else
+        "Both Webull credential components resolve through the canonical registry; a bounded read-only PaperTrade auth canary is the next Systems action.")
+    result = cases.record_department_result(case_id, department="SYSTEMS",
+        what_was_done="Resumed the persisted Webull credential recovery directive; queried scoped Systems history and ran the canonical resolver in metadata-only mode.",
+        why="The active Wick evidence route needs real-volume TSLA M30 data, but credential recovery is only one approach; this result routes Research to evaluate existing OANDA-backed evidence routes if local credentials are unavailable.",
+        configuration={"directive_id": directive_id, "history_lookup_status": history.get("status"),
+            "relevant_prior_lessons": len(history.get("records") or []), "credential": credential_result,
+            "auth_test": auth, "key_rotated": False, "live_trading": False,
+            "return_to": "RESEARCH", "scope": "Read-only credential discovery only."},
+        result=findings, did_it_advance_goal=True,
+        what_was_learned="No supported local credential reference was found by the canonical resolver; this blocks the TSLA/Webull branch but does not block the Wick objective because the existing OANDA historical forex route remains available.",
+        new_questions=["Given that canonical Webull credential resolution returned MISSING, which existing OANDA-supported instrument/timeframe and already-developed Wick experiment provide the highest information value next, without introducing an unsupported indicator or new paid data source?"],
+        next_recommended_action="Research reassesses the same Wick case and notebook; select the best already-supported OANDA experiment or retain a concrete credential recovery follow-up.",
+        evidence_refs=["credential.webull.openapi.prod.v1", "dreq_71a5c929d9c9bf4e"],
+        result_type="SYSTEMS_CAPABILITY_CHECK", directive_id=directive_id,
+        learning_record={"why_it_changed": "The canonical resolver's existing configured sources returned no Webull credential components.",
+            "root_cause": "CREDENTIAL_REFERENCE_NOT_RESOLVED_BY_CANONICAL_REGISTRY", "confidence": "HIGH",
+            "scope": "Canonical runtime resolver sources checked at execution time; no conclusion about remote vendor account validity.",
+            "sample_size": 1, "alternative_explanations": ["Credentials may exist outside approved resolver locations, including a human-controlled external vault."],
+            "what_was_not_proven": ["That the Webull PaperTrade application is invalid", "That no credential exists anywhere outside the resolver's configured locations"],
+            "reusable_lesson": "Provider credential failure blocks a route; keep the parent objective active and evaluate existing alternate capabilities."})
+    if not result.get("ok"):
+        return {"status": "RESULT_WRITE_FAILED", "reason": result.get("reason")}
+    packet = result["result"]
+    packet.update({"summary": findings, "supporting_data": credential_result,
+        "actionable_items": ["Research evaluates an existing OANDA-supported Wick experiment and updates the same case/notebook."],
+        "exact_instructions": "Use the current Wick notebook and case evidence to pick one supported OANDA experiment; do not seek a new provider or add arbitrary indicators.",
+        "next_owner": "RESEARCH", "expected_output": "Updated Wick understanding plus a specific next owner/directive.",
+        "return_to": "RESEARCH", "actionable_item_count": 1})
+    # Record augmented envelope in the authoritative case through the engine.
+    fresh = cases.get_case(case_id) or case
+    results = list(fresh.get("department_results") or [])
+    for row in results:
+        if row.get("result_id") == packet.get("result_id"):
+            row.update(packet)
+    cases._save(fresh, "SYSTEMS_RESULT_ACTIONABLE_ENVELOPE", department_results=results)
+    return {"status": "RESULT_RETURNED", "directive_id": directive_id, "result_id": packet.get("result_id"),
+        "next_owner": "RESEARCH", "history_lookup": history.get("status"), "credential": credential_result,
+        "actionable_item_count": 1, "case_status": (cases.get_case(case_id) or {}).get("status")}
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -161,7 +237,7 @@ def create_systems_work_order(handoff: dict[str, Any], *, assessment_only: bool 
         cost_budget={"max_usd": 0},
         retry_budget={"max_attempts": 1},
     )
-    order.update({"handoff_id": handoff_id, "owner": SYSTEMS_OWNER, "department": "SYSTEMS", "idempotency_key": f"systems-intake:{handoff_id}"})
+    order.update({"handoff_id": handoff_id, "owner": SYSTEMS_OWNER, "department": "SYSTEMS", "department_queue_item_id": order.get("work_order_id"), "idempotency_key": f"systems-intake:{handoff_id}"})
     persistence.append_record("work_orders", order)
     return order
 
@@ -200,6 +276,24 @@ def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False,
         latest_analysis = _latest(analyses, "work_order_id", str(order.get("work_order_id")))
         contract = systems_input_contract(handoff)
         refs = _source_refs(handoff, handoffs) or list(contract.get("source_refs") or [])
+        if latest_analysis and not latest_analysis.get("worker_execution_id"):
+            # The legacy completed order predates execution correlation IDs.
+            # The request_id is the exact durable transport correlation passed
+            # to the real Systems worker, so backfill lineage without rerunning
+            # the completed bounded action.
+            persistence.append_record("systems_ai_analyses", {**latest_analysis,
+                "artifact_id": latest_analysis.get("artifact_id") or latest_analysis.get("analysis_id"),
+                "department_queue_item_id": latest_analysis.get("department_queue_item_id") or order.get("work_order_id"),
+                "worker_execution_id": f"systems:{handoff_id}",
+                "artifact_type": latest_analysis.get("artifact_type") or "SYSTEMS_AI_ANALYSIS",
+                "artifact_location": latest_analysis.get("artifact_location") or "data/governed/systems_ai_analyses.jsonl",
+                "updated_at": _now()})
+            persistence.append_record("work_orders", {**order,
+                "department_queue_item_id": order.get("department_queue_item_id") or order.get("work_order_id"),
+                "worker_execution_id": f"systems:{handoff_id}",
+                "artifact_id": latest_analysis.get("artifact_id") or latest_analysis.get("analysis_id"),
+                "artifact_location": latest_analysis.get("artifact_location") or "data/governed/systems_ai_analyses.jsonl",
+                "updated_at": _now()})
         if latest_analysis and (not latest_analysis.get("parent_research_finding_id") or not latest_analysis.get("source_refs")):
             persistence.append_record("systems_ai_analyses", {**latest_analysis, "parent_research_finding_id": contract.get("parent_research_finding_id"), "source_refs": refs, "input_contract": contract, "updated_at": _now()})
         if not handoff.get("finding_id") and contract.get("parent_research_finding_id"):
@@ -211,6 +305,7 @@ def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False,
     persistence.append_record("work_orders", order)
     contract = systems_input_contract(handoff)
     source_refs = _source_refs(handoff, handoffs)
+    worker_execution_id = persistence.new_id("systems_execution")
     receipt = model_runner(_systems_prompt(contract, assessment_only=assessment_only), f"systems-{handoff_id[:80]}", timeout_seconds=180, request_id=f"systems:{handoff_id}")
     judgment = _json_object(receipt.response or "") or {
         "disposition": "BLOCKED_EXTERNAL",
@@ -223,6 +318,9 @@ def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False,
     artifact = {
         "schema_version": "nexus.systems-ai-analysis.v1",
         "analysis_id": persistence.new_id("systems_analysis"),
+        "artifact_id": None,
+        "department_queue_item_id": order.get("department_queue_item_id") or order.get("work_order_id"),
+        "worker_execution_id": worker_execution_id,
         "work_order_id": order["work_order_id"],
         "parent_handoff_id": handoff_id,
         "parent_alpha_receipt_id": handoff.get("alpha_receipt_id"),
@@ -239,8 +337,11 @@ def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False,
         "judgment": judgment,
         "disposition": disposition,
         "production_touch": False,
+        "artifact_type": "SYSTEMS_AI_ANALYSIS",
+        "artifact_location": "data/governed/systems_ai_analyses.jsonl",
         "created_at": _now(),
     }
+    artifact["artifact_id"] = artifact["analysis_id"]
     persistence.append_record("systems_ai_analyses", artifact)
     next_owner = "RESEARCH" if disposition in {"NEEDS_MORE_EVIDENCE", "BLOCKED_EXTERNAL", "BLOCKED_HUMAN"} else SYSTEMS_OWNER
     next_action = {

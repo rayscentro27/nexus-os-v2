@@ -7,20 +7,22 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0,str(ROOT/"scripts"/"ops"))
-from same_day_common import SUPABASE_READY, env_presence, now, parse_env, read_json, write_json, write_report  # noqa:E402
+sys.path.insert(0,str(ROOT/"scripts"))
+from activation.governed_http import get_json as governed_get_json  # noqa:E402
+from same_day_common import SUPABASE_READY, env_presence, now, read_json, write_json, write_report  # noqa:E402
 from youtube_local_tool import audit as audit_local_tool
+from nexus_runtime_env import load_runtime_env  # noqa:E402
 
 
 def key_value()->str:
-    values={}
-    for p in (ROOT/".env",ROOT/".env.local",ROOT/".env.nexus.recovered.local"): values.update(parse_env(p))
+    values=load_runtime_env(allowed_keys={"YOUTUBE_API_KEY", "YOUTUBE_DATA_API_KEY", "GOOGLE_API_KEY", "GOOGLE_CLOUD_API_KEY"})
     return values.get("YOUTUBE_API_KEY","")
 
 
 def api(path:str, params:dict, key:str)->dict:
     query=urllib.parse.urlencode({**params,"key":key})
-    with urllib.request.urlopen(f"https://www.googleapis.com/youtube/v3/{path}?{query}",timeout=15) as response:
-        return json.loads(response.read())
+    return governed_get_json(f"https://www.googleapis.com/youtube/v3/{path}?{query}",
+        provider="GOOGLE", service="youtube_data_api", timeout=15, estimated_units=1)
 
 
 def build()->dict:

@@ -62,6 +62,28 @@ def approve_and_send(item_id, approved_by="ray"):
     if packet.get("current_status") == "SENT":
         print(json.dumps({"error": "Already sent"}))
         return None
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+    correlation_id = os.environ.get("NEXUS_CORRELATION_ID")
+    department = os.environ.get("NEXUS_DEPARTMENT")
+    approval_id = os.environ.get("NEXUS_APPROVAL_ID")
+    if (not job_id or not correlation_id or not department or not approval_id
+            or packet.get("governed_job_id") != job_id
+            or packet.get("approval_id") != approval_id):
+        packet["current_status"] = "GOVERNOR_DENIED"
+        packet["error"] = "DURABLE_JOB_CORRELATION_DEPARTMENT_APPROVAL_CONTEXT_REQUIRED"
+        with open(packet_path, "w") as f: json.dump(packet, f, indent=2)
+        return packet
+    from scripts.nexus_agent_platform.provider_enforcement import authorize_email_action
+    from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    try:
+        authorize_email_action("CONTROLLED_SEND",
+            workflow_authorized=packet.get("current_status") == "APPROVED" and packet.get("approved_by") == approved_by)
+    except GovernanceDenied as exc:
+        packet["current_status"] = "HUMAN_APPROVAL_REQUIRED"
+        packet["error"] = exc.code
+        packet["next_action"] = "Record explicit workflow approval before sending."
+        with open(packet_path, "w") as f: json.dump(packet, f, indent=2)
+        return packet
     resend_key = os.environ.get("RESEND_API_KEY")
     if not resend_key:
         packet["current_status"] = "APPROVED_BUT_PROVIDER_ENV_MISSING"
@@ -70,15 +92,22 @@ def approve_and_send(item_id, approved_by="ray"):
             json.dump(packet, f, indent=2)
         print(json.dumps({"status": "approved_but_env_missing", "item_id": item_id}))
         return packet
+    from scripts.nexus_agent_platform.provider_enforcement import execute
     try:
         import requests
         email_data = packet["email_data"]
-        resp = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={"from": f"{email_data['from_name']} <onboarding@resend.dev>", "to": [email_data["to"]], "subject": email_data["subject"], "html": email_data["body"]},
-            timeout=10
-        )
+        def send():
+            return requests.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+                json={"from": f"{email_data['from_name']} <onboarding@resend.dev>", "to": [email_data["to"]], "subject": email_data["subject"], "html": email_data["body"]},
+                timeout=10)
+        resp = execute("EMAIL_PROVIDER", "resend_email", "CONTROLLED_SEND",
+            {"requests": 1, "operations": 1, "emails": 1, "billable": True}, send,
+            job_id=job_id, job_type=os.environ.get("NEXUS_JOB_TYPE", "CUSTOMER_EMAIL"),
+            correlation_id=correlation_id,
+            actual_usage=lambda response: {"requests": 1, "operations": 1, "emails": 1},
+            external_ref=lambda response: (response.json() or {}).get("id"))
         result = resp.json()
         packet["current_status"] = "SENT" if resp.status_code == 200 else "SEND_FAILED"
         packet["send_result"] = result
@@ -90,6 +119,13 @@ def approve_and_send(item_id, approved_by="ray"):
         with open(packet_path, "w") as f:
             json.dump(packet, f, indent=2)
         print(json.dumps({"status": packet["current_status"], "item_id": item_id, "result": result}, indent=2))
+    except GovernanceDenied as e:
+        packet["current_status"] = "HUMAN_APPROVAL_REQUIRED"
+        packet["error"] = e.code
+        packet["next_action"] = "Configure an explicit provider budget and approval policy before sending."
+        with open(packet_path, "w") as f:
+            json.dump(packet, f, indent=2)
+        print(json.dumps({"status": packet["current_status"], "item_id": item_id, "error": e.code}))
     except Exception as e:
         packet["current_status"] = "SEND_FAILED"
         packet["error"] = str(e)

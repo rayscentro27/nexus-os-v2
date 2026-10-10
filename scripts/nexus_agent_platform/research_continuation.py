@@ -182,7 +182,12 @@ def evaluate_goal_result(*, goal_id: str, objective_id: str, result: dict[str, A
             workstreams = list(row.get("active_workstreams") or [])
             if objective_id not in workstreams:
                 workstreams.append(objective_id)
-            row.update({"current_evidence": evidence[-20:], "active_workstreams": workstreams[-20:], "last_progress": reduced, "updated_at": feedback["created_at"]})
+            row.update({"current_evidence": evidence[-20:], "active_workstreams": workstreams[-20:],
+                        "last_progress": reduced, "updated_at": feedback["created_at"],
+                        "status": "ACTIVE", "current_action": "EXECUTE_RESEARCH_CONTRACT",
+                        "next_action": "EXECUTE_RESEARCH_CONTRACT",
+                        "research_next_question": feedback.get("next_action"),
+                        "research_remaining_gaps": remaining})
         _portfolio_write(rows)
     except Exception:
         feedback["portfolio_update"] = "DEGRADED"

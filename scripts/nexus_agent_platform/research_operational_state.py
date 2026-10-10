@@ -98,6 +98,7 @@ def build_research_operational_state() -> dict[str, Any]:
     v2_review_queue = _jsonl(ROOT / "data/governed/research_v2_review_queue.jsonl")
     alpha_evaluations = _jsonl(ROOT / "data/governed/alpha_evaluations.jsonl")
     result_feedback = _jsonl(ROOT / "data/governed/result_feedback.jsonl")
+    execution_events = _jsonl(ROOT / "data/runtime/research_execution_jobs.jsonl")
     scheduler_plist = Path.home() / "Library/LaunchAgents/com.nexus.continuous-loop.plist"
     scheduler_loaded = False
     try:
@@ -173,6 +174,28 @@ def build_research_operational_state() -> dict[str, Any]:
         if row.get("title"):
             v2_findings.append({"finding": row.get("title"), "evidence": (row.get("known_evidence") or [])[:2], "status": row.get("status", "UNKNOWN"), "recorded_at": row.get("recorded_at"), "source": "research_v2_strategies"})
     v2_findings = v2_findings[:8]
+    # Admin Center projection: derive the latest learning/evidence fields from
+    # the append-only execution ledger. This is a view, not another queue or
+    # mutable source of truth.
+    execution_projection: dict[str, dict[str, Any]] = {}
+    for row in execution_events:
+        execution_id = row.get("execution_id")
+        if not execution_id:
+            continue
+        entry = execution_projection.setdefault(str(execution_id), {"execution_id": execution_id})
+        if row.get("status") == "RESEARCH_LEARNING_RECORD":
+            entry.update({key: row.get(key) for key in (
+                "what_was_researched", "what_nexus_learned", "key_findings",
+                "new_information", "duplicate_status", "why_it_matters",
+                "unresolved_questions", "next_action", "current_pipeline_stage")})
+        if row.get("status") == "EVIDENCE_READY":
+            entry.update({key: row.get(key) for key in (
+                "research_id", "work_id", "objective_id", "source_id",
+                "source_url", "final_status", "processor", "alpha_eligible",
+                "department_target")})
+        if row.get("status") in {"COMPLETED", "CATEGORY_MISMATCH", "FAILED_RETRYABLE"}:
+            entry["terminal_status"] = row.get("status")
+    research_action_projection = list(execution_projection.values())[-100:]
     current_work = {
         "state": work_state,
         "legacy_active_jobs": active_jobs,
@@ -301,6 +324,7 @@ def build_research_operational_state() -> dict[str, Any]:
             "BLOCKED_EXTERNAL": len(queue_projection["blocked_items"]),
         },
         "recent_findings": v2_findings,
+        "research_action_items": research_action_projection,
         "mission_state": {
             "active_count": len(mission_state["active"]),
             "completed_count": len(mission_state["completed"]),

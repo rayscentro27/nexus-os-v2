@@ -17,12 +17,14 @@ Usage:
 
 import argparse
 import json
+import io
 import os
 import sys
 import urllib.request
 import urllib.parse
 import urllib.error
 import ssl
+from urllib.parse import urlsplit
 from datetime import datetime, timezone
 
 # SSL context for outbound requests
@@ -33,6 +35,31 @@ SSL_CTX.verify_mode = ssl.CERT_NONE
 TIMEOUT = 12
 MAX_RESULTS = 6
 RECEIPT_DIR = "reports/hermes/web_search"
+
+
+def governed_urlopen(request, timeout=TIMEOUT, context=None):
+    """Require durable job identity and governor authorization for all APIs."""
+    from nexus_agent_platform.provider_enforcement import execute
+    url = request.full_url if hasattr(request, "full_url") else str(request)
+    host = (urlsplit(url).hostname or "").lower()
+    provider = {
+        "api.search.brave.com": "BRAVE_SEARCH",
+        "api.tavily.com": "TAVILY",
+        "serpapi.com": "SERPAPI",
+    }.get(host, "UNKNOWN_EXTERNAL_PROVIDER")
+    def fetch_buffered():
+        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+            buffered = io.BytesIO(response.read())
+            buffered.status = response.status
+            buffered.headers = response.headers
+            return buffered
+    return execute(
+        provider, "hermes_web_search", "SEARCH_REQUEST",
+        {"requests": 1, "api_calls": 1, "billable": True, "cost": None},
+        fetch_buffered,
+        purpose=f"hermes_web_search:{host}",
+        actual_usage=lambda response: {"requests": 1, "bytes": response.getbuffer().nbytes, "cost": None},
+    )
 
 
 def _env(name):
@@ -101,7 +128,7 @@ def _search_brave(query, max_results=MAX_RESULTS):
             "Accept": "application/json",
             "X-Subscription-Token": api_key,
         })
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+        with governed_urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         results = []
@@ -159,7 +186,7 @@ def _search_tavily(query, max_results=MAX_RESULTS):
             data=payload,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+        with governed_urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         results = []
@@ -207,7 +234,7 @@ def _search_serpapi(query, max_results=MAX_RESULTS):
         })
         url = f"https://serpapi.com/search.json?{params}"
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+        with governed_urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         results = []
@@ -253,7 +280,7 @@ def _search_searxng(query, max_results=MAX_RESULTS):
             "Accept": "application/json",
             "User-Agent": "NexusHermes/1.0",
         })
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+        with governed_urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         results = []
@@ -292,7 +319,7 @@ def _search_duckduckgo_html(query, max_results=MAX_RESULTS):
         params = urllib.parse.urlencode({"q": query})
         url = f"https://html.duckduckgo.com/html/?{params}"
         req = urllib.request.Request(url, headers={"User-Agent": "NexusHermes/1.0", "Accept": "text/html"})
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+        with governed_urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             html = resp.read(300_000).decode("utf-8", errors="replace")
         # Keep parsing dependency-free and return only public result metadata.
         import re
@@ -313,7 +340,7 @@ def _search_bing_html(query, max_results=MAX_RESULTS):
     try:
         params = urllib.parse.urlencode({"q": query})
         req = urllib.request.Request(f"https://www.bing.com/search?{params}", headers={"User-Agent": "NexusHermes/1.0", "Accept": "text/html"})
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+        with governed_urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             html = resp.read(300_000).decode("utf-8", errors="replace")
         import re
         rows = re.findall(r'<li class="b_algo".*?<h2[^>]*><a[^>]+href="([^"]+)"[^>]*>(.*?)</a>.*?</li>', html, re.I | re.S)

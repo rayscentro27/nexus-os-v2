@@ -47,6 +47,25 @@ def _work_order_for_handoff(handoff_id: str) -> dict[str, Any] | None:
                  or row.get("handoff_id") == handoff_id), None)
 
 
+def _case_backtest_identity_ok(research_case_id: str, strategy_spec: dict[str, Any],
+                              artifact: dict[str, Any] | None) -> bool:
+    """Require exact case/strategy provenance for any Research Case backtest."""
+    if not research_case_id:
+        return True  # legacy certification fixtures remain usable only outside cases
+    return bool(
+        strategy_spec.get("case_id") == research_case_id
+        and strategy_spec.get("created_by") == "Mercury"
+        and strategy_spec.get("status") == "READY_FOR_BACKTEST"
+        and strategy_spec.get("strategy_id")
+        and strategy_spec.get("no_lookahead") is True
+        and strategy_spec.get("source_refs")
+        and isinstance(artifact, dict)
+        and artifact.get("case_id") == research_case_id
+        and artifact.get("strategy_id") == strategy_spec.get("strategy_id")
+        and artifact.get("spec_status") == "READY_FOR_BACKTEST"
+    )
+
+
 def create_internal_work_order(handoff: dict[str, Any]) -> dict[str, Any]:
     """Create one idempotent internal order for a qualified/test handoff."""
     handoff_id = str(handoff.get("handoff_id") or "")
@@ -121,7 +140,19 @@ def consume_trading_test(handoff_id: str) -> dict[str, Any]:
     if backtest_artifact and not artifact_path:
         from pathlib import Path
         artifact_path = Path(__file__).resolve().parents[2] / backtest_artifact
-    supported_rules = bool(strategy_spec.get("entry_logic") and strategy_spec.get("exit_logic") and strategy_spec.get("market") and strategy_spec.get("risk_logic"))
+    # Generic certification fixtures (including the 10/30 SMA example) must
+    # never satisfy a real Research Case. Case-linked strategy specs must be
+    # Mercury-authored, explicitly ready, source-bound, no-lookahead, and paired
+    # with a backtest artifact carrying the same case/strategy identity.
+    research_case_id = str(handoff.get("research_case_id") or strategy_spec.get("case_id") or "")
+    case_bound_identity_ok = _case_backtest_identity_ok(research_case_id, strategy_spec, artifact)
+    supported_rules = bool(
+        case_bound_identity_ok
+        and strategy_spec.get("entry_long") and strategy_spec.get("entry_short")
+        and strategy_spec.get("stop") and strategy_spec.get("target")
+        and strategy_spec.get("risk") and strategy_spec.get("market")
+        and strategy_spec.get("timeframe")
+    )
     artifact = None
     if artifact_path and artifact_path.exists():
         import json
@@ -129,7 +160,7 @@ def consume_trading_test(handoff_id: str) -> dict[str, Any]:
             artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             artifact = None
-    if supported_rules and isinstance(artifact, dict) and artifact.get("live_trading") is False:
+    if supported_rules and artifact_identity_ok and isinstance(artifact, dict) and artifact.get("live_trading") is False:
         results = list(artifact.get("results") or [])
         output = {
             "status": "EXECUTED_PAPER_BACKTEST", "worker": "TRADING_ENGINE", "execution_class": "DETERMINISTIC_EXECUTOR",

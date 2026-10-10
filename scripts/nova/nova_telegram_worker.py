@@ -99,11 +99,13 @@ def load_runtime_env():
                 continue
             if "=" in line:
                 key, _, val = line.partition("=")
+                key = key.strip()
                 val = val.strip()
                 # Strip matching single or double quotes
                 if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
                     val = val[1:-1]
-                env[key.strip()] = val
+                if key in {"HERMES_NOVA_TELEGRAM_BOT_TOKEN", "HERMES_NOVA_CHAT_ID", "TELEGRAM_CHAT_ID", PRIMARY_RUNTIME_FLAG, AB_CERTIFICATION_FLAG}:
+                    env[key] = val
     return env
 
 _ENV = None
@@ -152,13 +154,20 @@ def _tg_api(method, params=None, token=None, timeout=20):
 
     url = TELEGRAM_API.format(token=token, method=method)
     try:
-        if params:
-            data = urllib.parse.urlencode(params).encode("utf-8")
-            req = urllib.request.Request(url, data=data)
-        else:
-            req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        def call():
+            req = urllib.request.Request(url, data=urllib.parse.urlencode(params).encode("utf-8") if params else None)
+            with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        if method == "sendMessage":
+            from nexus_agent_platform.provider_enforcement import execute_telegram_delivery
+            return execute_telegram_delivery(params.get("chat_id"), call, job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type=os.environ.get("NEXUS_JOB_TYPE", "NOVA_TELEGRAM_DELIVERY"), external_ref=lambda value: str((value.get("result") or {}).get("message_id")) if value else None)
+        from nexus_agent_platform.provider_enforcement import execute
+        return execute("TELEGRAM", "bot_api", f"API_{method}",
+            {"requests": 1, "operations": 1, "billable": False}, call,
+            job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type=os.environ.get("NEXUS_JOB_TYPE", "NOVA_TELEGRAM_RECEIVER"),
+            purpose=f"nova_telegram:{method}")
     except urllib.error.HTTPError as e:
         body = ""
         try:
@@ -180,21 +189,30 @@ def _tg_send_attempt(chat_id, chunk, token=None, timeout=TELEGRAM_SEND_TIMEOUT):
         return {"ok": False, "retryable": False, "error": "telegram_token_missing"}
     url = TELEGRAM_API.format(token=token, method="sendMessage")
     try:
-        req = urllib.request.Request(url, data=urllib.parse.urlencode({"chat_id": chat_id, "text": chunk}).encode("utf-8"))
-        with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
+        def call():
+            req = urllib.request.Request(url, data=urllib.parse.urlencode({"chat_id": chat_id, "text": chunk}).encode("utf-8"))
+            with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        from nexus_agent_platform.provider_enforcement import execute_telegram_delivery
+        body = execute_telegram_delivery(chat_id, call, job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type=os.environ.get("NEXUS_JOB_TYPE", "NOVA_TELEGRAM_DELIVERY"), external_ref=lambda value: str((value.get("result") or {}).get("message_id")) if value else None)
         if body.get("ok"):
             return {"ok": True, "message_id": body.get("result", {}).get("message_id")}
         error_code = int(body.get("error_code") or 0)
         return {"ok": False, "retryable": error_code in {408, 429, 500, 502, 503, 504}, "error": json.dumps(body)[:500], "retry_after": (body.get("parameters") or {}).get("retry_after")}
-    except urllib.error.HTTPError as exc:
-        retry_after = None
-        try:
-            retry_after = int(exc.headers.get("Retry-After")) if exc.headers.get("Retry-After") else None
-        except (TypeError, ValueError):
-            pass
-        return {"ok": False, "retryable": exc.code in {408, 429, 500, 502, 503, 504}, "error": f"HTTP {exc.code}: {str(exc)[:300]}", "retry_after": retry_after}
-    except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError, OSError) as exc:
+    except Exception as exc:
+        from nexus_agent_platform.resource_spend_governor import GovernanceDenied
+        if isinstance(exc, GovernanceDenied):
+            return {"ok": False, "retryable": False, "error": exc.code}
+        if isinstance(exc, urllib.error.HTTPError):
+            retry_after = None
+            try:
+                retry_after = int(exc.headers.get("Retry-After")) if exc.headers.get("Retry-After") else None
+            except (TypeError, ValueError):
+                pass
+            return {"ok": False, "retryable": exc.code in {408, 429, 500, 502, 503, 504}, "error": f"HTTP {exc.code}: {str(exc)[:300]}", "retry_after": retry_after}
+        if not isinstance(exc, (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError, OSError)):
+            return {"ok": False, "retryable": False, "error": type(exc).__name__}
         return {"ok": False, "retryable": True, "error": f"{type(exc).__name__}: {exc}"[:500]}
 
 
@@ -1620,9 +1638,8 @@ def run_test():
     model = env.get("HERMES_NOVA_MODEL", "openai/gpt-4o-mini (default)")
     print(f"Model: {model}")
 
-    # Check OpenRouter key
-    api_key = env.get("OPENROUTER_API_KEY", "")
-    print(f"OpenRouter key present: {'YES' if api_key else 'NO'}")
+    # The passive Telegram receiver does not receive model-provider secrets.
+    print("OpenRouter credential: not available to Telegram receiver")
 
     # Check authorization
     print(f"Ray chat ID: 1288928049")

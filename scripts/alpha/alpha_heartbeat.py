@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import subprocess
+import os
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -94,20 +95,23 @@ def seed_registry() -> list[dict[str, Any]]:
 
 def fetch_github(url: str) -> dict[str, Any]:
     slug = url.removeprefix("https://github.com/").strip("/")
-    req = urllib.request.Request("https://api.github.com/repos/" + slug, headers={"User-Agent": "NexusAlphaResearch/1.0", "Accept": "application/vnd.github+json"})
     try:
-        try:
-            with urllib.request.urlopen(req, timeout=20) as response: data = json.loads(response.read().decode())
-        except Exception:
-            api = subprocess.run(["curl", "-L", "--fail", "--max-time", "20", "-A", "NexusAlphaResearch/1.0", "-sS", "https://api.github.com/repos/" + slug], capture_output=True, timeout=25, check=False)
-            if api.returncode != 0: raise RuntimeError("github_api_unavailable")
-            data = json.loads(api.stdout.decode("utf-8", "replace"))
-        readme_req = urllib.request.Request("https://raw.githubusercontent.com/" + slug + "/HEAD/README.md", headers={"User-Agent": "NexusAlphaResearch/1.0"})
-        try:
-            with urllib.request.urlopen(readme_req, timeout=20) as response: readme = response.read(20000).decode("utf-8", "replace")
-        except Exception:
-            raw = subprocess.run(["curl", "-L", "--fail", "--max-time", "20", "-A", "NexusAlphaResearch/1.0", "-sS", "https://raw.githubusercontent.com/" + slug + "/HEAD/README.md"], capture_output=True, timeout=25, check=False)
-            readme = raw.stdout.decode("utf-8", "replace")[:20000] if raw.returncode == 0 else "README unavailable"
+        from alpha.alpha_live_research import http_json
+        ok, status, data, error, _ = http_json("GET", "https://api.github.com/repos/" + slug,
+            {"User-Agent": "NexusAlphaResearch/1.0", "Accept": "application/vnd.github+json"}, timeout=20)
+        if not ok or not isinstance(data, dict):
+            raise RuntimeError(error or f"github_api_http_{status}")
+        from nexus_agent_platform.provider_enforcement import execute
+        def read_raw():
+            req = urllib.request.Request("https://raw.githubusercontent.com/" + slug + "/HEAD/README.md",
+                headers={"User-Agent": "NexusAlphaResearch/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as response:
+                return response.read(20000).decode("utf-8", "replace")
+        readme = execute("GITHUB", "raw_content", "RESEARCH_READ",
+            {"requests": 1, "api_calls": 1, "bytes": 20000, "billable": False, "cost": 0},
+            read_raw, job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+            job_type=os.environ.get("NEXUS_JOB_TYPE"),
+            correlation_id=os.environ.get("NEXUS_CORRELATION_ID"))
         return {"ok": True, "url": url, "title": data.get("full_name", slug), "excerpt": readme[:1600], "sha": data.get("pushed_at"), "stars": data.get("stargazers_count"), "retrieved_at": iso(), "source_type": "GITHUB_REPO"}
     except Exception as exc: return {"ok": False, "url": url, "error": type(exc).__name__, "retrieved_at": iso(), "source_type": "GITHUB_REPO"}
 

@@ -78,16 +78,40 @@ def extract(text: str, source_type: str) -> dict[str, Any]:
 
 
 def fetch(url: str, accept: str = "text/html") -> tuple[str, dict[str, Any]]:
-    req = urllib.request.Request(url, headers={"User-Agent": "NexusResearch/1.0", "Accept": accept})
-    context = None
-    try:
-        import certifi
-        context = ssl.create_default_context(cafile=certifi.where())
-    except Exception:
+    # Research retrieval is a provider call too. Enforce durable-job identity,
+    # reservation, and footprint before opening a socket; unknown hosts deny.
+    import os
+    from urllib.parse import urlsplit
+    from nexus_agent_platform.provider_enforcement import execute
+    host = (urlsplit(url).hostname or "").lower()
+    if host.endswith("github.com") or host == "api.github.com":
+        provider = "GITHUB"
+    elif host.endswith("youtube.com") or host.endswith("googleapis.com"):
+        provider = "GOOGLE"
+    elif host.endswith("supabase.co") or host.endswith("supabase.com"):
+        provider = "SUPABASE"
+    else:
+        provider = "PUBLIC_WEB"
+
+    def request():
+        req = urllib.request.Request(url, headers={"User-Agent": "NexusResearch/1.0", "Accept": accept})
         context = None
-    with urllib.request.urlopen(req, timeout=25, context=context) as response:
-        body = response.read()
-        return body.decode("utf-8", "replace"), {"status": response.status, "content_type": response.headers.get("Content-Type", "")}
+        try:
+            import certifi
+            context = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            context = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=25, context=context) as response:
+            body = response.read(2_000_000)
+            return body.decode("utf-8", "replace"), {"status": response.status, "content_type": response.headers.get("Content-Type", "")}
+
+    return execute(
+        provider, host, "RESEARCH_READ",
+        {"requests": 1, "api_calls": 1, "bytes": 2_000_000, "billable": True, "cost": 0},
+        request, job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+        job_type=os.environ.get("NEXUS_JOB_TYPE"),
+        correlation_id=os.environ.get("NEXUS_CORRELATION_ID"),
+    )
 
 
 def _write(path: Path, value: Any, text_mode: bool = False) -> None:

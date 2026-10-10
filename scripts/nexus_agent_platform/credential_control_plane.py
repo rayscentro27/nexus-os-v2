@@ -164,9 +164,12 @@ def catalog() -> dict[str, Any]:
             key = os.environ.get("BRAVE_SEARCH_API_KEY") or os.environ.get("BRAVE_API_KEY")
             if key:
                 try:
-                    request = urllib.request.Request("https://api.search.brave.com/res/v1/web/search?" + urllib.parse.urlencode({"q":"Nexus credential canary","count":1}), headers={"Accept":"application/json","X-Subscription-Token":key})
-                    with urllib.request.urlopen(request, timeout=10) as response: health = {"status":"PASS","http_status":response.status}
-                except urllib.error.HTTPError as exc: health = {"status":"AUTH_REQUIRED" if exc.code in {401,402,403} else "DEGRADED","http_status":exc.code}
+                    from alpha.alpha_live_research import http_json
+                    ok, status, _data, _error, _latency = http_json(
+                        "GET", "https://api.search.brave.com/res/v1/web/search?" + urllib.parse.urlencode({"q":"Nexus credential canary","count":1}),
+                        {"Accept":"application/json","X-Subscription-Token":key}, timeout=10,
+                    )
+                    health = {"status":"PASS" if ok else ("AUTH_REQUIRED" if status in {401,402,403} else "GOVERNOR_DENIED"),"http_status":status}
                 except Exception: health = {"status":"DEGRADED","http_status":None}
         result = record["result"]
         if health["status"] == "AUTH_REQUIRED": result = "AUTH_REQUIRED"

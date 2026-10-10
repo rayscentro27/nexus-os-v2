@@ -33,9 +33,23 @@ def _result(job):
     }
 
 
-def test_modal_submit_uses_native_function_and_preserves_contract(monkeypatch):
+def _allow_mock_modal(monkeypatch, tmp_path):
+    from nexus_agent_platform.resource_spend_governor import LocalGovernorStore
+    path=tmp_path/"governor.sqlite3"
+    monkeypatch.setenv("NEXUS_GOVERNOR_DB",str(path))
+    monkeypatch.setenv("NEXUS_MODAL_ESTIMATED_COST_PER_JOB","0.01")
+    monkeypatch.setenv("NEXUS_JOB_BUDGET",'{"max_estimated_cost":1,"max_runtime_seconds":1000}')
+    LocalGovernorStore(path).set_policy("MODAL","remote_worker","evidence_ingestion","DAILY",
+        autonomous_usage_allowed=True,autonomous_spend_allowed=True,
+        hard_limits={"rate":{},"usage":{"requests":10,"operations":10,"runtime_seconds":1000},
+                     "money":{"per_job":1,"per_day":10,"per_month":100}})
+
+
+def test_modal_submit_uses_native_function_and_preserves_contract(monkeypatch, tmp_path):
+    _allow_mock_modal(monkeypatch,tmp_path)
     secret = "test-secret"
     job = _job()
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", job["job_id"])
     function = _Function(_result(job))
     provider = ModalRemoteWorkerProvider(shared_secret=secret)
     monkeypatch.setattr(provider, "_function", lambda name: function)
@@ -48,8 +62,10 @@ def test_modal_submit_uses_native_function_and_preserves_contract(monkeypatch):
     assert function.calls[0][2] == sign_request(job, secret, function.calls[0][1])
 
 
-def test_modal_submit_rejects_wrong_job_or_tenant(monkeypatch):
+def test_modal_submit_rejects_wrong_job_or_tenant(monkeypatch, tmp_path):
+    _allow_mock_modal(monkeypatch,tmp_path)
     job = _job()
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", job["job_id"])
     wrong_job = _job({"scope": "tenant", "tenant_id": "other"})
     function = _Function(_result(wrong_job))
     provider = ModalRemoteWorkerProvider(shared_secret="test-secret")
@@ -87,6 +103,14 @@ def test_missing_secret_fails_only_when_signed_job_is_submitted(monkeypatch):
     monkeypatch.delenv("NEXUS_MODAL_WORKER_URL", raising=False)
     provider = provider_from_environment()
     with pytest.raises(RuntimeError, match="SHARED_SECRET"):
+        provider.submit(_job())
+
+
+def test_modal_submit_requires_matching_durable_job_identity(monkeypatch):
+    provider = ModalRemoteWorkerProvider(shared_secret="test-secret")
+    monkeypatch.delenv("NEXUS_DURABLE_JOB_ID", raising=False)
+    from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    with pytest.raises(GovernanceDenied, match="DURABLE_JOB_ID_REQUIRED_OR_MISMATCH"):
         provider.submit(_job())
 
 

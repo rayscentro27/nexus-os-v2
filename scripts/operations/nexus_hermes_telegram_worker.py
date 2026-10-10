@@ -99,7 +99,9 @@ def load_runtime_env(path: Path = RUNTIME_ENV) -> Dict[str, str]:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, value = line.split("=", 1)
-            values[key.strip().removeprefix("export ")] = value.strip().strip("'\"")
+            key = key.strip().removeprefix("export ")
+            if key in {"TELEGRAM_BOT_TOKEN", "NEXUS_TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "TELEGRAM_ALLOWED_CHAT_IDS"}:
+                values[key] = value.strip().strip("'\"")
     except OSError:
         return values
     return values
@@ -134,8 +136,23 @@ def telegram_call(token: str, method: str, params: Optional[Dict[str, Any]] = No
         if certifi is not None:
             import ssl
             context = ssl.create_default_context(cafile=certifi.where())
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT, context=context) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        def call():
+            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT, context=context) as response:
+                return json.loads(response.read().decode("utf-8"))
+        if method == "sendMessage":
+            from nexus_agent_platform.provider_enforcement import execute_telegram_delivery
+            params = params or {}
+            payload = execute_telegram_delivery(params.get("chat_id"), call,
+                job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type=os.environ.get("NEXUS_JOB_TYPE", "HERMES_TELEGRAM_DELIVERY"),
+                external_ref=lambda value: str((value.get("result") or {}).get("message_id")) if value else None)
+        else:
+            from nexus_agent_platform.provider_enforcement import execute
+            payload = execute("TELEGRAM", "bot_api", f"API_{method}",
+                {"requests": 1, "operations": 1, "billable": False}, call,
+                job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type=os.environ.get("NEXUS_JOB_TYPE", "HERMES_TELEGRAM_RECEIVER"),
+                purpose=f"hermes_telegram:{method}")
         return payload if isinstance(payload, dict) else {"ok": False, "description": "malformed_response"}
     except Exception as exc:
         return {"ok": False, "description": type(exc).__name__}

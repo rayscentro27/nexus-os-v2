@@ -80,12 +80,16 @@ def supabase_request(method: str, url: str, service_role_key: str, path: str, **
     data = json.dumps(kwargs.get("body")).encode() if "body" in kwargs else None
     req = urllib.request.Request(full_url, data=data, headers=headers, method=method)
 
-    try:
-        with urllib.request.urlopen(req, timeout=30, context=SSL_CONTEXT) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        body = e.read().decode() if e.fp else ""
-        raise RuntimeError(f"Supabase {method} failed ({e.code}): {body}") from e
+    def request() -> dict[str, Any]:
+        try:
+            with urllib.request.urlopen(req, timeout=30, context=SSL_CONTEXT) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            body = e.read().decode() if e.fp else ""
+            raise RuntimeError(f"Supabase {method} failed ({e.code}): {body}") from e
+    from nexus_agent_platform.provider_enforcement import execute
+    return execute("SUPABASE", "credit_report_workflow", f"DATABASE_{method.upper()}",
+        {"requests": 1, "api_calls": 1, "billable": False, "cost": 0}, request)
 
 
 def download_storage_file(url: str, service_role_key: str, bucket: str, path: str, dest: Path) -> Path:
@@ -95,9 +99,12 @@ def download_storage_file(url: str, service_role_key: str, bucket: str, path: st
         "apikey": service_role_key,
         "Authorization": f"Bearer {service_role_key}",
     })
-    with urllib.request.urlopen(req, timeout=60, context=SSL_CONTEXT) as resp:
-        dest.write_bytes(resp.read())
-    return dest
+    def download() -> Path:
+        with urllib.request.urlopen(req, timeout=60, context=SSL_CONTEXT) as resp:
+            dest.write_bytes(resp.read())
+        return dest
+    from nexus_agent_platform.provider_enforcement import execute_public_read
+    return execute_public_read("SUPABASE", "credit_report_storage", download, response_bytes=2_000_000)
 
 
 def extract_text_pypdf(pdf_path: Path) -> tuple[str, str, list[dict[str, str]]]:
@@ -370,6 +377,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Parse an uploaded credit report from Supabase Storage")
     parser.add_argument("--document-id", required=True, help="client_documents row ID")
     parser.add_argument("--analysis-job-id", help="Versioned queue attempt ID; creates a preserved parser result")
+    parser.add_argument("--nexus-job-id", help="Durable job identity for governed dispatcher execution")
     parser.add_argument("--out", type=Path, default=Path("reports/credit_repair/live_upload_parser_results"))
     args = parser.parse_args()
 
@@ -537,10 +545,12 @@ def main() -> int:
         db_row["needs_specialist_review"] = exception["exception_required"]
         if args.analysis_job_id:
             db_row["analysis_job_id"] = args.analysis_job_id
+        if args.nexus_job_id:
+            db_row["nexus_job_id"] = args.nexus_job_id
 
         # Check if result already exists for this document
         try:
-            existing_path = f"credit_report_parser_results?analysis_job_id=eq.{args.analysis_job_id}&select=id&limit=1" if args.analysis_job_id else f"credit_report_parser_results?document_id=eq.{document_id}&select=id&order=created_at.desc&limit=1"
+            existing_path = (f"credit_report_parser_results?nexus_job_id=eq.{urllib.parse.quote(args.nexus_job_id)}&select=id&limit=1" if args.nexus_job_id else (f"credit_report_parser_results?analysis_job_id=eq.{args.analysis_job_id}&select=id&limit=1" if args.analysis_job_id else f"credit_report_parser_results?document_id=eq.{document_id}&select=id&order=created_at.desc&limit=1"))
             existing = supabase_request("GET", supabase_url, service_role_key, existing_path)
 
             if existing:
@@ -647,7 +657,7 @@ def main() -> int:
             if discrepancy_rows:supabase_request("POST",supabase_url,service_role_key,"credit_report_discrepancies",body=discrepancy_rows)
             workflow_update={"analysis_status":"complete","exception_review_status":"required" if exception["exception_required"] else "not_required","exception_code":None if not exception["exception_required"] else exception["exception_code"],"exception_reason":None if not exception["exception_required"] else exception["reason"],"latest_parser_result_id":result_id,"canonical_matching_completed_at":datetime.now(timezone.utc).isoformat(),"discrepancy_detection_completed_at":datetime.now(timezone.utc).isoformat()}
             supabase_request("PATCH",supabase_url,service_role_key,f"credit_document_workflows?document_id=eq.{document_id}",body=workflow_update)
-            event_rows=[{"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"canonical_matching_completed","metadata":{"canonical_accounts":len(canonical_model["canonical_accounts"]),"unmatched_tradelines":len(unmatched),"ambiguous_matches":canonical_model["ambiguous_match_count"]},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION}]
+            event_rows=[{"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"canonical_matching_completed","metadata":{"canonical_accounts":len(canonical_model["canonical_accounts"]),"unmatched_tradelines":len(unmatched),"ambiguous_matches":canonical_model["ambiguous_match_count"],"nexus_job_id":args.nexus_job_id},"actor_type":"worker","actor_id":args.nexus_job_id,"parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION}]
             if discrepancy_rows:event_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"discrepancy_created","metadata":{"count":len(discrepancy_rows)},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION})
             if exception["exception_required"]:event_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"exception_required","metadata":{"code":exception["exception_code"]},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION})
             supabase_request("POST",supabase_url,service_role_key,"credit_workflow_events",body=event_rows)

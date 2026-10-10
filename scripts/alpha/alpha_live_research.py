@@ -17,6 +17,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,65 @@ def ssl_context() -> ssl.SSLContext:
 
 
 def http_json(
+    method: str,
+    url: str,
+    headers: dict[str, str] | None = None,
+    payload: dict[str, Any] | None = None,
+    timeout: int = 30,
+) -> tuple[bool, int | None, Any, str | None, int]:
+    host = (urlsplit(url).hostname or "").lower()
+    provider = None
+    service = urlsplit(url).path.strip("/") or "request"
+    if host == "openrouter.ai" or host.endswith(".openrouter.ai"):
+        provider = "OPENROUTER"
+    elif host == "api.groq.com":
+        provider = "GROQ"
+    elif host in {
+        "api.openai.com", "api.anthropic.com", "generativelanguage.googleapis.com",
+        "api.search.brave.com", "www.googleapis.com", "api.resend.com", "api.stripe.com",
+        "graph.facebook.com", "api.telegram.org", "api.tavily.com", "serpapi.com",
+        "api-fxpractice.oanda.com", "api-fxtrade.oanda.com", "paper-api.alpaca.markets",
+        "api.alpaca.markets", "data.alpaca.markets", "api.modal.com", "huggingface.co",
+        "api-inference.huggingface.co",
+    }:
+        provider = {
+            "api.openai.com": "OPENAI", "api.anthropic.com": "ANTHROPIC",
+            "generativelanguage.googleapis.com": "GOOGLE", "api.search.brave.com": "BRAVE_SEARCH",
+            "www.googleapis.com": "GOOGLE", "api.resend.com": "EMAIL_PROVIDER",
+            "api.stripe.com": "STRIPE", "graph.facebook.com": "SOCIAL_MEDIA_EXTERNAL_ACTIONS",
+            "api.telegram.org": "TELEGRAM", "api.tavily.com": "TAVILY", "serpapi.com": "SERPAPI",
+            "api-fxpractice.oanda.com": "OANDA", "api-fxtrade.oanda.com": "OANDA",
+            "paper-api.alpaca.markets": "ALPACA", "api.alpaca.markets": "ALPACA",
+            "data.alpaca.markets": "ALPACA", "api.modal.com": "MODAL",
+            "huggingface.co": "HUGGING_FACE", "api-inference.huggingface.co": "HUGGING_FACE",
+        }[host]
+    else:
+        # All non-local HTTP destinations must pass the same default-deny
+        # boundary.  This includes free APIs and unknown providers: absence
+        # from the registry is not authorization.
+        provider = "SUPABASE" if host.endswith(".supabase.co") or host.endswith(".supabase.com") else "UNKNOWN_EXTERNAL_PROVIDER"
+    if provider:
+        from nexus_agent_platform.provider_enforcement import execute
+
+        def governed_request():
+            return _http_json_unchecked(method, url, headers, payload, timeout)
+
+        try:
+            return execute(
+                provider, service, "PROVIDER_HTTP_REQUEST",
+                {"requests": 1, "api_calls": 1, "tokens": int((payload or {}).get("max_tokens", 0) or 0),
+                 "billable": True, "cost": None},
+                governed_request,
+                job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type=os.environ.get("NEXUS_JOB_TYPE"),
+                correlation_id=os.environ.get("NEXUS_CORRELATION_ID"),
+            )
+        except Exception as exc:
+            return False, None, {}, f"GOVERNOR_DENIED:{getattr(exc, 'code', type(exc).__name__)}", 0
+    return _http_json_unchecked(method, url, headers, payload, timeout)
+
+
+def _http_json_unchecked(
     method: str,
     url: str,
     headers: dict[str, str] | None = None,
@@ -272,11 +332,8 @@ def deterministic_analysis(query: str, category: str, sources: list[dict[str, An
 
 
 def supabase_headers() -> dict[str, str]:
-    base = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL") or ""
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-    if not base or not key:
-        return {}
-    return {"apikey": key, "authorization": f"Bearer {key}", "content-type": "application/json", "prefer": "return=representation"}
+    """Legacy direct persistence is disabled pending a job-scoped RPC bridge."""
+    return {}
 
 
 def rest_url(table: str, query: str = "") -> str:
@@ -285,13 +342,10 @@ def rest_url(table: str, query: str = "") -> str:
 
 
 def supabase_insert(table: str, payload: dict[str, Any], query: str = "") -> tuple[bool, str | None, Any]:
-    headers = supabase_headers()
-    if not headers:
-        return False, "supabase_service_missing", None
-    ok, status, data, error, _ = http_json("POST", rest_url(table, query), headers, payload, timeout=25)
-    if ok and status and 200 <= status < 300:
-        return True, None, data
-    return False, error or f"HTTP_{status}", data
+    # Research artifacts remain in the job's local result package. Control
+    # plane writes are handed back to the durable dispatcher; this legacy
+    # adapter must never exercise a service-role credential directly.
+    return False, "durable_job_backend_required", None
 
 
 def record_process_run(result: dict[str, Any]) -> dict[str, Any]:

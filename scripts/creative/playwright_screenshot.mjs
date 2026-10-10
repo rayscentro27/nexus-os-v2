@@ -2,6 +2,10 @@ import { chromium } from 'playwright';
 
 const [url, output, width, height, pageMode] = process.argv.slice(2);
 if (!url || !output || !width || !height) process.exit(2);
+const parsedTarget = new URL(url);
+if (parsedTarget.protocol !== 'file:' && !['127.0.0.1', 'localhost', '::1'].includes(parsedTarget.hostname)) {
+  throw new Error('BROWSER_EXTERNAL_TARGET_DENIED');
+}
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: Number(width), height: Number(height) } });
 try {

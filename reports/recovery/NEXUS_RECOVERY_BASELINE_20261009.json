@@ -1,0 +1,859 @@
+{
+  "AUTONOMOUS_ENABLEMENT": false,
+  "BASELINE_ID": "nexus-pre-activation-recovery-20261009",
+  "BASELINE_UPDATE_HISTORY": [
+    {
+      "new_working_tree_sha256": "d5d0727d4f256b53480c9b5679184c0f85796fc13a8bbbcfd2981411701e41af",
+      "prior_working_tree_sha256": "d43893b4ecda20bdb84162c888f0efe1384bcac00483ad7056fa0899a42bcbf8",
+      "reason": "whole-company certification added reviewed campaign worker integration, artifacts, and recovery Git-status timeout handling; safe runtime remains disabled",
+      "secret_values_included": false,
+      "updated_critical_file": "scripts/nexus_agent_platform/environment_drift_monitor.py"
+    },
+    {
+      "certification_campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+      "new_working_tree_sha256": "2a8214e0b6aa83b1e26da0d6f6011d84cf1af348c72dd0c804fe410b1d37d008",
+      "prior_working_tree_sha256": "d5d0727d4f256b53480c9b5679184c0f85796fc13a8bbbcfd2981411701e41af",
+      "reason": "approved whole-company certification checkpoint, reports, and evidence references written; runtime remains OFF",
+      "secret_values_included": false
+    },
+    {
+      "commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "reason": "aligned local lifecycle registry source commit with verified canonical/GitHub main commit before freeze",
+      "secret_values_included": false
+    },
+    {
+      "reason": "recovery verifier Supabase health SELECT timeout bounded at 45 seconds after observed read-only CLI completed in approximately 33 seconds; regression test added",
+      "secret_values_included": false
+    }
+  ],
+  "BASELINE_UPDATE_NOTE": "Certified integration source commit recorded. One exact direct-child freeze commit is permitted with the fixed subject; every other commit transition remains drift. Approved campaign evidence and unrelated pre-existing dirty work are fingerprinted separately.",
+  "CANONICAL_BRANCH": "main",
+  "CANONICAL_PYTHON": {
+    "executable": "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+    "version": "3.12.13"
+  },
+  "CANONICAL_REPO": "/Users/raymonddavis/nexus-os-v2-canonical",
+  "CANONICAL_SOURCE_PATHS": {
+    "dispatcher": "scripts/nexus_agent_platform/dispatcher_once.py",
+    "drift_monitor": "scripts/nexus_agent_platform/environment_drift_monitor.py",
+    "environment_registry": "configs/environment_lifecycle_registry.json",
+    "legacy_recovery_inspector": "scripts/operations/nexus_recovery_check.py",
+    "provider_registry": "reports/remediation/provider_caller_registry_20261009.json",
+    "python_environment": ".venv-agent-platform/bin/python3",
+    "recovery_launchd_definition": "ops/launchd/com.nexus.recovery-check-v2.plist",
+    "recovery_verifier": "scripts/systems/verify_safe_recovery.py",
+    "scheduler": "scripts/nexus_agent_platform/scheduler_once.py",
+    "secret_registry": "reports/remediation/local_secret_consumer_registry_20261009.json",
+    "worker_control_plane": "scripts/nexus_agent_platform/durable_jobs.py"
+  },
+  "CERTIFICATION_CAMPAIGN_ID": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "CERTIFIED_COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "CREATED_AT": "2026-10-09T22:23:50.365962+00:00",
+  "ENVIRONMENT_REGISTRY_HASH": "7d43e0dda5c192a6162bab0d3ab68be500d6a5dc6eebef015426d5e3e109de65",
+  "EXPECTED_ACTIVE_OPERATOR_STATE": "OFF",
+  "EXPECTED_BROWSER_AUTOMATION_STATE": "OFF",
+  "EXPECTED_CRON": {
+    "nexus_workflow_entries": 0,
+    "root_sha256": null,
+    "user_sha256": null
+  },
+  "EXPECTED_CRON_STATE": {
+    "root_crontab_last_verified": "NO_CRONTAB",
+    "root_nexus_entries": 0,
+    "user_nexus_entries": 0
+  },
+  "EXPECTED_DISPATCHER_STATE": "OFF",
+  "EXPECTED_ENABLED_LAUNCHD": [],
+  "EXPECTED_ENVIRONMENTS": {
+    "active_operator": "OFF",
+    "dispatcher": "OFF",
+    "old_kernel": "OFF",
+    "registry_sha256": "4776dee36b8d9f7cae32fc7132f34766c29329bd13007461818e2d7376759568",
+    "scheduler": "OFF"
+  },
+  "EXPECTED_HERMES_SCHEDULES": {
+    "active_nexus_workflows": 0,
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "EXPECTED_HERMES_SCHEDULE_STATE": {
+    "active_nexus_schedules": 0,
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "EXPECTED_LAUNCHD_LABELS": [
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "INVALID_ROOT_TYPE",
+    "UNPARSEABLE",
+    "UNPARSEABLE",
+    "UNPARSEABLE",
+    "UNPARSEABLE",
+    "UNPARSEABLE",
+    "UNPARSEABLE",
+    "UNPARSEABLE",
+    "com.nexus.active-operator-v2",
+    "com.nexus.continuous-loop",
+    "com.nexus.nexus-mcp-bridge",
+    "com.nexus.recovery-check-v2",
+    "com.nexus.research-morning-report",
+    "com.nexus.research-persistence-certifier",
+    "com.nexus.research-two-hour-report",
+    "com.nexus.telegram-hermes-nova",
+    "com.nexus.telegram-hermes-v2",
+    "com.nexus.wp9-company-cycle"
+  ],
+  "EXPECTED_LAUNCHD_STATES": {
+    "all_repository_definitions_disabled": true,
+    "enabled_autostarts": [],
+    "loaded_nexus_labels": []
+  },
+  "EXPECTED_LOCAL_PORTS": {
+    "snapshot_sha256": "c927eaf47bf7ac733e0000a5f152d7616744ea2fbc6da0aa5e1601d9ff0a918e"
+  },
+  "EXPECTED_LOCAL_STATE": {
+    "authorized_freeze_commit": {
+      "parent_commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "subject": "freeze certified Nexus integration baseline"
+    },
+    "browser_automation_process_name_sha256": "661f0f176fb51dc9c0e18c9f40799df6f7f59b798153f496a1068e41bbdf51d4",
+    "container_names_sha256": null,
+    "containment_policy": "REPORT_ONLY; never start, stop, enable, disable, or mutate remote services",
+    "environment_registry_sha256": "4776dee36b8d9f7cae32fc7132f34766c29329bd13007461818e2d7376759568",
+    "hermes_schedule_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "launch_agents": [
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/ai.nexus.control-center.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "9bf55afe5a7b362c01ba0ff4315961d97024671c1283b82c800d59a4fcefd98a",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/ai.nexus.email-pipeline.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "7866b9b031ae73140766259447c77d5f530794a3342ff101b5efea7bb10dbfb7",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.activation.continuous-loop.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "3097356091e100f45b2a93ba3a714347085048be3bbf61f683daf32205aba51e",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.active-operator-hourly.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "27b505b6d080ca94127991473edf77852d4e4432d3974ffd260d722121da2a23",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/operations/nexus_active_operator_runner.py",
+          "--once"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.active-operator-v2",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.active-operator-v2.plist",
+        "program": "",
+        "run_at_load": false,
+        "start_interval": 900
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.auto-executor.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "cda22044c8796ff3acae19be940b4eb34a0076640caef6f809623efed0069317",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.autonomy-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "cc8ba8f7fc92fca0724e38e1639e1b63a764b2be88fa6a09aabb165a87e0b662",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.cloudflare-tunnel.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "881c1bd9972a87c6b6898b229e831002d413645629ba030e87b1e1851e91efa5",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/run_continuous_operating_kernel.py",
+          "--daemon",
+          "--interval-seconds",
+          "1200"
+        ],
+        "keep_alive": true,
+        "label": "com.nexus.continuous-loop",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.continuous-loop.plist",
+        "program": "",
+        "run_at_load": true,
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.continuous-ops-daily.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "cdb9319055d5fc6a82a33a20f7e82ea26df5adaa0ac7f6d6426f0dadd23a2b75",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.coordination-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "93bb6bb604d5a9325addc350d95d4653cf838b9c94fe2b8b2cc0374d23d60d6c",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.daily-operating.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "6f718ab967e3f597e9ffe7ecd3b735b44be2bab3f52101fd83be916ca53fc106",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.demo-trading-loop.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "9e00cadb249865061286fa87140101a1dd8daa1a7f6fb566b168441ab9c4e172",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.evening-closeout.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "f8721bfbcc3b51464935310e0e8a15b8b5abff794399bca49f8d4ade011fb560",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.hermes-status.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "e4804b7e2582fa1c24e4f8a496d5c1d3fd74032336995e42c49e09423d62eb45",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.mac-mini-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "4993ff3daa77ceac06eee828bce79ca8988ce3eee44dc477eed46f31898d4381",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.monetization-research.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "8415155387613115a9767e154dc79ba51b714db0c0e84aa4196b569f2b9a3b44",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.monitoring-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "94cf161c471e506bd53490a7100d8d03730d061b8a5c1a35a624ce4050baa15e",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/nexus_mcp_bridge.sh"
+        ],
+        "keep_alive": true,
+        "label": "com.nexus.nexus-mcp-bridge",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.nexus-mcp-bridge.plist",
+        "program": "",
+        "run_at_load": true,
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.oanda-practice-trading.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "f404147e21ccd11fd5424578fcfa4fd5953246c03f992019c52836f577daaeae",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.ollama.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "1ec0ffa227c7b02b605e53a32424693ef447e204ab2abb876789c8b1262f0406",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.ops-control-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "4106646e336c1347bc60b930a6987a14b8bffa35ea0a6c3099188b61cada88f8",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.orchestrator.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "e5da07797079679292b9469efc058c1081ca99d38a5e85871d2d223341646f06",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_nexus_runtime_env.sh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/operations/nexus_recovery_check.py",
+          "--once",
+          "--execute-approved"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.recovery-check-v2",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.recovery-check-v2.plist",
+        "program": "",
+        "run_at_load": false,
+        "start_interval": 10800
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.recovery-check.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "da4cd20efe896c2566560c5eefb91da61a25d4c6d1cf19543baeacf56494a7e2",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/research/morning_research_report.py"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.research-morning-report",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-morning-report.plist",
+        "program": "",
+        "run_at_load": false,
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/research/research_persistence_certifier.py"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.research-persistence-certifier",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-persistence-certifier.plist",
+        "program": "",
+        "run_at_load": true,
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-signal-bridge.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "97f67b8962a8a82d6eff275e8c0d5809d2fcec5666349bf772c6ac430d856f90",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_canonical_runtime_env.sh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/research/generate_research_status_report.py",
+          "--window-hours",
+          "2",
+          "--output",
+          "latest"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.research-two-hour-report",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-two-hour-report.plist",
+        "program": "",
+        "run_at_load": false,
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "726e289eabca2b11277fe7ac80f2bef513038a8d61ee15a24fb072cac98ae8b8",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.signal-review.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "ab9e982719c663bd3c534ecafdbefb1e8c9963c7c38e5066993f6f9a8a7a9738",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.signal-router.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "b9249821c75530550e058b3ebb62482284fba5038f286dad37179a59ab370aa7",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.strategy-lab.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "127ca8c84ddb40bd3f850d6e2a40887aac346b38ebf3bfefadda840727bea658",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-alpha.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "981a1abb83798542df829a3164a2728b37330b8dc0d268f80c62f15c92e13d05",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/bin/zsh",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_nova_with_runtime_env.sh"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.telegram-hermes-nova",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-hermes-nova.plist",
+        "program": "",
+        "run_at_load": true,
+        "start_interval": 30
+      },
+      {
+        "arguments": [
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/run_with_nexus_runtime_env.sh",
+          "/usr/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/operations/nexus_hermes_telegram_worker.py",
+          "--once"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.telegram-hermes-v2",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-hermes-v2.plist",
+        "program": "",
+        "run_at_load": false,
+        "start_interval": 60
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-hermes.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "935034ea2a55fc960d12b17457766f65861ea92de0aa5a98af7748c41af7bb55",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.telegram-operator.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "fad273a5c9bc2d159933c714f0ba010ac1d24568fa941f519927f0e9b4614b4d",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.temporal-server.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "bed523238a79f1013e47a0ef3e6e1a5681e958cb5788b9818998a619e64d16be",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.temporal-worker.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "872f8f17c823350adf3dc18fb0995303503900e97856173e0d2e76293ffa6213",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.tournament.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "879ddf1be7bfcd65259de5368625b99027019240535312a6bc3a85a24f7446b3",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.trading-engine.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "c1e36eb74be3ed6c7c8a4ac9b735f23b3fef94b0ef98f56ebc0f12af038f5961",
+        "start_interval": null
+      },
+      {
+        "arguments": [
+          "/usr/local/bin/python3",
+          "/Users/raymonddavis/nexus-os-v2-canonical/scripts/wp9_company_scheduler.py",
+          "--scheduled"
+        ],
+        "keep_alive": false,
+        "label": "com.nexus.wp9-company-cycle",
+        "parse_status": "VALID",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.wp9-company-cycle.plist",
+        "program": "",
+        "run_at_load": false,
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "INVALID_ROOT_TYPE",
+        "parse_status": "INVALID_PLIST_ROOT",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.youtube-channel-poller.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "52eba2ab02bf5ee3aa9081de69dbedc62f28b9e3e9a5259d30d7019b15a1e2a3",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.control-center.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "0bd5935b3d568b56269752bc3d2a94f4b9d3d416b50c9d2332818541e9ebba8e",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.dashboard.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "9754e9f401ab89f9e3a86ac14fe40fd07b82d2ad1068c8bfc66810b97308483b",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.hermes-mobile.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "d4f5943cf051b0eb073676cb437a60862b32d9b5286925588f1dbb34836ec071",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "3e62eaefcf7249fb5ad4ea673bfd47747e70c3f6cd55ccdab6ab5042e88258bd",
+        "start_interval": null
+      },
+      {
+        "arguments": [],
+        "keep_alive": false,
+        "label": "UNPARSEABLE",
+        "parse_error_class": "InvalidFileException",
+        "parse_status": "INVALID_PLIST",
+        "path": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.telegram.plist",
+        "program": "",
+        "run_at_load": false,
+        "sha256": "085c350380532b9a4ff1ef8d4c91f78c19434fc4f9dacde884f99f4e337785bc",
+        "start_interval": null
+      }
+    ],
+    "listener_snapshot_sha256": "c927eaf47bf7ac733e0000a5f152d7616744ea2fbc6da0aa5e1601d9ff0a918e",
+    "loaded_launchd_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "monitor_authority": {
+      "can_call_paid_provider": false,
+      "can_create_business_work": false,
+      "can_enable_runtime": false,
+      "can_restart_services": false
+    },
+    "nexus_process_name_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "observed_at": "2026-10-09T23:45:00+00:00",
+    "openclaw_schedule_sha256": "d3ee9321b4f9acc501fa7daa291116f74a0e89692088805ce12c2d773e557fc4",
+    "pm2_saved_state_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "process_name_snapshot_sha256": "1d3d77a7cd1697d209acdd437830bc577bea0aeba02be25372014e9891ab4513",
+    "provider_caller_registry_sha256": "7538ffdd4c9bacb5d552d434a02b87a0da2972ad75eab075d07b81f509da3171",
+    "python_runtime": {
+      "executable": "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+      "version": "3.12.13"
+    },
+    "repository": {
+      "branch": "main",
+      "commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "path": "/Users/raymonddavis/nexus-os-v2-canonical"
+    },
+    "root_cron_sha256": null,
+    "runtime_limits_sha256": null,
+    "scheduler_dispatcher_processes": [],
+    "secret_consumer_registry_sha256": "8f9fb593e071422c2d784ae4afb612be5bb67ee80f9d4ccbf17bffd81425e806",
+    "user_cron_sha256": null,
+    "working_tree_dirty": true,
+    "working_tree_sha256": "5b75852da7a522eda321a634431a920d1c851396fa847593f2199b5e99e7d79f",
+    "working_tree_status": "AVAILABLE"
+  },
+  "EXPECTED_OLD_KERNEL_STATE": "OFF",
+  "EXPECTED_OPENCLAW_SCHEDULES": {
+    "active_jobs": 0,
+    "sha256": "d3ee9321b4f9acc501fa7daa291116f74a0e89692088805ce12c2d773e557fc4"
+  },
+  "EXPECTED_OPENCLAW_STATE": {
+    "active_jobs": 0,
+    "sha256": "d3ee9321b4f9acc501fa7daa291116f74a0e89692088805ce12c2d773e557fc4"
+  },
+  "EXPECTED_PM2": {
+    "saved_app_names": [],
+    "saved_state_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "workflow_apps": []
+  },
+  "EXPECTED_PM2_STATE": {
+    "saved_state_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "workflow_executors": "OFF"
+  },
+  "EXPECTED_POST_FREEZE_DIRTY_PATH_COUNT": 18556,
+  "EXPECTED_POST_FREEZE_WORKTREE_SHA256": "5b75852da7a522eda321a634431a920d1c851396fa847593f2199b5e99e7d79f",
+  "EXPECTED_PROVIDER_CALLER_REGISTRY_HASH": "7538ffdd4c9bacb5d552d434a02b87a0da2972ad75eab075d07b81f509da3171",
+  "EXPECTED_RUNTIME_LIMITS": {
+    "interactive_agents": "SERIALIZED",
+    "max_browser_workers": 1,
+    "max_heavy_workers": 1,
+    "max_research_workers": 1,
+    "max_total_active_workers": 2
+  },
+  "EXPECTED_SCHEDULER_STATE": "OFF",
+  "EXPECTED_SECRET_CONSUMER_REGISTRY_HASH": "8f9fb593e071422c2d784ae4afb612be5bb67ee80f9d4ccbf17bffd81425e806",
+  "GITHUB_MAIN_COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "HISTORICAL_TASK_REPLAY_POLICY": "636 rows classified; only explicitly reviewed CURRENT_V2_MIGRATED rows with approved migration metadata are eligible; no existing row migrated",
+  "LAUNCHD_DEFINITION_COUNT": 28,
+  "LAUNCHD_SAFE_BOOT_EVIDENCE_HASH": "0804faf33dca5f8d806811c1345284222f8791255924056e66ef842fe942c1c3",
+  "LEGACY_CREDIT_QUEUE_POLICY": "25 historical rows preserved; no upload-trigger insertion; no autonomous consumer; rollback/manual admin use only",
+  "LOCAL_CANONICAL_COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "LOCAL_COMMIT": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+  "MAX_BROWSER_WORKERS": 1,
+  "MAX_HEAVY_WORKERS": 1,
+  "MAX_RESEARCH_WORKERS": 1,
+  "MAX_TOTAL_ACTIVE_WORKERS": 2,
+  "NODE_RUNTIME": "v22.22.3",
+  "NPM_RUNTIME": "10.9.8",
+  "PROVIDER_REGISTRY_HASH": "7538ffdd4c9bacb5d552d434a02b87a0da2972ad75eab075d07b81f509da3171",
+  "PYTHON_RUNTIME": {
+    "path": "/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3",
+    "version": "3.12.13"
+  },
+  "RECOVERY_CRITICAL_FILE_HASHES": {
+    "configs/launchd/com.nexus.continuous-loop.plist": "0a17372b47c86b38c801cf1bb46a566570eac8d4888a6999062b17144fba7217",
+    "configs/launchd/com.nexus.dispatcher.plist": "b7c62c5d99d155a63da1e68e92053749e5a9d972d2d331981942ee9136ee7f39",
+    "configs/launchd/com.nexus.research-morning-report.plist": "326e1077ae1405dc70c693571404034733ea73dad130ec16d3c391d034511bd2",
+    "configs/launchd/com.nexus.research-persistence-certifier.plist": "4f473c91401e77bac07e9f22494db889302851521ff448f2c4c90ff31b7bb7c5",
+    "configs/launchd/com.nexus.scheduler.plist": "25b25bb746cae0a687c27d181b9a70b00d64efdddaceaba8c25e36a9bc082d23",
+    "launchd/com.nexus.department-work-consumer.plist": "66168b557749f2b1c255f4a28974be3f251b2d74e7795941d88cb0a49d2cd01f",
+    "launchd/com.nexus.forex-scanner.plist": "e418225ae3db20a652da1cc30000d719058559fc33aa3daf8b361c144eb343ed",
+    "launchd/com.nexus.nexus-mcp-bridge.plist": "31343703dd59aa3edb9291fc1295bac70c1748a02fed2d83fe3aec5e197db707",
+    "launchd/com.nexus.nova-admin.plist": "b064f38eb41e5e7a4ec96a645d968096ebcacb0826c01a302de3e88c3e60d05e",
+    "launchd/com.nexus.oracle-hermes-tunnel.plist": "95c29ec51cff1688e298d9f23fe78a41de949db3d4a562cfece6b8376b24e7ca",
+    "launchd/com.nexus.oracle-ollama-tunnel.plist": "f491f9b52cca2654511c853c6c39a9de8df1574fe38d7ab042a47104bd033245",
+    "launchd/com.nexus.searxng-tunnel.plist": "fb65520bbcc609eed34a1dfd2cefd46dee248d6ba86dcf7e1314f4839086551c",
+    "launchd/com.nexus.telegram-hermes-nova.plist": "af179275ac572204740e0cc78ee5f5e4affa130aae579546e28601780ad4b80f",
+    "launchd/com.nexus.voice-local.plist": "8ec99dbbcfdbe04f84050dc3f502bb1d5573176fd7059ddd35d9410e75b2b6dc",
+    "launchd/com.nexus.voice-repair-recovery.plist": "34afd21fd97585bbda9ca079e6027ee1179d517a0455f24a8bfc2b2c40e5abd2",
+    "ops/launchd/com.nexus.active-operator-v2.plist": "bc63c33a1793c253dffa68d1a74fd8e6181a5674f5c0bbb211e0b4d13fdc0f7a",
+    "ops/launchd/com.nexus.continuous-loop.plist": "0a17372b47c86b38c801cf1bb46a566570eac8d4888a6999062b17144fba7217",
+    "ops/launchd/com.nexus.daily-operating.plist": "0ad6b3e2a592794501dd77baac06a48a428b5e735b2dfc82f95fb4c971cb4125",
+    "ops/launchd/com.nexus.dispatcher.plist": "35883ec8486ae58b75098084fd73ee5c78d7e63243f7f6e8652ccf71c39ccd43",
+    "ops/launchd/com.nexus.evening-closeout.plist": "078b67df1fb39f4f6ac1d8d7b42bcc367e6876ee9183a2d0b7db7fdc49cedc09",
+    "ops/launchd/com.nexus.nexus-supervisor.plist": "ddff5baa72bf9ddc2bbfba7b2b6342d902319841cfd6b12deb10bc7021f02b26",
+    "ops/launchd/com.nexus.recovery-check-v2.plist": "cf60f6cc026cac85f0f5912a880dc66b37facb12d537430adcdc9ed0f228da22",
+    "ops/launchd/com.nexus.scheduler.plist": "6cf6b89fd4f62d274464cece9d043d3883f61fcbacf74b5e868b0e8997e8a2e3",
+    "ops/launchd/com.nexus.telegram-hermes-v2.plist": "2a8a8a8bcf3259b354437b1df2cf27da048e402ce9f5f1228a21362b24e008e4",
+    "ops/launchd/com.nexus.wp9-company-cycle.plist": "5e673ede0225e3b604e3c6e15d0d48b9fbc2f80dfb9d3f6bd31ce351ea23be00",
+    "ops/launchd/com.nexus.youtube-followup-worker.plist": "e9734e57609d008ec6fca8d2373a5c27a17bd74f9ba31fe8412c8b6c626a25b1",
+    "reports/remediation/task_request_classification_20261009.json": "a02d15a522761064a59faa41893b0b95240e73e22bd393bb0ecd7f8269ded549",
+    "scripts/nexus_agent_platform/environment_drift_monitor.py": "a7cc5c1fbffca0618b12fe6bfeb5c8d59619f391c9c4f0d67c1aae9a4adace09",
+    "scripts/nexus_agent_platform/task_request_eligibility.py": "eba5fa9305790a07f5d55e0d6a28100adb3bbf71fb9479efed1a4e86a95e0c45",
+    "scripts/ops/com.nexus.research-two-hour-report.plist": "e66fe632727061630172a2741e3664261f60102d063ecb4e31b79e6a9ea2be0a",
+    "scripts/ops/com.nexus.telegram-alpha.plist": "4f1da78188264c25bf2046e250a054c60b00bf9c9ce1d0c66be16f035dacdf0c",
+    "scripts/systems/environment_baseline.py": "6d5ac4079240967d5c62d4071ab28bc8956d5b25af651a777cab34de658d68e5",
+    "scripts/systems/verify_safe_recovery.py": "1f02361f6fb535b10f0b6b8b813e50d85be8d6433dd792ba2668733bdf47d1c1"
+  },
+  "REMOTE_STATE": "Netlify production-only blocker; Meta provider revocation pending human action; local safe recovery independent",
+  "SECRET_REGISTRY_HASH": "8f9fb593e071422c2d784ae4afb612be5bb67ee80f9d4ccbf17bffd81425e806",
+  "SECRET_VALUES_INCLUDED": false,
+  "STATUS": "PRE_ACTIVATION_RECOVERY_BASELINE",
+  "SUPABASE_MIGRATION_HEAD": "20261021180000",
+  "SUPABASE_PROJECT_REF": "iqjwgpnujbeoyaeuwehj",
+  "WORKTREE_DIRTY_STATE": "DIRTY_PRESERVED"
+}

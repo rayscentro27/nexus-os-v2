@@ -222,7 +222,7 @@ def generated_questions(*, content: dict[str, Any], spans: list[dict[str, Any]],
              "decision_supported": "research prioritization", "priority": "P2", "status": "OPEN",
              "source_id": content["source_id"], "next_action": "research.cross_check"} for q in base[:max(1, min(2, len(spans) + len(related)))]
             ]
-def retrieve_page(url: str, timeout: int = 20) -> dict[str, Any]:
+def _retrieve_page_unchecked(url: str, timeout: int = 20) -> dict[str, Any]:
     req = urllib.request.Request(url, headers={"User-Agent": "NexusAlphaResearch/1.0", "Accept": "text/html,application/xhtml+xml"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response: raw = response.read(1_500_000).decode("utf-8", "replace"); final = response.geturl()
@@ -246,6 +246,16 @@ def retrieve_page(url: str, timeout: int = 20) -> dict[str, Any]:
             return {"ok": True, "url": url, "title": title_text, "text_hash": content_hash, "excerpt": text[:1600], "text": text[:12000], "raw_html": raw, "retrieved_at": fetched, "content_length": len(text), "retrieval_provider": "curl_fallback"}
         except Exception:
             return {"ok": False, "url": url, "error": first_exc.__class__.__name__, "retrieved_at": now()}
+
+
+def retrieve_page(url: str, timeout: int = 20) -> dict[str, Any]:
+    """Fetch public evidence only from a real governed Research job."""
+    from nexus_agent_platform.provider_enforcement import execute_public_read
+    return execute_public_read(
+        "BROWSER_EXTERNAL_SERVICES", "alpha_public_research",
+        lambda: _retrieve_page_unchecked(url, timeout), requests=1,
+        response_bytes=1_500_000,
+    )
 def _asr_python() -> str | None:
     """Locate the certified isolated faster-whisper runtime without adding dependencies."""
     configured = os.environ.get("NEXUS_FASTER_WHISPER_PYTHON", "").strip()
@@ -365,7 +375,7 @@ print(json.dumps({"segments": rows}, ensure_ascii=False))
         return {"ok": True, "video_id": video_id, "status": "TRANSCRIPT_RETRIEVED", "language": "en", "transcript_hash": hashlib.sha256(text.encode()).hexdigest(), "transcript": text, "excerpt": text[:2400], "transcript_artifact": str(artifact), "timestamped_artifact": str(timestamped), "retrieved_at": now(), "media_downloaded": True, "audio_downloaded": True, "media_format_selected": selected.get("format_id"), "media_format_kind": "AUDIO_ONLY" if selected in audio_only else "PROGRESSIVE_VIDEO_AUDIO", "ffmpeg_audio_extraction": "PASS_REAL", "transcript_method": "LOCAL_ASR", "asr_engine": asr_engine, "asr_version": asr_version, "asr_model": asr_model, "caption_failure_type": caption_failure_type}
 
 
-def youtube_transcript(url: str, timeout: int = 90) -> dict[str, Any]:
+def _youtube_transcript_unchecked(url: str, timeout: int = 90) -> dict[str, Any]:
     video_id = urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("v", [""])[0] or url.rsplit("/", 1)[-1]
     with tempfile.TemporaryDirectory(prefix="nexus-alpha-youtube-") as tmp:
         output = str(Path(tmp) / "caption.%(ext)s")
@@ -393,6 +403,15 @@ def youtube_transcript(url: str, timeout: int = 90) -> dict[str, Any]:
         except Exception:
             metadata = {}
         return {"ok": True, "video_id": video_id, "status": "TRANSCRIPT_RETRIEVED", "language": "en", "transcript_hash": hashlib.sha256(text.encode()).hexdigest(), "transcript": text, "excerpt": text[:2400], "description": description[:5000], "retrieved_at": now(), "media_downloaded": False, "audio_downloaded": False, "transcript_method": "AUTO_CAPTION", **metadata}
+
+
+def youtube_transcript(url: str, timeout: int = 90) -> dict[str, Any]:
+    """Retrieve YouTube captions only inside a real governed Research job."""
+    from nexus_agent_platform.provider_enforcement import execute_public_read
+    return execute_public_read("YOUTUBE", "youtube_transcript_read",
+        lambda: _youtube_transcript_unchecked(url, timeout), response_bytes=5_000_000)
+
+
 def route_finding(theme: str, research_id: str, finding: str) -> str:
     route = {"TRADING": "trading_research", "BUSINESS": "business_opportunity", "MARKETING": "growth_experiment_candidate", "AI_NEXUS": "nexus_capability_improvement"}.get(theme, "alpha_review")
     work_order_id = digest({"research_id": research_id, "route": route}, "wo")

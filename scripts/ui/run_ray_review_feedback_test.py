@@ -4,6 +4,8 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'activation'));from activation_common import write_report
 def main():
  a=argparse.ArgumentParser();a.add_argument('--json',action='store_true');a.add_argument('--url',default='http://127.0.0.1:4174/?ui-smoke=1#rayreview');x=a.parse_args();checks={};error=''
+ from browser_target_guard import require_local_browser_target
+ require_local_browser_target(x.url)
  try:
   from playwright.sync_api import sync_playwright
   with sync_playwright() as p:

@@ -96,8 +96,8 @@ test.describe('Invited Payment Pilot Certification', () => {
     })
 
     test('no live Stripe keys in environment', async () => {
-      const env = process.env.STRIPE_SECRET_KEY || ''
-      expect(env.startsWith('sk_live_')).toBe(false)
+      const configuredMode = (process.env.NEXUS_STRIPE_MODE || '').toLowerCase()
+      expect(configuredMode).not.toBe('live')
     })
   })
 

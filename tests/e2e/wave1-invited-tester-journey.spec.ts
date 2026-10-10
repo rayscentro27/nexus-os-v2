@@ -6,12 +6,16 @@ import { createClient } from '@supabase/supabase-js'
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
 
 function loadLocalE2EEnv() {
-  for (const envPath of [resolve(process.cwd(), '.env'), resolve(process.cwd(), '.env.e2e.local')]) {
+  const allowed = new Set(['VITE_SUPABASE_URL', 'SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY',
+    'E2E_ADMIN_EMAIL', 'VITE_E2E_ADMIN_EMAIL', 'ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD',
+    'VITE_E2E_ADMIN_PASSWORD', 'ADMIN_PASSWORD'])
+  for (const envPath of [resolve(process.cwd(), '.env.e2e.local')]) {
     if (!existsSync(envPath)) continue
     for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
       const trimmed = line.trim()
       if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue
       const [key, ...valueParts] = trimmed.split('=')
+      if (!allowed.has(key)) continue
       if (!process.env[key]) process.env[key] = valueParts.join('=').replace(/^['"]|['"]$/g, '')
     }
   }

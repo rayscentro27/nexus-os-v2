@@ -31,6 +31,35 @@ def test_capability_discovery_denies_execution():
     assert capability["execution"]["live_trading"] == "DENIED"
     assert capability["execution"]["place_order"] == "DENIED"
     assert capability["values_included"] is False
+    assert capability["market_data"]["snapshot"] == "ADAPTER_IMPLEMENTED"
+    assert capability["market_data"]["historical_bars"] == {
+        "provider_api": "DOCUMENTED",
+        "adapter": "READ_ONLY_METHOD_AVAILABLE",
+        "entitlement": "UNVERIFIED",
+    }
+
+
+def test_historical_bars_uses_bounded_read_only_get(monkeypatch):
+    provider = WebullProvider(environment="sandbox")
+    captured = {}
+
+    def fake_request(method, path, *, query_params=None, body=None):
+        captured.update({"method": method, "path": path, "query": query_params, "body": body})
+        return 200, {"data": [{"open": "1", "volume": "10"}]}
+
+    monkeypatch.setattr(provider, "_request", fake_request)
+    result = provider.historical_bars("tsla", "m30", 300)
+    assert captured == {"method": "GET", "path": "/market-data/stocks/bars/get",
+                        "query": {"symbol": "TSLA", "category": "US_STOCK", "interval": "M30", "count": "300"},
+                        "body": None}
+    assert result["http_status"] == 200
+    assert result["interval"] == "M30"
+
+
+@pytest.mark.parametrize("symbol,interval,count", [("", "M30", 5), ("TSLA", "M3", 5), ("TSLA", "M30", 1201)])
+def test_historical_bars_rejects_invalid_requests(symbol, interval, count):
+    with pytest.raises(ValueError):
+        WebullProvider().historical_bars(symbol, interval, count)
 
 
 def test_execution_methods_are_hard_denied():

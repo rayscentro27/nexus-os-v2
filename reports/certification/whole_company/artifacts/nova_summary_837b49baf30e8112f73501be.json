@@ -1,0 +1,35 @@
+{
+  "approval_state": "PENDING_RAY_APPROVAL",
+  "artifact_id": "nova_summary_837b49baf30e8112f73501be",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:16:09.903546+00:00",
+  "department": "NOVA",
+  "evidence_summary": "Official SBA source describes funding paths; it does not demonstrate customer demand or establish a specific borrower's eligibility.",
+  "external_actions": {
+    "email": "NOT_AUTHORIZED",
+    "publication": "BLOCKED_BY_APPROVAL",
+    "social": "NOT_AUTHORIZED",
+    "spend": "NOT_AUTHORIZED",
+    "trading": "NOT_AUTHORIZED"
+  },
+  "job_id": "job_15e99904b38647ebb2a1e26f0c183f86",
+  "marketing_campaign_state": "ITERATION_READY",
+  "marketing_stage": "ITERATION",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_c0892c104a9a414380a180aa84696744",
+  "recommendation": "Hold for Ray review; audience demand is unvalidated and financing eligibility is unknown.",
+  "scheduler_authority": false,
+  "schema_version": "nexus.company-certification-nova-summary.v1",
+  "source_artifacts": [
+    "reports/certification/whole_company/artifacts/research_19c64baebd0364e40a99a49f.json",
+    "reports/certification/whole_company/artifacts/funding_72fd2c881d06173d843160c8.json",
+    "strategy_ee722f7ca5e48f78249c9191",
+    "brief_23ae2ffabbc5ece9a38f39d2",
+    "analysis_a7e7e02c36a48863af9180f1",
+    "handoff_2f9a5f892e3dd2c723ba0340"
+  ],
+  "status": "SUPERSEDED_INSUFFICIENT_EVIDENCE_HYDRATION",
+  "superseded_by_artifact_id": "nova_summary_493d34d43ed78025a3a1564d",
+  "updated_at": "2026-10-10T01:30:41.908252+00:00"
+}

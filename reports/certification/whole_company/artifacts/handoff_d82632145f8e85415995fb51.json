@@ -1,0 +1,26 @@
+{
+  "approval_state": "NOT_AUTHORIZED",
+  "campaign_id": "NEXUS-WHOLE-COMPANY-20261009-GOCLEAR-READINESS",
+  "correlation_id": "corr-nexus-company-cert-20261009-goclear",
+  "created_at": "2026-10-10T01:16:09.904012+00:00",
+  "from_department": "NOVA",
+  "handoff_id": "handoff_d82632145f8e85415995fb51",
+  "input_artifact_ref": "reports/certification/whole_company/artifacts/nova_summary_837b49baf30e8112f73501be.json",
+  "job_id": "job_15e99904b38647ebb2a1e26f0c183f86",
+  "project_id": "goclear-readiness",
+  "receipt_id": "receipt_c0892c104a9a414380a180aa84696744",
+  "recommendation": "Hold for Ray review; audience demand is unvalidated and financing eligibility is unknown.",
+  "status": "SUPERSEDED_BY_EVIDENCE_HYDRATION",
+  "superseded_by_handoff_id": "handoff_27446f0ca9d82ea04ba85301",
+  "to_department": "NOVA",
+  "updated_at": "2026-10-10T01:30:41.908252+00:00",
+  "what_remains": [
+    "Ray review",
+    "customer validation before public positioning"
+  ],
+  "what_was_completed": [
+    "campaign evidence summarized",
+    "approval boundary preserved"
+  ],
+  "workflow_stage": "MARKETING_TO_NOVA_EXECUTIVE_SUMMARY"
+}
