@@ -1,0 +1,25 @@
+{
+  "schema_version": "nexus.certification-research-namespace.v1",
+  "namespace": "CERTIFICATION_RESEARCH",
+  "state_root": "/Users/raymonddavis/.nexus/state/certification/research",
+  "effective_environment": {
+    "NEXUS_CERTIFICATION_RESEARCH_STATE_ROOT": "/Users/raymonddavis/.nexus/state/certification/research",
+    "NEXUS_RESEARCH_STATE_ROOT": "/Users/raymonddavis/.nexus/state/certification/research",
+    "NEXUS_GOVERNED_DATA_DIR": "/Users/raymonddavis/.nexus/state/certification/research/governed"
+  },
+  "launcher": "scripts/ops/with_certification_research_state.sh",
+  "production_state_root_reference": "$NEXUS_RESEARCH_STATE_ROOT as configured by the production service",
+  "production_writes_allowed": false,
+  "production_archive_writes_allowed": false,
+  "state_v2": {
+    "current_state_backend": "namespace-local SQLite",
+    "current_state_path": "/Users/raymonddavis/.nexus/state/certification/research/current/research_state_v2.sqlite3",
+    "history_path": "/Users/raymonddavis/.nexus/state/certification/research/history/research",
+    "recovery_path": "/Users/raymonddavis/.nexus/state/certification/research/state_v2",
+    "production_current_state_access": false,
+    "production_history_access": false
+  },
+  "behavioral_difference": "State namespace only; same release/code/provider policy/dispatcher semantics required.",
+  "activation_status": "PREPARED_NOT_APPLIED_TO_LIVE_SERVICES",
+  "guard": "Certification launcher must set both environment variables to this root and reject production-root equality/overlap."
+}

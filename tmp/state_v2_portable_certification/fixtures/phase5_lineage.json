@@ -1,0 +1,10 @@
+{
+  "objective_id": "nova_research_16a764a4c75b65d81e46",
+  "project_id": "nova_research_work_16a764a4c75b65d81e46",
+  "intake_job_id": "job_d27d3093c0e248a3a1481a5a45730475",
+  "case_id": "rcase_f6c19e2c0afe9c44ea",
+  "status": "PROMISING",
+  "turn": 7,
+  "open_question_ids": ["q_b04da13aa3b1464f", "q_b42074818a3af0a5"],
+  "latest_advisor_review_id": "rrreview_d1224fbde735a8e6eb6d"
+}
