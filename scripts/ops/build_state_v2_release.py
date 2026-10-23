@@ -9,7 +9,6 @@ import os
 import shutil
 import sys
 import tarfile
-import tempfile
 import types
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -123,6 +122,7 @@ def main() -> int:
     runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
     runtime["release_id"] = release_id
     state_contract = runtime["research_state_v2_persistence"]
+    architecture_contract = runtime["research_state_architecture"]
     if state_contract.get("lookup_index_migration_applied") is not False:
         raise RuntimeError("MIGRATION_MUST_REMAIN_PENDING_IN_BUILD")
     runtime_path.write_text(json.dumps(runtime, indent=2) + "\n", encoding="utf-8")
@@ -170,8 +170,15 @@ def main() -> int:
         raise RuntimeError("SUPERVISOR_EXHAUSTION_ROUTING_MISSING")
     if state_contract["max_history_event_bytes"] != 65536 or state_contract["max_history_partition_bytes"] != 67108864:
         raise RuntimeError("HISTORY_BOUNDS_MISSING")
-    if state_contract["normal_legacy_reads_allowed"] or state_contract["normal_legacy_writes_allowed"]:
+    if architecture_contract["normal_legacy_reads_allowed"] or architecture_contract["normal_legacy_writes_allowed"]:
         raise RuntimeError("LEGACY_NORMAL_ACCESS_REENABLED")
+    if architecture_contract["full_archive_scan_allowed_in_live_path"]:
+        raise RuntimeError("FULL_ARCHIVE_SCAN_REENABLED")
+    certification_config = json.loads(
+        (release_root / "config/certification_research_namespace.v1.json").read_text(encoding="utf-8")
+    )
+    if certification_config["production_writes_allowed"] or certification_config["production_archive_writes_allowed"]:
+        raise RuntimeError("CERTIFICATION_NAMESPACE_NOT_ISOLATED")
 
     report = {
         "release_id": release_id,
