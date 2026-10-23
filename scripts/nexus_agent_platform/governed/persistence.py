@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-from nexus_agent_platform.runtime.paths import nexus_data_path
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
 
 COLLECTIONS = ("approvals", "work_orders", "recommendations", "audit", "queue", "research_requests", "research_questions", "youtube_claim_validations", "youtube_follow_ups", "youtube_follow_up_executions", "youtube_asr_jobs", "ui_skills_receipts", "result_feedback", "opportunities", "revenue_observations", "revenue_snapshots", "growth_experiments", "marketing_funnels", "marketing_events", "marketing_projects", "marketing_handoffs", "marketing_evaluations", "marketing_experiments", "creative_briefs", "creative_assets", "creative_receipts", "creative_concepts", "creative_feedback", "creative_preference_profiles", "creative_references", "creative_campaigns", "creative_territories", "creative_jobs", "creative_ai", "creative_media", "creative_reviews", "creative_learning", "finance_resource_ledger", "finance_cost_receipts", "finance_revenue", "finance_learning", "finance_economic_requests", "engagement_messages", "customer_signals", "company_handoffs", "specialists", "specialist_permissions", "skill_assignments", "goals", "loop_state", "metrics", "improvement_candidates", "trading_strategies", "business_ideas", "business_research", "business_receipts", "commercial_policies", "launch_candidates", "outcomes", "trading_experiments", "trading_journal", "trading_learning", "trading_paper_observations", "trading_replays", "trading_portfolios", "trading_mcp_audits", "trading_source_registry", "trading_strategy_dna", "trading_experiment_ledger", "trading_candidate_queue", "trading_source_quality", "trading_discovery_receipts", "knowledge_refreshes", "alpha_source_registry", "alpha_theme_registry", "alpha_content", "alpha_claims", "alpha_research", "alpha_discovery_queue", "alpha_outcomes", "alpha_evaluations", "adaptive_diagnoses", "adaptive_variants", "adaptive_learning", "adaptive_runs", "research_v2_sources", "research_v2_claims", "research_v2_methods", "research_v2_opportunities", "research_v2_strategies", "research_v2_questions", "research_v2_investigations", "research_v2_follow_ups", "research_v2_alpha_reviews", "research_v2_plans", "research_v2_reputations", "research_v2_handoffs", "research_v2_comparisons", "research_v2_packages", "research_v2_missions", "research_v2_mission_items", "research_v2_mission_reports", "research_v2_review_queue", "company_cycles")
 
@@ -35,7 +35,7 @@ def governed_data_dir() -> Path:
     override = os.environ.get("NEXUS_GOVERNED_DATA_DIR")
     if override:
         return Path(override).expanduser()
-    return nexus_data_path("governed")
+    return nexus_research_state_path("governed")
 
 
 def collection_path(name: str) -> Path:

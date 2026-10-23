@@ -1,0 +1,37 @@
+name: State v2 Release Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build explicit State v2 release manifest
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: python scripts/ops/build_state_v2_release.py
+      - name: Upload release candidate only
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-v2-release-candidate
+          path: |
+            dist/nexus-capability-actions-20261022-r51.tar.gz
+            dist/nexus-capability-actions-20261022-r51.manifest.json
+            dist/BUILD_METADATA.json
+            dist/validation_report.json
+          if-no-files-found: error
+          retention-days: 30

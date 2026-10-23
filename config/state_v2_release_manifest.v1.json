@@ -1,0 +1,37 @@
+{
+  "schema_version": "nexus.state-v2-release-manifest.v1",
+  "release_id": "nexus-capability-actions-20261022-r51",
+  "base_release_id": "nexus-capability-actions-20261022-r50",
+  "certified_source_commit": "f7cbec76a1d5d2837a5d9dbac8a6fe9aca56e5c4",
+  "database_migration": "20261022130000",
+  "source_files": [
+    "scripts/research/research_state_v2.py",
+    "scripts/research/research_case_engine.py",
+    "scripts/research/proactive_research_memory.py",
+    "scripts/nexus_agent_platform/stability_supervisor.py",
+    "scripts/nexus_agent_platform/runtime/paths.py",
+    "scripts/nexus_agent_platform/governed/persistence.py",
+    "scripts/ops/with_certification_research_state.sh",
+    "config/research_runtime_contract.v1.json",
+    "config/certification_research_namespace.v1.json"
+  ],
+  "certified_bundle_matches": [
+    "scripts/research/research_state_v2.py",
+    "scripts/research/research_case_engine.py",
+    "scripts/research/proactive_research_memory.py",
+    "scripts/nexus_agent_platform/runtime/paths.py",
+    "scripts/nexus_agent_platform/governed/persistence.py"
+  ],
+  "base_release_provides": [
+    "scripts/social/_supabase.py",
+    "scripts/nexus_agent_platform/governed package and non-State-v2 integrations"
+  ],
+  "excluded": [
+    "production state and recovery data",
+    "Phase 5 live records",
+    "legacy Research ledger",
+    "certification fixtures and runtime database",
+    "providers, credentials, and environment secrets",
+    "Room Manager, LangGraph, Marketing, Creative, Trading, UI, and unrelated changes"
+  ]
+}
