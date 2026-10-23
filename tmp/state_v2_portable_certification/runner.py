@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib.util
 import inspect
 import os
+import re
 import sys
 import tempfile
 import types
@@ -27,17 +28,21 @@ for secret_name in ("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_
 
 
 class _Raises:
-    def __init__(self, expected): self.expected = expected
+    def __init__(self, expected, match=None):
+        self.expected = expected
+        self.match = re.compile(match) if match is not None else None
     def __enter__(self): return self
     def __exit__(self, kind, value, traceback):
         if kind is None: raise AssertionError(f"expected {self.expected.__name__}")
         if not issubclass(kind, self.expected): return False
+        if self.match is not None and self.match.search(str(value)) is None:
+            raise AssertionError(f"exception message {str(value)!r} does not match {self.match.pattern!r}")
         return True
 
 
 class _PytestShim(types.ModuleType):
     @staticmethod
-    def raises(expected): return _Raises(expected)
+    def raises(expected, *, match=None): return _Raises(expected, match=match)
     @staticmethod
     def fail(message="pytest.fail"):
         raise AssertionError(message)

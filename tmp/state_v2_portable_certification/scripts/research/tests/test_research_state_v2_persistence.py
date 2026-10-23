@@ -31,7 +31,7 @@ def _row(case_id="case-test"):
 def test_current_state_write_succeeds_without_legacy_ledger(monkeypatch, tmp_path):
     _isolated(monkeypatch, tmp_path)
     monkeypatch.setattr(memory.persistence, "append_record", lambda *a, **k: pytest.fail("legacy append"))
-    monkeypatch.setattr(memory.state_v2, "_append_event", lambda event: str(tmp_path / "history.jsonl"))
+    monkeypatch.setattr(memory.state_v2, "_append_event", lambda event, target_hint=None: str(tmp_path / "history.jsonl"))
     result = memory.persist_state(_row())
     assert result["state_v2_receipt"]["status"] == "COMMITTED"
     assert not (tmp_path / "legacy.jsonl").exists()
@@ -71,7 +71,7 @@ def test_proactive_memory_reads_current_state(monkeypatch):
 
 def test_certification_store_and_history_are_isolated(monkeypatch, tmp_path):
     root = _isolated(monkeypatch, tmp_path)
-    monkeypatch.setattr(state, "_append_event", lambda event: str(state._archive_root() / "2026" / "10" / "2026-10-22.jsonl"))
+    monkeypatch.setattr(state, "_append_event", lambda event, target_hint=None: str(state._archive_root() / "2026" / "10" / "2026-10-22.jsonl"))
     state.persist_state(_row())
     with sqlite3.connect(root / "current" / "research_state_v2.sqlite3") as db:
         assert db.execute("select count(*) from current_state").fetchone()[0] == 1
@@ -89,7 +89,7 @@ def test_seed_activation_is_idempotent_and_preserves_phase5(monkeypatch, tmp_pat
     (seed_dir / "hot_state_seed.json").write_text(json.dumps(seed))
     (seed_dir / "selective_preservation_manifest.json").write_text(json.dumps({"retained_items": [
         {"CASE_ID": "rcase_f6c19e2c0afe9c44ea", "TYPE": "RESEARCH_CASE", "CLASS": "A"}], "EXCLUDED_FROM_STATE_V2_IMPORT": []}))
-    monkeypatch.setattr(state, "_append_event", lambda _event: "history-partition")
+    monkeypatch.setattr(state, "_append_event", lambda _event, target_hint=None: "history-partition")
     result = state.activate_seed(seed_dir / "hot_state_seed.json")
     assert result["imported"] == 1
     stored = state.lookup_case("rcase_f6c19e2c0afe9c44ea")
@@ -110,7 +110,7 @@ def test_current_state_failure_emits_recovery_event(monkeypatch, tmp_path):
 
 def test_history_failure_leaves_replayable_intent(monkeypatch, tmp_path):
     _isolated(monkeypatch, tmp_path)
-    monkeypatch.setattr(state, "_append_event", lambda event: (_ for _ in ()).throw(state.HistoryPartitionFailure("disk")))
+    monkeypatch.setattr(state, "_append_event", lambda event, target_hint=None: (_ for _ in ()).throw(state.HistoryPartitionFailure("disk")))
     monkeypatch.setattr(state, "_upsert_current", lambda row: {"status": "PASS", "verified": True})
     monkeypatch.setattr(state, "_emit_failure", lambda *a: None)
     with pytest.raises(state.HistoryPartitionFailure): state.persist_state(_row())
@@ -124,7 +124,7 @@ def test_pending_intent_is_detected_and_reconciled(monkeypatch, tmp_path):
     pending = {"event_id": event["event_id"], "current_state": row, "history_event": event}
     state._atomic_write(state._pending_path(event["event_id"]), json.dumps(pending).encode())
     monkeypatch.setattr(state, "_upsert_current", lambda value: {"status": "PASS", "verified": True})
-    monkeypatch.setattr(state, "_append_event", lambda value: "history-partition")
+    monkeypatch.setattr(state, "_append_event", lambda value, target_hint=None: "history-partition")
     monkeypatch.setattr(state, "_emit_failure", lambda *a: None)
     assert state.detect_divergence()["reconciliation_required"] is True
     assert state.reconcile_pending()["processed"] == 1
@@ -276,8 +276,10 @@ def test_lineage_lookup_uses_bounded_exact_hydration(monkeypatch):
     class Client:
         def configured(self): return True
         def rest(self, method, path):
+            if "select=memory_id%2Cpayload" in path or "select=memory_id,payload" in path:
+                return 200, [{"memory_id": "case-test", "payload": _row()}]
             if "select=memory_id" in path: return 200, [{"memory_id": "case-test"}]
-            return 200, [{"memory_id": "case-test", "payload": _row()}]
+            raise AssertionError(f"unexpected lineage query: {path}")
     monkeypatch.setattr(state, "supabase", Client())
     assert state.lookup_lineage("project_id", "project-test")[0]["case_id"] == "case-test"
 
