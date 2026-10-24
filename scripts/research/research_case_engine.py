@@ -84,7 +84,13 @@ def _latest_cases(*, include_full_payload: bool = True) -> list[dict[str, Any]]:
     # Detailed case work explicitly hydrates bounded case payloads; ordinary
     # scheduling and proactive-memory reads use compact projections.
     for row in state_v2.list_current(kinds=("RESEARCH_CASE", "PROACTIVE_RESEARCH_CASE"),
-                                     limit=100, include_payload=True):
+                                     limit=100, include_payload=include_full_payload,
+                                     fields=None if include_full_payload else (
+                                         "memory_id", "memory_kind", "recorded_at",
+                                         "case_id:payload->>case_id",
+                                         "objective_key:payload->>objective_key",
+                                         "status:payload->>status",
+                                         "case_schema_version:payload->>case_schema_version")):
         kind = row.get("memory_kind")
         if kind not in {"RESEARCH_CASE", "PROACTIVE_RESEARCH_CASE"}:
             continue

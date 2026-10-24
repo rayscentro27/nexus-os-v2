@@ -337,8 +337,11 @@ def lookup_lineage(kind: str, identifier: str, *, limit: int = 100) -> list[dict
 
 
 def list_current(*, kinds: tuple[str, ...] = (), limit: int = 100, include_payload: bool = True,
-                 max_bytes: int | None = None) -> list[dict[str, Any]]:
+                 max_bytes: int | None = None, fields: tuple[str, ...] | None = None) -> list[dict[str, Any]]:
     """Bounded indexed projection; optional case hydration remains capped at 100."""
+    if fields is not None:
+        if include_payload or not fields or any(field not in CURRENT_FIELDS for field in fields):
+            raise ValueError("INVALID_CURRENT_STATE_PROJECTION")
     cap = max(1, min(int(limit), MAX_QUERY_ROWS if include_payload else MAX_CONTROL_ROWS))
     byte_cap = max(64 * 1024, min(int(max_bytes or (1_500_000 if include_payload else 2_000_000)),
                                  1_500_000 if include_payload else 2_000_000))
@@ -363,7 +366,8 @@ def list_current(*, kinds: tuple[str, ...] = (), limit: int = 100, include_paylo
     offset = 0
     while offset < cap:
         page_size = min(4 if include_payload else 500, cap - offset)
-        query = {"select": "memory_id,memory_kind,recorded_at,payload" if include_payload else ",".join(CURRENT_FIELDS),
+        projection = "memory_id,memory_kind,recorded_at,payload" if include_payload else ",".join(fields or CURRENT_FIELDS)
+        query = {"select": projection,
                  "order": "recorded_at.desc", "limit": str(page_size), "offset": str(offset)}
         if kinds: query["memory_kind"] = "in.(" + ",".join(kinds) + ")"
         status, rows = supabase.rest("GET", "research_proactive_memory?" + urllib.parse.urlencode(query))
@@ -589,6 +593,18 @@ def _apply_pending(event_id: str, pending: dict[str, Any]) -> dict[str, Any]:
 
 def persist_state(state: dict[str, Any], *, event_type: str | None = None) -> dict[str, Any]:
     """Persist a durable outbox intent, then current state, then history receipt."""
+    worker_job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
+    def worker_marker(stage: str, **details: Any) -> None:
+        if not worker_job_id:
+            return
+        try:
+            from nexus_agent_platform.worker_lifecycle import emit
+            emit(worker_job_id, stage, attempt=os.environ.get("NEXUS_JOB_ATTEMPT_COUNT"),
+                 worker_id=os.environ.get("NEXUS_WORKER_ID", ""), **details)
+        except Exception:
+            pass
+    worker_marker("STATE_V2_WRITE_START", memory_kind=state.get("memory_kind"),
+                  state_id=state.get("memory_id") or state.get("case_id"))
     try:
         row = _bounded_record(dict(state))
     except ValueError as exc:
@@ -658,6 +674,8 @@ def persist_state(state: dict[str, Any], *, event_type: str | None = None) -> di
             except OSError: pass
             raise
         fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+    worker_marker("STATE_V2_WRITE_COMPLETE", event_id=receipt.get("event_id"),
+                  memory_id=receipt.get("memory_id"), status=receipt.get("status"))
     return {**row, "state_v2_receipt": receipt, "supabase_sync": {"status": "PASS", "verified": True,
             "memory_id": row["memory_id"], "namespace": receipt["current_state"].get("namespace", "PRODUCTION")}}
 

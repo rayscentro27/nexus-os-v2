@@ -10,6 +10,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent  # repo root
@@ -26,13 +27,16 @@ except Exception:
 
 def load_env() -> dict:
     env = {}
+    allowed = {"SUPABASE_URL", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"}
     p = ROOT / ".env"
     if p.exists():
         for line in p.read_text(errors="ignore").splitlines():
             s = line.strip()
             if s and not s.startswith("#") and "=" in s:
                 k, v = s.split("=", 1)
-                env[k.strip()] = v.strip().strip('"').strip("'")
+                key = k.strip()
+                if key in allowed:
+                    env[key] = v.strip().strip('"').strip("'")
     env.update(load_runtime_env())
     return env
 
@@ -60,13 +64,40 @@ def rest(method: str, path: str, body=None, prefer: str | None = None):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(f"{URL}/rest/v1/{path}", data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            raw = r.read().decode(errors="ignore")
-            return r.status, (json.loads(raw) if raw else None)
-    except urllib.error.HTTPError as e:
-        return e.code, _redact(e.read().decode(errors="ignore"))[:300]
-    except Exception as e:  # noqa: BLE001
-        return 0, _redact(str(e))[:300]
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from nexus_agent_platform.supabase_egress_guard import record_request, safe_mode_enabled, preflight_request, read_bounded_response, JobEgressBudgetExceeded
+        max_retries = 0 if safe_mode_enabled() else max(0, min(1, int(os.environ.get("NEXUS_SUPABASE_MAX_RETRIES", "1"))))
+    except Exception:
+        from nexus_agent_platform.supabase_egress_guard import record_request, preflight_request, read_bounded_response, JobEgressBudgetExceeded
+        max_retries = 0
+    idempotent = method.upper() in {"GET", "HEAD", "OPTIONS", "PATCH"} or (method.upper() == "POST" and "on_conflict=" in path)
+    attempt = 0
+    while True:
+        preflight_request(method, path, body)
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                raw_bytes = read_bounded_response(r, method, path)
+                raw = raw_bytes.decode(errors="ignore")
+                parsed = json.loads(raw) if raw else None
+                record_request(method, path, r.status, len(raw_bytes), rows=len(parsed) if isinstance(parsed, list) else 0, retries=attempt, trace=False)
+                return r.status, parsed
+        except JobEgressBudgetExceeded:
+            raise
+        except urllib.error.HTTPError as e:
+            error_bytes = read_bounded_response(e, method, path)
+            record_request(method, path, e.code, len(error_bytes), retries=attempt, trace=False)
+            if idempotent and attempt < max_retries and e.code in {408, 429, 500, 502, 503, 504, 522}:
+                attempt += 1
+                time.sleep(min(2 ** attempt, 2))
+                continue
+            return e.code, _redact(error_bytes.decode(errors="ignore"))[:300]
+        except Exception as e:  # noqa: BLE001
+            record_request(method, path, 0, 0, retries=attempt, trace=False)
+            if idempotent and attempt < max_retries:
+                attempt += 1
+                time.sleep(min(2 ** attempt, 2))
+                continue
+            return 0, _redact(str(e))[:300]
 
 
 def get(table: str, query: str = ""):

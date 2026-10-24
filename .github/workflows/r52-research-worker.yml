@@ -1,0 +1,41 @@
+name: R52 Research Worker Certification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify-existing-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install pytest
+      - name: Verify existing immutable archive and source lineage
+        run: python scripts/ops/verify_r52_source_lineage.py
+      - name: Run focused R52 worker and State v2 certification
+        run: >-
+          python -m pytest -q
+          scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py
+          scripts/research/tests/test_research_state_v2_persistence.py
+          --junitxml=dist/r52_github_certification.xml
+      - name: Upload release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-capability-actions-20261023-r52-certification
+          path: |
+            dist/nexus-capability-actions-20261023-r52.tar.gz
+            dist/nexus-capability-actions-20261023-r52.sha256
+            dist/r52_github_certification.xml
+          if-no-files-found: error
+          retention-days: 30

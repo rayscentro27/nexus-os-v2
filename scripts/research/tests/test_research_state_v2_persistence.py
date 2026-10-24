@@ -58,7 +58,7 @@ def test_exact_case_lookup_does_not_touch_legacy_ledger(monkeypatch):
 def test_latest_cases_uses_current_state(monkeypatch):
     row = {**_row(), "case_schema_version": "nexus.research-case.v1"}
     monkeypatch.setattr(state, "list_current", lambda **kwargs: [row])
-    monkeypatch.setattr(cases, "_read_recent_states", lambda **kwargs: pytest.fail("legacy read"))
+    monkeypatch.setattr(cases.persistence, "read_records", lambda *args, **kwargs: pytest.fail("legacy read"))
     assert cases._latest_cases()[0]["case_id"] == "case-test"
 
 
