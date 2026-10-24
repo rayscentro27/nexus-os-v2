@@ -24,6 +24,8 @@ jobs:
       - name: Verify existing immutable archive and source lineage
         run: python scripts/ops/verify_r52_source_lineage.py
       - name: Run focused R52 worker and State v2 certification
+        env:
+          PYTHONPATH: scripts
         run: >-
           python -m pytest -q
           scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py
