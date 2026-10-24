@@ -279,18 +279,27 @@ STATE_V2_REQUIRED_CHECKS = (
 
 def _active_state_v2_release() -> tuple[str | None, bool]:
     configured = os.environ.get("NEXUS_ACTIVE_RESEARCH_RELEASE", "").strip()
+    candidates = []
     if configured:
-        return configured, True
-    for parent in Path(__file__).resolve().parents:
+        configured_path = Path(configured).expanduser()
+        candidates.append(configured_path if configured_path.is_dir()
+                          else Path.home() / ".nexus" / "releases" / configured)
+    candidates.extend(Path(__file__).resolve().parents)
+    for parent in candidates:
         for manifest_name in ("R53_RELEASE_MANIFEST.json", "R52_RELEASE_MANIFEST.json"):
             manifest_path = parent / manifest_name
             if manifest_path.is_file():
                 try:
                     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
                     capabilities = manifest.get("capabilities", [])
-                    return str(manifest.get("release_id") or ""), "state_v2" in capabilities
+                    release_id = str(manifest.get("release_id") or "")
+                    if configured and Path(configured).name not in {release_id, parent.name}:
+                        continue
+                    return release_id, "state_v2" in capabilities
                 except (OSError, ValueError, TypeError):
                     return None, False
+    if configured:
+        return None, False
     return None, False
 
 

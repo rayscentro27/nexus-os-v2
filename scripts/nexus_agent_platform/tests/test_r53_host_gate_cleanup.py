@@ -9,6 +9,8 @@ import pytest
 
 from nexus_agent_platform import job_worker_supervisor, stability_supervisor as ss, supabase_egress_guard as eg
 
+_ACTIVE_RELEASE_IDENTITY = ss._active_state_v2_release
+
 
 def ready(**overrides):
     checks = {name: True for name in ss.STATE_V2_REQUIRED_CHECKS}
@@ -102,6 +104,12 @@ def test_stale_readiness_is_unknown():
 def test_incomplete_readiness_is_unknown():
     assert ss.evaluate_state_v2_readiness({"schema": ss.STATE_V2_READINESS_SCHEMA,
         "verified_at": datetime.now(timezone.utc).isoformat(), "checks": {}})["status"] == "UNKNOWN"
+
+
+def test_active_release_name_alone_does_not_prove_state_v2_support(monkeypatch):
+    monkeypatch.setenv("NEXUS_ACTIVE_RESEARCH_RELEASE", "nexus-capability-actions-20261024-r53")
+    monkeypatch.setattr(ss, "_active_state_v2_release", _ACTIVE_RELEASE_IDENTITY)
+    assert ss._active_state_v2_release() == (None, False)
 
 
 def run_as_main(source_file, argv_file):
