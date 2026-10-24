@@ -1,0 +1,31 @@
+{
+  "release_id": "nexus-capability-actions-20261024-r53",
+  "release_type": "immutable_additive_overlay",
+  "base_release_id": "nexus-capability-actions-20261023-r52",
+  "capabilities": ["state_v2", "bounded_host_reconciliation", "exact_worker_cleanup"],
+  "purpose": "Reconcile stale host incidents with fresh bounded evidence, derive State v2 readiness from a timestamped runtime attestation, and authorize exact supervisor cleanup safely.",
+  "runtime_files": [
+    "scripts/nexus_agent_platform/stability_supervisor.py",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py",
+    "scripts/nexus_agent_platform/job_worker_supervisor.py"
+  ],
+  "prohibited_contents": [
+    "legacy Research ledger",
+    "production State v2 records",
+    "credentials or runtime.env",
+    "r50 or r51 release directories",
+    "database migrations",
+    "worker runtime logs"
+  ],
+  "certification": {
+    "minimum_test_count": 100,
+    "required_suites": [
+      "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
+      "scripts/nexus_agent_platform/tests/test_stability_supervisor.py",
+      "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+      "scripts/nexus_agent_platform/tests/test_durable_jobs.py",
+      "scripts/research/tests/test_research_state_v2_persistence.py"
+    ],
+    "requires_offline_failure_reproduction": true
+  }
+}

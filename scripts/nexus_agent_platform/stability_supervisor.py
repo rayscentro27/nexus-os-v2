@@ -75,6 +75,10 @@ class SupervisorStateStore:
             );
             CREATE INDEX IF NOT EXISTS objective_blocks_job_idx ON objective_blocks(job_id,status);
             CREATE TABLE IF NOT EXISTS supervisor_flags(flag TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS host_reconciliations(
+              event_id TEXT PRIMARY KEY, observed_at TEXT NOT NULL, observation_json TEXT NOT NULL,
+              FOREIGN KEY(event_id) REFERENCES incidents(event_id)
+            );
             """)
             columns = {row[1] for row in db.execute("PRAGMA table_info(objective_blocks)")}
             if "department" not in columns:
@@ -161,6 +165,22 @@ class SupervisorStateStore:
                            (status, event_id, objective_id))
             db.commit()
 
+    def reconcile_host_incident(self, event_id: str, observation: dict[str, Any]) -> None:
+        """Resolve an active host incident only after the caller supplies fresh passing evidence."""
+        encoded = json.dumps(observation, separators=(",", ":"))
+        if len(encoded.encode("utf-8")) > 4096 or observation.get("result") != "HEALTHY":
+            raise ValueError("HOST_RECONCILIATION_EVIDENCE_INVALID")
+        with sqlite3.connect(self.path, timeout=2) as db:
+            row = db.execute("SELECT event_json,status FROM incidents WHERE event_id=?", (event_id,)).fetchone()
+            if not row or json.loads(row[0]).get("failure_domain") != "SYSTEMS_HOST":
+                raise KeyError("GLOBAL_HOST_INCIDENT_NOT_FOUND")
+            db.execute("INSERT INTO host_reconciliations VALUES(?,?,?) ON CONFLICT(event_id) DO UPDATE SET "
+                       "observed_at=excluded.observed_at,observation_json=excluded.observation_json",
+                       (event_id, str(observation["observed_at"]), encoded))
+            db.execute("UPDATE incidents SET status='RESOLVED',updated_at=? WHERE event_id=? AND status='ACTIVE'",
+                       (str(observation["observed_at"]), event_id))
+            db.commit()
+
     def set_flag(self, flag: str, value: bool) -> None:
         with sqlite3.connect(self.path, timeout=2) as db:
             db.execute("INSERT INTO supervisor_flags VALUES(?,?,?) ON CONFLICT(flag) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at",
@@ -175,39 +195,143 @@ class SupervisorStateStore:
 
 def get_host_execution_gate(*, state_store: SupervisorStateStore | None = None,
                             process_rows: list[dict[str, str]] | None = None,
-                            filesystem_responsive: bool | None = True,
-                            governor_state: str | None = None) -> dict[str, Any]:
-    """Fail closed for new heavy work when a global host incident or bad signal exists."""
+                            filesystem_responsive: bool | None = None,
+                            governor_state: str | None = None,
+                            process_samples: list[list[dict[str, str]]] | None = None,
+                            state_v2_readiness: dict[str, Any] | None = None,
+                            active_release: tuple[str | None, bool] | None = None) -> dict[str, Any]:
+    """Use fresh bounded health evidence; retain incidents as history and reconcile explicitly."""
     state_store = state_store or SupervisorStateStore()
     reasons: list[str] = []
     evidence: list[str] = []
     incidents = state_store.active_global_host_incidents()
-    if incidents:
-        reasons.append("HOST_IO_DEGRADED")
-        evidence.extend(str(row["event"].get("evidence_references", [row["event_id"]])[0]) for row in incidents)
-    if process_rows is None:
-        process_rows, error = _read_process_table()
-        if error:
-            reasons.append("PROCESS_STATE_UNAVAILABLE")
-    u_rows = [row for row in process_rows if "U" in row.get("state", "").upper()]
-    if u_rows:
-        reasons.append("PROCESS_UNINTERRUPTIBLE_IO")
-        evidence.extend(f"pid:{row['pid']}:{row.get('command','')[:120]}" for row in u_rows[:8])
+    if process_samples is None:
+        if process_rows is not None:
+            process_samples = [process_rows]
+        else:
+            process_samples = []
+            for index in range(3):
+                rows, error = _read_process_table()
+                if error:
+                    process_samples.append([])
+                    reasons.append("PROCESS_STATE_UNAVAILABLE")
+                else:
+                    process_samples.append(rows)
+                if index < 2:
+                    time.sleep(0.5)
+    if not process_samples:
+        reasons.append("PROCESS_STATE_UNAVAILABLE")
+    elif len(process_samples) < 3:
+        reasons.append("PROCESS_OBSERVATION_INCOMPLETE")
+    if filesystem_responsive is None:
+        filesystem_responsive, fs_reasons = _bounded_filesystem_probe(_RECOVERY_CERTIFICATION_PATHS)
+        reasons.extend(fs_reasons)
+    u_by_sample = [{str(row.get("pid")): row for row in rows
+                    if "U" in str(row.get("state", "")).upper() and row.get("pid")}
+                   for rows in process_samples]
+    common_u = set.intersection(*(set(rows) for rows in u_by_sample)) if u_by_sample else set()
+    persistent_rows = [u_by_sample[-1][pid] for pid in sorted(common_u)]
     if filesystem_responsive is False:
         reasons.append("FILESYSTEM_STALL")
     if governor_state and governor_state.upper() in {"BLOCKED", "DEGRADED", "UNAVAILABLE"}:
         reasons.append(f"RESOURCE_GOVERNOR_{governor_state.upper()}")
+    nexus_persistent = [row for row in persistent_rows if any(
+        marker in str(row.get("command", "")).lower() for marker in _NEXUS_MARKERS)]
+    families = {Path(str(row.get("command", "")).split(" ", 1)[0]).name for row in persistent_rows}
+    persistent_degradation = bool(nexus_persistent or len(families) >= 2 or
+                                  persistent_rows and (filesystem_responsive is False or
+                                  (governor_state or "").upper() in {"BLOCKED", "DEGRADED", "UNAVAILABLE"}))
+    if persistent_degradation:
+        reasons.append("PERSISTENT_HOST_IO_DEGRADED")
+        evidence.extend(f"pid:{row['pid']}:{str(row.get('command',''))[:120]}" for row in persistent_rows[:8])
+    elif not reasons and incidents:
+        observation = {"observed_at": datetime.now(timezone.utc).isoformat(),
+                       "sample_count": len(process_samples), "persistent_u_count": 0,
+                       "filesystem_responsive": filesystem_responsive,
+                       "governor_state": governor_state or "NOT_AVAILABLE",
+                       "result": "HEALTHY"}
+        for row in incidents:
+            state_store.reconcile_host_incident(row["event_id"], observation)
+            evidence.append(f"reconciled:{row['event_id']}")
     host_blocked = bool(reasons)
-    research_ready = state_store.get_flag("research_state_architecture_certified", False)
-    if not research_ready:
-        reasons.append("RESEARCH_STATE_ARCHITECTURE_UNCERTIFIED")
+    readiness = evaluate_state_v2_readiness(state_v2_readiness, active_release=active_release)
+    if readiness["status"] != "READY":
+        reasons.append("STATE_V2_READINESS_UNKNOWN" if readiness["status"] == "UNKNOWN"
+                       else "STATE_V2_NOT_READY")
     return {"host_health": "BLOCKED" if host_blocked else "HEALTHY",
             "heavy_work_allowed": not host_blocked,
-            "research_execution_allowed": not host_blocked and research_ready,
+            "research_execution_allowed": not host_blocked and readiness["status"] == "READY",
             "build_allowed": not host_blocked,
             "migration_allowed": not host_blocked,
             "reason_codes": sorted(set(reasons)),
-            "evidence_references": list(dict.fromkeys(evidence))}
+            "evidence_references": list(dict.fromkeys(evidence)),
+            "state_v2_readiness": readiness}
+
+
+STATE_V2_READINESS_SCHEMA = "nexus.state-v2-readiness.v1"
+STATE_V2_REQUIRED_CHECKS = (
+    "active_release_supports_state_v2", "migration_applied", "project_index_valid_ready",
+    "job_index_valid_ready", "legacy_normal_reads_disabled", "legacy_normal_writes_disabled",
+    "legacy_fsync_disabled", "authoritative_backend_available", "hot_state_seed_verified",
+    "cutover_verified", "legacy_not_required_for_recovery",
+)
+
+
+def _active_state_v2_release() -> tuple[str | None, bool]:
+    configured = os.environ.get("NEXUS_ACTIVE_RESEARCH_RELEASE", "").strip()
+    if configured:
+        return configured, True
+    for parent in Path(__file__).resolve().parents:
+        for manifest_name in ("R53_RELEASE_MANIFEST.json", "R52_RELEASE_MANIFEST.json"):
+            manifest_path = parent / manifest_name
+            if manifest_path.is_file():
+                try:
+                    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                    capabilities = manifest.get("capabilities", [])
+                    return str(manifest.get("release_id") or ""), "state_v2" in capabilities
+                except (OSError, ValueError, TypeError):
+                    return None, False
+    return None, False
+
+
+def evaluate_state_v2_readiness(record: dict[str, Any] | None = None, *,
+                                active_release: tuple[str | None, bool] | None = None) -> dict[str, Any]:
+    """Validate a small durable readiness attestation; never infer readiness from build metadata."""
+    if record is None:
+        path = diagnostics_root().parent / "state_v2_runtime_readiness.json"
+        try:
+            if not path.is_file() or path.stat().st_size > 16 * 1024:
+                return {"status": "UNKNOWN", "reason": "READINESS_RECORD_MISSING_OR_OVERSIZE",
+                        "source": str(path)}
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return {"status": "UNKNOWN", "reason": "READINESS_RECORD_UNREADABLE",
+                    "source": str(path)}
+    if not isinstance(record, dict) or record.get("schema") != STATE_V2_READINESS_SCHEMA:
+        return {"status": "UNKNOWN", "reason": "READINESS_SCHEMA_UNKNOWN"}
+    release_id, release_supports_state_v2 = active_release or _active_state_v2_release()
+    if (not release_id or not release_supports_state_v2
+            or record.get("active_release_id") != release_id):
+        return {"status": "UNKNOWN", "reason": "ACTIVE_RELEASE_READINESS_MISMATCH"}
+    verified_at = record.get("verified_at")
+    try:
+        stamp = datetime.fromisoformat(str(verified_at).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            raise ValueError
+        age = (datetime.now(timezone.utc) - stamp.astimezone(timezone.utc)).total_seconds()
+        if age < -300 or age > 7 * 24 * 60 * 60:
+            return {"status": "UNKNOWN", "reason": "READINESS_EVIDENCE_STALE_OR_FUTURE"}
+    except (TypeError, ValueError):
+        return {"status": "UNKNOWN", "reason": "READINESS_TIMESTAMP_INVALID"}
+    checks = record.get("checks")
+    if not isinstance(checks, dict) or any(key not in checks for key in STATE_V2_REQUIRED_CHECKS):
+        return {"status": "UNKNOWN", "reason": "READINESS_CHECKS_INCOMPLETE"}
+    if any(checks[key] is not True for key in STATE_V2_REQUIRED_CHECKS):
+        return {"status": "NOT_READY", "reason": "REQUIRED_STATE_V2_CHECK_FAILED",
+                "failed_checks": [key for key in STATE_V2_REQUIRED_CHECKS if checks[key] is not True]}
+    return {"status": "READY", "reason": "ALL_REQUIRED_RUNTIME_CHECKS_PASS",
+            "evidence_version": str(record.get("evidence_version") or "unknown"),
+            "verified_at": str(record.get("verified_at") or "unknown")}
 
 
 _RECOVERY_CERTIFICATION_OPERATION = "STABILITY_SUPERVISOR_FOCUSED_TESTS"

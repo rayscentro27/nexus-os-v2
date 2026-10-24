@@ -47,6 +47,30 @@ WORKER_CLEANUP_ALLOWED_SELECT = {
 }
 
 
+def _trusted_cleanup_caller(frame) -> str | None:
+    """Identify only the packaged worker or the exact supervisor entrypoint."""
+    trusted_supervisor = (Path(__file__).resolve().parent / "job_worker_supervisor.py").resolve()
+    main_module = sys.modules.get("__main__")
+    main_file = getattr(main_module, "__file__", None)
+    try:
+        main_path = Path(main_file).resolve() if main_file else None
+        argv_path = Path(sys.argv[0]).resolve() if sys.argv and sys.argv[0] else None
+    except (OSError, RuntimeError):
+        main_path = argv_path = None
+    while frame is not None:
+        module_name = str(frame.f_globals.get("__name__") or "")
+        source_path = Path(frame.f_code.co_filename).resolve()
+        if module_name == "nexus_agent_platform.job_worker_once":
+            return "PACKAGED_WORKER"
+        if (module_name == "nexus_agent_platform.job_worker_supervisor" and source_path == trusted_supervisor):
+            return "PACKAGED_SUPERVISOR_MODULE"
+        if (module_name == "__main__" and source_path == trusted_supervisor
+                and main_path == trusted_supervisor and argv_path == trusted_supervisor):
+            return "PACKAGED_SUPERVISOR_ENTRYPOINT"
+        frame = frame.f_back
+    return None
+
+
 class ResearchSourcesBurstExceeded(RuntimeError):
     """The current wake exhausted its measured research_sources request budget."""
 
@@ -62,17 +86,8 @@ class JobEgressBudgetExceeded(RuntimeError):
 @contextmanager
 def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None = None):
     """Permit only tiny exact-job cleanup requests after normal egress is spent."""
-    frame = sys._getframe(1)
-    authorized = False
-    for _ in range(12):
-        if frame is None:
-            break
-        caller = str(frame.f_globals.get("__name__") or "")
-        if caller in {"nexus_agent_platform.job_worker_once", "nexus_agent_platform.job_worker_supervisor"}:
-            authorized = True
-            break
-        frame = frame.f_back
-    if not authorized:
+    caller_identity = _trusted_cleanup_caller(sys._getframe(1))
+    if caller_identity is None:
         raise PermissionError("WORKER_CLEANUP_CALLER_NOT_AUTHORIZED")
     safe_id = str(job_id or "")
     if not safe_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for ch in safe_id):
@@ -84,6 +99,7 @@ def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None
     if safe_reservation and not re.fullmatch(r"[A-Za-z0-9_-]{1,160}", safe_reservation):
         raise ValueError("CLEANUP_RESERVATION_ID_INVALID")
     token = _CLEANUP_SCOPE.set({"job_id": safe_id, "worker_id": safe_worker,
+                                "caller_identity": caller_identity,
                                 "reservation_id": safe_reservation, "requests": 0, "response_bytes": 0})
     try:
         yield

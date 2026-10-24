@@ -11,6 +11,7 @@ import sys
 import tempfile
 import threading
 import time
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -124,6 +125,21 @@ def _exception_summary(stderr_path: Path) -> tuple[str | None, str | None]:
     return None, None
 
 
+def _cleanup_failure(exc: Exception) -> dict:
+    from nexus_agent_platform.worker_lifecycle import sanitize
+    frames = traceback.extract_tb(exc.__traceback__)
+    frame = frames[-1] if frames else None
+    message = sanitize(str(exc) or type(exc).__name__, limit=300)
+    return {"status": "CLEANUP_FAILED", "error_type": sanitize(type(exc).__name__, limit=80),
+            "error_summary": message, "traceback_location": {
+                "file": Path(frame.filename).name if frame else None,
+                "function": sanitize(frame.name, limit=100) if frame else None,
+                "line": int(frame.lineno) if frame else None,
+            }, "caller_identity": "CALLER_REJECTED" if "CALLER_NOT_AUTHORIZED" in message
+            else "TRUSTED_SUPERVISOR", "operation": "EXACT_JOB_POST_EXIT_READ_OR_TRANSITION",
+            "active_slot_released": False}
+
+
 def _exact_exit_recovery(job_id: str, worker_id: str) -> dict:
     from nexus_agent_platform.durable_jobs import default_store
     from nexus_agent_platform.supabase_egress_guard import worker_cleanup_scope
@@ -210,8 +226,7 @@ def supervise(job_id: str, worker_id: str, attempt: int, timeout_seconds: int = 
     try:
         recovery = _exact_exit_recovery(job_id, worker_id)
     except Exception as exc:
-        recovery = {"status": "CLEANUP_FAILED", "error_type": type(exc).__name__,
-                    "active_slot_released": False}
+        recovery = _cleanup_failure(exc)
     final_stage = last_stage(lifecycle_path)
     emit(job_id, "WORKER_PROCESS_EXIT", attempt=attempt, worker_id=worker_id,
          exit_code=exit_code, termination_signal=termination_signal,
