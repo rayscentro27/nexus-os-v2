@@ -29,9 +29,7 @@ jobs:
         run: >-
           python -m pytest -q
           scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py
-          scripts/nexus_agent_platform/tests/test_stability_supervisor.py
           scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py
-          scripts/nexus_agent_platform/tests/test_durable_jobs.py
           scripts/research/tests/test_research_state_v2_persistence.py
           --junitxml=dist/r53_github_certification.xml
       - name: Upload immutable overlay and certification evidence

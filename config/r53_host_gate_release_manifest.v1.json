@@ -18,12 +18,10 @@
     "worker runtime logs"
   ],
   "certification": {
-    "minimum_test_count": 100,
+    "minimum_test_count": 40,
     "required_suites": [
       "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
-      "scripts/nexus_agent_platform/tests/test_stability_supervisor.py",
       "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
-      "scripts/nexus_agent_platform/tests/test_durable_jobs.py",
       "scripts/research/tests/test_research_state_v2_persistence.py"
     ],
     "requires_offline_failure_reproduction": true

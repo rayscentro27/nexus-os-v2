@@ -190,6 +190,14 @@ def test_r52_compact_discovery_and_capacity_path_preserved():
     assert 'if case_open["status"] == "WAITING_FOR_CAPACITY"' in worker.read_text()
 
 
-def test_global_expired_lease_recovery_source_preserved():
-    from nexus_agent_platform import durable_jobs
-    assert "def recover_expired" in Path(durable_jobs.__file__).read_text()
+def test_global_expired_lease_recovery_source_preserved(tmp_path):
+    from datetime import timedelta
+    from nexus_agent_platform.durable_jobs import DurableJobStore
+    store = DurableJobStore(tmp_path / "jobs.sqlite3")
+    job = store.enqueue("RESEARCH", "RESEARCH_INTAKE", max_attempts=3)
+    now = datetime.now(timezone.utc)
+    claimed = store.claim("worker-global-recovery", now=now, lease_seconds=15)
+    assert claimed and claimed.job_id == job.job_id
+    store.transition(job.job_id, "RUNNING", worker_id="worker-global-recovery", lease_seconds=15)
+    assert store.recover_expired(now + timedelta(seconds=30)) == 1
+    assert store.get(job.job_id).state == "FAILED_RETRYABLE"
