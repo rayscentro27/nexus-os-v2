@@ -1,6 +1,9 @@
 name: R54 Bounded Research-Only Contract Certification
 
 on:
+  push:
+    branches:
+      - research/r54-research-only-certification
   workflow_dispatch:
 
 permissions:
