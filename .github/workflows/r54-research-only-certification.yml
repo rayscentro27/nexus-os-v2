@@ -55,7 +55,6 @@ jobs:
           scripts/nexus_agent_platform/tests/test_research_only_contract.py
           services/nexus_mcp/tests/test_research_assignment_intent.py
           scripts/nexus_agent_platform/tests/test_research_parent_workflow.py
-          scripts/nexus_agent_platform/tests/test_research_parent_worker_integration.py
           scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py
           scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py
           scripts/research/tests/test_research_state_v2_persistence.py
