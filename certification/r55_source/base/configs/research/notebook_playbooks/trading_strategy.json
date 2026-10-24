@@ -1,0 +1,117 @@
+{
+  "playbook_id": "nexus.notebook.trading_strategy",
+  "case_type": "TRADING_STRATEGY",
+  "version": "1.0.0",
+  "objective_description": "Develop a discovered trading component into an independently testable hypothesis.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What does the indicator or strategy do, what market behavior is it intended to identify, and what are its exact bullish and bearish signal rules?",
+    "Are signals intrabar or confirmed at candle close; what are the defaults, configurable parameters, repaint/lookahead risks, and formation invalidation rules?",
+    "Classify each component as entry, confirmation, trend/regime/volume/volatility filter, market structure, stop, target, exit, sizing, session filter, or context only.",
+    "Which complementary indicators are paired with it, what role does each perform, what combinations have evidence, and where is overfitting possible?",
+    "Which markets were tested, strongest and weakest, and is volume centralized, proxy, or unavailable? Which independent Nexus market is appropriate first?",
+    "Which timeframes were tested, strongest and weakest, why, and which should be first test and robustness interval?",
+    "What stop, ATR, structure stop, target, risk/reward, trailing exit, invalidation, and position-sizing rules are stated?",
+    "For every performance claim, identify source, market, timeframe, trade count, win rate, net return, profit factor, drawdown, settings, period, and costs; separate claims from verified results.",
+    "Propose the simplest source-faithful baseline and at most one evidence-supported improvement plus one meaningful variation; separate source-supported rules from Nexus test assumptions.",
+    "Identify true blocking unknowns, non-blocking unknowns, next research question, and best next source class."
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "TRADINGVIEW_PUBLIC_SCRIPTS",
+    "YOUTUBE",
+    "NEXUS_MARKET_DATA",
+    "MERCURY_TRADING"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "exact",
+        "pine",
+        "repaint",
+        "formation",
+        "signal rules",
+        "defaults"
+      ],
+      "source_classes": [
+        "TRADINGVIEW_PUBLIC_SCRIPTS",
+        "OFFICIAL_SCRIPT_PAGE"
+      ]
+    },
+    {
+      "match_any": [
+        "timeframe",
+        "market",
+        "volume",
+        "tested"
+      ],
+      "source_classes": [
+        "YOUTUBE",
+        "NEXUS_MARKET_DATA",
+        "MARKET_STUDY"
+      ]
+    },
+    {
+      "match_any": [
+        "fill",
+        "stop",
+        "target",
+        "exit",
+        "sizing"
+      ],
+      "source_classes": [
+        "MERCURY_TRADING",
+        "NEXUS_BACKTEST_ENGINE"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "case_id": "",
+    "strategy_name": "",
+    "source_supported_rules": [],
+    "test_assumptions": [],
+    "market": "",
+    "timeframe": "",
+    "entry": "",
+    "exit": "",
+    "stop": "",
+    "target": "",
+    "claims_to_verify": [],
+    "recommended_test": ""
+  },
+  "handoff_destination": "MERCURY_TRADING",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": "",
+    "source_supported_rules": [],
+    "test_assumptions": [],
+    "market": "",
+    "timeframe": "",
+    "entry": "",
+    "exit": "",
+    "stop": "",
+    "target": "",
+    "claims_to_verify": [],
+    "recommended_test": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

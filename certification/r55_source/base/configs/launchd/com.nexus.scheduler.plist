@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.nexus.scheduler</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3</string>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/nexus_agent_platform/scheduler_once.py</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+	<key>StartInterval</key>
+	<integer>300</integer>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>KeepAlive</key>
+	<false/>
+	<key>StandardOutPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/durable_scheduler.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/durable_scheduler.error.log</string>
+	<key>Disabled</key>
+	<true/>
+</dict>
+</plist>

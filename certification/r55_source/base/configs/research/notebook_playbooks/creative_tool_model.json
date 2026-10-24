@@ -1,0 +1,84 @@
+{
+  "playbook_id": "nexus.notebook.creative_tool_model",
+  "case_type": "CREATIVE_TOOL_MODEL",
+  "version": "1.0.0",
+  "objective_description": "Evaluate a creative model against a concrete production use case.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What can it generate (image/video/audio/avatar), with what inputs and output formats?",
+    "What evidence exists for quality, resolution, character consistency, prompt adherence, text fidelity, and speed?",
+    "What API/automation path, cost, quotas, region/model availability, and local/cloud requirements apply?",
+    "What commercial license and usage restrictions apply?",
+    "How does it compare with Modal, fal.ai, Meta, Hugging Face, and current Nexus routes?",
+    "What bounded benchmark prompt, success criteria, and expected cost should be tested?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "OFFICIAL_DOCS",
+    "MODEL_CARD",
+    "GITHUB",
+    "PRICING",
+    "CREATOR_DEMOS",
+    "BENCHMARKS",
+    "NEXUS_TEST_ARTIFACTS"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "quality",
+        "resolution",
+        "consistency",
+        "prompt"
+      ],
+      "source_classes": [
+        "BENCHMARKS",
+        "CREATOR_DEMOS",
+        "NEXUS_CANARY"
+      ]
+    },
+    {
+      "match_any": [
+        "license",
+        "commercial"
+      ],
+      "source_classes": [
+        "OFFICIAL_LICENSE",
+        "MODEL_CARD"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "creative_use_case": "",
+    "provider_comparison": [],
+    "benchmark_needed": true,
+    "benchmark_prompt": "",
+    "success_criteria": [],
+    "expected_cost": "",
+    "recommendation": ""
+  },
+  "handoff_destination": "CREATIVE",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

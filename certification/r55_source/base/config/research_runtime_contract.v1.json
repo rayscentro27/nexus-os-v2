@@ -1,0 +1,172 @@
+{
+  "schema_version": "nexus.research-runtime-contract.v1",
+  "release_id": "nexus-capability-actions-20261022-r51",
+  "release_components": {
+    "MCP_ENTRYPOINT": "services/nexus_mcp/http_server.py",
+    "DISPATCHER_ENTRYPOINT": "scripts/nexus_agent_platform/dispatcher_once.py",
+    "WORKER_ENTRYPOINT": "scripts/nexus_agent_platform/job_worker_once.py",
+    "RESEARCH_INTAKE_RUNNER": "scripts/research/run_dispatched_research_job.py",
+    "RESEARCH_CONTROLLER": "scripts/nexus_agent_platform/research_room/production_controller.py",
+    "ADVISOR_ROUTER": "scripts/nexus_agent_platform/research_room/advisor_router.py",
+    "CASE_ENGINE": "scripts/research/research_case_engine.py",
+    "STATE_V2_STORE": "scripts/research/research_state_v2.py",
+    "NEEDLE": "scripts/nexus_agent_platform/research_room/participants.py",
+    "SYNTHESIS": "scripts/nexus_agent_platform/research_room/participants.py",
+    "TRACE_READER": "services/nexus_mcp/server.py"
+  },
+  "external_state": {
+    "RESEARCH_STATE_ROOT_ENV": "NEXUS_RESEARCH_STATE_ROOT",
+    "DURABLE_JOB_STORE": "nexus_durable_jobs (Supabase production; SQLite only for isolated certification)",
+    "GOVERNOR_POLICY_STORE": "nexus_resource_policies (Supabase production)",
+    "EXECUTION_LEDGER": "runtime/research_execution_jobs.jsonl",
+    "RECEIPT_STORE": "durable job receipt_ref/result_hash plus governed Research state",
+    "RESEARCH_CURRENT_STATE": "research_proactive_memory keyed by memory_id; certification-local SQLite namespace",
+    "RESEARCH_HISTORY": "NEXUS_RESEARCH_STATE_ROOT/history/research/YYYY/MM/YYYY-MM-DD[.segment].jsonl plus bounded partition manifest",
+    "CERTIFICATION_STATE_ROOT_ENV": "NEXUS_CERTIFICATION_RESEARCH_STATE_ROOT",
+    "CERTIFICATION_STATE_ROOT": "/Users/raymonddavis/.nexus/state/certification/research",
+    "CERTIFICATION_EFFECTIVE_RESEARCH_STATE_ENV": "NEXUS_RESEARCH_STATE_ROOT",
+    "CERTIFICATION_WRITES_PRODUCTION_STATE": false
+  },
+  "executables": {
+    "CHATGPT_PLAN_EXECUTABLE": "/usr/local/bin/codex",
+    "PYTHON_EXECUTABLE": ".venv-agent-platform/bin/python3",
+    "REQUIRED_SUBPROCESS_EXECUTABLES": [
+      "/bin/zsh",
+      "/usr/bin/env",
+      "/usr/local/bin/codex"
+    ]
+  },
+  "environment": {
+    "PATH_REQUIRED_ENTRY": "/usr/local/bin",
+    "HOME_REQUIRED": true,
+    "USER_REQUIRED": true,
+    "PYTHONPATH_RELEASE_ROOT_REQUIRED": true,
+    "NEXUS_RESEARCH_STATE_ROOT_REQUIRED": true,
+    "PROVIDER_CONFIGURATION": "runtime.env sourced by the configured Nexus wrapper; secrets never printed",
+    "GOVERNOR_CONFIGURATION": "policy read must resolve CHATGPT_PLAN / RESEARCH_ADVISOR / RESEARCH_ROOM_ADVISOR",
+    "RELEASE_ROOT_REQUIRED": true
+  },
+  "services": {
+    "MCP": {
+      "label": "com.nexus.nexus-mcp-bridge",
+      "plist": "~/Library/LaunchAgents/com.nexus.nexus-mcp-bridge.plist"
+    },
+    "DURABLE_DISPATCHER": {
+      "label": "com.nexus.durable-dispatcher",
+      "plist": "~/Library/LaunchAgents/com.nexus.durable-dispatcher.plist"
+    }
+  },
+  "providers": {
+    "CHATGPT_PLAN": {
+      "advisor_eligibility": "PRIMARY",
+      "incremental_cost": 0,
+      "approval_required": false,
+      "auth_required": true
+    },
+    "OPENROUTER_FREE": {
+      "advisor_eligibility": "AUTHORIZED_FREE_FALLBACK_ONLY",
+      "incremental_cost": 0
+    },
+    "CODEX": {
+      "advisor_eligibility": "TECHNICAL_SPECIALIST_ONLY",
+      "incremental_cost": 0,
+      "approval_required": false
+    },
+    "OLLAMA_LOCAL": {
+      "advisor_eligibility": "INELIGIBLE",
+      "research_advisor_allowed": false
+    }
+  },
+  "runtime_gates": {
+    "no_relevant_process_in_uninterruptible_state": true,
+    "memory_free_percent_minimum": 10,
+    "disk_free_gib_minimum": 10,
+    "active_deep_research_case_limit": 3,
+    "authenticated_mcp_initialize_and_tool_discovery_required": true,
+    "governor_policy_probe_required": true,
+    "host_u_state_blocks_new_work": true
+  },
+  "ledger_health_guards": {
+    "basis": "provisional safety thresholds; validate against repeated healthy-host p95 measurements before enforcement",
+    "max_hot_ledger_size_bytes": 1073741824,
+    "warning_hot_ledger_size_bytes": 536870912,
+    "max_case_lookup_latency_ms": 1000,
+    "warning_case_lookup_latency_ms": 250,
+    "max_ledger_append_latency_ms": 1000,
+    "warning_ledger_append_latency_ms": 100,
+    "max_allowed_full_scan_on_normal_case_read": 0,
+    "rotation_threshold_bytes": 536870912,
+    "compaction_trigger_bytes": 1073741824,
+    "host_u_state_blocks_new_work": true,
+    "actions_on_guard_failure": [
+      "PAUSE_NEW_HEAVY_WORK",
+      "PRESERVE_EXISTING_STATE",
+      "EMIT_RECOVERY_EVENT"
+    ]
+  },
+  "research_state_architecture": {
+    "hot_state": "authoritative research_proactive_memory current-state rows keyed by memory_id; certification uses namespace-local SQLite only",
+    "archive": "append-only daily JSONL partitions with numbered 64 MiB maximum segments under the external Research state root",
+    "certification_state_root_must_differ_from_production": true,
+    "history_deletion_allowed": false,
+    "full_archive_scan_allowed_in_live_path": false,
+    "lookup_unavailable_event": "CURRENT_STATE_LOOKUP_UNAVAILABLE",
+    "normal_legacy_reads_allowed": false,
+    "normal_legacy_writes_allowed": false,
+    "legacy_recovery_requires_explicit_operation": true,
+    "temporary_get_case_legacy_recovery_reason": "Pre-cutover operator recovery compatibility only; get_case requires allow_bounded_local_recovery=true and ordinary live calls fail closed.",
+    "temporary_get_case_legacy_recovery_removal_condition": "Remove after State v2 release is activated, seed lineage is verified, and source ledger has been atomically quarantined with rollback path retained."
+  },
+  "research_state_v2_persistence": {
+    "current_state_backend": "Supabase research_proactive_memory; SQLite only in isolated certification namespace",
+    "current_state_primary_key": "memory_id",
+    "case_id_lookup": "exact memory_id equality",
+    "objective_id_lookup": "objective_id indexed column, then exact memory_id hydration",
+    "project_id_lookup": "bounded payload project_id equality projection, then exact memory_id hydration",
+    "job_id_lookup": "bounded payload job_id equality projection, then exact memory_id hydration",
+    "lookup_index_migration": "scripts/research/sql/research_state_v2_indexes.sql",
+    "lookup_index_migration_applied": false,
+    "database_index_migration_required_before_cutover": true,
+    "max_current_state_record_bytes": 262144,
+    "history_root": "NEXUS_RESEARCH_STATE_ROOT/history/research",
+    "history_partition": "UTC daily JSONL; numbered segments when a partition reaches its byte cap",
+    "max_history_event_bytes": 65536,
+    "max_history_partition_bytes": 67108864,
+    "max_history_segment_probes": 4,
+    "unbounded_segment_search": false,
+    "max_history_partition_age_days": 1,
+    "rotation_threshold_bytes": 67108864,
+    "normal_lookup_latency_target_ms": 1000,
+    "no_full_history_scan": true,
+    "write_order": [
+      "durable_pending_intent",
+      "authoritative_current_state_upsert",
+      "partitioned_history_append",
+      "commit_receipt",
+      "pending_intent_removal"
+    ],
+    "reconciliation": "bounded replay of durable pending intents; current upsert is idempotent and archive replay checks the locked partition tail event_id",
+    "certification_namespace_isolation": true,
+    "certification_current_store": "NEXUS_CERTIFICATION_RESEARCH_STATE_ROOT/current/research_state_v2.sqlite3",
+    "certification_history_root": "NEXUS_CERTIFICATION_RESEARCH_STATE_ROOT/history/research",
+    "limits_rationale": "Daily UTC partitions bound age; 64 MiB segments cap single-file growth; 64 KiB event and 256 KiB current-record caps bound individual writes; four adjacent segment probes cover the hinted active segment, stale/partial rotation recovery, and the next writable segment while failing closed instead of scanning archive history; lookup target retains the existing provisional 1 s runtime-contract ceiling pending healthy-host measurements."
+  },
+  "host_io_recovery_signals": [
+    "HOST_IO_DEGRADED",
+    "LEDGER_SIZE_THRESHOLD_EXCEEDED",
+    "CASE_LOOKUP_LATENCY_EXCEEDED",
+    "FILESYSTEM_STALL",
+    "PROCESS_UNINTERRUPTIBLE_IO",
+    "CURRENT_STATE_WRITE_FAILED",
+    "HISTORY_WRITE_FAILED",
+    "STATE_DIVERGENCE_DETECTED",
+    "HISTORY_PARTITION_ROTATION_FAILED",
+    "HISTORY_PARTITION_SELECTION_EXHAUSTED",
+    "RECONCILIATION_REQUIRED"
+  ],
+  "failure_policy": {
+    "objective_termination_authority": "RAY_ONLY",
+    "automatic_objective_termination": false,
+    "retries_must_be_bounded_and_authorized": true
+  }
+}

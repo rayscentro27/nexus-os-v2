@@ -1,0 +1,50 @@
+{
+  "base_release_id": "nexus-capability-actions-20261022-r51",
+  "certification": {
+    "errors": 0,
+    "failures": 0,
+    "minimum_test_count": 15,
+    "report": "certification/r52_certification.xml",
+    "required_suites": [
+      "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+      "scripts/nexus_agent_platform/tests/test_durable_jobs.py",
+      "scripts/research/tests/test_research_state_v2_persistence.py"
+    ],
+    "requires_offline_failure_reproduction": true,
+    "result": "PASS",
+    "skipped": 0,
+    "tests": 76
+  },
+  "payload_sha256": {
+    "scripts/nexus_agent_platform/durable_jobs.py": "8892f083ce2b033d2b409963c0edfad3afbed36208c9cc431529800f24da1323",
+    "scripts/nexus_agent_platform/feeder_runtime.py": "f4e3a8d842661934ad49f5c16eff0ab7e4e3dbc1521ee69b8cbbb3816e77aaa0",
+    "scripts/nexus_agent_platform/job_worker_once.py": "d95502952db2063ad6a570a71073b62889bb1636cbf395d033d2bec36021ec39",
+    "scripts/nexus_agent_platform/job_worker_supervisor.py": "10e393412112b08d7b3cab26afc58119500fd3ac2e8208f7be5dc032ea8d66b1",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py": "f125180b2ece9611325f3c711e13d7d14ad6ce9fd50810ed7b0a2faf8059fd6b",
+    "scripts/nexus_agent_platform/worker_lifecycle.py": "1aa527e760b747415a6bb8282861a4d656050dcbd7c3078fed45d24bc07c1277",
+    "scripts/research/research_case_engine.py": "df541d335e3f094a50b3138e7b77e6e3e71cae03c197a8f8ba83a827f84f56e8",
+    "scripts/research/research_state_v2.py": "cfe79dffa7cc6dd092b22db3c55a62b7b10894cd81b5d6bc46819981d4da1ef7",
+    "scripts/social/_supabase.py": "79316a92e9dd51f63e54d27d2d222a37840ac4853d7184ded4480605ed8ad1ce"
+  },
+  "prohibited_contents": [
+    "legacy Research ledger",
+    "production State v2 records",
+    "credentials or runtime.env",
+    "r50 or r51 release directories",
+    "database migrations"
+  ],
+  "purpose": "Bound Research worker egress, settle capacity waits, recover exact-job child exits, and capture bounded worker observability.",
+  "release_id": "nexus-capability-actions-20261023-r52",
+  "release_type": "immutable_additive_overlay",
+  "runtime_files": [
+    "scripts/nexus_agent_platform/durable_jobs.py",
+    "scripts/nexus_agent_platform/feeder_runtime.py",
+    "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/job_worker_supervisor.py",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py",
+    "scripts/nexus_agent_platform/worker_lifecycle.py",
+    "scripts/research/research_case_engine.py",
+    "scripts/research/research_state_v2.py",
+    "scripts/social/_supabase.py"
+  ]
+}

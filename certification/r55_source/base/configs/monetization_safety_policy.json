@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "test_mode_only": true,
+  "real_charge_allowed": false,
+  "live_payment_link_allowed": false,
+  "customer_contact_allowed": false,
+  "funding_guarantee_allowed": false,
+  "score_guarantee_allowed": false,
+  "approval_required_for": ["test payment confirmation", "persistent synthetic customer insertion", "offer publication", "lead contact", "client-facing funding recommendation"]
+}

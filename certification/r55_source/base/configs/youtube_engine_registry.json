@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "roles": [
+    {"id":"youtube_api_metadata_connector","purpose":"Official quota-aware channel/video/playlist metadata with cache","downloads_media":false},
+    {"id":"youtube_ytdlp_local_probe","purpose":"Approved-target metadata fallback and subtitle availability detection","downloads_media":false,"cookies_allowed":false,"approval_required":true},
+    {"id":"youtube_transcript_import","purpose":"Approved local TXT source-text ingestion","downloads_media":false},
+    {"id":"youtube_review_engine","purpose":"Scoring, opportunities, content, Ray Review, and Hermes recommendations","downloads_media":false},
+    {"id":"youtube_notebooklm_bridge","purpose":"Manual NotebookLM research bundle export/import","consumer_browser_automation":false}
+  ],
+  "allowed_modes": ["real_transcript_review_active","real_metadata_review_active_api","real_metadata_review_active_ytdlp_local","api_configured_quota_cache_ready","ytdlp_available_needs_approval","targets_configured_ytdlp_available_needs_approved_probe","targets_configured_connector_missing","queue_only_no_real_review","not_configured","failed_with_error"]
+}

@@ -1,0 +1,12 @@
+{
+  "research_mode": "static_concept_records_only",
+  "network_access_required": false,
+  "targets": [
+    {"id":"hyperswitch","name":"Juspay Hyperswitch","url":"https://github.com/juspay/hyperswitch","concepts":["payment orchestration","multi-processor routing","webhook reliability","vault boundaries"]},
+    {"id":"btcpayserver","name":"BTCPay Server","url":"https://github.com/btcpayserver/btcpayserver","concepts":["self-hosted checkout","invoice state machine","crypto payments later","webhook events"]},
+    {"id":"globalpayments-samples","name":"Global Payments official samples","url":"https://github.com/globalpayments","concepts":["hosted payment fields","tokenization","sample checkout flows","PCI boundaries"]},
+    {"id":"payment-gateway-topic","name":"GitHub payment-gateway topic","url":"https://github.com/topics/payment-gateway","concepts":["gateway adapters","idempotency","provider abstraction"]},
+    {"id":"payment-links-topic","name":"GitHub payment-links topic","url":"https://github.com/topics/payment-links","concepts":["payment links","checkout lifecycle","conversion tracking"]},
+    {"id":"point-of-sale-topic","name":"GitHub point-of-sale topic","url":"https://github.com/topics/point-of-sale","concepts":["order/payment separation","receipts","reconciliation"]}
+  ]
+}

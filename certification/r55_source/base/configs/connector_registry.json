@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generated_for": "full_engine_audit",
+  "connectors": [
+    {
+      "connector_id": "bureau_dispute_connector", "name": "Bureau Dispute Connector", "category": "bureau_dispute", "mode": "mock", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["create synthetic connector action", "generate draft metadata", "write local proof"], "blocked_actions": ["submit dispute", "contact bureau", "upload real client data"], "proof_path": "reports/runtime/dispute_simulation_lab_latest.json", "safety_notes": "Synthetic simulation only; no bureau contact.", "required_env_vars": [], "configured": true, "next_setup_step": "Design a separately approved vendor sandbox before any connector upgrade."
+    },
+    {
+      "connector_id": "creditor_dispute_connector", "name": "Creditor Review Connector", "category": "creditor_dispute", "mode": "mock", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["create synthetic connector action", "queue draft for Ray Review"], "blocked_actions": ["contact creditor", "send letter", "submit account data"], "proof_path": "reports/runtime/dispute_simulation_lab_latest.json", "safety_notes": "Mock lifecycle proof only.", "required_env_vars": [], "configured": true, "next_setup_step": "Keep manual until compliance and vendor sandbox design are approved."
+    },
+    {
+      "connector_id": "collector_dispute_connector", "name": "Collector Debt Validation Connector", "category": "collector_dispute", "mode": "mock", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["generate validation draft metadata", "create internal task"], "blocked_actions": ["contact collector", "send validation request"], "proof_path": "reports/runtime/dispute_simulation_lab_latest.json", "safety_notes": "No collector contact.", "required_env_vars": [], "configured": true, "next_setup_step": "Require legal/compliance review and explicit Ray approval."
+    },
+    {
+      "connector_id": "certified_mail_connector", "name": "Certified Mail / DocuPost Connector", "category": "certified_mail", "mode": "disabled", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["create mailing checklist", "estimate required proof fields"], "blocked_actions": ["mail letter", "buy postage", "call DocuPost API"], "proof_path": "reports/runtime/connector_test_harness_latest.json", "safety_notes": "No postage or letter sending.", "required_env_vars": ["DOCUPOST_SANDBOX_KEY"], "configured": false, "next_setup_step": "Evaluate sandbox terms and approval design; do not connect production."
+    },
+    {
+      "connector_id": "client_message_connector", "name": "Client Message Connector", "category": "client_message", "mode": "disabled", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["generate message draft", "create admin review item"], "blocked_actions": ["send email", "send SMS", "contact client"], "proof_path": "reports/runtime/supabase_ready/client_messages_latest.json", "safety_notes": "Draft/read-only portal messages only.", "required_env_vars": [], "configured": false, "next_setup_step": "Approve consent, recipient, provider, and send workflow separately."
+    },
+    {
+      "connector_id": "document_upload_connector", "name": "Private Document Upload", "category": "document_upload", "mode": "disabled", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["generate document checklist", "show demo status"], "blocked_actions": ["upload real files", "store PII without tenant isolation"], "proof_path": "reports/runtime/supabase_ready/client_documents_latest.json", "safety_notes": "Frontend upload is intentionally disabled.", "required_env_vars": [], "configured": false, "next_setup_step": "Create private bucket, RLS, retention, consent, and malware-scan design."
+    },
+    {
+      "connector_id": "social_draft_engine", "name": "Social Draft Engine", "category": "social_draft", "mode": "internal", "status": "internal_active", "live_enabled": true, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["generate captions", "generate hooks", "generate hashtags", "create approval cards"], "blocked_actions": ["publish post", "contact followers"], "proof_path": "reports/runtime/social_connector_proof_latest.json", "safety_notes": "Real internal draft generation; never public posting.", "required_env_vars": [], "configured": true, "next_setup_step": "Review the five generated drafts in Ray Review."
+    },
+    {
+      "connector_id": "social_connector_health", "name": "Social Connector Health", "category": "social_health", "mode": "configured_read_only", "status": "connector_configured_publish_disabled", "live_enabled": false, "external_action_performed": false, "approval_required": false,
+      "allowed_actions": ["check local configuration presence", "report missing fields without values"], "blocked_actions": ["call publish API", "print token", "modify account"], "proof_path": "reports/runtime/social_connector_proof_latest.json", "safety_notes": "Account/token env presence detected locally; validity not network-tested.", "required_env_vars": ["META_PAGE_ACCESS_TOKEN", "META_PAGE_ID", "META_APP_ID", "META_APP_SECRET"], "configured": true, "next_setup_step": "Use a separately approved read-only/sandbox health check before sandbox posting."
+    },
+    {
+      "connector_id": "social_publish_gate", "name": "Social Publish Gate", "category": "social_publish", "mode": "approval_required", "status": "approval_gated", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["create dry-run gate proof", "create approval card"], "blocked_actions": ["public posting", "enable publish flag"], "proof_path": "reports/runtime/social_connector_proof_latest.json", "safety_notes": "Real public posting disabled.", "required_env_vars": ["META_PAGE_ACCESS_TOKEN", "META_PAGE_ID"], "configured": true, "next_setup_step": "Ray must approve exact test account, post, timing, and sandbox path."
+    },
+    {
+      "connector_id": "youtube_research_connector", "name": "YouTube Research Connector", "category": "youtube_research", "mode": "internal_queue", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": false,
+      "allowed_actions": ["inspect approved local targets", "review imported metadata/transcripts", "approval-gated local yt-dlp metadata/subtitle availability probe"], "blocked_actions": ["download video", "download audio", "bypass restrictions", "broad scrape", "publish reused content"], "proof_path": "reports/runtime/youtube_review_proof_latest.json", "safety_notes": "Four approved channel targets exist. Local yt-dlp may probe metadata/subtitle availability only after Ray approval; no media download.", "required_env_vars": ["YOUTUBE_API_KEY"], "configured": false, "local_ytdlp_available": true, "local_ytdlp_path": "/usr/local/bin/yt-dlp", "local_ytdlp_version": "2026.03.03", "local_ytdlp_probe_approved": false, "next_setup_step": "Approve local yt-dlp metadata/subtitle probe for queued YouTube targets, configure an API connector, or manually import approved source text."
+    },
+    {
+      "connector_id": "youtube_review_engine", "name": "YouTube Review Engine", "category": "youtube_review", "mode": "internal", "status": "queue_only_no_real_review", "live_enabled": true, "external_action_performed": false, "approval_required": false,
+      "allowed_actions": ["score imported metadata", "score local transcript text", "create opportunities"], "blocked_actions": ["claim placeholder metadata is real", "reuse copyrighted content", "download video/audio", "bypass platform restrictions"], "proof_path": "reports/runtime/youtube_review_proof_latest.json", "safety_notes": "Engine code exists. yt-dlp availability alone does not mean real review is active.", "required_env_vars": [], "configured": true, "next_setup_step": "Approve a bounded local probe or provide a real approved transcript/metadata record."
+    },
+    {
+      "connector_id": "email_draft_connector", "name": "Email Draft Connector", "category": "email_draft", "mode": "internal", "status": "internal_active", "live_enabled": true, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["generate draft email", "create approval record"], "blocked_actions": ["send email", "select real recipient"], "proof_path": "reports/runtime/supabase_ready/email_drafts_latest.json", "safety_notes": "Draft generation only.", "required_env_vars": [], "configured": true, "next_setup_step": "Review copy; sending remains separately gated."
+    },
+    {
+      "connector_id": "supabase_insert_connector", "name": "Supabase Insert Connector", "category": "supabase_insert", "mode": "approval_required", "status": "approval_gated", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["generate Supabase-ready JSON", "validate schema mapping"], "blocked_actions": ["automatic production insertion", "service-role exposure"], "proof_path": "reports/runtime/client_portal_backend_build_latest.json", "safety_notes": "Exports only; no insert during audit.", "required_env_vars": [], "configured": true, "next_setup_step": "Approve schema/RLS mapping and bounded insertion plan."
+    },
+    {
+      "connector_id": "payment_status_connector", "name": "Payment Status Connector", "category": "payment", "mode": "disabled", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["show payment-path missing status"], "blocked_actions": ["charge client", "create checkout", "spend money"], "proof_path": "reports/runtime/monetization_readiness_audit_latest.json", "safety_notes": "No payment collection path activated.", "required_env_vars": ["PAYMENT_PROVIDER_KEY"], "configured": false, "next_setup_step": "Select provider and approve offer/checkout terms before connection."
+    },
+    {
+      "connector_id": "trading_demo_connector", "name": "Oanda Practice Read Connector", "category": "trading_demo", "mode": "practice_read_only", "status": "practice_read_verified", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["read practice account metadata", "read historical practice candles", "run local historical replay"], "blocked_actions": ["place order", "connect live endpoint", "funded trading"], "proof_path": "reports/runtime/oanda_demo_readonly_check_latest.json", "safety_notes": "Practice environment and authenticated read access verified by HTTP 200. This does not authorize or enable practice/live order placement.", "required_env_vars": ["OANDA_API_TOKEN or OANDA_API_KEY", "OANDA_ACCOUNT_ID", "OANDA_ENVIRONMENT=practice"], "configured": true, "next_setup_step": "No setup required for bounded read-only market research; independently validate instrument, timeframe, data quality, and usage rights before each case-specific replay."
+    },
+    {
+      "connector_id": "webull_market_data_connector", "name": "Webull OpenAPI Market Data", "category": "market_data", "mode": "sandbox_read_only", "status": "credential_missing_entitlement_unverified", "live_enabled": false, "external_action_performed": false, "approval_required": true,
+      "allowed_actions": ["read sandbox snapshots", "read historical stock bars after authentication and subscription are verified"], "blocked_actions": ["place order", "modify/cancel order", "access funded trading"], "proof_path": "reports/trading/webull_sandbox_canary_latest.json", "safety_notes": "A prior sandbox canary reports HTTP 200 for account discovery and market data but carries no timestamp or historical-bar proof. Current canonical credential control plane has no Webull app key/secret configured; stock-history entitlement and company-use terms remain unverified.", "required_env_vars": ["NEXUS_WEBULL_OPENAPI_APP_KEY", "NEXUS_WEBULL_OPENAPI_APP_SECRET"], "configured": false, "next_setup_step": "Restore the approved Webull credential through the canonical Keychain/runtime control plane, then test only a bounded sandbox historical-bar read and verify market-data subscription and use terms."
+    }
+  ]
+}

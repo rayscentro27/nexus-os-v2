@@ -1,0 +1,40 @@
+{
+  "remote_source": "https://www.ui-skills.com/mcp",
+  "role": "implementation_guidance_and_qa",
+  "design_authority": false,
+  "creative_design_authority": true,
+  "ray_final_visual_approval": true,
+  "codex_implementation_authority": true,
+  "max_selected_skills": 3,
+  "preferred_selected_skills": 1,
+  "allowlisted_skills": [
+    "ui-skills-root",
+    "ibelick-baseline-ui",
+    "ibelick-fixing-accessibility",
+    "ibelick-fixing-motion-performance",
+    "jakubkrehel-better-layout",
+    "jakubkrehel-better-accessibility",
+    "jakubkrehel-better-writing",
+    "addyosmani-frontend-ui-engineering"
+  ],
+  "restricted_capabilities": [
+    "major_visual_redesign",
+    "brand_changes",
+    "information_architecture_changes",
+    "framework_replacement",
+    "dependency_addition",
+    "approved_layout_override"
+  ],
+  "allowed_capabilities": [
+    "accessibility",
+    "responsive_implementation",
+    "layout_implementation",
+    "typography_implementation",
+    "motion_performance_guidance",
+    "component_quality",
+    "frontend_architecture_guidance",
+    "testing",
+    "implementation_qa",
+    "design_fidelity_review"
+  ]
+}

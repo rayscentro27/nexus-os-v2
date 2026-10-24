@@ -1,0 +1,85 @@
+{
+  "base_release_id": "nexus-capability-actions-20261024-r53",
+  "certification": {
+    "errors": 0,
+    "failures": 0,
+    "minimum_test_count": 100,
+    "report": "certification/r54_certification.xml",
+    "required_suites": [
+      "scripts/nexus_agent_platform/tests/test_research_only_contract.py",
+      "scripts/nexus_agent_platform/tests/test_research_parent_workflow.py",
+      "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
+      "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+      "scripts/research/tests/test_research_state_v2_persistence.py"
+    ],
+    "result": "PASS",
+    "skipped": 0,
+    "tests": 112
+  },
+  "payload_sha256": {
+    "scripts/nexus_agent_platform/job_worker_once.py": "6826441150b3aee29d5576c64c34944a00f9e5c69e2c113ea6b65801f3b75110",
+    "scripts/nexus_agent_platform/research_assignment_executor.py": "66b7a824aea7fd52b177ca0af5bee2d80763104f5679b0dd5b64fa3111514eba",
+    "scripts/nexus_agent_platform/research_assignment_intent.py": "a045a0545dff9bac89a5eb01d6944fc7294d032ba474197e7301859416409b85",
+    "scripts/nexus_agent_platform/research_only_execution.py": "baf736faad2959935af6e5bb709f3837591c7a1ce7789a32b95b68aed304a6bf",
+    "scripts/nexus_agent_platform/research_parent_adapters.py": "90938acd50dcd64ca3da3d36250551c32a6839a0be10867141829d1c7c2cca44",
+    "scripts/nexus_agent_platform/research_parent_workflow.py": "bce3789e93a8f253cfea9d56eace92e6c360b52a0d2f0d4ee03ae59c904ca74a",
+    "scripts/research/research_case_engine.py": "bc587b4ad4617d008bc93dc0b15fed1b79e1faa877d9d38a5e9317c287dca5d1",
+    "services/nexus_mcp/server.py": "1ba8d97d9a4661dd1172e7eb403dd3d811ecdd38d354262f7a06131c89b36942"
+  },
+  "prohibited_contents": [
+    "legacy Research ledger",
+    "production State v2 records",
+    "credentials or runtime.env",
+    "r50, r51, r52, or r53 release directories",
+    "database migrations",
+    "worker runtime logs"
+  ],
+  "purpose": "Add an explicit bounded Research-only assignment contract that persists one source-grounded result and stops before parent continuation.",
+  "release_id": "nexus-capability-actions-20261024-r54",
+  "release_type": "immutable_additive_overlay",
+  "research_only_contract": {
+    "case_continue_research": false,
+    "case_state": "AWAITING_RAY_DECISION",
+    "downstream_children": 0,
+    "execution_path": "BOUNDED_RESEARCH_ONLY",
+    "intent": "RESEARCH_ONLY",
+    "max_evidence_references": 5,
+    "max_handoff_bytes": 8192,
+    "max_public_source_reads": 1,
+    "max_source_response_bytes": 1000000,
+    "max_summary_chars": 1200,
+    "terminal_job_state": "COMPLETED",
+    "terminal_work_item_state": "COMPLETE"
+  },
+  "runtime_files": [
+    "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/research_assignment_intent.py",
+    "scripts/nexus_agent_platform/research_only_execution.py",
+    "scripts/nexus_agent_platform/research_parent_workflow.py",
+    "scripts/nexus_agent_platform/research_parent_adapters.py",
+    "scripts/nexus_agent_platform/research_assignment_executor.py",
+    "scripts/research/research_case_engine.py",
+    "services/nexus_mcp/server.py"
+  ],
+  "source_map": {
+    "scripts/nexus_agent_platform/job_worker_once.py": "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/research_assignment_executor.py": "certification/r54_source/scripts/nexus_agent_platform/research_assignment_executor.py",
+    "scripts/nexus_agent_platform/research_assignment_intent.py": "scripts/nexus_agent_platform/research_assignment_intent.py",
+    "scripts/nexus_agent_platform/research_only_execution.py": "scripts/nexus_agent_platform/research_only_execution.py",
+    "scripts/nexus_agent_platform/research_parent_adapters.py": "certification/r54_source/scripts/nexus_agent_platform/research_parent_adapters.py",
+    "scripts/nexus_agent_platform/research_parent_workflow.py": "certification/r54_source/scripts/nexus_agent_platform/research_parent_workflow.py",
+    "scripts/research/research_case_engine.py": "scripts/research/research_case_engine.py",
+    "services/nexus_mcp/server.py": "certification/r54_source/services/nexus_mcp/server.py"
+  },
+  "test_support_files": {
+    "scripts/nexus_agent_platform/durable_objective_control.py": "certification/r54_source/scripts/nexus_agent_platform/durable_objective_control.py",
+    "scripts/nexus_agent_platform/research_work_queue.py": "certification/r54_source/scripts/nexus_agent_platform/research_work_queue.py",
+    "scripts/nexus_agent_platform/workflow_execution.py": "certification/r54_source/scripts/nexus_agent_platform/workflow_execution.py",
+    "scripts/operations/nexus_handoff.py": "certification/r54_source/scripts/operations/nexus_handoff.py",
+    "scripts/research/needle_research_readiness.py": "certification/r54_source/scripts/research/needle_research_readiness.py",
+    "scripts/research/notebook_playbook_runner.py": "certification/r54_source/scripts/research/notebook_playbook_runner.py",
+    "scripts/research/notebook_playbooks.py": "certification/r54_source/scripts/research/notebook_playbooks.py",
+    "scripts/research/notebooklm_research_adapter.py": "certification/r54_source/scripts/research/notebooklm_research_adapter.py",
+    "scripts/research/research_profiles.py": "certification/r54_source/scripts/research/research_profiles.py"
+  }
+}

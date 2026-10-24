@@ -1,0 +1,44 @@
+{
+  "base_release_id": "nexus-capability-actions-20261023-r52",
+  "capabilities": [
+    "state_v2",
+    "bounded_host_reconciliation",
+    "exact_worker_cleanup"
+  ],
+  "certification": {
+    "errors": 0,
+    "failures": 0,
+    "minimum_test_count": 40,
+    "report": "certification/r53_certification.xml",
+    "required_suites": [
+      "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
+      "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+      "scripts/research/tests/test_research_state_v2_persistence.py"
+    ],
+    "requires_offline_failure_reproduction": true,
+    "result": "PASS",
+    "skipped": 0,
+    "tests": 67
+  },
+  "payload_sha256": {
+    "scripts/nexus_agent_platform/job_worker_supervisor.py": "76fa268eaa03ea59dcc74c11fcaac834a71b4693218516aecadb24a4ea5ef5eb",
+    "scripts/nexus_agent_platform/stability_supervisor.py": "aad32b4b429cc8a10df73f8f68600bbe8d02fcff55233e90dbce67325146749a",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py": "b90796ae230e26f1c78892306fea0ca4d8f341bc1ca6b704309c737013f213f2"
+  },
+  "prohibited_contents": [
+    "legacy Research ledger",
+    "production State v2 records",
+    "credentials or runtime.env",
+    "r50 or r51 release directories",
+    "database migrations",
+    "worker runtime logs"
+  ],
+  "purpose": "Reconcile stale host incidents with fresh bounded evidence, derive State v2 readiness from a timestamped runtime attestation, and authorize exact supervisor cleanup safely.",
+  "release_id": "nexus-capability-actions-20261024-r53",
+  "release_type": "immutable_additive_overlay",
+  "runtime_files": [
+    "scripts/nexus_agent_platform/stability_supervisor.py",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py",
+    "scripts/nexus_agent_platform/job_worker_supervisor.py"
+  ]
+}

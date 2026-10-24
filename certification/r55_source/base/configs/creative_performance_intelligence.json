@@ -1,0 +1,11 @@
+{
+  "schema_version": "nexus.creative-performance-intelligence.v1",
+  "mode": "READ_ONLY",
+  "accepted_platforms": ["meta_ads", "instagram_reels", "youtube_shorts", "tiktok", "google_ads", "other_approved_channel"],
+  "unavailable_metrics_are_null": true,
+  "pattern_policy": "GUIDANCE_NOT_RULE",
+  "creative_can_depart_from_observed_pattern": true,
+  "single_metric_optimization": false,
+  "feedback_loop": ["CREATIVE", "PRODUCTION", "DISTRIBUTION", "PERFORMANCE", "RESEARCH_ANALYTICS", "ALPHA", "CREATIVE_LEARNING"],
+  "paid_account_connection": "NOT_ENABLED_BY_THIS_FOUNDATION"
+}

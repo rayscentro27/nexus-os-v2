@@ -1,0 +1,147 @@
+{
+  "schema_version": "nexus.systems-worker-recipes.v1",
+  "operating_mode": "BUILD_CERTIFICATION",
+  "permanent_objective": "Continuously improve, validate, and maintain Nexus execution environments and worker recipes required by departments.",
+  "recipes": [
+    {
+      "recipe_id": "gpu-environment-diagnostic-v1",
+      "version": "1.0.0",
+      "purpose": "Prove a clean worker runtime's Python, Torch, CUDA, GPU, ffmpeg, network, disk, and model-import boundary without installing a production dependency.",
+      "provider_compatibility": [
+        "kaggle",
+        "oracle",
+        "modal"
+      ],
+      "required_accelerator": "GPU_OPTIONAL",
+      "base_runtime": "python:3.11",
+      "python_packages": [
+        "torch==2.2.2",
+        "packaging==24.2"
+      ],
+      "system_packages": [
+        "ffmpeg"
+      ],
+      "model_revision": null,
+      "inputs": [],
+      "outputs": [
+        "diagnostic_report.json",
+        "run_manifest.json"
+      ],
+      "resource_class": "small_gpu_or_cpu",
+      "validation": [
+        "python version",
+        "torch import",
+        "CUDA availability",
+        "ffmpeg version",
+        "disk",
+        "network status",
+        "model import boundary"
+      ],
+      "reproducibility_status": "READY"
+    },
+    {
+      "recipe_id": "nova-avatar-musetalk-v1",
+      "version": "1.0.0",
+      "purpose": "Bounded Nova talking-avatar benchmark using the previously selected MuseTalk candidate.",
+      "provider_compatibility": [
+        "kaggle",
+        "oracle",
+        "modal"
+      ],
+      "required_accelerator": "NVIDIA_GPU",
+      "base_runtime": "python:3.10",
+      "python_packages": [],
+      "system_packages": [
+        "ffmpeg"
+      ],
+      "model_revision": null,
+      "model_source": "https://github.com/TMElyralab/MuseTalk",
+      "inputs": [
+        "canonical approved Nova reference image at canonical_reference_image",
+        "approved audio"
+      ],
+      "outputs": [
+        "nova_test.mp4",
+        "run_manifest.json"
+      ],
+      "resource_class": "medium_gpu",
+      "validation": [
+        "ffprobe video/audio streams",
+        "duration",
+        "resolution",
+        "fps",
+        "sha256",
+        "grounded Creative evaluation"
+      ],
+      "reproducibility_status": "READY_WITH_APPROVED_REFERENCE; MODEL_DEPENDENCY_AND_LICENSE_REVIEW_PENDING",
+      "known_limitations": [
+        "The prior audit selected MuseTalk but did not establish a pinned dependency/model revision or license clearance for all weights/data.",
+        "MuseTalk dependency/model revisions and license review remain outstanding; local GPU preprocessing is not performed."
+      ],
+      "canonical_reference_image": "/Users/raymonddavis/nexus-os-v2-canonical/assets/nova/avatar/nova_reference.png",
+      "reference_image_sha256": "a0e6a873726ea6831dcc2d8cdbbd603eeaad3324486f7e396c1bd33bb2ee825c",
+      "identity_cache_status": "INVALIDATED_STALE_REGEN_REQUIRED",
+      "regeneration_required": true
+    },
+    {
+      "recipe_id": "nova-avatar-latentsync-v1",
+      "version": "1.0.0",
+      "purpose": "Future bounded LatentSync comparison recipe; not selected until identity, revision, and license evidence are complete.",
+      "provider_compatibility": [
+        "kaggle",
+        "oracle",
+        "modal"
+      ],
+      "required_accelerator": "NVIDIA_GPU",
+      "base_runtime": "python:3.10",
+      "python_packages": [],
+      "system_packages": [
+        "ffmpeg"
+      ],
+      "model_revision": null,
+      "inputs": [
+        "approved Nova image",
+        "approved audio"
+      ],
+      "outputs": [
+        "nova_test.mp4",
+        "run_manifest.json"
+      ],
+      "resource_class": "medium_gpu",
+      "validation": [
+        "same Nova benchmark contract as MuseTalk"
+      ],
+      "reproducibility_status": "RESEARCH_REQUIRED"
+    },
+    {
+      "recipe_id": "nova-avatar-liveportrait-v1",
+      "version": "1.0.0",
+      "purpose": "Future bounded portrait-motion comparison recipe; not selected until audio/lip-sync path and licensing are complete.",
+      "provider_compatibility": [
+        "kaggle",
+        "oracle",
+        "modal"
+      ],
+      "required_accelerator": "NVIDIA_GPU",
+      "base_runtime": "python:3.10",
+      "python_packages": [],
+      "system_packages": [
+        "ffmpeg"
+      ],
+      "model_revision": null,
+      "inputs": [
+        "approved Nova image",
+        "approved driving media"
+      ],
+      "outputs": [
+        "nova_test.mp4",
+        "run_manifest.json"
+      ],
+      "resource_class": "medium_gpu",
+      "validation": [
+        "same identity, temporal, and artifact checks as MuseTalk"
+      ],
+      "reproducibility_status": "RESEARCH_REQUIRED"
+    }
+  ]
+}

@@ -1,0 +1,389 @@
+{
+  "activation_policy": "safe_mode_until_pre_activation_gate_passes",
+  "environments": [
+    {
+      "autostart": "workflow launchers disabled; passive macOS services retained",
+      "delete_after": null,
+      "dependencies": [
+        "env.nexus-os-v2"
+      ],
+      "deploy_version": null,
+      "drift_status": "MATCHED_PRE_FREEZE_SOURCE_COMMIT",
+      "environment_id": "env.mac-mini",
+      "git_commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "last_verified_at": "2026-10-10T01:40:00Z",
+      "owner": "Nexus Operations",
+      "purpose": "Canonical safe-mode host",
+      "quarantine_date": null,
+      "scheduler": "OFF",
+      "secret_ids": [],
+      "spend_authority": false,
+      "state": "ACTIVE_PASSIVE",
+      "write_authority": "local source/configuration only"
+    },
+    {
+      "autostart": "disabled pending activation gate",
+      "delete_after": null,
+      "dependencies": [
+        "env.supabase"
+      ],
+      "deploy_version": null,
+      "drift_status": "MATCHED_PRE_FREEZE_SOURCE_COMMIT",
+      "environment_id": "env.nexus-os-v2",
+      "git_commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "last_verified_at": "2026-10-10T01:40:00Z",
+      "owner": "Nexus Operations",
+      "purpose": "Single canonical source for future Nexus runtime",
+      "quarantine_date": null,
+      "scheduler": "canonical durable scheduler, currently OFF",
+      "secret_ids": [
+        "sec.supabase.runtime",
+        "sec.openrouter"
+      ],
+      "spend_authority": false,
+      "state": "JOB_ONLY",
+      "write_authority": "job-scoped Supabase writes; no action until governed job"
+    },
+    {
+      "autostart": "disabled",
+      "delete_after": null,
+      "dependencies": [
+        "environment audit and consumer mapping"
+      ],
+      "deploy_version": null,
+      "drift_status": "EXTERNAL_REVIEW_REQUIRED",
+      "environment_id": "env.legacy-nexus-v1",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T18:53:12Z",
+      "owner": "Nexus Operations",
+      "purpose": "Historical Nexus runtime and data",
+      "quarantine_date": "2026-10-09",
+      "scheduler": "legacy launchd/cron/PM2 paths disabled",
+      "secret_ids": [
+        "sec.legacy.runtime"
+      ],
+      "spend_authority": false,
+      "state": "QUARANTINED",
+      "write_authority": "unknown historical capabilities; isolated by disabled runtime"
+    },
+    {
+      "autostart": "deployed automation inventory incomplete",
+      "delete_after": null,
+      "dependencies": [
+        "Nexus runtime",
+        "Edge Functions"
+      ],
+      "deploy_version": "unknown",
+      "drift_status": "ADMIN_METADATA_ACCESS_REQUIRED",
+      "environment_id": "env.supabase",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T18:53:12Z",
+      "owner": "Nexus Operations",
+      "purpose": "Remote Nexus control plane and durable state",
+      "quarantine_date": null,
+      "scheduler": "deployed autonomous execution not verified",
+      "secret_ids": [
+        "sec.supabase.runtime",
+        "sec.supabase.admin"
+      ],
+      "spend_authority": false,
+      "state": "EXTERNAL_BLOCKED",
+      "write_authority": "data/workflow mutation depending on credential"
+    },
+    {
+      "autostart": "public repository Actions metadata partially inspected; admin metadata unknown",
+      "delete_after": null,
+      "dependencies": [
+        "env.nexus-os-v2",
+        "Netlify",
+        "Supabase"
+      ],
+      "deploy_version": null,
+      "drift_status": "MATCHED_PRE_FREEZE_SOURCE_COMMIT",
+      "environment_id": "env.github",
+      "git_commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "last_verified_at": "2026-10-10T01:40:00Z",
+      "owner": "Nexus Operations",
+      "purpose": "Source, Actions and deployment authority",
+      "quarantine_date": null,
+      "scheduler": "no canonical business schedule confirmed; admin metadata incomplete",
+      "secret_ids": [
+        "sec.github.actions"
+      ],
+      "spend_authority": "Actions minutes and connected providers; limits unknown",
+      "state": "ACTIVE_PASSIVE",
+      "write_authority": "repository and deployment authority depends on workflow token"
+    },
+    {
+      "autostart": "Git linkage, schedules and deployed functions unverified",
+      "delete_after": null,
+      "dependencies": [
+        "GitHub",
+        "nexuslive"
+      ],
+      "deploy_version": null,
+      "drift_status": "ADMIN_METADATA_ACCESS_REQUIRED",
+      "environment_id": "env.netlify",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T18:53:12Z",
+      "owner": "Nexus Operations",
+      "purpose": "Legacy frontend and serverless deployment surface",
+      "quarantine_date": null,
+      "scheduler": "unknown",
+      "secret_ids": [
+        "sec.netlify.environment"
+      ],
+      "spend_authority": "plan and build authority unknown",
+      "state": "EXTERNAL_BLOCKED",
+      "write_authority": "frontend/serverless and deployment authority"
+    },
+    {
+      "autostart": "resource schedules and restart policies not verified",
+      "delete_after": null,
+      "dependencies": [
+        "provider account access"
+      ],
+      "deploy_version": null,
+      "drift_status": "ADMIN_METADATA_ACCESS_REQUIRED",
+      "environment_id": "env.oracle-modal-hf-kaggle-cloudflare-r2",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T18:53:12Z",
+      "owner": "Nexus Operations",
+      "purpose": "Remote compute, model and storage providers",
+      "quarantine_date": null,
+      "scheduler": "unknown",
+      "secret_ids": [
+        "sec.cloud.provider"
+      ],
+      "spend_authority": "unknown; no resource start or inference performed",
+      "state": "EXTERNAL_BLOCKED",
+      "write_authority": "resource, storage and deployment authority varies by provider"
+    },
+    {
+      "autostart": "No scheduler/dispatcher production path; manual checkout only",
+      "delete_after": null,
+      "dependencies": [
+        "env.nexus-os-v2"
+      ],
+      "deploy_version": null,
+      "drift_status": "SECONDARY_SOURCE_REVIEWED; unique source ported",
+      "environment_id": "env.secondary-nexus-checkout",
+      "git_commit": "f0275e3cb0372535bc80afff0d889dff0a85b4af",
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Nexus Operations",
+      "purpose": "Historical secondary source checkout; preserved as evidence",
+      "quarantine_date": "2026-10-09",
+      "scheduler": "OFF",
+      "secret_ids": [
+        "legacy local credential references; see metadata registry"
+      ],
+      "spend_authority": false,
+      "state": "QUARANTINED",
+      "write_authority": "No production write; source could execute if manually invoked"
+    },
+    {
+      "autostart": "Local source fixed; deployed artifact contains confirmed exposed Meta credential identity",
+      "delete_after": null,
+      "dependencies": [
+        "env.github",
+        "env.netlify",
+        "env.supabase"
+      ],
+      "deploy_version": "Netlify production commit unknown",
+      "drift_status": "EXTERNAL_DEPLOYMENT_AND_ROTATION_BLOCKER",
+      "environment_id": "env.nexuslive",
+      "git_commit": "4fb57df7cfa36249d714491609f88ed6d50bdf98",
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "GoClear/Nexus Operations",
+      "purpose": "Separate frontend repository and serverless deployment",
+      "quarantine_date": null,
+      "scheduler": "Remote functions/schedules unknown",
+      "secret_ids": [
+        "sec.meta.page",
+        "sec.netlify.environment"
+      ],
+      "spend_authority": "UNKNOWN",
+      "state": "EXTERNAL_BLOCKED",
+      "write_authority": "Potential public provider/publish execution through deployed routes"
+    },
+    {
+      "autostart": "Safe-mode evidence only; workflow launchers OFF",
+      "delete_after": null,
+      "dependencies": [
+        "env.nexus-os-v2"
+      ],
+      "deploy_version": null,
+      "drift_status": "MATCHED_PRE_FREEZE_SOURCE_COMMIT",
+      "environment_id": "env.local-nexus-state",
+      "git_commit": "67c48700bdaf763a74dc4c4fb485189bd8727524",
+      "last_verified_at": "2026-10-10T01:40:00Z",
+      "owner": "Nexus Operations",
+      "purpose": "Local runtime configuration and forensic state",
+      "quarantine_date": null,
+      "scheduler": "OFF",
+      "secret_ids": [
+        "local credentials mapped by metadata only"
+      ],
+      "spend_authority": false,
+      "state": "ACTIVE_PASSIVE",
+      "write_authority": "Local metadata/evidence only"
+    },
+    {
+      "autostart": "Internal cron entries disabled; no Hermes workflow running",
+      "delete_after": null,
+      "dependencies": [
+        "env.github",
+        "env.supabase"
+      ],
+      "deploy_version": "Remote Hermes state not verified",
+      "drift_status": "REMOTE_ROUTE_INVENTORY_REQUIRED",
+      "environment_id": "env.hermes-local",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Nexus Operations",
+      "purpose": "Legacy Hermes configuration and disabled schedule records",
+      "quarantine_date": "2026-10-09",
+      "scheduler": "Hermes internal cron OFF",
+      "secret_ids": [
+        "legacy Telegram/provider references; value access not included"
+      ],
+      "spend_authority": "UNKNOWN",
+      "state": "QUARANTINED",
+      "write_authority": "Historical remote capability retained in config only"
+    },
+    {
+      "autostart": "31 jobs disabled per prior audit",
+      "delete_after": null,
+      "dependencies": [],
+      "deploy_version": null,
+      "drift_status": "DISABLED_CONFIGURATION_RETAINED",
+      "environment_id": "env.openclaw-local",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Nexus Operations",
+      "purpose": "Legacy OpenClaw configuration and disabled jobs",
+      "quarantine_date": "2026-10-09",
+      "scheduler": "OFF",
+      "secret_ids": [
+        "historical auth references not inspected for values"
+      ],
+      "spend_authority": "UNKNOWN",
+      "state": "QUARANTINED",
+      "write_authority": "No local run expected"
+    },
+    {
+      "autostart": "No Nexus PM2 workflow apps running; no restart loop observed",
+      "delete_after": null,
+      "dependencies": [],
+      "deploy_version": null,
+      "drift_status": "FORENSIC_RETENTION",
+      "environment_id": "env.pm2-local",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Nexus Operations",
+      "purpose": "Historical process manager state and logs",
+      "quarantine_date": "2026-10-09",
+      "scheduler": "PM2 workflow apps OFF",
+      "secret_ids": [
+        "historical environment metadata may exist in dump/log evidence"
+      ],
+      "spend_authority": "UNKNOWN",
+      "state": "QUARANTINED",
+      "write_authority": "No Nexus execution intended"
+    },
+    {
+      "autostart": "Manual interactive use only; serialize with Codex",
+      "delete_after": null,
+      "dependencies": [
+        "env.nexus-os-v2"
+      ],
+      "deploy_version": null,
+      "drift_status": "SERIALIZED_INTERACTIVE_ONLY",
+      "environment_id": "env.opencode-local",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Nexus Operations",
+      "purpose": "Interactive coding tool state",
+      "quarantine_date": null,
+      "scheduler": "No Nexus scheduler authority assigned",
+      "secret_ids": [
+        "tool auth metadata not inspected for values"
+      ],
+      "spend_authority": "UNKNOWN",
+      "state": "ACTIVE_PASSIVE",
+      "write_authority": "May edit local repository when manually invoked"
+    },
+    {
+      "autostart": "User software only; Nexus automation OFF",
+      "delete_after": null,
+      "dependencies": [],
+      "deploy_version": null,
+      "drift_status": "DO_NOT_MOVE_OR_CLEAR",
+      "environment_id": "env.browser-user-profile",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Ray Davis",
+      "purpose": "Normal interactive authenticated browser profile",
+      "quarantine_date": null,
+      "scheduler": "No Nexus job schedule assigned",
+      "secret_ids": [
+        "authenticated sessions retained; contents not inspected"
+      ],
+      "spend_authority": false,
+      "state": "ACTIVE_PASSIVE",
+      "write_authority": "User can perform external actions interactively"
+    },
+    {
+      "autostart": "53 Nexus/Hermes overrides disabled in prior verification; malformed Nexus plists preserved unchanged",
+      "delete_after": null,
+      "dependencies": [
+        "env.nexus-os-v2"
+      ],
+      "deploy_version": null,
+      "drift_status": "DISABLED_AND_EVIDENCE_RETAINED",
+      "environment_id": "env.legacy-launch-definitions",
+      "git_commit": null,
+      "last_verified_at": "2026-10-09T20:03:01.819615+00:00",
+      "owner": "Nexus Operations",
+      "purpose": "Historical Nexus/Hermes launchd plist source and installed definitions",
+      "quarantine_date": "2026-10-09",
+      "scheduler": "Disabled",
+      "secret_ids": [
+        "environment variable references only; values redacted"
+      ],
+      "spend_authority": "Potential only if manually enabled with credentials",
+      "state": "QUARANTINED",
+      "write_authority": "Launch-capable if repaired/enabled; remain disabled"
+    }
+  ],
+  "local_environment_inventory": {
+    "local_state_roots": [
+      "env.secondary-nexus-checkout",
+      "env.local-nexus-state",
+      "env.hermes-local",
+      "env.openclaw-local",
+      "env.pm2-local",
+      "env.opencode-local",
+      "env.browser-user-profile",
+      "env.legacy-launch-definitions"
+    ],
+    "source_checkouts": [
+      "env.nexus-os-v2",
+      "env.secondary-nexus-checkout",
+      "env.nexuslive"
+    ],
+    "status": "MAPPED_WITH_EXPLICIT_LOCAL_COMPONENTS",
+    "unknown_local_registered_environments": 0
+  },
+  "schema_version": 1,
+  "states": [
+    "ACTIVE_PRODUCTION",
+    "ACTIVE_PASSIVE",
+    "JOB_ONLY",
+    "EXTERNAL_BLOCKED",
+    "QUARANTINED",
+    "DECOMMISSION_PENDING",
+    "REMOVED"
+  ],
+  "updated_at": "2026-10-10T01:40:00Z"
+}

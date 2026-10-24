@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "scheduler_type": "launchd",
+  "internal_safe_only": true,
+  "daily_label": "com.nexus.daily-operating",
+  "evening_label": "com.nexus.evening-closeout",
+  "daily_time_local": "08:00",
+  "evening_time_local": "18:00",
+  "max_runtime_minutes": 45,
+  "external_actions_allowed": false,
+  "database_writes_allowed": false,
+  "email_send_allowed": false,
+  "sms_send_allowed": false,
+  "social_publish_allowed": false,
+  "dispute_send_allowed": false,
+  "trading_orders_allowed": false,
+  "stripe_live_allowed": false,
+  "uninstall_supported": true
+}

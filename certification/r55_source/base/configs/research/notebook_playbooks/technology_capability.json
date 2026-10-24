@@ -1,0 +1,99 @@
+{
+  "playbook_id": "nexus.notebook.technology_capability",
+  "case_type": "TECHNOLOGY_CAPABILITY",
+  "version": "1.0.0",
+  "objective_description": "Determine whether a technology materially improves a specific Nexus capability.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What does the technology do, and what concrete Nexus problem could it solve?",
+    "What current Nexus capability would it replace or improve, and what measurable advantage is expected?",
+    "Does it offer API, MCP, CLI, local runtime, or browser-only access; what are automation limits?",
+    "What are license and commercial-use terms, price/free tier, quotas, hardware, and latency?",
+    "What are privacy, reliability, maintenance, activity, and known limitation risks?",
+    "What bounded Labs benchmark and success criteria should precede integration?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "OFFICIAL_DOCS",
+    "GITHUB",
+    "RELEASE_NOTES",
+    "MODEL_CARD",
+    "PRICING",
+    "BENCHMARKS",
+    "NEXUS_CAPABILITY_REGISTRY"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "license",
+        "commercial",
+        "rights"
+      ],
+      "source_classes": [
+        "OFFICIAL_REPO",
+        "MODEL_CARD",
+        "LICENSE_TEXT"
+      ]
+    },
+    {
+      "match_any": [
+        "api",
+        "mcp",
+        "cli",
+        "automation"
+      ],
+      "source_classes": [
+        "OFFICIAL_DOCS",
+        "API_DOCS"
+      ]
+    },
+    {
+      "match_any": [
+        "price",
+        "cost",
+        "free tier",
+        "rate limit"
+      ],
+      "source_classes": [
+        "OFFICIAL_PRICING",
+        "OFFICIAL_DOCS"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "use_case": "",
+    "current_alternative": "",
+    "expected_advantage": "",
+    "license": "",
+    "cost": "",
+    "privacy": "",
+    "reliability": "",
+    "test_required": "",
+    "recommendation": ""
+  },
+  "handoff_destination": "LABS",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

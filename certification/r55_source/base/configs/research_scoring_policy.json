@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "dimensions": [
+    "revenue_potential",
+    "immediate_actionability",
+    "client_value",
+    "Nexus_upgrade_value",
+    "credit_funding_value",
+    "content_value",
+    "affiliate_partner_value"
+  ],
+  "effort_dimension": "implementation_effort",
+  "risk_dimension": "risk_level",
+  "score_range": [
+    0,
+    100
+  ]
+}

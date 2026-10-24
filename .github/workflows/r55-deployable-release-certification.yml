@@ -1,0 +1,127 @@
+name: R55 Deployable R53 + R54 Certification
+
+on:
+  push:
+    branches:
+      - research/r55-deployable-certification
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact R55 composition source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install bounded certification dependencies
+        run: python -m pip install pytest 'mcp<2' pydantic-settings uvicorn
+      - name: Prepare self-contained R55 runtime tree
+        env:
+          R55_TEST_ROOT: ${{ github.workspace }}/build/r55-runtime
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, shutil
+          from pathlib import Path
+          root = Path.cwd()
+          contract = json.loads((root / "config/r55_deployable_release_manifest.v1.json").read_text())
+          output = Path(os.environ["R55_TEST_ROOT"])
+          if output.exists():
+              raise SystemExit("R55_TEST_RUNTIME_EXISTS")
+          output.mkdir(parents=True)
+          for group in ("base_release", "overlay_release"):
+              source = root / contract[group]["source_directory"]
+              expected = contract[group]["payload_sha256"]
+              actual = {}
+              for relative, sha in expected.items():
+                  path = source / relative
+                  data = path.read_bytes()
+                  if hashlib.sha256(data).hexdigest() != sha:
+                      raise SystemExit(f"R55_SOURCE_HASH_MISMATCH:{relative}")
+                  actual[relative] = sha
+              if len(actual) != int(contract[group]["file_count"]):
+                  raise SystemExit("R55_SOURCE_COUNT_MISMATCH:" + group)
+              for relative in expected:
+                  src, dst = source / relative, output / relative
+                  dst.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copy2(src, dst)
+          for relative in contract["overlay_release"]["payload_sha256"]:
+              src, dst = (root / contract["overlay_release"]["source_directory"] / relative,
+                          output / relative)
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              if dst.exists():
+                  dst.unlink()
+              shutil.copy2(src, dst)
+          output.joinpath("reports").mkdir(parents=True, exist_ok=True)
+          payload = {**contract["base_release"]["payload_sha256"],
+                     **contract["overlay_release"]["payload_sha256"]}
+          staging_manifest = {**contract, "runtime_file_count": len(payload),
+                              "payload_sha256": payload}
+          manifest_path = output / "R55_RELEASE_MANIFEST.json"
+          manifest_path.write_text(json.dumps(staging_manifest, sort_keys=True, indent=2) + "\n")
+          manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+          (output / "RELEASE_MANIFEST.sha256").write_text(
+              f"{manifest_hash}  R55_RELEASE_MANIFEST.json\n")
+          for relative in contract["certification"]["required_suites"]:
+              src, dst = root / relative, output / relative
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(src, dst)
+          support = output / "certification/r54_source/services/nexus_mcp/server.py"
+          support.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copy2(root / "certification/r54_source/services/nexus_mcp/server.py", support)
+          for relative, entry in contract["test_support_files"].items():
+              src, dst = root / entry["path"], output / relative
+              data = src.read_bytes()
+              if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+                  raise SystemExit("R55_TEST_SUPPORT_HASH_MISMATCH:" + relative)
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(src, dst)
+          print(json.dumps({"result":"PASS", "base_files":contract["base_release"]["file_count"],
+                            "overlay_files":contract["overlay_release"]["file_count"],
+                            "runtime_files":contract["runtime_file_count_after_overlay"]}))
+          PY
+      - name: Run R55 launch, Research-only, and inherited compatibility suites
+        env:
+          R55_TEST_ROOT: ${{ github.workspace }}/build/r55-runtime
+          PYTHONPATH: ${{ github.workspace }}/build/r55-runtime:${{ github.workspace }}/build/r55-runtime/scripts
+          R55_CERT_REPORT: ${{ github.workspace }}/dist/r55_certification.xml
+          NEXUS_REPO_ROOT: ${{ github.workspace }}/build/r55-runtime
+          NEXUS_RESEARCH_STATE_ROOT: ${{ runner.temp }}/r55-test-state
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          mkdir -p dist
+          cd "$RUNNER_TEMP"
+          python -m pytest -q --import-mode=importlib \
+            "$R55_TEST_ROOT/scripts/nexus_agent_platform/tests/test_research_only_contract.py" \
+            "$R55_TEST_ROOT/services/nexus_mcp/tests/test_research_assignment_intent.py" \
+            "$R55_TEST_ROOT/scripts/nexus_agent_platform/tests/test_research_parent_workflow.py" \
+            "$R55_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py" \
+            "$R55_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py" \
+            "$R55_TEST_ROOT/scripts/research/tests/test_research_state_v2_persistence.py" \
+            "$R55_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r55_deployable_release.py" \
+            --junitxml="$R55_CERT_REPORT"
+      - name: Build immutable R55 from passing evidence
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: python scripts/ops/build_r55_release.py
+      - name: Verify R55 source and artifact lineage
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: python scripts/ops/verify_r55_source_lineage.py
+      - name: Upload immutable R55 and report
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-capability-actions-20261024-r55
+          path: |
+            dist/nexus-capability-actions-20261024-r55.tar.gz
+            dist/nexus-capability-actions-20261024-r55.sha256
+            dist/r55_certification.xml
+          if-no-files-found: error
+          retention-days: 30

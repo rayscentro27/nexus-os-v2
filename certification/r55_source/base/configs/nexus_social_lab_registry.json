@@ -1,0 +1,27 @@
+{
+  "schema_version": "nexus.social-lab-registry.v1",
+  "business_id": "nexus_social_lab",
+  "display_name": "Nexus Social Lab",
+  "environment": "LAB",
+  "channel_environment": "LAB",
+  "customer_facing": false,
+  "real_customer_data": false,
+  "primary_provider": "POSTIZ",
+  "metricool_connected": false,
+  "test_content_allowed": true,
+  "metricool_quota_reserved_for_production": true,
+  "lab_metricool_usage": 0,
+  "auto_social_provider_failover": false,
+  "purpose": ["scheduler certification", "publishing certification", "Reels/video testing", "receipt testing", "analytics testing", "comment ingestion", "retry testing", "provider routing", "Hermes integration testing"],
+  "channels": {
+    "facebook": {"status": "DISCOVERY", "account_id": null, "human_actions_required": []},
+    "instagram": {"status": "DISCOVERY", "account_id": null, "human_actions_required": []},
+    "tiktok": {"status": "DISCOVERY", "account_id": null, "human_actions_required": []},
+    "youtube": {"status": "DISCOVERY", "account_id": null, "human_actions_required": []}
+  },
+  "google_business_profile": {"status": "NOT_REQUESTED", "creation_policy": "LEGITIMATE_ELIGIBLE_BUSINESS_ONLY"},
+  "human_verification_policy": "STOP_AT_CAPTCHA_SMS_EMAIL_MFA_IDENTITY_OWNERSHIP_TERMS",
+  "postiz_connection": "BLOCKED_UNTIL_POSTIZ_DEPLOYED_AND_HEALTHY",
+  "created_at": "2026-09-23T20:00:00Z",
+  "updated_at": "2026-09-23T20:00:00Z"
+}

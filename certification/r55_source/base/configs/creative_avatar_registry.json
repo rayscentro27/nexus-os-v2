@@ -1,0 +1,72 @@
+{
+  "schema_version": "nexus.creative-avatar-registry.v1",
+  "avatar_usage_optional": true,
+  "namespaces": {
+    "NEXUS_OS": "avatar.nexus.primary",
+    "GOCLEAR": "avatar.goclear.primary"
+  },
+  "avatars": {
+    "avatar.goclear.primary": {
+      "avatar_id": "avatar.goclear.primary",
+      "avatar_name": "GoClear Restaurant Readiness Character",
+      "brand": "GOCLEAR",
+      "role": "internal stylized canary character",
+      "style": "flat illustrated avatar",
+      "version": "AVATAR_V1",
+      "reference_images": [
+        "public/creative-r20a1/qa/avatar-start.png",
+        "public/creative-r20a1/qa/avatar-middle.png",
+        "public/creative-r20a1/qa/avatar-end.png"
+      ],
+      "reference_video": "public/creative-r20a1/final/goclear-restaurant-readiness-avatar-r20a1.mp4",
+      "face_reference": "public/creative-r20a1/qa/avatar-start.png",
+      "body_reference": "public/creative-r20a1/qa/avatar-start.png",
+      "voice_id": null,
+      "voice_provider": null,
+      "voice_reference": "public/creative-r20a1/final/goclear-restaurant-readiness-avatar-r20a1.mp4",
+      "core_appearance": "same illustrated brown-skinned character, oval face, dark cap, navy shirt and white tie",
+      "age_range": "stylized adult; exact age not asserted",
+      "hair": "dark cap/hair silhouette",
+      "facial_features": "oval face, simple eyes, narrow nose, expressive mouth",
+      "skin_tone": "warm medium-brown illustration tone",
+      "body_type": "stylized upper-body figure",
+      "default_wardrobe": "navy shirt with white tie",
+      "optional_wardrobe_variants": [],
+      "personality": "not fixed by this identity contract; Creative-owned per campaign",
+      "gesture_style": "not fixed by this identity contract; Creative-owned per campaign",
+      "voice_style": null,
+      "brand_color_relationship": "uses existing GoClear navy/teal family where present in the source asset",
+      "allowed_variation": ["background", "pose", "activity", "camera", "lighting", "mood", "genre", "animation treatment", "story", "wardrobe when supported"],
+      "prohibited_identity_changes": ["random new face", "materially different facial features", "unversioned age/identity change", "unversioned voice identity change", "unapproved real-person likeness"],
+      "created_at": "2026-09-22T00:00:00Z",
+      "updated_at": "2026-09-22T00:00:00Z",
+      "status": "INTERNAL_CANARY_NOT_PRODUCTION_APPROVED"
+    },
+    "avatar.nexus.primary": {
+      "avatar_id": "avatar.nexus.primary",
+      "brand": "NEXUS_OS",
+      "version": "NOT_CONFIGURED",
+      "status": "RESERVED_NAMESPACE_NO_AVATAR_CONFIGURED",
+      "reference_images": [],
+      "prohibited_identity_changes": ["no avatar may be invented implicitly by a downstream generator"]
+    }
+  },
+  "brand_assets": {
+    "NEXUS_OS": {
+      "brand_id": "NEXUS_OS",
+      "canonical_assets": {"icon": "public/brand/app-icon.svg", "favicon": "public/brand/favicon.svg"},
+      "avatar_ids": ["avatar.nexus.primary"],
+      "version": "CANONICAL_CURRENT",
+      "status": "ACTIVE"
+    },
+    "GOCLEAR": {
+      "brand_id": "GOCLEAR",
+      "canonical_assets": {"logo": "public/brand/GoClearLogo.svg", "wordmark": "public/brand/GoClearWordmark.svg", "mark": "public/brand/GoClearMark.svg"},
+      "avatar_ids": ["avatar.goclear.primary"],
+      "version": "CANONICAL_CURRENT",
+      "status": "ACTIVE"
+    }
+  },
+  "random_brand_reinvention": "BLOCKED",
+  "labs_boundary": {"heavy_external_tools_installed": false, "labs_can_modify_production": false}
+}

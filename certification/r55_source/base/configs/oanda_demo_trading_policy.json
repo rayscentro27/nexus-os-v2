@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "mode": "demo_practice",
+  "host": "https://api-fxpractice.oanda.com",
+  "max_smoke_units": 1,
+  "max_open_smoke_trades": 1,
+  "smoke_instrument_preference": ["AUD_USD", "EUR_USD", "GBP_USD", "USD_CAD", "NZD_USD"],
+  "required_tag": "NEXUS_DEMO_SMOKE_TEST",
+  "immediate_close_required": true,
+  "live_endpoint_blocked": true,
+  "funded_trading_blocked": true,
+  "recurring_demo_orders_approval_required": true
+}
