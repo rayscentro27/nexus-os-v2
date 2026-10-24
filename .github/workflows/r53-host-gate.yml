@@ -1,0 +1,46 @@
+name: R53 Host Gate and Cleanup Certification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout certified source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install pytest
+      - name: Verify immutable R53 archive and source lineage
+        run: python scripts/ops/verify_r53_source_lineage.py
+      - name: Run R53 and inherited R52 certification suites
+        env:
+          PYTHONPATH: scripts
+        run: >-
+          python -m pytest -q
+          scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py
+          scripts/nexus_agent_platform/tests/test_stability_supervisor.py
+          scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py
+          scripts/nexus_agent_platform/tests/test_durable_jobs.py
+          scripts/research/tests/test_research_state_v2_persistence.py
+          --junitxml=dist/r53_github_certification.xml
+      - name: Upload immutable overlay and certification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-capability-actions-20261024-r53-certification
+          path: |
+            dist/nexus-capability-actions-20261024-r53.tar.gz
+            dist/nexus-capability-actions-20261024-r53.sha256
+            dist/r53_github_certification.xml
+          if-no-files-found: error
+          retention-days: 30
