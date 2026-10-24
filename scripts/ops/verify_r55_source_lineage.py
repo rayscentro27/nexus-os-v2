@@ -62,8 +62,9 @@ def main() -> int:
             raise SystemExit("R55_PACKAGED_PAYLOAD_MISMATCH:" + ",".join(errors))
         overlay = manifest["overlay_release"]
         base = manifest["base_release"]
+        replaced_paths = set(overlay["payload_sha256"])
         for rel, want in base["payload_sha256"].items():
-            if sha(release / rel) != want:
+            if rel not in replaced_paths and sha(release / rel) != want:
                 raise SystemExit(f"R55_BASE_LINEAGE_MISMATCH:{rel}")
         for rel, want in overlay["payload_sha256"].items():
             if sha(release / rel) != want:
