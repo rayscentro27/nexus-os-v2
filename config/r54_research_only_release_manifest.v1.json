@@ -26,8 +26,11 @@
   "test_support_files": {
     "scripts/nexus_agent_platform/durable_objective_control.py": "certification/r54_source/scripts/nexus_agent_platform/durable_objective_control.py",
     "scripts/nexus_agent_platform/research_work_queue.py": "certification/r54_source/scripts/nexus_agent_platform/research_work_queue.py",
+    "scripts/nexus_agent_platform/workflow_execution.py": "certification/r54_source/scripts/nexus_agent_platform/workflow_execution.py",
     "scripts/research/notebook_playbook_runner.py": "certification/r54_source/scripts/research/notebook_playbook_runner.py",
-    "scripts/research/needle_research_readiness.py": "certification/r54_source/scripts/research/needle_research_readiness.py"
+    "scripts/research/needle_research_readiness.py": "certification/r54_source/scripts/research/needle_research_readiness.py",
+    "scripts/research/notebook_playbooks.py": "certification/r54_source/scripts/research/notebook_playbooks.py",
+    "scripts/operations/nexus_handoff.py": "certification/r54_source/scripts/operations/nexus_handoff.py"
   },
   "prohibited_contents": [
     "legacy Research ledger",
