@@ -120,6 +120,10 @@ def run_as_main(source_file, argv_file):
 
 def test_exact_direct_supervisor_identity_is_authorized():
     trusted = Path(eg.__file__).resolve().with_name("job_worker_supervisor.py")
+    # R52 checked only module names, so a direct script invocation appeared as
+    # __main__ and was rejected even when it was the packaged supervisor.
+    assert "__main__" not in {"nexus_agent_platform.job_worker_once",
+                              "nexus_agent_platform.job_worker_supervisor"}
     run_as_main(trusted, trusted)
     assert eg.worker_cleanup_identity() is None
 
