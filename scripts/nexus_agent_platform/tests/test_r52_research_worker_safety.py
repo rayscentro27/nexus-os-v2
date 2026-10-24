@@ -177,8 +177,11 @@ def test_cleanup_scope_rejects_other_job_id(monkeypatch, tmp_path):
 
 
 def test_capacity_response_is_not_a_case_open_failure(monkeypatch):
-    monkeypatch.setattr("nexus_agent_platform.research_assignment_executor.execute_assignment",
-                        lambda _work: {"status": "WAITING_FOR_CAPACITY", "reason": "CAPACITY_FULL"})
+    import sys
+    executor = SimpleNamespace(
+        execute_assignment=lambda _work: {"status": "WAITING_FOR_CAPACITY", "reason": "CAPACITY_FULL"}
+    )
+    monkeypatch.setitem(sys.modules, "nexus_agent_platform.research_assignment_executor", executor)
     opened = job_worker_once.open_mcp_research_intake_case({"objective_id": "objective-diagnostic"})
     assert opened == {"status": "WAITING_FOR_CAPACITY", "reason": "CAPACITY_FULL",
                       "retryable": True, "objective_terminated": False, "case_created": False}
