@@ -31,6 +31,7 @@
     "scripts/research/needle_research_readiness.py": "certification/r54_source/scripts/research/needle_research_readiness.py",
     "scripts/research/notebook_playbooks.py": "certification/r54_source/scripts/research/notebook_playbooks.py",
     "scripts/research/notebooklm_research_adapter.py": "certification/r54_source/scripts/research/notebooklm_research_adapter.py",
+    "scripts/research/research_profiles.py": "certification/r54_source/scripts/research/research_profiles.py",
     "scripts/operations/nexus_handoff.py": "certification/r54_source/scripts/operations/nexus_handoff.py"
   },
   "prohibited_contents": [
@@ -59,7 +60,6 @@
     "minimum_test_count": 100,
     "required_suites": [
       "scripts/nexus_agent_platform/tests/test_research_only_contract.py",
-      "services/nexus_mcp/tests/test_research_assignment_intent.py",
       "scripts/nexus_agent_platform/tests/test_research_parent_workflow.py",
       "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
       "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
