@@ -23,6 +23,12 @@
     "scripts/research/research_case_engine.py": "scripts/research/research_case_engine.py",
     "services/nexus_mcp/server.py": "certification/r54_source/services/nexus_mcp/server.py"
   },
+  "test_support_files": {
+    "scripts/nexus_agent_platform/durable_objective_control.py": "certification/r54_source/scripts/nexus_agent_platform/durable_objective_control.py",
+    "scripts/nexus_agent_platform/research_work_queue.py": "certification/r54_source/scripts/nexus_agent_platform/research_work_queue.py",
+    "scripts/research/notebook_playbook_runner.py": "certification/r54_source/scripts/research/notebook_playbook_runner.py",
+    "scripts/research/needle_research_readiness.py": "certification/r54_source/scripts/research/needle_research_readiness.py"
+  },
   "prohibited_contents": [
     "legacy Research ledger",
     "production State v2 records",

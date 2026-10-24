@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install bounded test dependencies
-        run: python -m pip install pytest mcp pydantic-settings
+        run: python -m pip install pytest 'mcp<2' pydantic-settings
       - name: Prepare exact R54 runtime overlay for offline tests
         run: |
           python - <<'PY'
@@ -37,6 +37,11 @@ jobs:
               dst = root / relative
               if src.resolve() == dst.resolve():
                   continue
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(src, dst)
+          for relative, source in contract["test_support_files"].items():
+              src = root / source
+              dst = root / relative
               dst.parent.mkdir(parents=True, exist_ok=True)
               shutil.copyfile(src, dst)
           PY
