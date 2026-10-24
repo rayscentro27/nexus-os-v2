@@ -35,6 +35,8 @@ jobs:
           for relative in contract["runtime_files"]:
               src = root / contract["source_map"][relative]
               dst = root / relative
+              if src.resolve() == dst.resolve():
+                  continue
               dst.parent.mkdir(parents=True, exist_ok=True)
               shutil.copyfile(src, dst)
           PY
