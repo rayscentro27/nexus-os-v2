@@ -106,7 +106,10 @@ def test_incomplete_readiness_is_unknown():
         "verified_at": datetime.now(timezone.utc).isoformat(), "checks": {}})["status"] == "UNKNOWN"
 
 
-def test_active_release_name_alone_does_not_prove_state_v2_support(monkeypatch):
+def test_active_release_name_alone_does_not_prove_state_v2_support(monkeypatch, tmp_path):
+    # Keep this negative identity test independent of a real user's installed
+    # release tree when it runs on a developer Mac.
+    monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("NEXUS_ACTIVE_RESEARCH_RELEASE", "nexus-capability-actions-20261024-r53")
     monkeypatch.setattr(ss, "_active_state_v2_release", _ACTIVE_RELEASE_IDENTITY)
     assert ss._active_state_v2_release() == (None, False)

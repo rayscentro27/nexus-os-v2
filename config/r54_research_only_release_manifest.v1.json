@@ -1,0 +1,60 @@
+{
+  "release_id": "nexus-capability-actions-20261024-r54",
+  "release_type": "immutable_additive_overlay",
+  "base_release_id": "nexus-capability-actions-20261024-r53",
+  "purpose": "Add an explicit bounded Research-only assignment contract that persists one source-grounded result and stops before parent continuation.",
+  "runtime_files": [
+    "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/research_assignment_intent.py",
+    "scripts/nexus_agent_platform/research_only_execution.py",
+    "scripts/nexus_agent_platform/research_parent_workflow.py",
+    "scripts/nexus_agent_platform/research_parent_adapters.py",
+    "scripts/nexus_agent_platform/research_assignment_executor.py",
+    "scripts/research/research_case_engine.py",
+    "services/nexus_mcp/server.py"
+  ],
+  "source_map": {
+    "scripts/nexus_agent_platform/job_worker_once.py": "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/research_assignment_intent.py": "scripts/nexus_agent_platform/research_assignment_intent.py",
+    "scripts/nexus_agent_platform/research_only_execution.py": "scripts/nexus_agent_platform/research_only_execution.py",
+    "scripts/nexus_agent_platform/research_parent_workflow.py": "certification/r54_source/scripts/nexus_agent_platform/research_parent_workflow.py",
+    "scripts/nexus_agent_platform/research_parent_adapters.py": "certification/r54_source/scripts/nexus_agent_platform/research_parent_adapters.py",
+    "scripts/nexus_agent_platform/research_assignment_executor.py": "certification/r54_source/scripts/nexus_agent_platform/research_assignment_executor.py",
+    "scripts/research/research_case_engine.py": "scripts/research/research_case_engine.py",
+    "services/nexus_mcp/server.py": "certification/r54_source/services/nexus_mcp/server.py"
+  },
+  "prohibited_contents": [
+    "legacy Research ledger",
+    "production State v2 records",
+    "credentials or runtime.env",
+    "r50, r51, r52, or r53 release directories",
+    "database migrations",
+    "worker runtime logs"
+  ],
+  "research_only_contract": {
+    "intent": "RESEARCH_ONLY",
+    "execution_path": "BOUNDED_RESEARCH_ONLY",
+    "max_public_source_reads": 1,
+    "max_source_response_bytes": 1000000,
+    "max_handoff_bytes": 8192,
+    "max_summary_chars": 1200,
+    "max_evidence_references": 5,
+    "downstream_children": 0,
+    "terminal_job_state": "COMPLETED",
+    "terminal_work_item_state": "COMPLETE",
+    "case_state": "AWAITING_RAY_DECISION",
+    "case_continue_research": false
+  },
+  "certification": {
+    "minimum_test_count": 100,
+    "required_suites": [
+      "scripts/nexus_agent_platform/tests/test_research_only_contract.py",
+      "services/nexus_mcp/tests/test_research_assignment_intent.py",
+      "scripts/nexus_agent_platform/tests/test_research_parent_workflow.py",
+      "scripts/nexus_agent_platform/tests/test_research_parent_worker_integration.py",
+      "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
+      "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+      "scripts/research/tests/test_research_state_v2_persistence.py"
+    ]
+  }
+}

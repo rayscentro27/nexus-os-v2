@@ -1,0 +1,70 @@
+name: R54 Bounded Research-Only Contract Certification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact R54 source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install bounded test dependencies
+        run: python -m pip install pytest mcp pydantic-settings
+      - name: Prepare exact R54 runtime overlay for offline tests
+        run: |
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+          root = Path.cwd()
+          contract = json.loads((root / "config/r54_research_only_release_manifest.v1.json").read_text())
+          for relative in contract["runtime_files"]:
+              src = root / contract["source_map"][relative]
+              dst = root / relative
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(src, dst)
+          PY
+      - name: Prepare certification output directory
+        run: mkdir -p dist
+      - name: Run R54 contract and inherited Research safety suites
+        env:
+          PYTHONPATH: scripts:.
+        run: >-
+          python -m pytest -q
+          scripts/nexus_agent_platform/tests/test_research_only_contract.py
+          services/nexus_mcp/tests/test_research_assignment_intent.py
+          scripts/nexus_agent_platform/tests/test_research_parent_workflow.py
+          scripts/nexus_agent_platform/tests/test_research_parent_worker_integration.py
+          scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py
+          scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py
+          scripts/research/tests/test_research_state_v2_persistence.py
+          --junitxml=dist/r54_certification.xml
+      - name: Build immutable R54 from passing certification evidence
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: python scripts/ops/build_r54_release.py
+      - name: Verify certified source and archive lineage
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: python scripts/ops/verify_r54_source_lineage.py
+      - name: Upload immutable R54 and certification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-capability-actions-20261024-r54
+          path: |
+            dist/nexus-capability-actions-20261024-r54.tar.gz
+            dist/nexus-capability-actions-20261024-r54.sha256
+            dist/r54_certification.xml
+          if-no-files-found: error
+          retention-days: 30

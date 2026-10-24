@@ -884,6 +884,57 @@ def run(job_id: str, worker_id: str, store) -> dict:
             completed = None
         elif (job.job_type == "RESEARCH_INTAKE"
                 and research_parent_source == "NOVA_MCP_RESEARCH_ASSIGNMENT"
+                and str(assigned_work.get("requested_intent") or "").upper() == "RESEARCH_ONLY"):
+            # Explicit bounded mode ends after one source-grounded result.
+            # It never enters parent continuation or schedules Advisor/Needle.
+            _lifecycle(job_id, "PRE_CASE_INPUTS_READY", job=job, worker_id=worker_id,
+                       objective_id=assigned_work.get("objective_id"),
+                       work_id=assigned_work.get("work_id"),
+                       project_id=assigned_work.get("project_id") or assigned_work.get("work_id"))
+            from nexus_agent_platform.research_only_execution import execute_research_only
+            routed = execute_research_only(
+                assigned_work, job_id=job_id,
+                stage=lambda name, details: _lifecycle(
+                    job_id, name, job=job, worker_id=worker_id, **dict(details)))
+            if str(routed.get("status") or "").upper() == "WAITING_FOR_CAPACITY":
+                result = {"status": "WAITING_FOR_CAPACITY",
+                          "reason": routed.get("reason") or "MAX_ACTIVE_DEEP_CASES_REACHED",
+                          "retryable": True, "objective_terminated": False}
+            elif str(routed.get("status") or "").upper() != "COMPLETED":
+                from nexus_agent_platform.research_work_queue import default_queue
+                default_queue().settle(job.payload_ref, "BLOCKED_EXTERNAL", result={
+                    "final_status": "RESEARCH_ONLY_FAILED",
+                    "reason": routed.get("reason") or "RESEARCH_ONLY_FAILED",
+                    "case_id": routed.get("case_id"),
+                    "research_result": routed.get("research_result")})
+                result = {"status": "BLOCKED", "reason": routed.get("reason") or "RESEARCH_ONLY_FAILED",
+                          "job_type": job.job_type, "case_id": routed.get("case_id"),
+                          "research_result": routed.get("research_result")}
+            else:
+                from nexus_agent_platform.research_assignment_intent import result_contract
+                from nexus_agent_platform.research_work_queue import default_queue
+                handoff = routed.get("research_result") or {}
+                fulfillment = result_contract(
+                    requested_intent=str(assigned_work.get("requested_intent") or ""),
+                    routed_intent=str(routed.get("routed_intent") or ""),
+                    execution_path=str(routed.get("execution_path") or ""),
+                    status=str(routed.get("status") or ""), result=handoff)
+                if not fulfillment.get("task_fulfilled"):
+                    default_queue().settle(job.payload_ref, "BLOCKED_EXTERNAL", result={
+                        "final_status": "RESEARCH_ONLY_CONTRACT_INVALID",
+                        "routing_blocker": fulfillment.get("routing_blocker")})
+                    result = {"status": "BLOCKED", "reason": fulfillment.get("routing_blocker"),
+                              "job_type": job.job_type, "case_id": routed.get("case_id")}
+                else:
+                    routed["task_fulfillment"] = fulfillment
+                    default_queue().settle(job.payload_ref, "COMPLETE", result=handoff)
+                    _lifecycle(job_id, "RESEARCH_EXECUTION_COMPLETE", job=job,
+                               worker_id=worker_id, case_id=routed.get("case_id"),
+                               downstream_jobs_created=0)
+                    result = routed
+            completed = None
+        elif (job.job_type == "RESEARCH_INTAKE"
+                and research_parent_source == "NOVA_MCP_RESEARCH_ASSIGNMENT"
                 and str(assigned_work.get("requested_intent") or "").upper() == "RESEARCH_MISSION"):
             # The MCP intake job owns opening/joining the canonical Research
             # Case Engine record. This is a local write; Advisor/source work is
