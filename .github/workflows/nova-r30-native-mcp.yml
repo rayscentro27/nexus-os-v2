@@ -1,0 +1,58 @@
+name: Nova R30 native MCP transport certification
+
+on:
+  push:
+    branches: [nova/r30-native-mcp]
+    paths:
+      - "nova_baseline/nova-operator-v1-20261025-r30-native-mcp/**"
+      - ".github/workflows/nova-r30-native-mcp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install R29 runtime import dependencies
+        run: |
+          python -m pip install "pip<24.1"
+          sed -e '/^litellm>=/d' -e '/^brave-search>=/d' \
+            nova_baseline/nova-operator-v1-20261025-r29-research-control/runtime/requirements-agent-platform.txt \
+            > /tmp/nova-r30-certification-requirements.txt
+          python -m pip install -r /tmp/nova-r30-certification-requirements.txt
+      - name: Build R30 and run R29 plus native transport tests
+        env:
+          NOVA_R30_DIST: ${{ runner.temp }}/nova-r30-dist
+        run: |
+          python -B nova_baseline/nova-operator-v1-20261025-r30-native-mcp/build_release.py
+          cd "$NOVA_R30_DIST/nova-operator-v1-20261025-r30-native-mcp"
+          PYTHONPATH="$PWD/runtime/scripts" python -B -m unittest discover -s certification/tests -v
+          python -B - <<'PY'
+          import hashlib, importlib, json, os, pathlib, sys
+          root=pathlib.Path(os.environ["NOVA_R30_DIST"])/"nova-operator-v1-20261025-r30-native-mcp"
+          manifest=json.loads((root/"R30_MANIFEST.json").read_text())
+          assert manifest["source_commit"] == os.environ["GITHUB_SHA"]
+          assert manifest["parent_commit"] == "6cdf01c9c768333fb7db2dee01aff2366a9b1413"
+          for rel,digest in manifest["payload_sha256"].items():
+              assert hashlib.sha256((root/rel).read_bytes()).hexdigest()==digest,rel
+          runtime=(root/"runtime").resolve(); sys.path.insert(0,str(runtime/"scripts"))
+          for name in ("nova.nova_telegram_worker","nova.semantic_orchestration","nova.nexus_mcp_status","nova.research_intent","nova.nova_research_control"):
+              assert pathlib.Path(importlib.import_module(name).__file__).resolve().is_relative_to(runtime),name
+          assert not (runtime/"scripts/nexus_agent_platform/research_only_execution.py").exists()
+          print("R30_ARTIFACT_SOURCE_MATCH=YES")
+          print("R60_RESEARCH_FILES_CHANGED=NONE")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-operator-v1-20261025-r30-native-mcp
+          path: |
+            ${{ runner.temp }}/nova-r30-dist/nova-operator-v1-20261025-r30-native-mcp.tar.gz
+          if-no-files-found: error

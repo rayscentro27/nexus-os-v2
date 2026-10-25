@@ -1,0 +1,28 @@
+{
+  "certification": {
+    "failures": 0,
+    "result": "PASS",
+    "tests": 44
+  },
+  "composition": "certified R28 immutable runtime plus only declared Nova control files",
+  "new_runtime_files": [
+    "scripts/nova/nova_research_control.py"
+  ],
+  "overlay_files": [
+    "scripts/nova/nexus_mcp_status.py",
+    "scripts/nova/nova_research_control.py",
+    "scripts/nova/nova_telegram_worker.py",
+    "scripts/nova/research_intent.py",
+    "scripts/nova/semantic_orchestration.py"
+  ],
+  "parent_artifact_sha256": "70cfae57ac5a566165276ece9a23c972b14d251a3d736452e699253a60af0f4f",
+  "parent_commit": "f99c1eb04dc4ba6017de6de5bdade72f0f3f1d75",
+  "parent_github_run_id": "40231745912",
+  "parent_release": "nova-operator-v1-20261025-r28-baseline",
+  "payload_file_count": 163,
+  "production_jobs_created": false,
+  "release_id": "nova-operator-v1-20261025-r29-research-control",
+  "research_runtime_changed_files": [],
+  "runtime_file_count": 156,
+  "source_commit": "6cdf01c9c768333fb7db2dee01aff2366a9b1413"
+}

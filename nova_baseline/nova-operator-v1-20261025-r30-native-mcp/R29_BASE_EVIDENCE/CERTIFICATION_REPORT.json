@@ -1,0 +1,21 @@
+{
+  "advisor_jobs_created": 0,
+  "assignment_tool_discoverable": true,
+  "base_commit": "f99c1eb04dc4ba6017de6de5bdade72f0f3f1d75",
+  "base_release": "nova-operator-v1-20261025-r28-baseline",
+  "continuation_jobs_created": 0,
+  "direct_supabase_research_writes": "NO",
+  "exact_job_status_tool_discoverable": true,
+  "mcp_initialize": "PASS",
+  "mcp_tool_count": 49,
+  "needle_jobs_created": 0,
+  "production_research_jobs_created": "NO",
+  "r60_research_changed": false,
+  "release_id": "nova-operator-v1-20261025-r29-research-control",
+  "result": "PASS",
+  "source_commit": "6cdf01c9c768333fb7db2dee01aff2366a9b1413",
+  "test_count": 44,
+  "test_fail": 0,
+  "test_pass": 44,
+  "test_skip": 0
+}

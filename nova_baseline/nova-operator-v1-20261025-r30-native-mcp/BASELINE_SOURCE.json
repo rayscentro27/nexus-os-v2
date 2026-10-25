@@ -1,0 +1,9 @@
+{
+  "release_id": "nova-operator-v1-20261025-r30-native-mcp",
+  "parent_release": "nova-operator-v1-20261025-r29-research-control",
+  "parent_commit": "6cdf01c9c768333fb7db2dee01aff2366a9b1413",
+  "parent_artifact_sha256": "89612aec5540b2a50e40dc7895c6d7890d933beb38a1136fe63046a956621387",
+  "rebase_source": "verified certified R29 artifact payload",
+  "changed_runtime_files": ["scripts/nova/nexus_mcp_status.py"],
+  "research_runtime_changed_files": []
+}
