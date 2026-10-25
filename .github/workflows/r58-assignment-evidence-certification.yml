@@ -40,6 +40,7 @@ jobs:
       R58_TEST_ROOT: /tmp/nexus-capability-actions-20261025-r58-test
       NEXUS_REPO_ROOT: /tmp/nexus-capability-actions-20261025-r58-test
       NEXUS_RESEARCH_STATE_ROOT: /tmp/r58-test-state
+      R56_TEST_ROOT: /tmp/nexus-capability-actions-20261025-r58-test
       R57_TEST_ROOT: /tmp/r58-r57-artifact/nexus-capability-actions-20261025-r57
       R57_PREDECESSOR_SHA256: 69d9fa36271b346337d47ce01c349df69eed1631b312d3502d7ae27b1dc805e3
 
