@@ -81,6 +81,8 @@ def main() -> None:
             path = Path(member.name)
             if path.is_absolute() or ".." in path.parts or not (member.isdir() or member.isfile()):
                 raise SystemExit("UNSAFE_R57_ARCHIVE_MEMBER")
+            if member.name == NAME and member.isdir():
+                continue
             if not member.name.startswith(prefix):
                 raise SystemExit("R57_ARCHIVE_ROOT_MISMATCH")
         archive.extractall(EXTRACT, members=members)
