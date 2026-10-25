@@ -47,7 +47,7 @@ WORKER_CLEANUP_ALLOWED_SELECT = {
 }
 
 
-def _trusted_cleanup_caller(frame) -> str | None:
+def _trusted_cleanup_caller(frame, job_id: str, worker_id: str, attempt: int) -> str | None:
     """Identify only the packaged worker or the exact supervisor entrypoint."""
     trusted_supervisor = (Path(__file__).resolve().parent / "job_worker_supervisor.py").resolve()
     main_module = sys.modules.get("__main__")
@@ -57,10 +57,21 @@ def _trusted_cleanup_caller(frame) -> str | None:
         argv_path = Path(sys.argv[0]).resolve() if sys.argv and sys.argv[0] else None
     except (OSError, RuntimeError):
         main_path = argv_path = None
+    expected_worker = (Path(__file__).resolve().parent / "job_worker_once.py").resolve()
+    expected_argv = ["--job-id", str(job_id), "--worker-id", str(worker_id), "--attempt", str(attempt)]
+    worker_env_matches = (os.environ.get("NEXUS_DURABLE_JOB_ID") == str(job_id)
+                          and os.environ.get("NEXUS_WORKER_ID") == str(worker_id)
+                          and os.environ.get("NEXUS_JOB_ATTEMPT_COUNT") == str(attempt))
     while frame is not None:
         module_name = str(frame.f_globals.get("__name__") or "")
         source_path = Path(frame.f_code.co_filename).resolve()
-        if module_name == "nexus_agent_platform.job_worker_once":
+        if (module_name == "__main__" and source_path == expected_worker
+                and main_path == expected_worker and argv_path == expected_worker
+                and sys.argv[1:] == expected_argv and worker_env_matches):
+            return "PACKAGED_WORKER_ENTRYPOINT"
+        if (module_name == "nexus_agent_platform.job_worker_once" and source_path == expected_worker
+                and main_path == expected_worker and argv_path == expected_worker
+                and sys.argv[1:] == expected_argv and worker_env_matches):
             return "PACKAGED_WORKER"
         if (module_name == "nexus_agent_platform.job_worker_supervisor" and source_path == trusted_supervisor):
             return "PACKAGED_SUPERVISOR_MODULE"
@@ -84,9 +95,11 @@ class JobEgressBudgetExceeded(RuntimeError):
 
 
 @contextmanager
-def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None = None):
+def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None = None,
+                         attempt: int | None = None):
     """Permit only tiny exact-job cleanup requests after normal egress is spent."""
-    caller_identity = _trusted_cleanup_caller(sys._getframe(1))
+    safe_attempt = int(attempt or os.environ.get("NEXUS_JOB_ATTEMPT_COUNT") or 0)
+    caller_identity = _trusted_cleanup_caller(sys._getframe(1), job_id, worker_id, safe_attempt)
     if caller_identity is None:
         raise PermissionError("WORKER_CLEANUP_CALLER_NOT_AUTHORIZED")
     safe_id = str(job_id or "")
@@ -98,7 +111,9 @@ def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None
     safe_reservation = str(reservation_id or "")
     if safe_reservation and not re.fullmatch(r"[A-Za-z0-9_-]{1,160}", safe_reservation):
         raise ValueError("CLEANUP_RESERVATION_ID_INVALID")
-    token = _CLEANUP_SCOPE.set({"job_id": safe_id, "worker_id": safe_worker,
+    if safe_attempt < 1:
+        raise ValueError("CLEANUP_ATTEMPT_INVALID")
+    token = _CLEANUP_SCOPE.set({"job_id": safe_id, "worker_id": safe_worker, "attempt": safe_attempt,
                                 "caller_identity": caller_identity,
                                 "reservation_id": safe_reservation, "requests": 0, "response_bytes": 0})
     try:
@@ -107,9 +122,9 @@ def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None
         _CLEANUP_SCOPE.reset(token)
 
 
-def worker_cleanup_identity() -> tuple[str, str] | None:
+def worker_cleanup_identity() -> tuple[str, str, int] | None:
     scope = _CLEANUP_SCOPE.get()
-    return (scope["job_id"], scope["worker_id"]) if scope else None
+    return (scope["job_id"], scope["worker_id"], scope["attempt"]) if scope else None
 
 
 def _request_shape(method: str, path: str) -> dict:
@@ -286,7 +301,8 @@ def _validate_cleanup_request(scope: dict, method: str, path: str, cleanup_relea
         raise JobEgressBudgetExceeded("WORKER_CLEANUP_RESERVATION_SCOPE_REJECTED")
     shape = _request_shape(method, path)
     params = parse_qs(urlsplit(path).query)
-    exact = params.get("job_id", []) == [f"eq.{scope['job_id']}"]
+    exact = (params.get("job_id", []) == [f"eq.{scope['job_id']}"]
+             and params.get("attempt_count", []) == [f"eq.{scope['attempt']}"])
     if shape["table_or_rpc"] != "nexus_durable_jobs" or not exact:
         raise JobEgressBudgetExceeded("WORKER_CLEANUP_SCOPE_REJECTED")
     if shape["method"] == "GET":
@@ -296,7 +312,9 @@ def _validate_cleanup_request(scope: dict, method: str, path: str, cleanup_relea
         return
     if shape["method"] == "PATCH":
         filters = parse_qs(urlsplit(path).query)
-        if filters.get("claimed_by") != [f"eq.{scope['worker_id']}"] or filters.get("state") != ["in.(CLAIMED,RUNNING)"]:
+        if (filters.get("claimed_by") != [f"eq.{scope['worker_id']}"]
+                or filters.get("attempt_count") != [f"eq.{scope['attempt']}"]
+                or filters.get("state") != ["in.(CLAIMED,RUNNING)"]):
             raise JobEgressBudgetExceeded("WORKER_CLEANUP_FILTER_REJECTED")
         allowed_body = {"state", "lease_until", "claimed_by", "claimed_at", "completed_at",
                         "scheduled_at", "last_error_code", "last_error_summary"}

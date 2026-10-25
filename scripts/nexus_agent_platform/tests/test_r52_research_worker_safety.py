@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import json
 import os
+from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,6 +20,15 @@ def _egress_env(monkeypatch, tmp_path, job_id="job-r52-test"):
     monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", job_id)
     monkeypatch.setenv("NEXUS_DURABLE_EXECUTION_ID", "attempt-1")
     monkeypatch.setenv("NEXUS_JOB_BUDGET", json.dumps({"max_requests": 10, "max_response_bytes": 100}))
+
+
+@contextmanager
+def _test_trusted_cleanup_scope(monkeypatch, job_id, worker_id, reservation_id=None):
+    # Exercise the bounded cleanup request contract independently from the
+    # real-entrypoint identity tests in certification/r59_source.
+    monkeypatch.setattr(guard, "_trusted_cleanup_caller", lambda *_a, **_k: "PACKAGED_WORKER")
+    with job_worker_once._worker_cleanup_scope(job_id, worker_id, reservation_id, attempt=1):
+        yield
 
 
 def test_case_discovery_uses_compact_state_projection(monkeypatch):
@@ -104,7 +114,7 @@ def test_exact_job_get_uses_narrow_projection_inside_cleanup(monkeypatch):
                      state="RUNNING", attempt_count=1, max_attempts=3, claimed_by="worker-exact"))
     requests = []
     monkeypatch.setattr(store, "_request", lambda path, *args: requests.append(path) or [row])
-    with job_worker_once._worker_cleanup_scope("job-exact", "worker-exact"):
+    with _test_trusted_cleanup_scope(monkeypatch, "job-exact", "worker-exact"):
         assert store.get("job-exact").job_id == "job-exact"
     assert "job_id=eq.job-exact" in requests[0]
     assert "&limit=1" in requests[0]
@@ -119,9 +129,9 @@ def test_exhausted_egress_allows_bounded_exact_job_cleanup(monkeypatch, tmp_path
     }))
     with pytest.raises(guard.JobEgressBudgetExceeded):
         guard.preflight_request("GET", "nexus_durable_jobs?job_id=eq.job-cleanup&select=job_id,state&limit=1")
-    with job_worker_once._worker_cleanup_scope("job-cleanup", "worker-cleanup"):
-        guard.preflight_request("GET", "nexus_durable_jobs?job_id=eq.job-cleanup&select=job_id,state&limit=1")
-        guard.record_request("GET", "nexus_durable_jobs?job_id=eq.job-cleanup&select=job_id,state&limit=1", 200, 30, rows=1)
+    with _test_trusted_cleanup_scope(monkeypatch, "job-cleanup", "worker-cleanup"):
+        guard.preflight_request("GET", "nexus_durable_jobs?job_id=eq.job-cleanup&attempt_count=eq.1&select=job_id,state&limit=1")
+        guard.record_request("GET", "nexus_durable_jobs?job_id=eq.job-cleanup&attempt_count=eq.1&select=job_id,state&limit=1", 200, 30, rows=1)
     state = guard.job_egress_snapshot("job-cleanup")
     assert state["cleanup_request_count"] == 1
     assert state["cleanup_response_bytes"] == 30
@@ -147,7 +157,7 @@ def test_exhausted_budget_allows_failed_retryable_transition(monkeypatch, tmp_pa
             row.update(body)
         return [dict(row)]
     monkeypatch.setattr(store, "_request", request)
-    with job_worker_once._worker_cleanup_scope("job-cleanup-transition", "worker-cleanup-transition"):
+    with _test_trusted_cleanup_scope(monkeypatch, "job-cleanup-transition", "worker-cleanup-transition"):
         result = store.transition("job-cleanup-transition", "FAILED_RETRYABLE",
             worker_id="worker-cleanup-transition", error_code="EGRESS_LIMIT", error_summary="bounded")
     assert result.state == "FAILED_RETRYABLE"
@@ -158,7 +168,7 @@ def test_exhausted_budget_allows_failed_retryable_transition(monkeypatch, tmp_pa
 
 def test_cleanup_scope_cannot_read_research_payload(monkeypatch, tmp_path):
     _egress_env(monkeypatch, tmp_path, "job-cleanup-deny")
-    with job_worker_once._worker_cleanup_scope("job-cleanup-deny", "worker-cleanup"):
+    with _test_trusted_cleanup_scope(monkeypatch, "job-cleanup-deny", "worker-cleanup"):
         with pytest.raises(guard.JobEgressBudgetExceeded, match="WORKER_CLEANUP_SCOPE_REJECTED"):
             guard.preflight_request("GET", "research_proactive_memory?select=payload&memory_id=eq=x&limit=1")
 
@@ -171,7 +181,7 @@ def test_cleanup_scope_cannot_be_entered_from_untrusted_caller():
 
 def test_cleanup_scope_rejects_other_job_id(monkeypatch, tmp_path):
     _egress_env(monkeypatch, tmp_path, "job-one")
-    with job_worker_once._worker_cleanup_scope("job-one", "worker-one"):
+    with _test_trusted_cleanup_scope(monkeypatch, "job-one", "worker-one"):
         with pytest.raises(guard.JobEgressBudgetExceeded, match="WORKER_CLEANUP_SCOPE_REJECTED"):
             guard.preflight_request("GET", "nexus_durable_jobs?job_id=eq.job-two&select=job_id,state&limit=1")
 
@@ -188,6 +198,7 @@ def test_capacity_response_is_not_a_case_open_failure(monkeypatch):
 
 
 def test_capacity_wait_settles_work_item_and_releases_job_lease(monkeypatch, tmp_path):
+    monkeypatch.setattr(guard, "_trusted_cleanup_caller", lambda *_a, **_k: "PACKAGED_WORKER")
     store = DurableJobStore(tmp_path / "capacity.sqlite")
     job = store.enqueue("RESEARCH", "RESEARCH_INTAKE", payload_ref="work-capacity",
                         max_attempts=3, governance_context={"objective_id": "objective-capacity"})
@@ -215,7 +226,7 @@ def test_waiting_capacity_worker_exit_is_successfully_handled(monkeypatch):
     monkeypatch.setattr(job_worker_once, "run", lambda *_args: {"status": "WAITING_FOR_CAPACITY"})
     monkeypatch.setattr(job_worker_once, "default_store", lambda: object())
     monkeypatch.setattr(job_worker_once, "_lifecycle", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(sys, "argv", ["job_worker_once.py", "--job-id", "job-capacity", "--worker-id", "worker-capacity"])
+    monkeypatch.setattr(sys, "argv", ["job_worker_once.py", "--job-id", "job-capacity", "--worker-id", "worker-capacity", "--attempt", "1"])
     assert job_worker_once.main() == 0
 
 
@@ -260,7 +271,7 @@ def test_supervisor_checks_exact_job_even_after_zero_exit(monkeypatch, tmp_path)
         def wait(self, timeout=None): return self.returncode
     monkeypatch.setattr(supervisor.subprocess, "Popen", lambda *args, **kwargs: Process())
     result = supervisor.supervise("job-zero-active", "worker-zero-active", 1, 30)
-    assert observed == [("job-zero-active", "worker-zero-active")]
+    assert observed == [("job-zero-active", "worker-zero-active", 1)]
     assert result["recovery"]["active_slot_released"] is True
 
 

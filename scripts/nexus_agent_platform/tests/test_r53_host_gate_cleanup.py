@@ -121,7 +121,7 @@ def run_as_main(source_file, argv_file):
     sys.argv[:] = [str(argv_file)]
     sys.modules["__main__"] = SimpleNamespace(__file__=str(argv_file))
     try:
-        code = "with worker_cleanup_scope('job_exact','worker_exact'):\n    pass\n"
+        code = "with worker_cleanup_scope('job_exact','worker_exact', attempt=1):\n    pass\n"
         exec(compile(code, str(source_file), "exec"), namespace)
     finally:
         sys.argv[:] = old_argv
@@ -172,7 +172,7 @@ def test_cleanup_failure_metadata_is_bounded():
 def test_settled_blocked_job_exit_recovery_is_idempotent(monkeypatch):
     class Store:
         def get(self, job_id):
-            return SimpleNamespace(state="BLOCKED", claimed_by=None)
+            return SimpleNamespace(state="BLOCKED", claimed_by=None, attempt_count=1)
         def transition(self, *args, **kwargs):
             raise AssertionError("settled job must not transition again")
     monkeypatch.setattr("nexus_agent_platform.durable_jobs.default_store", lambda: Store())
@@ -185,7 +185,7 @@ def test_running_job_exit_uses_exact_retry_recovery(monkeypatch):
         def __init__(self):
             self.transitions = []
         def get(self, job_id):
-            return SimpleNamespace(state="RUNNING", claimed_by="worker_exact")
+            return SimpleNamespace(state="RUNNING", claimed_by="worker_exact", attempt_count=1)
         def transition(self, *args, **kwargs):
             self.transitions.append((args, kwargs))
             return SimpleNamespace(state="FAILED_RETRYABLE", attempt_count=1)

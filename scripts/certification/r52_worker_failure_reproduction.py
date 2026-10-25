@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from unittest.mock import patch
 from pathlib import Path
 
 from nexus_agent_platform import job_worker_once, supabase_egress_guard as guard
@@ -48,14 +49,15 @@ def reproduce() -> dict[str, object]:
             # cleanup remains available while Research data access is denied.
             guard._update_job_egress(method="GET", path="research_sources?select=id&limit=1",
                                      response_bytes=NORMAL_RESPONSE_BUDGET_BYTES, rows=1)
-            with job_worker_once._worker_cleanup_scope("job-r52-repro", "worker-r52-repro"):
-                guard.preflight_request("GET", "nexus_durable_jobs?job_id=eq.job-r52-repro&select=job_id,state&limit=1")
-                cleanup_allowed = True
-                try:
-                    guard.preflight_request("GET", "research_proactive_memory?memory_id=eq.x&select=payload&limit=1")
-                    research_after_budget_denied = False
-                except guard.JobEgressBudgetExceeded:
-                    research_after_budget_denied = True
+            with patch.object(guard, "_trusted_cleanup_caller", return_value="PACKAGED_WORKER"):
+                with job_worker_once._worker_cleanup_scope("job-r52-repro", "worker-r52-repro", attempt=1):
+                    guard.preflight_request("GET", "nexus_durable_jobs?job_id=eq.job-r52-repro&attempt_count=eq.1&select=job_id,state&limit=1")
+                    cleanup_allowed = True
+                    try:
+                        guard.preflight_request("GET", "research_proactive_memory?memory_id=eq.x&select=payload&limit=1")
+                        research_after_budget_denied = False
+                    except guard.JobEgressBudgetExceeded:
+                        research_after_budget_denied = True
             return {
                 "r51_total_response_bytes": CAPTURED_R51_TOTAL_BYTES,
                 "r51_largest_response_bytes": CAPTURED_R51_LARGEST_RESPONSE_BYTES,

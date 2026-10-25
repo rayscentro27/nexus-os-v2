@@ -37,10 +37,12 @@ def _lifecycle(job_id: str, stage: str, *, job=None, worker_id: str | None = Non
 
 
 @contextmanager
-def _worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None = None):
+def _worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None = None,
+                          attempt: int | None = None):
     """Enter the guard's cleanup capability only from this worker module."""
     from nexus_agent_platform.supabase_egress_guard import worker_cleanup_scope
-    with worker_cleanup_scope(job_id, worker_id, reservation_id):
+    with worker_cleanup_scope(job_id, worker_id, reservation_id,
+                              attempt=attempt or int(os.environ.get("NEXUS_JOB_ATTEMPT_COUNT", "1"))):
         yield
 
 def _result_json(stdout):
@@ -122,7 +124,8 @@ def _settle_capacity_wait(job, worker_id: str, store, reservation: dict,
         _lifecycle(job_id, "CAPACITY_WORK_ITEM_SETTLE_FAILED", job=job,
                    worker_id=worker_id, exception_type=type(exc).__name__)
         raise
-    with _worker_cleanup_scope(job_id, worker_id, reservation.get("reservation_id")):
+    with _worker_cleanup_scope(job_id, worker_id, reservation.get("reservation_id"),
+                               attempt=job.attempt_count):
         store.transition(job_id, "FAILED_RETRYABLE", worker_id=worker_id,
             error_code=reason,
             error_summary="Research objective remains queued until an execution slot is available.")
@@ -1370,9 +1373,10 @@ def run(job_id: str, worker_id: str, store) -> dict:
     return result
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--job-id", required=True); parser.add_argument("--worker-id", required=True)
+    parser = argparse.ArgumentParser(); parser.add_argument("--job-id", required=True); parser.add_argument("--worker-id", required=True); parser.add_argument("--attempt", type=int, required=True)
     args = parser.parse_args(); store = default_store()
     os.environ["NEXUS_WORKER_ID"] = args.worker_id
+    os.environ["NEXUS_JOB_ATTEMPT_COUNT"] = str(args.attempt)
     _lifecycle(args.job_id,"WORKER_PROCESS_STARTED",worker_id=args.worker_id,pid=os.getpid())
     try:
         result=run(args.job_id, args.worker_id, store)
@@ -1391,7 +1395,8 @@ def main() -> int:
         except Exception:
             safe_error_summary = type(exc).__name__
         try:
-            with _worker_cleanup_scope(args.job_id,args.worker_id,active[1] if active else None):
+            with _worker_cleanup_scope(args.job_id,args.worker_id,active[1] if active else None,
+                                      attempt=args.attempt):
                 job = store.get(args.job_id)
                 if job and job.state in {"CLAIMED", "RUNNING"}:
                     store.transition(args.job_id, "FAILED_RETRYABLE", worker_id=args.worker_id,

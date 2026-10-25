@@ -473,11 +473,13 @@ class SupabaseJobStore:
         except Exception:
             cleanup = None
         columns = self.JOB_COLUMNS
+        attempt_filter = ""
         if cleanup is not None:
             if cleanup[0] != job_id:
                 raise JobError("WORKER_CLEANUP_EXACT_JOB_REQUIRED")
+            attempt_filter = f"&attempt_count=eq.{cleanup[2]}"
             columns = "job_id,state,attempt_count,max_attempts,claimed_by,claimed_at,lease_until,scheduled_at,receipt_ref,result_hash"
-        rows = self._request(f"nexus_durable_jobs?job_id=eq.{quote(job_id,safe='')}&select={columns}&limit=1")
+        rows = self._request(f"nexus_durable_jobs?job_id=eq.{quote(job_id,safe='')}{attempt_filter}&select={columns}&limit=1")
         return self._job(rows[0]) if rows else None
 
     def transition(self, job_id: str, state: str, *, worker_id: str | None = None, lease_seconds: int = 300,
@@ -488,7 +490,7 @@ class SupabaseJobStore:
             cleanup = worker_cleanup_identity()
         except Exception:
             cleanup = None
-        if cleanup is not None and (cleanup != (job_id, worker_id) or state not in {"FAILED_RETRYABLE", "BLOCKED"}):
+        if cleanup is not None and (cleanup[:2] != (job_id, worker_id) or state not in {"FAILED_RETRYABLE", "BLOCKED"}):
             raise JobError("WORKER_CLEANUP_TRANSITION_NOT_ALLOWED")
         current=self.get(job_id)
         if current is None: raise JobError("JOB_NOT_FOUND")
@@ -507,6 +509,7 @@ class SupabaseJobStore:
             patch.update(last_error_code=(error_code or "WORKER_ERROR")[:100],
                          last_error_summary=(error_summary or "")[:500])
         filt=f"job_id=eq.{job_id}"
+        if cleanup is not None: filt += f"&attempt_count=eq.{cleanup[2]}"
         if worker_id: filt+=f"&claimed_by=eq.{worker_id}"
         # Starting a worker is a one-shot compare-and-set. Without this state
         # predicate two processes that both read CLAIMED could both enter the

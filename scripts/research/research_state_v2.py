@@ -10,6 +10,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import tempfile
 import time
@@ -241,6 +242,8 @@ def _upsert_current(row: dict[str, Any]) -> dict[str, Any]:
             db.execute("CREATE TABLE IF NOT EXISTS current_state (memory_id TEXT PRIMARY KEY, memory_kind TEXT NOT NULL, objective_id TEXT, project_id TEXT, job_id TEXT, recorded_at TEXT NOT NULL, payload TEXT NOT NULL)")
             db.execute("INSERT INTO current_state VALUES(?,?,?,?,?,?,?) ON CONFLICT(memory_id) DO UPDATE SET memory_kind=excluded.memory_kind, objective_id=excluded.objective_id, project_id=excluded.project_id, job_id=excluded.job_id, recorded_at=excluded.recorded_at, payload=excluded.payload",
                        (memory_id, str(row.get("memory_kind") or "STATE"), row.get("objective_id"), row.get("project_id") or row.get("work_id"), row.get("job_id"), str(row["recorded_at"]), json.dumps(row, separators=(",", ":"), default=str)))
+        if not _pending_current_matches(_exact_current(memory_id) or {}, row):
+            raise StateWriteFailure("CURRENT_STATE_WRITE_VERIFICATION_FAILED")
         return {"status": "PASS", "verified": True, "memory_id": memory_id, "namespace": "CERTIFICATION"}
     if supabase is None or not supabase.configured():
         raise CurrentStateUnavailable("CURRENT_STATE_BACKEND_UNAVAILABLE")
@@ -250,9 +253,34 @@ def _upsert_current(row: dict[str, Any]) -> dict[str, Any]:
     status, body = supabase.rest("POST", "research_proactive_memory?on_conflict=memory_id", body=[payload],
                                  prefer="return=representation,resolution=merge-duplicates")
     echoed = next((item for item in body if isinstance(item, dict) and item.get("memory_id") == memory_id), None) if isinstance(body, list) else None
-    if status not in {200, 201, 204} or not echoed or echoed.get("recorded_at") != row["recorded_at"]:
+    echoed_payload = echoed.get("payload") if echoed else None
+    if (status not in {200, 201, 204} or not echoed
+            or echoed.get("memory_id") != memory_id
+            or not _timestamps_equal(echoed.get("recorded_at"), row.get("recorded_at"))
+            or not isinstance(echoed_payload, dict)
+            or not _pending_current_matches(echoed_payload, row)):
         raise StateWriteFailure(f"CURRENT_STATE_WRITE_FAILED:HTTP_{status}")
     return {"status": "PASS", "verified": True, "memory_id": memory_id, "namespace": "PRODUCTION"}
+
+
+def _aware_utc_timestamp(value: Any) -> datetime:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("STATE_TIMESTAMP_INVALID")
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("STATE_TIMESTAMP_INVALID") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("STATE_TIMESTAMP_TIMEZONE_REQUIRED")
+    return parsed.astimezone(timezone.utc)
+
+
+def _timestamps_equal(left: Any, right: Any) -> bool:
+    """Compare authoritative timestamps as timezone-aware instants, not strings."""
+    try:
+        return _aware_utc_timestamp(left) == _aware_utc_timestamp(right)
+    except ValueError:
+        return False
 
 
 def _exact_current(memory_id: str) -> dict[str, Any] | None:
@@ -578,10 +606,15 @@ def _apply_pending(event_id: str, pending: dict[str, Any]) -> dict[str, Any]:
         receipt = json.loads(receipt_path.read_text())
         _pending_path(event_id).unlink(missing_ok=True)
         return receipt
-    # Reconciliation always retries current state first. Pending state is
-    # durable before either authoritative write, so crashes are replayable.
+    # A previous attempt may have committed current state but stopped before
+    # history/receipt. Verify all pending fields before skipping that upsert.
     row["last_state_event_id"] = event_id
-    current_receipt = _upsert_current(row)
+    existing = _exact_current(str(row["memory_id"]))
+    if existing is not None and _pending_current_matches(existing, row):
+        current_receipt = {"status": "PASS", "verified": True, "memory_id": row["memory_id"],
+                           "namespace": "PRODUCTION"}
+    else:
+        current_receipt = _upsert_current(row)
     event = pending["history_event"]
     archive_path = _append_event(event, pending.get("history_path"))
     receipt = {"event_id": event_id, "memory_id": row["memory_id"], "current_state": current_receipt,
@@ -589,6 +622,16 @@ def _apply_pending(event_id: str, pending: dict[str, Any]) -> dict[str, Any]:
     _atomic_write(receipt_path, json.dumps(receipt, separators=(",", ":")).encode())
     _pending_path(event_id).unlink(missing_ok=True)
     return receipt
+
+
+def _pending_current_matches(actual: dict[str, Any], expected: dict[str, Any]) -> bool:
+    for field, value in expected.items():
+        if field == "recorded_at":
+            if not _timestamps_equal(actual.get(field), value):
+                return False
+        elif actual.get(field) != value:
+            return False
+    return True
 
 
 def persist_state(state: dict[str, Any], *, event_type: str | None = None) -> dict[str, Any]:
@@ -699,6 +742,37 @@ def reconcile_pending(*, limit: int = 20) -> dict[str, Any]:
                 except OSError: pass
         fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
     return {"status": "PASS" if not failed else "DEGRADED", "processed": processed, "failed": failed}
+
+
+def reconcile_pending_event(event_id: str) -> dict[str, Any]:
+    """Recover one explicitly named outbox event without scanning pending state."""
+    if not re.fullmatch(r"evt_[A-Za-z0-9_-]{8,160}", str(event_id or "")):
+        raise ValueError("PENDING_EVENT_ID_INVALID")
+    path = _pending_path(event_id)
+    lock_path = _state_root() / "writer.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+b") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        if not path.is_file():
+            receipt = _state_root() / "receipts" / (event_id + ".json")
+            if receipt.is_file():
+                return json.loads(receipt.read_text())
+            raise FileNotFoundError("PENDING_EVENT_NOT_FOUND")
+        if path.stat().st_size > MAX_CURRENT_RECORD_BYTES:
+            raise StateWriteFailure("PENDING_EVENT_EXCEEDS_SIZE_LIMIT")
+        pending = json.loads(path.read_text())
+        if pending.get("event_id") != event_id or pending.get("history_event", {}).get("event_id") != event_id:
+            raise StateWriteFailure("PENDING_EVENT_IDENTITY_MISMATCH")
+        row = pending.get("current_state")
+        if not isinstance(row, dict) or not row.get("memory_id"):
+            raise StateWriteFailure("PENDING_CURRENT_STATE_MISSING")
+        actual = _exact_current(str(row["memory_id"]))
+        intended = {**row, "last_state_event_id": event_id}
+        if not _pending_current_matches(actual or {}, intended):
+            raise StateWriteFailure("PENDING_CURRENT_STATE_MISMATCH")
+        result = _apply_pending(event_id, pending)
+        fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+        return result
 
 
 def detect_divergence(*, limit: int = 100) -> dict[str, Any]:

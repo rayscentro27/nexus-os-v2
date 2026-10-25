@@ -1,0 +1,20 @@
+{
+  "release_id": "nexus-capability-actions-20261025-r59",
+  "base_release_id": "nexus-capability-actions-20261025-r58",
+  "base_source_commit": "c75a6161a93ff3658106766d16d9665ec09157c8",
+  "base_artifact_sha256": "d58deab9fd55678f69f2cc7dbe78cfd02620ec2ff6fb1b63f0d0fa749cfb30f4",
+  "base_manifest_sha256": "7dca2f1ad34abc37562bf771b04860f33f7f7df1c8cd0926d10167ba34b23a3d",
+  "base_run_id": "40209725873",
+  "base_artifact_name": "nexus-capability-actions-20261025-r58",
+  "changed_runtime_files": [
+    "scripts/research/research_state_v2.py",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py",
+    "scripts/nexus_agent_platform/durable_jobs.py",
+    "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/job_worker_supervisor.py",
+    "scripts/certification/r52_worker_failure_reproduction.py",
+    "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+    "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py"
+  ],
+  "composition_rule": "Exact certified R58 deployable runtime plus only timezone-aware State v2 write verification, exact packaged-worker cleanup identity, exact pending-event recovery, and focused R59 certification evidence."
+}

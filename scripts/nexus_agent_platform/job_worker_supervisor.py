@@ -140,15 +140,15 @@ def _cleanup_failure(exc: Exception) -> dict:
             "active_slot_released": False}
 
 
-def _exact_exit_recovery(job_id: str, worker_id: str) -> dict:
+def _exact_exit_recovery(job_id: str, worker_id: str, attempt: int = 1) -> dict:
     from nexus_agent_platform.durable_jobs import default_store
     from nexus_agent_platform.supabase_egress_guard import worker_cleanup_scope
     store = default_store()
-    with worker_cleanup_scope(job_id, worker_id):
+    with worker_cleanup_scope(job_id, worker_id, attempt=attempt):
         job = store.get(job_id)
         if job is None:
             return {"status": "JOB_NOT_FOUND", "active_slot_released": False}
-        if job.state not in {"CLAIMED", "RUNNING"} or job.claimed_by != worker_id:
+        if job.state not in {"CLAIMED", "RUNNING"} or job.claimed_by != worker_id or job.attempt_count != attempt:
             return {"status": job.state, "active_slot_released": job.state not in {"CLAIMED", "RUNNING"}}
         transitioned = store.transition(job_id, "FAILED_RETRYABLE", worker_id=worker_id,
             error_code="WORKER_EXITED_UNEXPECTEDLY",
@@ -190,7 +190,7 @@ def supervise(job_id: str, worker_id: str, attempt: int, timeout_seconds: int = 
             "stdout_path": str(stdout_path), "stderr_path": str(stderr_path),
             "lifecycle_path": str(lifecycle_path), "timeout_seconds": timeout_seconds}
     _write_json(process_path, {**base, "supervisor_pid": os.getpid(), "status": "STARTING"})
-    process = subprocess.Popen([sys.executable, str(worker_script), "--job-id", job_id, "--worker-id", worker_id],
+    process = subprocess.Popen([sys.executable, str(worker_script), "--job-id", job_id, "--worker-id", worker_id, "--attempt", str(attempt)],
         cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         start_new_session=True, close_fds=True)
     emit(job_id, "WORKER_PROCESS_STARTED", attempt=attempt, worker_id=worker_id,
@@ -224,7 +224,7 @@ def supervise(job_id: str, worker_id: str, attempt: int, timeout_seconds: int = 
     # cannot prove the durable transition committed; recover only if the
     # worker still owns a CLAIMED/RUNNING row.
     try:
-        recovery = _exact_exit_recovery(job_id, worker_id)
+        recovery = _exact_exit_recovery(job_id, worker_id, attempt)
     except Exception as exc:
         recovery = _cleanup_failure(exc)
     final_stage = last_stage(lifecycle_path)
