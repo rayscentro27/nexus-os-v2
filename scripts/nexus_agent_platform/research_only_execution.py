@@ -89,9 +89,19 @@ _BEHAVIOR_VARIANTS = {
 }
 
 
+def _strip_source_policy_metadata(question: str) -> str:
+    """Remove only recognized appended source-policy URL annotations for parsing."""
+    return re.sub(
+        r"\s+\b(?:allowed|approved)\s+source\s+url\s*:\s*https?://\S+\s*$",
+        " ", str(question or ""), flags=re.I)
+
+
 def assignment_anchors(question: str) -> dict[str, Any]:
     """Derive API, behavior, and condition anchors from the actual assignment."""
-    without_urls = re.sub(r"https?://\S+", " ", str(question or ""), flags=re.I)
+    # Source-policy annotations remain in the original assignment and its
+    # dedicated source_url field; only this semantic parsing view is cleaned.
+    without_source_metadata = _strip_source_policy_metadata(question)
+    without_urls = re.sub(r"https?://\S+", " ", without_source_metadata, flags=re.I)
     symbols = list(dict.fromkeys(re.findall(
         r"\b(?:[A-Za-z_]\w*\.)+[A-Za-z_]\w*(?:\(\))?", without_urls)))
     symbols = [value.removesuffix("()") for value in symbols]

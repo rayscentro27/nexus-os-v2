@@ -1,0 +1,13 @@
+{
+  "release_id": "nexus-capability-actions-20261025-r60",
+  "base_release_id": "nexus-capability-actions-20261025-r59",
+  "base_source_commit": "25dad967b86892694548b2fe9b3e9e1fe75a349d",
+  "base_artifact_sha256": "bfc428e7be91f58ebe782b0541d710b85f50410ce903738afdd802a38fdd34ff",
+  "base_manifest_sha256": "109671f28ea769ebd41a2da53ee15261f783828387b87a579101e4f9aab94367",
+  "base_run_id": "40213780657",
+  "base_artifact_name": "nexus-capability-actions-20261025-r59",
+  "changed_runtime_files": [
+    "scripts/nexus_agent_platform/research_only_execution.py"
+  ],
+  "composition_rule": "Exact certified R59 deployable runtime plus only narrow source-policy metadata removal before semantic assignment-anchor extraction and focused R60 certification evidence."
+}
