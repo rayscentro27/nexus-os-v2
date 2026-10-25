@@ -161,3 +161,54 @@ def test_arbitrary_main_is_denied(tmp_path):
         _invoke_as_packaged_worker(argv_tail=["--job-id", "job-r59", "--worker-id", "worker-r59", "--attempt", "3"],
             main_path=fake, code_path=fake, env_values={"NEXUS_DURABLE_JOB_ID": "job-r59",
             "NEXUS_WORKER_ID": "worker-r59", "NEXUS_JOB_ATTEMPT_COUNT": "3"})
+
+
+def test_direct_main_worker_failure_cleans_exact_attempt_and_reservation(monkeypatch, tmp_path):
+    import os
+    from nexus_agent_platform import job_worker_once
+
+    job_id, worker_id, attempt = "job-r59-direct", "worker-r59-direct", 2
+    worker_script = Path(job_worker_once.__file__).resolve()
+    class Store:
+        job = SimpleNamespace(job_id=job_id, state="RUNNING", attempt_count=attempt,
+                              claimed_by=worker_id, lease_until="lease")
+        def get(self, identity):
+            assert identity == job_id
+            return self.job
+        def transition(self, identity, state_name, **kwargs):
+            assert identity == job_id and kwargs.get("worker_id") == worker_id
+            self.job.state = state_name
+            self.job.lease_until = None
+            self.job.claimed_by = None
+            self.job.last_error_code = kwargs.get("error_code")
+            return self.job
+    class Governor:
+        calls = []
+        def reconcile(self, reservation_id, usage): self.calls.append((reservation_id, usage))
+    store, governor = Store(), Governor()
+    monkeypatch.setattr(job_worker_once, "default_store", lambda: store)
+    monkeypatch.setattr(job_worker_once, "_lifecycle", lambda *_a, **_k: None)
+    monkeypatch.setattr("nexus_agent_platform.supabase_egress_guard.job_egress_snapshot",
+                        lambda _identity: {"request_count": 2, "response_bytes": 128})
+    def fail_after_reservation(*_args):
+        job_worker_once.ACTIVE_RESERVATIONS[job_id] = (
+            governor, "reservation-r59-direct", {"request_count": 1, "response_bytes": 64})
+        raise RuntimeError("controlled retryable failure")
+    monkeypatch.setattr(job_worker_once, "run", fail_after_reservation)
+    old_argv, old_main = sys.argv[:], sys.modules.get("__main__")
+    previous_job = os.environ.get("NEXUS_DURABLE_JOB_ID")
+    os.environ["NEXUS_DURABLE_JOB_ID"] = job_id
+    sys.argv[:] = [str(worker_script), "--job-id", job_id, "--worker-id", worker_id, "--attempt", str(attempt)]
+    sys.modules["__main__"] = SimpleNamespace(__file__=str(worker_script))
+    try:
+        namespace = {"__name__": "__main__", "worker_main": job_worker_once.main}
+        exec(compile("worker_main()", str(worker_script), "exec"), namespace)
+    finally:
+        sys.argv[:] = old_argv
+        if old_main is not None: sys.modules["__main__"] = old_main
+        if previous_job is None: os.environ.pop("NEXUS_DURABLE_JOB_ID", None)
+        else: os.environ["NEXUS_DURABLE_JOB_ID"] = previous_job
+    assert store.job.state == "FAILED_RETRYABLE"
+    assert store.job.lease_until is None and store.job.claimed_by is None
+    assert governor.calls == [("reservation-r59-direct", {"requests": 1, "bytes": 64, "cost": 0})]
+    assert job_id not in job_worker_once.ACTIVE_RESERVATIONS
