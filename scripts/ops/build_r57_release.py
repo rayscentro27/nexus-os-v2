@@ -26,6 +26,7 @@ ADDITIONS = [
     Path("certification/r57_source/predecessor/20261022120000_fix_resource_governor_jsonb_threshold.sql"),
     Path("certification/r57_source/sql/isolated_governor_schema.sql"),
     Path("certification/r57_source/tests/test_r57_governor_reservation_ordering.py"),
+    Path("certification/r57_source/tests/r57_release_smoke.py"),
 ]
 SECRET_PATTERNS = [
     re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),

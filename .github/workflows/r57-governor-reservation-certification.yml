@@ -51,7 +51,7 @@ jobs:
         run: |
           python -m pip install pytest 'mcp<2' pydantic-settings uvicorn
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-client zsh
       - name: Fetch and verify exact certified R56 artifact
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -91,6 +91,8 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           R57_CERT_REPORT: ${{ github.workspace }}/dist/r57_certification.xml
         run: python scripts/ops/build_r57_release.py
+      - name: Offline launch and import-root smoke test against exact R57 package
+        run: python certification/r57_source/tests/r57_release_smoke.py
       - name: Verify R57 archive manifest, payload and source lineage
         run: python scripts/ops/verify_r57_source_lineage.py
       - name: Upload R57 artifact and certification evidence
