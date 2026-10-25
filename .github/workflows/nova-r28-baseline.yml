@@ -24,7 +24,15 @@ jobs:
       - name: Install packaged Nova dependencies
         run: |
           python -m pip install "pip<24.1"
-          python -m pip install -r nova_baseline/nova-operator-v1-20261025-r28-baseline/runtime/requirements-agent-platform.txt
+          # The full runtime requirements include optional provider adapters
+          # (LiteLLM and Brave) whose current upstream metadata is malformed
+          # under the certification runner. They are not imported by the
+          # baseline contract checks; keep the packaged requirements intact
+          # and install the remaining runtime dependencies for import tests.
+          sed -e '/^litellm>=/d' -e '/^brave-search>=/d' \
+            nova_baseline/nova-operator-v1-20261025-r28-baseline/runtime/requirements-agent-platform.txt \
+            > /tmp/nova-r28-certification-requirements.txt
+          python -m pip install -r /tmp/nova-r28-certification-requirements.txt
       - name: Certify baseline imports, lineage, and read-only MCP evidence
         working-directory: nova_baseline/nova-operator-v1-20261025-r28-baseline
         run: python -B -m unittest discover -s certification/tests -v
