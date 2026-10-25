@@ -43,7 +43,7 @@ def main() -> int:
         source_hash = hashlib.sha256((ROOT / migration).read_bytes()).hexdigest()
         if manifest["payload_sha256"].get(migration) != source_hash:
             raise SystemExit("R57_MIGRATION_SOURCE_MISMATCH")
-        if "R56_RELEASE_MANIFEST.json" not in members or "R55_RELEASE_MANIFEST.json" in members:
+        if root + "R56_RELEASE_MANIFEST.json" not in members or root + "R55_RELEASE_MANIFEST.json" in members:
             raise SystemExit("R57_ROOT_BASE_MANIFEST_LAYOUT_INVALID")
     release_root = ROOT / "dist" / RELEASE_ID
     sys.path.insert(0, str(release_root / "scripts"))
