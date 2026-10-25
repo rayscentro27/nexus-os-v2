@@ -63,6 +63,8 @@ jobs:
           payload["R55_RELEASE_MANIFEST.json"] = hashlib.sha256(lineage_manifest.read_bytes()).hexdigest()
           metadata = {"release_id": contract["release_id"],
                       "base_release_id": contract["base_release_id"],
+                      "base_artifact_sha256": contract["base_artifact_sha256"],
+                      "base_manifest_sha256": contract["base_manifest_sha256"],
                       "source_commit": os.environ.get("GITHUB_SHA", "test"),
                       "runtime_file_count": len(payload), "certification": {"result": "PASS"}}
           metadata_path = output / "BUILD_METADATA.json"

@@ -367,7 +367,8 @@ def _validated_active_release_manifest(root: Path) -> dict[str, Any] | None:
         if (expected_metadata_hash and hashlib.sha256(metadata_path.read_bytes()).hexdigest()
                 != expected_metadata_hash):
             return None
-        for identity_field in ("base_release_id", "overlay_release_id", "source_commit"):
+        for identity_field in ("base_release_id", "overlay_release_id", "source_commit",
+                               "base_artifact_sha256", "base_manifest_sha256"):
             manifest_value = manifest.get(identity_field)
             metadata_value = metadata.get(identity_field)
             if (manifest_value is not None and metadata_value is not None

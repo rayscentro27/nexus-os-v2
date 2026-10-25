@@ -140,6 +140,8 @@ def main() -> int:
         text=True, timeout=10).stdout.strip()
     metadata = {
         "release_id": RELEASE_ID, "base_release_id": contract["base_release_id"],
+        "base_artifact_sha256": contract["base_artifact_sha256"],
+        "base_manifest_sha256": contract["base_manifest_sha256"],
         "source_commit": source_commit, "built_at": datetime.now(timezone.utc).isoformat(),
         "runtime_file_count": len(payload), "certification": certification,
     }
