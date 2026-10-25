@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "global_blocked_commands": [
+    "stripe --live",
+    "supabase db reset --linked",
+    "supabase db push --include-all",
+    "oanda live order",
+    "yt-dlp video download",
+    "yt-dlp audio download",
+    "git add .env",
+    "service role in frontend"
+  ],
+  "approval_required_actions": [
+    "external writes",
+    "payments confirmation",
+    "email sending",
+    "social publishing",
+    "database insertion",
+    "trading orders",
+    "permanent scheduler installation"
+  ],
+  "default_external_action_allowed": false
+}

@@ -1,0 +1,15 @@
+{
+  "_comment": "Approved YouTube sources for the v2 monitor. Only entries with enabled=true are processed when --approved-only is set. Do NOT add random channels — Ray approves additions. No private/unlisted videos.",
+  "rating_model_version": "v1",
+  "sources": [
+    {
+      "name": "EXAMPLE — replace with a Ray-approved public source",
+      "url": "https://www.youtube.com/watch?v=EXAMPLE",
+      "source_type": "youtube_video",
+      "category": "credit_funding_readiness",
+      "max_videos_per_run": 1,
+      "enabled": false,
+      "notes": "Placeholder. Set enabled=true only after Ray approves a real public URL/channel."
+    }
+  ]
+}

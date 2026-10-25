@@ -1,0 +1,71 @@
+{
+  "version": 2,
+  "mode": "static_seed_research_only",
+  "github_network_access_allowed": false,
+  "policy": {
+    "fetch_urls": false,
+    "clone_repositories": false,
+    "run_untrusted_code": false,
+    "copy_code_before_license_security_review": false,
+    "imports_require_ray_approval": true
+  },
+  "targets": [
+    {
+      "id": "github-topic-credit-repair-tools",
+      "type": "github_topic",
+      "name": "credit-repair-tools topic",
+      "url": "https://github.com/topics/credit-repair-tools",
+      "purpose": "Static concept seed for credit-repair workflows.",
+      "concepts": ["dispute workflow concepts", "letter draft queues", "goodwill letter concepts", "debt validation concepts", "client checklist ideas", "documentation requirements", "debt negotiation task flow"]
+    },
+    {
+      "id": "github-topic-credit-scoring",
+      "type": "github_topic",
+      "name": "credit-scoring topic",
+      "url": "https://github.com/topics/credit-scoring?o=desc&s=updated",
+      "purpose": "Static concept seed for explainable Nexus Readiness scoring.",
+      "concepts": ["score-factor categories", "utilization logic", "payment history importance", "inquiry risk", "credit age", "account mix", "explainable rejection/readiness reasons", "alternative readiness scoring concepts"]
+    },
+    {
+      "id": "github-moov-awesome-fintech",
+      "type": "github_repository",
+      "name": "moov-io/awesome-fintech",
+      "url": "https://github.com/moov-io/awesome-fintech",
+      "purpose": "Static concept seed for compliance-aware fintech architecture.",
+      "concepts": ["fintech infrastructure patterns", "compliance-aware financial data modeling", "banking/payment/funding ecosystem categories", "Metro 2 awareness only", "proof/ledger architecture ideas"]
+    },
+    {
+      "id": "github-wadprog-repaircredit",
+      "type": "github_repository",
+      "name": "Wadprog/RepairCredit-",
+      "url": "https://github.com/Wadprog/RepairCredit-",
+      "purpose": "Static concept seed for a reviewed credit-repair lifecycle.",
+      "concepts": ["credit repair app workflow", "bureau communication lifecycle as a concept", "dispute tracking lifecycle", "status tracking", "admin review steps", "automatic bureau contact"],
+      "blocked_concepts": ["automatic bureau contact"]
+    },
+    {
+      "id": "github-loan-management-system",
+      "type": "github_repository",
+      "name": "chandachewe10/loan-management-system",
+      "url": "https://github.com/chandachewe10/loan-management-system",
+      "purpose": "Static concept seed for funding workflow and document readiness.",
+      "concepts": ["loan application workflow", "borrower profile", "approval criteria", "repayment/status tracking", "document readiness", "funding pipeline"]
+    },
+    {
+      "id": "github-topic-credit-management",
+      "type": "github_topic",
+      "name": "credit-management topic",
+      "url": "https://github.com/topics/credit-management",
+      "purpose": "Static concept seed for business financial record readiness.",
+      "concepts": ["customer credit tracking", "balance/payment tracking", "receivables organization", "invoice/debt tracking", "business financial record readiness"]
+    },
+    {
+      "id": "github-topic-loan-approval-system",
+      "type": "github_topic",
+      "name": "loan-approval-system topic",
+      "url": "https://github.com/topics/loan-approval-system",
+      "purpose": "Static concept seed for reviewed funding-readiness decisions.",
+      "concepts": ["application intake", "eligibility checks", "underwriting-style workflow", "decision status", "approval dashboard concepts"]
+    }
+  ]
+}

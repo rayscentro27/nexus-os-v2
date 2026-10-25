@@ -1,0 +1,9 @@
+{
+  "HOT_STATE_SEED_REQUIRED": "YES",
+  "LEGACY_LEDGER_REQUIRED": "NO",
+  "REQUIRES_STATE_V2_DATABASE_MIGRATION": "20261022130000",
+  "RESEARCH_START_ALLOWED_BEFORE_DB_MIGRATION": "NO",
+  "STATE_V2_RUNTIME_CERTIFICATION": "PASS",
+  "base_release_id": "nexus-capability-actions-20261022-r50",
+  "release_id": "nexus-capability-actions-20261022-r51"
+}

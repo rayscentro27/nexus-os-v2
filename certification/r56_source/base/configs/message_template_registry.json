@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "lanes": [
+    "onboarding",
+    "credit_repair",
+    "business_funding_readiness",
+    "grants",
+    "business_credit",
+    "trading_education",
+    "payment_confirmation",
+    "lead_reactivation",
+    "document_reminder",
+    "abandoned_checkout",
+    "appointment_follow_up"
+  ],
+  "send_enabled": false
+}

@@ -1,0 +1,137 @@
+name: R56 Generic Active Release Readiness Certification
+
+on:
+  push:
+    branches:
+      - research/r56-readiness-resolver-certification
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact R56 source lineage
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install bounded certification dependencies
+        run: python -m pip install pytest 'mcp<2' pydantic-settings uvicorn
+      - name: Compose temporary R56 runtime from pinned R55 base and overlay
+        env:
+          R56_TEST_ROOT: ${{ runner.temp }}/nexus-capability-actions-20261025-r56
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, shutil
+          from pathlib import Path
+          repo = Path.cwd()
+          contract = json.loads((repo / "certification/r56_source/contract.json").read_text())
+          output = Path(os.environ["R56_TEST_ROOT"])
+          if output.exists():
+              raise SystemExit("R56_TEST_ROOT_ALREADY_EXISTS")
+          output.mkdir(parents=True)
+          base = repo / "certification/r56_source/base"
+          overlay = repo / "certification/r56_source/overlay"
+          base_hashes = {}
+          for source in sorted(p for p in base.rglob("*") if p.is_file()):
+              relative = source.relative_to(base).as_posix()
+              base_hashes[relative] = hashlib.sha256(source.read_bytes()).hexdigest()
+              target = output / relative
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+          lineage_manifest = repo / contract["base_manifest_path"]
+          expected_base = json.loads(lineage_manifest.read_text())["payload_sha256"]
+          if base_hashes != expected_base:
+              raise SystemExit("R55_CERTIFIED_BASE_SNAPSHOT_MISMATCH")
+          payload = dict(base_hashes)
+          for source in sorted(p for p in overlay.rglob("*") if p.is_file()):
+              relative = source.relative_to(overlay).as_posix()
+              digest = hashlib.sha256(source.read_bytes()).hexdigest()
+              if relative not in contract["overlay_runtime_files"]:
+                  raise SystemExit("R56_UNEXPECTED_OVERLAY_FILE:" + relative)
+              target = output / relative
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+              payload[relative] = digest
+          shutil.copy2(lineage_manifest, output / "R55_RELEASE_MANIFEST.json")
+          payload["R55_RELEASE_MANIFEST.json"] = hashlib.sha256(lineage_manifest.read_bytes()).hexdigest()
+          metadata = {"release_id": contract["release_id"],
+                      "base_release_id": contract["base_release_id"],
+                      "source_commit": os.environ.get("GITHUB_SHA", "test"),
+                      "runtime_file_count": len(payload), "certification": {"result": "PASS"}}
+          metadata_path = output / "BUILD_METADATA.json"
+          metadata_path.write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+          staging = {"release_id": contract["release_id"],
+                     "base_release_id": contract["base_release_id"],
+                     "source_commit": os.environ.get("GITHUB_SHA", "test"),
+                     "build_metadata_sha256": hashlib.sha256(metadata_path.read_bytes()).hexdigest(),
+                     "payload_file_count": len(payload), "payload_sha256": payload,
+                     "certification": {"result": "PASS"}}
+          manifest_path = output / "R56_RELEASE_MANIFEST.json"
+          manifest_path.write_text(json.dumps(staging, sort_keys=True, indent=2) + "\n")
+          manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+          (output / "RELEASE_MANIFEST.sha256").write_text(
+              f"{manifest_hash}  R56_RELEASE_MANIFEST.json\n")
+          output.joinpath("reports").mkdir()
+          for relative in contract["required_test_suites"]:
+              source = repo / relative
+              target = output / relative
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+          for relative, entry in json.loads((repo / "config/r55_deployable_release_manifest.v1.json").read_text())["test_support_files"].items():
+              source = repo / entry["path"]
+              if hashlib.sha256(source.read_bytes()).hexdigest() != entry["sha256"]:
+                  raise SystemExit("R55_TEST_SUPPORT_HASH_MISMATCH:" + relative)
+              target = output / relative
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+          support = output / "certification/r54_source/services/nexus_mcp/server.py"
+          support.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copy2(repo / "certification/r54_source/services/nexus_mcp/server.py", support)
+          print(json.dumps({"result":"PASS", "r55_base_files":len(base_hashes),
+                            "r56_payload_files":len(payload)}))
+          PY
+      - name: Run inherited safety and R56 readiness suites
+        env:
+          R55_TEST_ROOT: ${{ runner.temp }}/nexus-capability-actions-20261025-r56
+          R56_TEST_ROOT: ${{ runner.temp }}/nexus-capability-actions-20261025-r56
+          PYTHONPATH: ${{ runner.temp }}/nexus-capability-actions-20261025-r56:${{ runner.temp }}/nexus-capability-actions-20261025-r56/scripts
+          NEXUS_REPO_ROOT: ${{ runner.temp }}/nexus-capability-actions-20261025-r56
+          NEXUS_RESEARCH_STATE_ROOT: ${{ runner.temp }}/r56-test-state
+          PYTHONDONTWRITEBYTECODE: "1"
+          R56_CERT_REPORT: ${{ github.workspace }}/dist/r56_certification.xml
+        run: |
+          mkdir -p dist
+          cd "$RUNNER_TEMP"
+          python -m pytest -q --import-mode=importlib \
+            "$R56_TEST_ROOT/scripts/nexus_agent_platform/tests/test_research_only_contract.py" \
+            "$R56_TEST_ROOT/services/nexus_mcp/tests/test_research_assignment_intent.py" \
+            "$R56_TEST_ROOT/scripts/nexus_agent_platform/tests/test_research_parent_workflow.py" \
+            "$R56_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py" \
+            "$R56_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py" \
+            "$R56_TEST_ROOT/scripts/research/tests/test_research_state_v2_persistence.py" \
+            "$R56_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r55_deployable_release.py" \
+            "$R56_TEST_ROOT/scripts/nexus_agent_platform/tests/test_r56_release_readiness_manifest.py" \
+            --junitxml="$R56_CERT_REPORT"
+      - name: Build immutable R56 from certified evidence
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: python scripts/ops/build_r56_release.py
+      - name: Verify exact R55 base and R56 artifact lineage
+        run: python scripts/ops/verify_r56_source_lineage.py
+      - name: Upload immutable R56 artifact and certification report
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-capability-actions-20261025-r56
+          path: |
+            dist/nexus-capability-actions-20261025-r56.tar.gz
+            dist/nexus-capability-actions-20261025-r56.sha256
+            dist/r56_certification.xml
+          if-no-files-found: error
+          retention-days: 30

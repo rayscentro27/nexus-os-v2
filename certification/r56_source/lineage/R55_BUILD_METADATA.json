@@ -1,0 +1,18 @@
+{
+  "base_file_count": 309,
+  "base_release_id": "nexus-capability-actions-20261024-r53",
+  "built_at": "2026-10-24T21:58:52.589360+00:00",
+  "certification": {
+    "errors": 0,
+    "failures": 0,
+    "required_suites": 7,
+    "result": "PASS",
+    "skipped": 0,
+    "tests": 142
+  },
+  "overlay_file_count": 8,
+  "overlay_release_id": "nexus-capability-actions-20261024-r54",
+  "release_id": "nexus-capability-actions-20261024-r55",
+  "runtime_file_count": 310,
+  "source_commit": "2c2ef14f750d5ed726590ef5afd23ec8521aa609"
+}

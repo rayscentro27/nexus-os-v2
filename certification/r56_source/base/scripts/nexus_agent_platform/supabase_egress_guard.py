@@ -1,0 +1,629 @@
+"""Local, bounded Supabase REST egress accounting (no request values or secrets)."""
+from __future__ import annotations
+
+import json
+import os
+import fcntl
+import re
+import sys
+import tempfile
+import threading
+import time
+import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
+
+ROOT = Path(__file__).resolve().parents[2]
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
+
+STATE = nexus_research_state_path("runtime", "supabase_egress_guard.json")
+LARGE_RESPONSE_BYTES = 1_000_000
+CONTROL_PLANE_RESPONSE_WARNING_BYTES = 256_000
+SAFE_MODE_STATE = nexus_research_state_path("runtime", "supabase_egress_safe_mode.json")
+WAKE_BUDGET_STATE = nexus_research_state_path("runtime", "research_sources_wake_budget.json")
+SYSTEMS_INCIDENTS = nexus_research_state_path("runtime", "systems_workflow_runs.jsonl")
+MAX_RESEARCH_SOURCES_CALLS_FULL_WAKE = 20
+JOB_EGRESS_DIR = nexus_research_state_path("runtime", "job_egress")
+JOB_MAX_REQUESTS = 120
+JOB_MAX_RESPONSE_BYTES = 2_000_000
+FULL_RESEARCH_CANARY_JOB_PREFIX = "job_full_research_canary_"
+FULL_RESEARCH_CANARY_MAX_REQUESTS = 300
+_CACHE: dict[str, tuple[float, object]] = {}
+_CACHE_LOCK = threading.RLock()
+_CACHE_MAX_ENTRIES = 32
+_CACHE_MAX_BYTES = 1_000_000
+_CACHE_ALLOWED_PREFIXES = ("template:", "settings:", "provider:", "environment:", "capability:", "scheduler:")
+_REQUEST_LOCAL = threading.local()
+_CLEANUP_SCOPE: ContextVar[dict | None] = ContextVar("nexus_worker_cleanup_scope", default=None)
+WORKER_CLEANUP_MAX_REQUESTS = 3
+WORKER_CLEANUP_MAX_RESPONSE_BYTES = 32 * 1024
+WORKER_CLEANUP_ALLOWED_SELECT = {
+    "job_id", "state", "attempt_count", "max_attempts", "claimed_by", "claimed_at",
+    "lease_until", "scheduled_at", "receipt_ref", "result_hash", "last_error_code",
+    "last_error_summary", "completed_at",
+}
+
+
+def _trusted_cleanup_caller(frame) -> str | None:
+    """Identify only the packaged worker or the exact supervisor entrypoint."""
+    trusted_supervisor = (Path(__file__).resolve().parent / "job_worker_supervisor.py").resolve()
+    main_module = sys.modules.get("__main__")
+    main_file = getattr(main_module, "__file__", None)
+    try:
+        main_path = Path(main_file).resolve() if main_file else None
+        argv_path = Path(sys.argv[0]).resolve() if sys.argv and sys.argv[0] else None
+    except (OSError, RuntimeError):
+        main_path = argv_path = None
+    while frame is not None:
+        module_name = str(frame.f_globals.get("__name__") or "")
+        source_path = Path(frame.f_code.co_filename).resolve()
+        if module_name == "nexus_agent_platform.job_worker_once":
+            return "PACKAGED_WORKER"
+        if (module_name == "nexus_agent_platform.job_worker_supervisor" and source_path == trusted_supervisor):
+            return "PACKAGED_SUPERVISOR_MODULE"
+        if (module_name == "__main__" and source_path == trusted_supervisor
+                and main_path == trusted_supervisor and argv_path == trusted_supervisor):
+            return "PACKAGED_SUPERVISOR_ENTRYPOINT"
+        frame = frame.f_back
+    return None
+
+
+class ResearchSourcesBurstExceeded(RuntimeError):
+    """The current wake exhausted its measured research_sources request budget."""
+
+
+class LargeControlPlaneQueryBlocked(RuntimeError):
+    """A full proactive-memory payload query is broader than the safe contract."""
+
+
+class JobEgressBudgetExceeded(RuntimeError):
+    """One bounded worker exceeded its job-scoped Supabase budget."""
+
+
+@contextmanager
+def worker_cleanup_scope(job_id: str, worker_id: str, reservation_id: str | None = None):
+    """Permit only tiny exact-job cleanup requests after normal egress is spent."""
+    caller_identity = _trusted_cleanup_caller(sys._getframe(1))
+    if caller_identity is None:
+        raise PermissionError("WORKER_CLEANUP_CALLER_NOT_AUTHORIZED")
+    safe_id = str(job_id or "")
+    if not safe_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for ch in safe_id):
+        raise ValueError("CLEANUP_JOB_ID_INVALID")
+    safe_worker = str(worker_id or "")
+    if not safe_worker or len(safe_worker) > 160:
+        raise ValueError("CLEANUP_WORKER_ID_INVALID")
+    safe_reservation = str(reservation_id or "")
+    if safe_reservation and not re.fullmatch(r"[A-Za-z0-9_-]{1,160}", safe_reservation):
+        raise ValueError("CLEANUP_RESERVATION_ID_INVALID")
+    token = _CLEANUP_SCOPE.set({"job_id": safe_id, "worker_id": safe_worker,
+                                "caller_identity": caller_identity,
+                                "reservation_id": safe_reservation, "requests": 0, "response_bytes": 0})
+    try:
+        yield
+    finally:
+        _CLEANUP_SCOPE.reset(token)
+
+
+def worker_cleanup_identity() -> tuple[str, str] | None:
+    scope = _CLEANUP_SCOPE.get()
+    return (scope["job_id"], scope["worker_id"]) if scope else None
+
+
+def _request_shape(method: str, path: str) -> dict:
+    parsed = urlsplit(path)
+    params = parse_qs(parsed.query)
+    table = parsed.path.rstrip("/").split("/")[-1][:100] or "unknown"
+    selected = [item.strip()[:100] for item in params.get("select", [""])[0].split(",")[:40] if item.strip()]
+    filters = []
+    for key, values in params.items():
+        if key in {"select", "order", "limit", "offset", "on_conflict", "columns", "Prefer"}:
+            continue
+        op = values[0].split(".", 1)[0] if values and "." in values[0] else "eq"
+        filters.append({"field": key[:80], "operator": op[:20]})
+    limit = params.get("limit", [None])[0]
+    return {"method": str(method).upper()[:8], "table_or_rpc": table,
+            "selected_columns": selected, "filters": filters[:20],
+            "limit": limit[:16] if isinstance(limit, str) else None,
+            "offset": (params.get("offset", [None])[0] or "")[:16] or None}
+
+
+def _request_caller() -> dict[str, str]:
+    """Attribute a request to the first semantic caller, never storing arguments."""
+    transport = {"preflight_request", "_request", "rest", "record_request", "_update_job_egress"}
+    ignored = {"nexus_agent_platform.supabase_egress_guard", "nexus_agent_platform.feeder_runtime", "social._supabase"}
+    frame = sys._getframe(1)
+    for _ in range(16):
+        if frame is None:
+            break
+        module = str(frame.f_globals.get("__name__") or "unknown")
+        function = frame.f_code.co_name
+        if function not in transport and module not in ignored and module.startswith(("nexus_agent_platform.", "research.")):
+            return {"component": module.split(".")[-1][:80], "function": function[:80]}
+        frame = frame.f_back
+    return {"component": "unknown", "function": "unknown"}
+
+
+def job_egress_snapshot(job_id: str) -> dict:
+    if not job_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for ch in job_id):
+        return {}
+    try:
+        state = json.loads((JOB_EGRESS_DIR / f"{job_id}.json").read_text())
+        execution_id = os.environ.get("NEXUS_DURABLE_EXECUTION_ID") or "legacy"
+        attempt = (state.get("attempts") or {}).get(execution_id) or {}
+        state["attempt_request_count"] = int(attempt.get("request_count", 0) or 0)
+        state["attempt_response_bytes"] = int(attempt.get("response_bytes", 0) or 0)
+        state["attempt_budget_exceeded"] = bool(attempt.get("budget_exceeded", False))
+        return state
+    except (OSError, ValueError):
+        return {"job_id": job_id, "request_count": 0, "response_bytes": 0, "retry_count": 0,
+                "largest_response": 0, "endpoint_counts": {}}
+
+
+def _update_job_egress(*, method: str, path: str, response_bytes: int = 0, retries: int = 0,
+                       preflight: bool = False, cleanup_release: bool = False,
+                       request_id: str | None = None, rows: int = 0, status: int = 0,
+                       body: object | None = None) -> str | None:
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
+    if not job_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for ch in job_id): return None
+    JOB_EGRESS_DIR.mkdir(parents=True, exist_ok=True)
+    target = JOB_EGRESS_DIR / f"{job_id}.json"
+    with (JOB_EGRESS_DIR / f"{job_id}.lock").open("a+") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        state = job_egress_snapshot(job_id)
+        state.pop("attempt_request_count", None); state.pop("attempt_response_bytes", None)
+        state.pop("attempt_budget_exceeded", None)
+        state.setdefault("request_count", 0); state.setdefault("response_bytes", 0)
+        state.setdefault("retry_count", 0); state.setdefault("largest_response", 0)
+        state.setdefault("endpoint_counts", {})
+        attempts = state.setdefault("attempts", {})
+        execution_id = os.environ.get("NEXUS_DURABLE_EXECUTION_ID") or "legacy"
+        attempt = attempts.setdefault(execution_id, {"request_count": 0, "response_bytes": 0,
+            "retry_count": 0, "largest_response": 0})
+        if preflight:
+            cleanup = _CLEANUP_SCOPE.get()
+            if cleanup is not None:
+                if os.environ.get("NEXUS_DURABLE_JOB_ID", "") != cleanup["job_id"]:
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+                    raise JobEgressBudgetExceeded("WORKER_CLEANUP_JOB_CONTEXT_MISMATCH")
+                _validate_cleanup_request(cleanup, method, path, cleanup_release, body)
+                cleanup["requests"] += 1
+                if cleanup["requests"] > WORKER_CLEANUP_MAX_REQUESTS:
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+                    raise JobEgressBudgetExceeded("WORKER_CLEANUP_REQUEST_LIMIT")
+            request_id = uuid.uuid4().hex[:16]
+            request_budget=JOB_MAX_REQUESTS; response_budget=JOB_MAX_RESPONSE_BYTES
+            # Full Research canaries perform many separately governed
+            # NotebookLM actions while their Supabase payloads remain compact.
+            # Raise only this job-ID namespace's control-plane request ceiling;
+            # keep byte caps and every other job's default unchanged.
+            if job_id.startswith(FULL_RESEARCH_CANARY_JOB_PREFIX):
+                request_budget=max(request_budget,FULL_RESEARCH_CANARY_MAX_REQUESTS)
+            try:
+                budget=json.loads(os.environ.get("NEXUS_JOB_BUDGET","{}"))
+                request_budget=min(request_budget,max(1,int(budget.get("max_requests",request_budget))))
+                response_budget=min(response_budget,max(1,int(budget.get("max_response_bytes",response_budget))))
+            except (ValueError,TypeError): pass
+            over_request_budget=int(attempt["request_count"]) >= request_budget
+            cleanup_count=int(attempt.get("cleanup_release_count", 0) or 0)
+            if cleanup is None and ((over_request_budget and (not cleanup_release or cleanup_count >= 1))
+                                    or int(attempt["response_bytes"]) >= response_budget):
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+                raise JobEgressBudgetExceeded(f"JOB_EGRESS_BUDGET_EXCEEDED:{job_id}")
+            if cleanup is None and cleanup_release:
+                attempt["cleanup_release_count"] = cleanup_count + 1
+            if cleanup is None:
+                state["request_count"] += 1
+                attempt["request_count"] += 1
+            else:
+                state["cleanup_request_count"] = int(state.get("cleanup_request_count", 0)) + 1
+            endpoint = urlsplit(path).path.rstrip("/").split("/")[-1][:100] or "unknown"
+            state["endpoint_counts"][endpoint] = int(state["endpoint_counts"].get(endpoint, 0)) + 1
+            shape = _request_shape(method, path)
+            caller = _request_caller()
+            item = {"request_id": request_id, **shape, **caller, "purpose": f"{caller['component']}.{caller['function']}",
+                    "response_bytes": 0, "row_count": 0, "status": None, "cleanup": cleanup is not None}
+            requests = state.setdefault("request_trace", [])
+            requests.append(item)
+            if len(requests) > 64:
+                del requests[:-64]
+            _REQUEST_LOCAL.request_id = request_id
+            _REQUEST_LOCAL.cleanup = cleanup is not None
+        else:
+            size = max(0, int(response_bytes))
+            cleanup = _CLEANUP_SCOPE.get()
+            if cleanup is None:
+                state["response_bytes"] += size
+                attempt["response_bytes"] += size
+                state["largest_response"] = max(int(state["largest_response"]), size)
+                attempt["largest_response"] = max(int(attempt.get("largest_response", 0)), size)
+                state["retry_count"] += max(0, int(retries))
+            else:
+                cleanup["response_bytes"] += size
+                if cleanup["response_bytes"] > WORKER_CLEANUP_MAX_RESPONSE_BYTES:
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+                    raise JobEgressBudgetExceeded("WORKER_CLEANUP_RESPONSE_LIMIT")
+                state["cleanup_response_bytes"] = int(state.get("cleanup_response_bytes", 0)) + size
+            endpoint = urlsplit(path).path.rstrip("/").split("/")[-1][:100] or "unknown"
+            req_id = request_id or getattr(_REQUEST_LOCAL, "request_id", None)
+            if req_id:
+                for traced in reversed(state.get("request_trace", [])):
+                    if traced.get("request_id") == req_id:
+                        traced.update(response_bytes=size, row_count=max(0, int(rows)), status=int(status))
+                        break
+            response_budget=JOB_MAX_RESPONSE_BYTES
+            try: response_budget=min(response_budget,max(1,int(json.loads(os.environ.get("NEXUS_JOB_BUDGET","{}")).get("max_response_bytes",response_budget))))
+            except (ValueError,TypeError): pass
+            if attempt["response_bytes"] > response_budget or size > response_budget:
+                state["budget_exceeded"] = True
+                attempt["budget_exceeded"] = True
+                try:
+                    with SYSTEMS_INCIDENTS.open("a", encoding="utf-8") as incident_file:
+                        incident_file.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(), "component": "JOB_SCOPED_SUPABASE_EGRESS", "status": "DEGRADED", "job_id": job_id, "endpoint": endpoint, "response_bytes": size, "next_workflow": "DURABLE_JOB_EGRESS_RECOVERY"}, separators=(",", ":")) + "\n")
+                except OSError: pass
+        fd, tmp = tempfile.mkstemp(prefix="job-egress-", suffix=".tmp", dir=JOB_EGRESS_DIR)
+        try:
+            with os.fdopen(fd, "w") as output: json.dump(state, output, separators=(",", ":"))
+            os.chmod(tmp, 0o600); os.replace(tmp, target)
+        finally:
+            if os.path.exists(tmp): os.unlink(tmp)
+        fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+        return request_id
+
+
+def _validate_cleanup_request(scope: dict, method: str, path: str, cleanup_release: bool = False,
+                             body: object | None = None) -> None:
+    if cleanup_release:
+        params = parse_qs(urlsplit(path).query)
+        if (scope.get("reservation_id") and str(urlsplit(path).path).rstrip("/").endswith("nexus_resource_reservations")
+                and params.get("reservation_id") == [f"eq.{scope['reservation_id']}"]
+                and params.get("status") == ["eq.ACTIVE"] and method.upper() == "PATCH"
+                and isinstance(body, dict) and body.get("status") == "RELEASED"
+                and set(body).issubset({"status", "reconciled_at"})):
+            return
+        raise JobEgressBudgetExceeded("WORKER_CLEANUP_RESERVATION_SCOPE_REJECTED")
+    shape = _request_shape(method, path)
+    params = parse_qs(urlsplit(path).query)
+    exact = params.get("job_id", []) == [f"eq.{scope['job_id']}"]
+    if shape["table_or_rpc"] != "nexus_durable_jobs" or not exact:
+        raise JobEgressBudgetExceeded("WORKER_CLEANUP_SCOPE_REJECTED")
+    if shape["method"] == "GET":
+        selected = set(shape["selected_columns"])
+        if shape["limit"] != "1" or not selected or not selected.issubset(WORKER_CLEANUP_ALLOWED_SELECT):
+            raise JobEgressBudgetExceeded("WORKER_CLEANUP_PROJECTION_REJECTED")
+        return
+    if shape["method"] == "PATCH":
+        filters = parse_qs(urlsplit(path).query)
+        if filters.get("claimed_by") != [f"eq.{scope['worker_id']}"] or filters.get("state") != ["in.(CLAIMED,RUNNING)"]:
+            raise JobEgressBudgetExceeded("WORKER_CLEANUP_FILTER_REJECTED")
+        allowed_body = {"state", "lease_until", "claimed_by", "claimed_at", "completed_at",
+                        "scheduled_at", "last_error_code", "last_error_summary"}
+        if not isinstance(body, dict) or not set(body).issubset(allowed_body):
+            raise JobEgressBudgetExceeded("WORKER_CLEANUP_BODY_REJECTED")
+        if body.get("state") not in {"FAILED_RETRYABLE", "BLOCKED"} or body.get("lease_until") is not None:
+            raise JobEgressBudgetExceeded("WORKER_CLEANUP_TRANSITION_REJECTED")
+        selected = set(shape["selected_columns"])
+        if not selected or not selected.issubset(WORKER_CLEANUP_ALLOWED_SELECT):
+            raise JobEgressBudgetExceeded("WORKER_CLEANUP_PROJECTION_REJECTED")
+        return
+    raise JobEgressBudgetExceeded("WORKER_CLEANUP_METHOD_REJECTED")
+
+
+def response_read_limit() -> int | None:
+    """Maximum additional response bytes for this synchronous REST request."""
+    cleanup = _CLEANUP_SCOPE.get()
+    if cleanup is not None:
+        return max(0, WORKER_CLEANUP_MAX_RESPONSE_BYTES - int(cleanup.get("response_bytes", 0)))
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
+    if not job_id:
+        return None
+    budget = JOB_MAX_RESPONSE_BYTES
+    try:
+        budget = min(budget, max(1, int(json.loads(os.environ.get("NEXUS_JOB_BUDGET", "{}")).get("max_response_bytes", budget))))
+    except (ValueError, TypeError):
+        pass
+    snapshot = job_egress_snapshot(job_id)
+    return max(0, budget - int(snapshot.get("attempt_response_bytes", 0) or 0))
+
+
+def read_bounded_response(response, method: str, path: str) -> bytes:
+    """Read no more than the remaining normal or cleanup response allowance."""
+    limit = response_read_limit()
+    raw = response.read() if limit is None else response.read(limit + 1)
+    if limit is not None and len(raw) > limit:
+        record_request(method, path, getattr(response, "status", 200), len(raw), rows=0, trace=False)
+        raise JobEgressBudgetExceeded("JOB_RESPONSE_BYTES_LIMIT_EXCEEDED")
+    return raw
+
+
+def _atomic_json(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix="research-budget-", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, separators=(",", ":"))
+        os.chmod(name, 0o600)
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name): os.unlink(name)
+
+
+def preflight_request(method: str, path: str, body: object | None = None) -> None:
+    """Trace and enforce the evidence-based research_sources budget per wake.
+
+    The lock file is shared across forked heartbeat workers, so independent
+    child processes consume the same wake allowance atomically.
+    """
+    parsed = urlsplit(path)
+    table = parsed.path.rstrip("/").split("/")[-1]
+    params=parse_qs(parsed.query)
+    cleanup_release=(method.upper()=="PATCH" and table=="nexus_resource_reservations"
+        and isinstance(body,dict) and body.get("status")=="RELEASED"
+        and set(body).issubset({"status","reconciled_at"})
+        and any(value=="eq.ACTIVE" for value in params.get("status",[])))
+    _update_job_egress(method=method,path=path,body=body,preflight=True,cleanup_release=cleanup_release)
+    if table == "research_proactive_memory":
+        params = parse_qs(parsed.query)
+        fields = [field.strip().split(":", 1)[-1] for field in params.get("select", [""])[0].split(",")]
+        if "payload" in fields:
+            limit = params.get("limit", [""])[0]
+            bounded_limit = limit.isdigit() and 0 < int(limit) <= 100
+            exact_id = any(value.startswith("eq.") for value in params.get("memory_id", []))
+            case_filter = any(value.startswith("in.(RESEARCH_CASE,PROACTIVE_RESEARCH_CASE)")
+                              for value in params.get("memory_kind", []))
+            if not bounded_limit or not (exact_id and int(limit) <= 1 or case_filter):
+                raise LargeControlPlaneQueryBlocked("unbounded research_proactive_memory payload read blocked")
+    if table != "research_sources":
+        return
+    from nexus_agent_platform.research_sources_trace import trace_request
+    trace = trace_request(method, path) or {}
+    wake_id = os.environ.get("NEXUS_WAKE_ID", "").strip()
+    if not wake_id or len(wake_id) > 96:
+        return
+    caller = f"{str(trace.get('caller_module') or 'unknown')}.{str(trace.get('caller_function') or 'unknown')}"[:180]
+    limit = max(1, int(os.environ.get("NEXUS_RESEARCH_SOURCES_MAX_CALLS_PER_WAKE",
+                                     MAX_RESEARCH_SOURCES_CALLS_FULL_WAKE)))
+    WAKE_BUDGET_STATE.parent.mkdir(parents=True, exist_ok=True)
+    with WAKE_BUDGET_STATE.open("a+", encoding="utf-8") as handle:
+        os.chmod(WAKE_BUDGET_STATE, 0o600)
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        handle.seek(0)
+        try: state = json.loads(handle.read() or "{}")
+        except (ValueError, TypeError): state = {}
+        wakes = state.get("wakes") if isinstance(state.get("wakes"), dict) else {}
+        entry = wakes.setdefault(wake_id, {"calls": 0, "blocked": 0, "callers": {}, "incident_emitted": False})
+        if int(entry.get("calls", 0)) >= limit:
+            entry["blocked"] = int(entry.get("blocked", 0)) + 1
+            entry.setdefault("blocked_callers", {})[caller] = int(entry.get("blocked_callers", {}).get(caller, 0)) + 1
+            state["wakes"] = dict(list(wakes.items())[-16:])
+            handle.seek(0); handle.truncate(); json.dump(state, handle, separators=(",", ":")); handle.flush(); os.fsync(handle.fileno())
+            should_emit = not entry.get("incident_emitted")
+            entry["incident_emitted"] = True
+            # Persist the incident marker after first-writer selection.
+            handle.seek(0); handle.truncate(); json.dump(state, handle, separators=(",", ":")); handle.flush(); os.fsync(handle.fileno())
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            if should_emit:
+                try:
+                    SYSTEMS_INCIDENTS.parent.mkdir(parents=True, exist_ok=True)
+                    incident = {"at": datetime.now(timezone.utc).isoformat(), "component": "SUPABASE_RESEARCH_SOURCES_BURST_GUARD",
+                                "status": "DEGRADED", "wake_id": wake_id, "allowed_calls": limit,
+                                "attempted_call": int(entry["calls"]) + int(entry["blocked"]),
+                                "caller_breakdown": entry.get("callers", {}),
+                                "blocked_caller_breakdown": entry.get("blocked_callers", {}),
+                                "next_workflow": "SUPABASE_EGRESS_BURST_RECOVERY"}
+                    with SYSTEMS_INCIDENTS.open("a", encoding="utf-8") as out:
+                        out.write(json.dumps(incident, separators=(",", ":")) + "\n")
+                except OSError:
+                    pass
+            raise ResearchSourcesBurstExceeded(f"research_sources wake budget exceeded ({limit})")
+        entry["calls"] = int(entry.get("calls", 0)) + 1
+        entry.setdefault("callers", {})[caller] = int(entry.get("callers", {}).get(caller, 0)) + 1
+        state["wakes"] = dict(list(wakes.items())[-16:])
+        handle.seek(0); handle.truncate(); json.dump(state, handle, separators=(",", ":")); handle.flush(); os.fsync(handle.fileno())
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def safe_mode_enabled() -> bool:
+    try:
+        state = json.loads(SAFE_MODE_STATE.read_text())
+        return bool(state.get("enabled"))
+    except (OSError, ValueError, TypeError):
+        return os.environ.get("SUPABASE_EGRESS_SAFE_MODE", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def set_safe_mode(enabled: bool, *, reason: str = "operator_or_systems") -> dict:
+    state = {"enabled": bool(enabled), "changed_at": datetime.now(timezone.utc).isoformat(),
+             "reason": str(reason)[:120]}
+    SAFE_MODE_STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp = tempfile.mkstemp(prefix="egress-mode-", suffix=".tmp", dir=SAFE_MODE_STATE.parent)
+    try:
+        with os.fdopen(fd, "w") as stream:
+            json.dump(state, stream, separators=(",", ":"))
+        os.chmod(temp, 0o600)
+        os.replace(temp, SAFE_MODE_STATE)
+    finally:
+        if os.path.exists(temp): os.unlink(temp)
+    if enabled:
+        invalidate_cache()
+    return state
+
+
+def invalidate_cache(prefix: str | None = None) -> None:
+    with _CACHE_LOCK:
+        if prefix is None:
+            _CACHE.clear()
+        else:
+            for key in list(_CACHE):
+                if key.startswith(prefix): _CACHE.pop(key, None)
+
+
+def cached_static(key: str, loader, *, ttl_seconds: int = 300):
+    """Small process-local cache for explicitly approved non-PII configuration."""
+    if not key.startswith(_CACHE_ALLOWED_PREFIXES):
+        raise ValueError("CACHE_KEY_NOT_ALLOWLISTED")
+    ttl = max(1, min(int(ttl_seconds), 3600))
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        item = _CACHE.get(key)
+        if item and item[0] > now:
+            _record_cache(True)
+            return item[1]
+    value = loader()
+    try:
+        encoded = json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode()
+    except (TypeError, ValueError):
+        return value
+    if len(encoded) <= _CACHE_MAX_BYTES:
+        with _CACHE_LOCK:
+            while len(_CACHE) >= _CACHE_MAX_ENTRIES:
+                _CACHE.pop(next(iter(_CACHE)))
+            _CACHE[key] = (now + ttl, value)
+    _record_cache(False)
+    return value
+
+
+def _record_cache(hit: bool) -> None:
+    try:
+        data = snapshot()
+        data["cache_lookups"] = int(data.get("cache_lookups", 0)) + 1
+        data["cache_hits"] = int(data.get("cache_hits", 0)) + int(hit)
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        fd, temp = tempfile.mkstemp(prefix="egress-", suffix=".tmp", dir=STATE.parent)
+        try:
+            with os.fdopen(fd, "w") as stream: json.dump(data, stream, separators=(",", ":"))
+            os.replace(temp, STATE)
+        finally:
+            if os.path.exists(temp): os.unlink(temp)
+    except Exception:
+        pass
+
+
+def _day() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def record_request(method: str, path: str, status: int, response_bytes: int,
+                   *, rows: int = 0, retries: int = 0, cache_hit: bool = False,
+                   trace: bool = True) -> None:
+    """Aggregate safe counters by endpoint/table. Never store URL parameters."""
+    try: _update_job_egress(method=method, path=path, response_bytes=response_bytes, retries=retries,
+                            request_id=getattr(_REQUEST_LOCAL,"request_id",None),rows=rows,status=status)
+    except Exception: pass
+    try:
+        # Central attribution covers guarded Supabase clients beyond the shared
+        # script and feeder adapters. This is local-only and query-value safe.
+        if trace:
+            from nexus_agent_platform.research_sources_trace import trace_request
+            trace_request(method, path)
+        parsed = urlsplit(path)
+        table = parsed.path.rstrip("/").split("/")[-1][:100] or "unknown"
+        select = parse_qs(parsed.query).get("select", [""])[0]
+        field_count = 0 if select in ("", "*") else min(100, len(select.split(",")))
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            data = json.loads(STATE.read_text())
+        except (OSError, ValueError):
+            data = {"day": _day(), "request_count": 0, "approx_bytes": 0,
+                    "large_query_count": 0, "retry_count": 0, "cache_hits": 0,
+                    "cache_lookups": 0, "status_counts": {}, "http_522_count": 0, "endpoints": {}}
+        if data.get("day") != _day():
+            data = {"day": _day(), "request_count": 0, "approx_bytes": 0,
+                    "large_query_count": 0, "retry_count": 0, "cache_hits": 0,
+                    "cache_lookups": 0, "status_counts": {}, "http_522_count": 0, "endpoints": {}}
+        size = max(0, int(response_bytes))
+        data["request_count"] += 1
+        data["approx_bytes"] += size
+        data["large_query_count"] += int(size >= LARGE_RESPONSE_BYTES)
+        data["retry_count"] += max(0, int(retries))
+        data["cache_lookups"] += 1
+        data["cache_hits"] += int(cache_hit)
+        status_key = f"{int(status) // 100}xx" if int(status) > 0 else "000"
+        status_counts = data.setdefault("status_counts", {})
+        status_counts[status_key] = int(status_counts.get(status_key, 0)) + 1
+        data["http_522_count"] = int(data.get("http_522_count", 0)) + int(int(status) == 522)
+        endpoints = data.setdefault("endpoints", {})
+        entry = endpoints.setdefault(table, {"calls": 0, "rows": 0, "approx_bytes": 0,
+                                             "selected_field_count": field_count,
+                                             "max_response_bytes": 0,
+                                             "last_status": 0, "last_at": None})
+        if table == "research_proactive_memory":
+            params = parse_qs(parsed.query)
+            selected = [item.split(":", 1)[0].strip()[:64]
+                        for item in params.get("select", [""])[0].split(",")[:50]]
+            filters = []
+            for key, values in params.items():
+                if key in {"select", "order", "limit", "offset", "on_conflict", "columns"}:
+                    continue
+                operator = (values[0].split(".", 1)[0] if values and "." in values[0] else "eq")[:20]
+                filters.append({"field": key[:64], "operator": operator})
+            shape = {"method": str(method).upper()[:10], "selected_fields": selected,
+                     "filters": filters[:20], "limit": params.get("limit", [None])[0],
+                     "order": params.get("order", [None])[0]}
+            entry["last_query_shape"] = shape
+            shapes = entry.setdefault("query_shapes", {})
+            shape_key = json.dumps(shape, sort_keys=True, separators=(",", ":"))
+            shapes[shape_key] = int(shapes.get(shape_key, 0)) + 1
+            if len(shapes) > 8:
+                for old_shape in list(shapes)[:-8]:
+                    shapes.pop(old_shape, None)
+        entry["calls"] += 1
+        entry["rows"] += max(0, int(rows))
+        entry["approx_bytes"] += size
+        entry["max_response_bytes"] = max(int(entry.get("max_response_bytes", 0)), size)
+        entry["last_status"] = int(status)
+        entry["last_at"] = datetime.now(timezone.utc).isoformat()
+        # Cap endpoint cardinality so this local guard cannot grow without bound.
+        if len(endpoints) > 40:
+            keep = sorted(endpoints.items(), key=lambda item: item[1].get("last_at") or "", reverse=True)[:40]
+            data["endpoints"] = dict(keep)
+        total_bytes = data["approx_bytes"]
+        elevated = int(os.environ.get("NEXUS_SUPABASE_EGRESS_ELEVATED_BYTES", 100_000_000))
+        high = int(os.environ.get("NEXUS_SUPABASE_EGRESS_HIGH_BYTES", 500_000_000))
+        critical = int(os.environ.get("NEXUS_SUPABASE_EGRESS_CRITICAL_BYTES", 1_000_000_000))
+        data["thresholds_bytes"] = {"elevated": elevated, "high": high, "critical": critical}
+        data["state"] = ("CRITICAL" if total_bytes >= critical else
+                         "HIGH" if total_bytes >= high else
+                         "ELEVATED" if total_bytes >= elevated else "NORMAL")
+        large_control_response = table == "research_proactive_memory" and size > CONTROL_PLANE_RESPONSE_WARNING_BYTES
+        if large_control_response:
+            data["large_control_plane_response_count"] = int(data.get("large_control_plane_response_count", 0)) + 1
+            data["largest_control_plane_response_bytes"] = max(
+                int(data.get("largest_control_plane_response_bytes", 0)), size
+            )
+        fd, temp_name = tempfile.mkstemp(prefix="egress-", suffix=".tmp", dir=STATE.parent)
+        try:
+            with os.fdopen(fd, "w") as stream:
+                json.dump(data, stream, separators=(",", ":"))
+            os.replace(temp_name, STATE)
+        finally:
+            if os.path.exists(temp_name):
+                os.unlink(temp_name)
+        if large_control_response:
+            try:
+                SYSTEMS_INCIDENTS.parent.mkdir(parents=True, exist_ok=True)
+                incident = {"at": datetime.now(timezone.utc).isoformat(),
+                            "component": "SUPABASE_LARGE_CONTROL_RESPONSE", "status": "DEGRADED",
+                            "endpoint": table, "response_bytes": size,
+                            "warning_threshold_bytes": CONTROL_PLANE_RESPONSE_WARNING_BYTES,
+                            "next_workflow": "SUPABASE_EGRESS_LARGE_CONTROL_RESPONSE_RECOVERY"}
+                with SYSTEMS_INCIDENTS.open("a", encoding="utf-8") as out:
+                    out.write(json.dumps(incident, separators=(",", ":")) + "\n")
+            except OSError:
+                pass
+    except Exception:
+        # Telemetry must never interrupt authoritative workflow processing.
+        return
+
+
+def snapshot() -> dict:
+    try:
+        data = json.loads(STATE.read_text())
+        if data.get("day") == _day():
+            return data
+    except (OSError, ValueError):
+        pass
+    return {"day": _day(), "state": "NORMAL", "request_count": 0, "approx_bytes": 0,
+            "large_query_count": 0, "retry_count": 0, "cache_hits": 0,
+            "cache_lookups": 0, "endpoints": {}}

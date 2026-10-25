@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "global_forbidden": [
+    ".runtime/",
+    "data/runtime/",
+    "public/runtime/",
+    "state/",
+    "data/cache/",
+    "**/cache/",
+    "tmp/",
+    "test-results/",
+    "*.lock",
+    "auth.json",
+    "state.db",
+    "**/browser-profile/**",
+    "**/session-profile/**",
+    "**/credential*",
+    "**/*update_id*",
+    "**/*provider_session*",
+    "**/scratch/**"
+  ],
+  "workstreams": {
+    "CLIENT_PORTAL": {
+      "owned_paths": ["src/client-v2/", "src/pages/client/", "src/lib/clientPortalDataAdapter.ts", "docs/design/client-portal/"],
+      "allowed_report_paths": ["reports/projects/NEXUS_GOCLEAR_CLIENT_PORTAL_", "reports/projects/nexus_goclear_client_portal_"],
+      "commit_message": "Integrate approved GoClear client portal"
+    },
+    "RESEARCH_ALPHA": {
+      "owned_paths": ["scripts/research/", "scripts/nexus_agent_platform/research", "scripts/nexus_agent_platform/alpha", "configs/research/", "supabase/migrations/"],
+      "allowed_report_paths": ["reports/research/", "reports/alpha/"],
+      "commit_message": "Advance Research and Alpha workstream"
+    },
+    "NOVA_TELEGRAM": {
+      "owned_paths": ["scripts/nova/", "scripts/ops/nexus_telegram", "configs/nova/", "docs/architecture/NEXUS_TELEGRAM"],
+      "allowed_report_paths": ["reports/nova/", "reports/telegram/", "reports/hermes/"],
+      "commit_message": "Advance Nova and Telegram workstream"
+    },
+    "CREATIVE": {
+      "owned_paths": ["scripts/creative/", "src/components/Creative", "configs/creative", "public/creative", "tests/creative"],
+      "allowed_report_paths": ["reports/creative/", "reports/hermes_modernization/"],
+      "commit_message": "Advance Creative workstream"
+    },
+    "MARKETING": {
+      "owned_paths": ["scripts/marketing/", "src/lib/marketing", "configs/social", "public/marketing"],
+      "allowed_report_paths": ["reports/marketing/", "reports/manual_publish/"],
+      "commit_message": "Advance Marketing workstream"
+    },
+    "OPERATIONS_AUTONOMY": {
+      "owned_paths": ["scripts/operations/", "scripts/run_continuous", "scripts/wp9_company", "scripts/ops/", "data/operations/"],
+      "allowed_report_paths": ["reports/operations/", "reports/work_orders/"],
+      "commit_message": "Advance Operations autonomy workstream"
+    },
+    "ADMIN_CENTER": {
+      "owned_paths": ["src/admin/", "src/components/Admin", "scripts/operations/certify_r19_admin"],
+      "allowed_report_paths": ["reports/admin/", "reports/architecture/NEXUS_ADMIN"],
+      "commit_message": "Advance Admin Center workstream"
+    },
+    "TRADING": {
+      "owned_paths": ["scripts/trading", "scripts/r2", "scripts/r21", "scripts/r22", "scripts/r23", "scripts/r24", "scripts/r25", "scripts/r26", "scripts/r27", "src/components/Trading", "src/data/trading", "tests/*trading*"],
+      "allowed_report_paths": ["reports/trading/", "reports/manual_publish/oanda", "reports/manual_publish/trading"],
+      "commit_message": "Advance Trading workstream"
+    },
+    "FINANCE": {
+      "owned_paths": ["scripts/nexus_agent_platform/finance/", "src/lib/revenue", "supabase/functions/create-stripe-checkout/", "configs/stripe"],
+      "allowed_report_paths": ["reports/finance/", "reports/rebuild/NEXUS_REVENUE"],
+      "commit_message": "Advance Finance workstream"
+    },
+    "SYSTEMS_INFRA": {
+      "owned_paths": ["deploy/", "infra/", "launchd/", "supabase/functions/", "scripts/nexus_agent_platform/providers/", "scripts/nexus_agent_platform/systems/", "package.json", "package-lock.json", "netlify.toml"],
+      "allowed_report_paths": ["reports/systems/", "reports/runtime/"],
+      "commit_message": "Advance Systems infrastructure workstream"
+    },
+    "AUTH_SECURITY": {
+      "owned_paths": ["src/lib/auth", "src/lib/authHelpers.ts", "scripts/security/", "configs/credential"],
+      "allowed_report_paths": ["reports/security/"],
+      "commit_message": "Advance Auth and Security workstream"
+    },
+    "TESTS_SHARED": {
+      "owned_paths": ["tests/"],
+      "allowed_report_paths": [],
+      "commit_message": "Update shared Nexus tests"
+    }
+  }
+}

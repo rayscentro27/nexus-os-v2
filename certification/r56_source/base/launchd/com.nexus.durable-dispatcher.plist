@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>NEXUS_DISPATCH_ALLOWED_JOB_SOURCES</key>
+		<string>NOVA_MCP_DEPARTMENT_QUERY,NOVA_MCP_NOTEBOOKLM_CANARY,NOVA_MCP_RESEARCH_ASSIGNMENT,RESEARCH_PARENT_CONTINUATION,NEXUS_SYSTEMS_COMPLETION_NOTICE,NOVA_MCP_ALPHA_ASSIGNMENT,NEXUS_ALPHA_COMPLETION_NOTICE,NOVA_ALPHA_ASSIGNMENT_NOTICE,NOVA_CROSS_DEPARTMENT_ALPHA_HANDOFF,NOVA_BOUNDED_CONTROL_ACTION,RESEARCH_ROOM_ADVISOR</string>
+		<key>NEXUS_OPENCODE_BIN</key>
+		<string>/Users/raymonddavis/.opencode/bin/opencode</string>
+		<key>NEXUS_REPO_ROOT</key>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+		<key>PYTHONPATH</key>
+		<string>/Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261022-r50/scripts:/Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261022-r50</string>
+		<key>NEXUS_RESEARCH_STATE_ROOT</key>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/data</string>
+	</dict>
+	<key>Label</key>
+	<string>com.nexus.durable-dispatcher</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261022-r50/scripts/ops/run_with_canonical_runtime_env.sh</string>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3</string>
+		<string>/Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261022-r50/scripts/nexus_agent_platform/dispatcher_once.py</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/durable_dispatcher_error.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/durable_dispatcher.log</string>
+	<key>StartInterval</key>
+	<integer>30</integer>
+	<key>ThrottleInterval</key>
+	<integer>15</integer>
+	<key>WorkingDirectory</key>
+	<string>/Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261022-r50</string>
+</dict>
+</plist>

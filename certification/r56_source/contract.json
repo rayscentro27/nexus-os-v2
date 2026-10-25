@@ -1,0 +1,29 @@
+{
+  "release_id": "nexus-capability-actions-20261025-r56",
+  "base_release_id": "nexus-capability-actions-20261024-r55",
+  "base_artifact_sha256": "a84f2f8904c2757304a357d6c0d6d196eb0edc1532f0788056971f0d5bd4fb48",
+  "base_source_commit": "2c2ef14f750d5ed726590ef5afd23ec8521aa609",
+  "base_manifest_path": "certification/r56_source/lineage/R55_RELEASE_MANIFEST.json",
+  "base_manifest_sha256": "9896636e5b59bf5a5e2dd481b5ab21f81b66e1df7d0656a5c067e90624689cc6",
+  "base_metadata_path": "certification/r56_source/lineage/R55_BUILD_METADATA.json",
+  "base_metadata_sha256": "7011a789246ba9edfcc77a609cccec883a0350b14810d83cf9cfb8baa77f61b2",
+  "base_artifact_sidecar_path": "certification/r56_source/lineage/R55_ARTIFACT.sha256",
+  "base_source_directory": "certification/r56_source/base",
+  "overlay_source_directory": "certification/r56_source/overlay",
+  "overlay_runtime_files": [
+    "scripts/nexus_agent_platform/stability_supervisor.py"
+  ],
+  "required_test_suites": [
+    "scripts/nexus_agent_platform/tests/test_research_only_contract.py",
+    "services/nexus_mcp/tests/test_research_assignment_intent.py",
+    "scripts/nexus_agent_platform/tests/test_research_parent_workflow.py",
+    "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
+    "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+    "scripts/research/tests/test_research_state_v2_persistence.py",
+    "scripts/nexus_agent_platform/tests/test_r55_deployable_release.py",
+    "scripts/nexus_agent_platform/tests/test_r56_release_readiness_manifest.py"
+  ],
+  "minimum_test_count": 155,
+  "prohibited_suffixes": [".sqlite", ".sqlite3", ".db", ".jsonl", ".log", ".env"],
+  "prohibited_names": ["runtime.env", "research_runtime_states.jsonl"]
+}

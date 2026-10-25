@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import re
 import select
 import shlex
 import sqlite3
@@ -277,30 +278,159 @@ STATE_V2_REQUIRED_CHECKS = (
 )
 
 
-def _active_state_v2_release() -> tuple[str | None, bool]:
+_RELEASE_MANIFEST_NAME = re.compile(r"^R([0-9]+)_RELEASE_MANIFEST\.json$")
+_MAX_RELEASE_MANIFESTS = 8
+_MAX_RELEASE_PAYLOAD_FILES = 1024
+_MAX_RELEASE_PAYLOAD_FILE_BYTES = 8 * 1024 * 1024
+_MAX_RELEASE_PAYLOAD_BYTES = 64 * 1024 * 1024
+
+
+def _release_root_for_readiness() -> Path | None:
+    """Resolve only the explicitly active release or this module's immutable root.
+
+    A source checkout is deliberately not a release root. In particular, this
+    function never searches the canonical worktree or guesses the newest release.
+    """
     configured = os.environ.get("NEXUS_ACTIVE_RESEARCH_RELEASE", "").strip()
-    candidates = []
     if configured:
-        configured_path = Path(configured).expanduser()
-        candidates.append(configured_path if configured_path.is_dir()
-                          else Path.home() / ".nexus" / "releases" / configured)
-    candidates.extend(Path(__file__).resolve().parents)
-    for parent in candidates:
-        for manifest_name in ("R53_RELEASE_MANIFEST.json", "R52_RELEASE_MANIFEST.json"):
-            manifest_path = parent / manifest_name
-            if manifest_path.is_file():
-                try:
-                    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                    capabilities = manifest.get("capabilities", [])
-                    release_id = str(manifest.get("release_id") or "")
-                    if configured and Path(configured).name not in {release_id, parent.name}:
-                        continue
-                    return release_id, "state_v2" in capabilities
-                except (OSError, ValueError, TypeError):
-                    return None, False
-    if configured:
+        candidate = Path(configured).expanduser()
+        if not candidate.is_dir():
+            candidate = Path.home() / ".nexus" / "releases" / configured
+        try:
+            candidate = candidate.resolve(strict=True)
+        except OSError:
+            return None
+        return candidate if candidate.is_dir() and (candidate / "RELEASE_MANIFEST.sha256").is_file() else None
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "RELEASE_MANIFEST.sha256").is_file():
+            return parent
+    return None
+
+
+def _validated_active_release_manifest(root: Path) -> dict[str, Any] | None:
+    """Validate the one manifest belonging to *root* using bounded root-level reads."""
+    try:
+        names = sorted(path for path in root.glob("R*_RELEASE_MANIFEST.json")
+                       if path.is_file() and _RELEASE_MANIFEST_NAME.fullmatch(path.name))
+        if not names or len(names) > _MAX_RELEASE_MANIFESTS:
+            return None
+        # A layered release can retain its declared base manifest (R53 retains
+        # R52). Only the manifest whose release_id matches this directory is an
+        # active candidate; duplicate claims for that identity are ambiguous.
+        parsed: list[tuple[Path, dict[str, Any]]] = []
+        for path in names:
+            if path.stat().st_size > 1024 * 1024:
+                return None
+            value = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(value, dict):
+                return None
+            parsed.append((path, value))
+        matching = [(path, value) for path, value in parsed
+                    if value.get("release_id") == root.name]
+        if len(matching) != 1:
+            return None
+        manifest_path, manifest = matching[0]
+        expected_name = f"R{root.name.rsplit('-r', 1)[-1]}_RELEASE_MANIFEST.json"
+        if manifest_path.name != expected_name:
+            return None
+        # Any additional root-level manifest must be the declared base release,
+        # not a second or unrelated release that could make identity ambiguous.
+        extras = [(path, value) for path, value in parsed if path != manifest_path]
+        if any(value.get("release_id") != manifest.get("base_release_id") for _, value in extras):
+            return None
+        payload = manifest.get("payload_sha256")
+        if not isinstance(payload, dict) or not payload or len(payload) > _MAX_RELEASE_PAYLOAD_FILES:
+            return None
+        total_bytes = 0
+        for relative, expected_hash in payload.items():
+            rel = Path(str(relative))
+            if rel.is_absolute() or ".." in rel.parts or not isinstance(expected_hash, str):
+                return None
+            target = root / rel
+            resolved = target.resolve(strict=True)
+            if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
+                return None
+            size = resolved.stat().st_size
+            total_bytes += size
+            if size > _MAX_RELEASE_PAYLOAD_FILE_BYTES or total_bytes > _MAX_RELEASE_PAYLOAD_BYTES:
+                return None
+            digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
+            if digest != expected_hash:
+                return None
+        metadata_path = root / "BUILD_METADATA.json"
+        if not metadata_path.is_file() or metadata_path.stat().st_size > 64 * 1024:
+            return None
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        if not isinstance(metadata, dict) or metadata.get("release_id") != root.name:
+            return None
+        expected_metadata_hash = manifest.get("build_metadata_sha256")
+        if (expected_metadata_hash and hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+                != expected_metadata_hash):
+            return None
+        for identity_field in ("base_release_id", "overlay_release_id", "source_commit"):
+            manifest_value = manifest.get(identity_field)
+            metadata_value = metadata.get(identity_field)
+            if (manifest_value is not None and metadata_value is not None
+                    and manifest_value != metadata_value):
+                return None
+        if ("runtime_file_count" in metadata
+                and int(metadata["runtime_file_count"]) != len(payload)):
+            return None
+        if ("payload_file_count" in metadata
+                and int(metadata["payload_file_count"]) != len(payload)):
+            return None
+        if ("runtime_file_count" in manifest
+                and int(manifest["runtime_file_count"]) != len(payload)):
+            return None
+        cert = manifest.get("certification") or metadata.get("certification") or {}
+        metadata_cert = metadata.get("certification") or {}
+        if (cert.get("result") != "PASS"
+                or metadata_cert.get("result", "PASS") != "PASS"
+                or ("result" in manifest.get("certification", {})
+                    and manifest["certification"]["result"] != metadata_cert.get("result"))):
+            return None
+        for count_key in ("tests", "failures", "errors", "skipped"):
+            if (count_key in cert and count_key in metadata_cert
+                    and cert[count_key] != metadata_cert[count_key]):
+                return None
+        # Newer composed releases may declare State v2 in the manifest; older
+        # layered releases use the bounded State v2 runtime contract instead.
+        capabilities = manifest.get("capabilities", [])
+        supports_state_v2 = "state_v2" in capabilities
+        if not supports_state_v2:
+            contract_path = root / "STATE_V2_RELEASE_CONTRACT.json"
+            try:
+                contract = json.loads(contract_path.read_text(encoding="utf-8"))
+                supports_state_v2 = (contract.get("STATE_V2_RUNTIME_CERTIFICATION") == "PASS"
+                                     and contract.get("LEGACY_LEDGER_REQUIRED") == "NO")
+            except (OSError, ValueError, TypeError):
+                supports_state_v2 = False
+        manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        # R55+ sidecars pin the release manifest directly. Older release sidecars
+        # inventory payload files; in either format, a matching manifest entry
+        # must agree when present.
+        sidecar = root / "RELEASE_MANIFEST.sha256"
+        if not sidecar.is_file() or sidecar.stat().st_size > 256 * 1024:
+            return None
+        for line in sidecar.read_text(encoding="utf-8").splitlines():
+            fields = line.strip().split(None, 1)
+            if len(fields) == 2 and Path(fields[1].strip().lstrip("./")).name == manifest_path.name:
+                if fields[0] != manifest_sha:
+                    return None
+                break
+        return {"manifest": manifest, "supports_state_v2": supports_state_v2}
+    except (OSError, ValueError, TypeError, KeyError, OverflowError):
+        return None
+
+
+def _active_state_v2_release() -> tuple[str | None, bool]:
+    root = _release_root_for_readiness()
+    if root is None:
         return None, False
-    return None, False
+    validated = _validated_active_release_manifest(root)
+    if validated is None:
+        return None, False
+    return str(validated["manifest"].get("release_id") or "") or None, bool(validated["supports_state_v2"])
 
 
 def evaluate_state_v2_readiness(record: dict[str, Any] | None = None, *,

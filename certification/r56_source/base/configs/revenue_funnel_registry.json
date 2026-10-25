@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "primary_offer": "readiness_review_97",
+  "stages": ["source", "lead_draft", "Ray_approval", "test_checkout", "payment_confirmation", "synthetic_onboarding", "GoClear_review", "client_delivery", "upgrade", "subscription_retention"],
+  "external_actions_default": false
+}
