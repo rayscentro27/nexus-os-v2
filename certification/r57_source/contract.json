@@ -1,0 +1,21 @@
+{
+  "release_id": "nexus-capability-actions-20261025-r57",
+  "base_release_id": "nexus-capability-actions-20261025-r56",
+  "base_artifact_sha256": "a6d1bc14d2b50985f541cf7bc823f8b09e20dc22ecad5b95ba059a78fccfd263",
+  "base_source_commit": "4de0c1096b509561af75f81519210353d6f90a80",
+  "base_manifest_sha256": "06db40614cda9cdb1aee78a813d29660a646d2951343deeea05aa9013f2765f9",
+  "base_github_run_id": "40201626578",
+  "predecessor_migration_sha256": "69d9fa36271b346337d47ce01c349df69eed1631b312d3502d7ae27b1dc805e3",
+  "new_migration": "supabase/migrations/20261025150000_nexus_governor_reservation_ordering_fix.sql",
+  "minimum_test_count": 169,
+  "inherited_test_suites": [
+    "scripts/nexus_agent_platform/tests/test_research_only_contract.py",
+    "services/nexus_mcp/tests/test_research_assignment_intent.py",
+    "scripts/nexus_agent_platform/tests/test_research_parent_workflow.py",
+    "scripts/nexus_agent_platform/tests/test_r53_host_gate_cleanup.py",
+    "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+    "scripts/research/tests/test_research_state_v2_persistence.py",
+    "scripts/nexus_agent_platform/tests/test_r55_deployable_release.py",
+    "scripts/nexus_agent_platform/tests/test_r56_release_readiness_manifest.py"
+  ]
+}
