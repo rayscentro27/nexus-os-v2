@@ -71,7 +71,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f "$R58_TEST_ROOT/supabase/migrations/20261025150000_nexus_governor_reservation_ordering_fix.sql"
       - name: Run inherited R57 safety, governor, and R58 evidence tests
         env:
-          PYTHONPATH: ${{ runner.temp }}/nexus-capability-actions-20261025-r58-test:${{ runner.temp }}/nexus-capability-actions-20261025-r58-test/scripts
+          PYTHONPATH: /tmp/nexus-capability-actions-20261025-r58-test:/tmp/nexus-capability-actions-20261025-r58-test/scripts
           R58_CERT_REPORT: ${{ github.workspace }}/dist/r58_certification.xml
         run: |
           mkdir -p dist
