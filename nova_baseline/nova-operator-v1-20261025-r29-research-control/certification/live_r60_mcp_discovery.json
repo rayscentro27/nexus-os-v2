@@ -1,0 +1,16 @@
+{
+  "checked_at_utc": "2026-10-25T20:48:05.702191+00:00",
+  "endpoint": "http://127.0.0.1:18765/mcp",
+  "initialize": "PASS",
+  "operations_performed": [
+    "initialize",
+    "tools/list"
+  ],
+  "required_tools": {
+    "nexus_assign_research": true,
+    "nexus_get_durable_jobs": true
+  },
+  "research_jobs_created": "NO",
+  "supabase_mutations": "NO",
+  "tool_count": 49
+}

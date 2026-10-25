@@ -1,0 +1,34 @@
+{
+  "schema_version": "nexus.operating-mode.v1",
+  "mode": "BUILD_CERTIFICATION",
+  "allowed_modes": [
+    "BUILD_CERTIFICATION",
+    "NORMAL_PRODUCTION"
+  ],
+  "source": "canonical build and certification configuration",
+  "weekend_mode": {
+    "enabled": true,
+    "mode": "WEEKEND_AUTONOMY_TEST",
+    "activated_at": "2026-10-03T14:38:33.320262+00:00",
+    "activation_source": "RAY_EXPLICIT_FINAL_ACTIVATION",
+    "runtime": "EXISTING_CONTINUOUS_OPERATING_KERNEL",
+    "report_refresh_minutes": 20,
+    "timestamped_snapshot_hours": 3,
+    "host_limits": {
+      "MAX_BACKGROUND_SHELLS": 1,
+      "MAX_PARALLEL_PYTHON_CHILDREN": 1,
+      "NEXUS_RESEARCH_MAX_TOTAL_CONCURRENCY": 1,
+      "NEXUS_NOTEBOOK_MAX_BACKGROUND_SHELLS": 1
+    },
+    "safety": {
+      "LIVE_TRADING_ENABLED": false,
+      "REAL_AD_SPEND_ENABLED": false,
+      "EXTERNAL_PUBLISHING_ENABLED": false,
+      "PRODUCTION_DEPLOYMENT_REQUIRES_RAY": true,
+      "CREATIVE_GENERATION_REQUIRES_RAY_PROMPT_APPROVAL": true,
+      "FINAL_CAMPAIGN_EXECUTION_REQUIRES_RAY_APPROVAL": true,
+      "NEW_EXTERNAL_FINANCIAL_COMMITMENTS_REQUIRE_RAY": true,
+      "AUTHENTICATION_2FA_REQUIRES_RAY_WHEN_NEEDED": true
+    }
+  }
+}

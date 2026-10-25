@@ -1,0 +1,65 @@
+name: Nova R29 Research-only control certification
+
+on:
+  push:
+    branches: [nova/r29-research-control]
+    paths:
+      - "nova_baseline/nova-operator-v1-20261025-r29-research-control/**"
+      - ".github/workflows/nova-r29-research-control.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install baseline import-test dependencies
+        run: |
+          python -m pip install "pip<24.1"
+          sed -e '/^litellm>=/d' -e '/^brave-search>=/d' \
+            nova_baseline/nova-operator-v1-20261025-r29-research-control/runtime/requirements-agent-platform.txt \
+            > /tmp/nova-r29-certification-requirements.txt
+          python -m pip install -r /tmp/nova-r29-certification-requirements.txt
+      - name: Run R29 contract, duplicate, handoff, and lineage tests
+        working-directory: nova_baseline/nova-operator-v1-20261025-r29-research-control
+        run: python -B -m unittest discover -s certification/tests -v
+      - name: Build deterministic immutable R29 release
+        run: python -B nova_baseline/nova-operator-v1-20261025-r29-research-control/build_release.py
+      - name: Verify exact artifact, lineage, and offline runtime imports
+        run: |
+          python -B - <<'PY'
+          import hashlib, importlib, json, os, pathlib, sys, tarfile, tempfile
+          root=pathlib.Path("dist/nova-operator-v1-20261025-r29-research-control")
+          manifest=json.loads((root/"R29_MANIFEST.json").read_text())
+          assert manifest["source_commit"] == os.environ["GITHUB_SHA"]
+          assert manifest["parent_commit"] == "f99c1eb04dc4ba6017de6de5bdade72f0f3f1d75"
+          for rel,digest in manifest["payload_sha256"].items():
+              assert hashlib.sha256((root/rel).read_bytes()).hexdigest() == digest, rel
+          runtime=(root/"runtime").resolve()
+          sys.path[:0]=[str(runtime/"scripts"),str(runtime)]
+          for name in ("nova.nova_telegram_worker","nova.semantic_orchestration","nova.nexus_mcp_status","nova.research_intent","nova.nova_research_control"):
+              module=importlib.import_module(name)
+              assert pathlib.Path(module.__file__).resolve().is_relative_to(runtime), name
+          proof=json.loads((root/"certification/live_r60_mcp_discovery.json").read_text())
+          assert proof["initialize"] == "PASS" and proof["tool_count"] == 49
+          assert proof["required_tools"]["nexus_assign_research"]
+          assert proof["required_tools"]["nexus_get_durable_jobs"]
+          print("R29_ARTIFACT_SOURCE_MATCH=YES")
+          print("R29_OFFLINE_RUNTIME_IMPORTS=PASS")
+          print("R29_MCP_DISCOVERY_TOOLS=49")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-operator-v1-20261025-r29-research-control
+          path: |
+            dist/nova-operator-v1-20261025-r29-research-control.tar.gz
+            dist/nova-operator-v1-20261025-r29-research-control.sha256
+          if-no-files-found: error

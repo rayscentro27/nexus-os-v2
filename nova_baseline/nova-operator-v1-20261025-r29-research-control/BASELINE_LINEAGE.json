@@ -1,0 +1,23 @@
+{
+  "release_id": "nova-operator-v1-20261025-r29-research-control",
+  "base_release": "nova-operator-v1-20261025-r28-baseline",
+  "base_source_commit": "f99c1eb04dc4ba6017de6de5bdade72f0f3f1d75",
+  "base_artifact_sha256": "70cfae57ac5a566165276ece9a23c972b14d251a3d736452e699253a60af0f4f",
+  "base_github_run_id": "40231745912",
+  "overlay_files": [
+    "scripts/nova/nova_telegram_worker.py",
+    "scripts/nova/semantic_orchestration.py",
+    "scripts/nova/nexus_mcp_status.py",
+    "scripts/nova/research_intent.py",
+    "scripts/nova/nova_research_control.py"
+  ],
+  "research_runtime_changed_files": [],
+  "submission_tool": "nexus_assign_research",
+  "status_tool": "nexus_get_durable_jobs",
+  "status_arguments": {"job_id": "exact returned job ID", "limit": 1},
+  "research_intent": "RESEARCH_ONLY",
+  "transcript_persisted": false,
+  "direct_research_database_writes": false,
+  "advisor_needle_or_continuation_jobs": false,
+  "production_jobs_created_during_build": false
+}
