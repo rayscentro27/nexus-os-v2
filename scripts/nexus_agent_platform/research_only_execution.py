@@ -13,6 +13,7 @@ from typing import Any, Callable, Mapping
 
 HANDOFF_MAX_BYTES = 8 * 1024
 SUMMARY_MAX_CHARS = 1200
+SELECTED_EVIDENCE_MAX_BYTES = 8 * 1024
 MAX_EVIDENCE_REFS = 5
 MAX_UNANSWERED_QUESTIONS = 5
 
@@ -65,26 +66,204 @@ def _bounded_failure(work: Mapping[str, Any], *, job_id: str, reason: str,
             "research_result": handoff}
 
 
-def _answer_excerpt(question: str, source_text: str) -> str:
-    """Select up to three source sentences with the strongest question overlap."""
-    stop = {"according", "official", "documentation", "document", "what", "does", "do",
-            "return", "returns", "when", "the", "a", "an", "to", "for", "of", "in", "on",
-            "this", "that", "is", "are", "be", "it", "path"}
-    terms = {token for token in re.findall(r"[a-z0-9_]+", question.casefold())
-             if len(token) > 2 and token not in stop}
-    identifiers = {value.casefold() for value in re.findall(
-        r"\b(?:[A-Za-z_]\w*\.)+[A-Za-z_]\w*\b", question)}
-    terms.update(identifiers)
-    sentences = [" ".join(part.split()) for part in
-        re.split(r"(?<=[.!?])\s+|\s{2,}", source_text) if part.strip()]
-    ranked = []
-    for index, sentence in enumerate(sentences):
-        lowered = sentence.casefold()
-        score = sum(1 for term in terms if term in lowered)
+_ANCHOR_STOP_WORDS = {
+    "according", "official", "documentation", "document", "docs", "what", "does", "do",
+    "return", "returns", "when", "if", "where", "the", "a", "an", "to", "for", "of",
+    "in", "on", "this", "that", "is", "are", "be", "it", "please", "explain",
+}
+_CONDITION_STOP_WORDS = {"the", "a", "an", "does", "do", "is", "are", "be", "it", "path"}
+_BEHAVIOR_WORDS = {"return", "returns", "returned", "indicate", "indicates", "show", "shows",
+                   "report", "reports", "represent", "represents", "mean", "means", "produce",
+                   "produces", "yield", "yields", "calculate", "calculates", "accept", "accepts",
+                   "raise", "raises", "throw", "throws", "contain", "contains", "identify", "identifies"}
+_BEHAVIOR_VARIANTS = {
+    "return": ("return", "returns", "returned"),
+    "returns": ("return", "returns", "returned"),
+    "returned": ("return", "returns", "returned"),
+    "indicate": ("indicate", "indicates", "report", "reports", "show", "shows", "represent", "represents", "return", "returns"),
+    "indicates": ("indicate", "indicates", "report", "reports", "show", "shows", "represent", "represents", "return", "returns"),
+    "show": ("show", "shows", "indicate", "indicates", "report", "reports", "return", "returns"),
+    "shows": ("show", "shows", "indicate", "indicates", "report", "reports", "return", "returns"),
+    "report": ("report", "reports", "indicate", "indicates", "show", "shows", "return", "returns"),
+    "reports": ("report", "reports", "indicate", "indicates", "show", "shows", "return", "returns"),
+}
+
+
+def assignment_anchors(question: str) -> dict[str, Any]:
+    """Derive API, behavior, and condition anchors from the actual assignment."""
+    without_urls = re.sub(r"https?://\S+", " ", str(question or ""), flags=re.I)
+    symbols = list(dict.fromkeys(re.findall(
+        r"\b(?:[A-Za-z_]\w*\.)+[A-Za-z_]\w*(?:\(\))?", without_urls)))
+    symbols = [value.removesuffix("()") for value in symbols]
+    parts = [part for symbol in symbols for part in symbol.split(".") if part]
+    method = parts[-1].casefold() if len(parts) > 1 else ""
+    entity = parts[-2].casefold() if len(parts) > 1 else ""
+    tokens = {token.casefold() for token in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", without_urls)
+              if token.casefold() not in _ANCHOR_STOP_WORDS and len(token) > 1}
+    conditional = re.search(r"\b(?:when|if|where|unless|while|under|without|for)\b(.+)$",
+                            without_urls, flags=re.I)
+    condition_text = conditional.group(1) if conditional else ""
+    condition_tokens = {token.casefold() for token in re.findall(
+        r"[A-Za-z_][A-Za-z0-9_]*", condition_text)
+        if token.casefold() not in _CONDITION_STOP_WORDS and len(token) > 1}
+    asks_return = bool(re.search(r"\b(return|returns|returned)\b", without_urls, flags=re.I))
+    behavior_tokens = {token.casefold() for token in re.findall(
+        r"[A-Za-z_][A-Za-z0-9_]*", without_urls)
+        if token.casefold() in _BEHAVIOR_WORDS}
+    return {"symbols": symbols, "method": method, "entity": entity,
+            "tokens": tokens, "condition_tokens": condition_tokens,
+            "behavior_tokens": behavior_tokens, "asks_return": asks_return}
+
+
+def _contains_term(text: str, term: str) -> bool:
+    return bool(re.search(r"(?<![a-z0-9_])" + re.escape(term) + r"(?![a-z0-9_])",
+                          text.casefold()))
+
+
+def _condition_covered(text: str, anchors: dict[str, Any]) -> bool:
+    terms = set(anchors.get("condition_tokens") or ())
+    if not terms:
+        return True
+    lowered = text.casefold()
+    # Wording variants are semantic variants of question conditions, not answer
+    # values. The selected evidence must still cover the condition itself.
+    variants = {"exist": ("exist", "exists", "existing", "nonexistent", "missing", "not found"),
+                "exists": ("exist", "exists", "existing", "nonexistent", "missing", "not found"),
+                "missing": ("missing", "nonexistent", "does not exist", "not found", "absent"),
+                "not": ("not", "no", "without", "nonexistent", "missing"),
+                "no": ("no", "not", "without", "nonexistent", "missing")}
+    matched = 0
+    for term in terms:
+        options = variants.get(term, (term,))
+        if any(_contains_term(lowered, option) for option in options):
+            matched += 1
+    return matched >= max(1, (len(terms) + 1) // 2)
+
+
+def _responsive_to_assignment(question: str, evidence: str) -> bool:
+    """Require subject, requested behavior, and conditional coverage when present."""
+    anchors = assignment_anchors(question)
+    lowered = evidence.casefold()
+    method = str(anchors.get("method") or "")
+    entity = str(anchors.get("entity") or "")
+    if method:
+        subject_covered = _contains_term(lowered, method)
+    elif entity:
+        subject_covered = _contains_term(lowered, entity)
+    else:
+        principal = set(anchors.get("tokens") or ())
+        subject_covered = bool(principal & set(re.findall(r"[a-z0-9_]+", lowered)))
+    if not subject_covered or not _condition_covered(lowered, anchors):
+        return False
+    behavior_tokens = set(anchors.get("behavior_tokens") or ())
+    if "return" in behavior_tokens or "returns" in behavior_tokens or "returned" in behavior_tokens:
+        return bool(re.search(
+            r"\b(?:true|false|none|null)\b|\breturn(?:s|ed)?\s+(?!(?:when|if|for|because|that)\b)[a-z0-9_'\"`<]",
+            lowered))
+    if behavior_tokens:
+        return any(_contains_term(lowered, variant)
+                   for term in behavior_tokens
+                   for variant in _BEHAVIOR_VARIANTS.get(term, (term,)))
+    return bool(not anchors.get("asks_return") or re.search(
+        r"\b(?:true|false|none|null)\b|\breturn(?:s|ed)?\s+(?!(?:when|if|for|because|that)\b)[a-z0-9_'\"`<]",
+        lowered))
+
+
+def _sentence_score(sentence: str, anchors: dict[str, Any]) -> int:
+    lowered = sentence.casefold()
+    score = 0
+    method = str(anchors.get("method") or "")
+    entity = str(anchors.get("entity") or "")
+    if method and _contains_term(lowered, method):
+        score += 100
+    if entity and _contains_term(lowered, entity):
+        score += 20
+    score += 5 * sum(1 for term in anchors.get("condition_tokens", ()) if _contains_term(lowered, term))
+    score += sum(1 for term in anchors.get("tokens", ()) if _contains_term(lowered, term))
+    if anchors.get("asks_return") and re.search(r"\b(?:return|returns|returned|true|false|none|null)\b", lowered):
+        score += 15
+    return score
+
+
+def _section_window(question: str, sections: list[dict[str, Any]]) -> str:
+    """Choose a definition/heading and nearby same-section description blocks."""
+    anchors = assignment_anchors(question)
+    method = str(anchors.get("method") or "")
+    candidates: list[tuple[int, int]] = []
+    for index, block in enumerate(sections):
+        if not isinstance(block, dict):
+            continue
+        metadata = " ".join(str(block.get(key) or "") for key in ("id", "section_id", "heading"))
+        text = str(block.get("text") or "")
+        score = _sentence_score(metadata + " " + text, anchors)
+        if method and _contains_term(metadata, method):
+            score += 1000
+        if method and str(block.get("tag") or "").lower() == "dt" and _contains_term(text, method):
+            score += 500
         if score:
-            ranked.append((score, -index, sentence))
-    selected = [item[2] for item in sorted(ranked, reverse=True)[:3]]
-    return " ".join(selected)[:SUMMARY_MAX_CHARS]
+            candidates.append((score, index))
+    if not candidates:
+        return ""
+    _, start = max(candidates, key=lambda value: (value[0], -value[1]))
+    selected: list[str] = []
+    base_section = str(sections[start].get("section_id") or "")
+    for index in range(start, min(len(sections), start + 5)):
+        block = sections[index]
+        section_id = str(block.get("section_id") or "")
+        if index > start and base_section and section_id and section_id != base_section:
+            break
+        if index > start and block.get("tag") == "dt" and block.get("id"):
+            break
+        label = str(block.get("id") or block.get("heading") or "").strip()
+        text = str(block.get("text") or "").strip()
+        value = f"{label}: {text}" if label and label.casefold() not in text.casefold() else text
+        if value:
+            selected.append(value)
+        encoded = "\n".join(selected).encode("utf-8")
+        if len(encoded) >= SELECTED_EVIDENCE_MAX_BYTES:
+            break
+    return "\n".join(selected).encode("utf-8")[:SELECTED_EVIDENCE_MAX_BYTES].decode("utf-8", errors="ignore").strip()
+
+
+def select_assignment_evidence(question: str, source_text: str,
+                               sections: list[dict[str, Any]] | None = None) -> str | None:
+    """Return a compact source excerpt only when it answers the assignment."""
+    structural = _section_window(question, sections or []) if sections else ""
+    candidate = structural or str(source_text or "")
+    sentences = [" ".join(part.split()) for part in re.split(r"(?<=[.!?])\s+|\s{2,}", candidate)
+                 if part.strip()]
+    anchors = assignment_anchors(question)
+    ranked = sorted(enumerate(sentences), key=lambda item: (-_sentence_score(item[1], anchors), item[0]))
+    selected: list[str] = []
+    for _, sentence in ranked:
+        if not _sentence_score(sentence, anchors) and (not structural or len(selected) >= 3):
+            continue
+        proposal = " ".join(selected + [sentence])
+        if len(proposal.encode("utf-8")) > SELECTED_EVIDENCE_MAX_BYTES:
+            continue
+        selected.append(sentence)
+        if len(selected) >= 3:
+            break
+    if not selected:
+        return None
+    summary = " ".join(selected)
+    # Put the API symbol in the compact handoff when the definition ID carries
+    # it but the descriptive sentence omits it. This is a label, not an answer.
+    if anchors.get("method") and not _contains_term(summary, str(anchors["method"])):
+        symbol = next((str(value) for value in anchors.get("symbols", [])
+                       if str(value).casefold().endswith("." + str(anchors["method"]))), "")
+        if symbol:
+            summary = f"{symbol}: {summary}"
+    summary = summary[:SUMMARY_MAX_CHARS]
+    if not summary.encode("utf-8") or len(summary.encode("utf-8")) > SELECTED_EVIDENCE_MAX_BYTES:
+        return None
+    return summary if _responsive_to_assignment(question, summary) else None
+
+
+def _answer_excerpt(question: str, source_text: str,
+                    sections: list[dict[str, Any]] | None = None) -> str | None:
+    """Compatibility wrapper for the assignment-grounded evidence selector."""
+    return select_assignment_evidence(question, source_text, sections)
 
 
 def execute_research_only(work_item: Mapping[str, Any], *, job_id: str,
@@ -157,11 +336,11 @@ def execute_research_only(work_item: Mapping[str, Any], *, job_id: str,
         return {"status": "BLOCKED", "reason": str(source.get("reason") or source.get("status") or "RESEARCH_ONLY_SOURCE_UNAVAILABLE"),
                 "case_id": case_id, "research_result": failed_handoff}
     source_url_used = str(source.get("url") or safe_url)[:500]
-    summary = _answer_excerpt(question, text)
+    summary = _answer_excerpt(question, text, source.get("sections"))
     if not summary:
         insufficient = compact_handoff(job_id=job_id, objective_id=objective_id,
             project_id=project_id, case_id=case_id, question=question,
-            summary="The approved source was read, but no directly relevant passage was found.",
+            summary="The approved source was fetched, but no selected passage covered the requested API behavior and conditions; no answer was inferred.",
             evidence_refs=[source_url_used], status="SOURCE_INSUFFICIENT",
             unanswered_questions=[question],
             next_research_action="REVIEW_SOURCE_OR_APPROVE_ANOTHER_SOURCE")

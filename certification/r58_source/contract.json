@@ -1,0 +1,14 @@
+{
+  "release_id": "nexus-capability-actions-20261025-r58",
+  "base_release_id": "nexus-capability-actions-20261025-r57",
+  "base_source_commit": "f94675ebe6aa6ce1b772d1cc73c76621e82414fa",
+  "base_artifact_sha256": "8a1676b8cd6c92022e6340d3d7a63ec6f686455ed5a353d7821116252021d58f",
+  "base_run_id": "40205575697",
+  "base_artifact_name": "nexus-capability-actions-20261025-r57",
+  "base_manifest_sha256": "a2328a5be4d9aca01ed236c26ad999fe9daa718266e9dc8e4ad9718948c02e63",
+  "changed_runtime_files": [
+    "scripts/nexus_agent_platform/research_parent_adapters.py",
+    "scripts/nexus_agent_platform/research_only_execution.py"
+  ],
+  "composition_rule": "Exact certified R57 deployable runtime plus only the assignment-grounded evidence selection changes in the listed runtime files and focused R58 certification evidence."
+}
