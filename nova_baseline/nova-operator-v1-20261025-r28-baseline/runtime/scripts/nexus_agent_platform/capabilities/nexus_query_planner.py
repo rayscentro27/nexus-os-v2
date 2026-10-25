@@ -1,0 +1,1271 @@
+"""Nexus Semantic Query Planner — schema-aware intent→plan→execute pipeline.
+
+Replaces brittle keyword routing with structured query planning.
+
+Architecture:
+  user question → planner (model) → query plan → validation → executor → verified result
+
+The planner uses model reasoning to understand intent.
+The executor uses deterministic code to retrieve facts.
+The truth guard validates the result.
+Nova explains the result naturally.
+
+No writes. No client PII. No arbitrary SQL. No filesystem access.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+log = logging.getLogger(__name__)
+
+# ═══════════════════════════════════════════════════════════════
+# DOMAIN SCHEMAS — what the planner is allowed to reason over
+# ═══════════════════════════════════════════════════════════════
+
+DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
+    "processes": {
+        "description": "Nexus process registry — configured workflows and their state",
+        "fields": {
+            "process_id": {"type": "string", "values": "any"},
+            "name": {"type": "string", "values": "any"},
+            "configuration_state": {"type": "enum", "values": ["enabled", "disabled", "blocked", "unknown"]},
+            "execution_mode": {"type": "enum", "values": [
+                "ACTIVE_INTERNAL", "DRY_RUN", "TELEGRAM_OPERATOR",
+                "SANDBOX_TEST", "BLOCKED", "unknown",
+            ]},
+            "runtime_state": {"type": "enum", "values": [
+                "running", "idle", "completed", "failed", "simulated",
+                "skipped", "blocked", "unknown", "never_run",
+            ]},
+            "schedule": {"type": "string", "values": "any"},
+            "risk": {"type": "string", "values": "any"},
+            "last_run": {"type": "string", "values": "any"},
+        },
+        "operations": ["overview", "list", "filter", "count", "group_count", "lookup"],
+        "capability": "get_process_registry",
+        "detail_capability": "get_process_details",
+    },
+    "tools": {
+        "description": "Nexus tool registry — available software and integrations",
+        "fields": {
+            "name": {"type": "string", "values": "any"},
+            "category": {"type": "enum", "values": [
+                "internal_safe", "read_only", "approval_gated", "unavailable",
+            ]},
+            "status": {"type": "enum", "values": ["available", "unavailable", "approval_required"]},
+        },
+        "operations": ["overview", "list", "filter", "count", "group_count"],
+        "capability": "get_tool_registry",
+    },
+    "agents": {
+        "description": "Nexus agents — AI workers and their capabilities",
+        "fields": {
+            "agent_id": {"type": "string", "values": ["nexus_hermes", "hermes_nova", "alpha"]},
+            "name": {"type": "string", "values": "any"},
+            "role": {"type": "string", "values": "any"},
+            "read_count": {"type": "integer", "values": "any"},
+            "write_count": {"type": "integer", "values": "any"},
+            "tool_count": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview", "list", "lookup"],
+        "capability": "get_agent_registry",
+        "detail_capability": "get_agent_details",
+    },
+    "reports": {
+        "description": "Nexus reports — generated documents and their metadata",
+        "fields": {
+            "name": {"type": "string", "values": "any"},
+            "category": {"type": "string", "values": "any"},
+            "modified": {"type": "string", "values": "any"},
+        },
+        "operations": ["overview", "list"],
+        "capability": "get_latest_reports",
+        "index_capability": "get_report_index",
+    },
+    "approvals": {
+        "description": "Nexus approval queue — items awaiting review",
+        "fields": {
+            "pending_count": {"type": "integer", "values": "any"},
+            "queue_status": {"type": "enum", "values": ["empty", "has_items", "unavailable"]},
+        },
+        "operations": ["overview"],
+        "capability": "get_pending_approvals",
+    },
+    "research": {
+        "description": "Nexus research pipeline — Alpha research runs and findings",
+        "fields": {
+            "total_runs": {"type": "integer", "values": "any"},
+            "completed_runs": {"type": "integer", "values": "any"},
+            "total_results": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview"],
+        "capability": "get_recent_research",
+    },
+    "company_goals": {
+        "description": "Current durable Nexus company goal portfolio and discretionary work state",
+        "fields": {
+            "goal_id": {"type": "string", "values": "any"},
+            "program_id": {"type": "string", "values": "any"},
+            "department": {"type": "string", "values": "any"},
+            "priority": {"type": "enum", "values": ["P0", "P1", "P2", "P3", "P4"]},
+            "status": {"type": "string", "values": "any"},
+            "missing_criteria": {"type": "array", "values": "any"},
+            "last_progress": {"type": "string", "values": "any"},
+        },
+        "operations": ["overview", "list", "filter", "count", "summarize"],
+        "capability": "get_company_goal_portfolio",
+    },
+    "system_health": {
+        "description": "Nexus system health — service status and failures",
+        "fields": {
+            "overall_status": {"type": "enum", "values": ["healthy", "degraded", "unknown", "partial"]},
+            "active_services": {"type": "integer", "values": "any"},
+            "failed_services": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview"],
+        "capability": "get_system_health",
+    },
+    "recent_activity": {
+        "description": "Nexus recent activity — what happened across processes, approvals, research",
+        "fields": {
+            "has_any_real_execution": {"type": "boolean", "values": [True, False]},
+            "telemetry_summary": {"type": "string", "values": "any"},
+        },
+        "operations": ["overview", "summarize"],
+        "capability": "get_recent_activity",
+    },
+    "runtime_execution": {
+        "description": "Verified Nexus runtime execution telemetry — actual worker/process run events",
+        "fields": {
+            "process_id": {"type": "string", "values": "any"},
+            "process_name": {"type": "string", "values": "any"},
+            "run_id": {"type": "string", "values": "any"},
+            "worker_id": {"type": "string", "values": "any"},
+            "status": {"type": "enum", "values": ["running", "completed", "failed", "skipped", "blocked", "stale", "unknown"]},
+            "current_state": {"type": "enum", "values": ["running", "idle", "unknown"]},
+            "last_terminal_status": {"type": "enum", "values": ["completed", "failed", "skipped", "blocked", "unknown"]},
+            "event_type": {"type": "enum", "values": ["started", "heartbeat", "completed", "failed", "skipped", "blocked"]},
+            "started_at": {"type": "string", "values": "any"},
+            "completed_at": {"type": "string", "values": "any"},
+            "duration_ms": {"type": "integer", "values": "any"},
+            "error_type": {"type": "string", "values": "any"},
+            "telemetry_available": {"type": "boolean", "values": [True, False]},
+            "source_type": {"type": "enum", "values": ["verified_execution_telemetry"]},
+        },
+        "operations": ["overview", "list", "filter", "count", "lookup", "summarize"],
+        "capability": "get_runtime_execution_summary",
+    },
+    "incomplete_areas": {
+        "description": "Nexus incomplete/unavailable areas — what is not yet live",
+        "fields": {
+            "unique_incomplete_count": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview"],
+        "capability": "get_incomplete_areas",
+    },
+    "overview": {
+        "description": "Nexus system overview — architecture, agents, components",
+        "fields": {
+            "system_name": {"type": "string", "values": "any"},
+            "agent_count": {"type": "integer", "values": "any"},
+            "process_count": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview"],
+        "capability": "get_nexus_overview",
+    },
+    "nexus_system": {
+        "description": (
+            "Nexus study snapshot — study-derived findings from reports/nova_study, including what Nova learned, "
+            "gap counts, contradiction counts, unknowns, recommendations, integrations, offers, source_commit, "
+            "generated_at, and current-vs-study freshness reconciliation. Use this for questions about my study, "
+            "what I learned, study findings, gaps/contradictions/unknowns from the study, or concrete study numbers."
+        ),
+        "fields": {
+            "domain": {"type": "string", "values": "any"},
+            "product_count": {"type": "integer", "values": "any"},
+            "connector_count": {"type": "integer", "values": "any"},
+            "gap_count": {"type": "integer", "values": "any"},
+            "contradiction_count": {"type": "integer", "values": "any"},
+            "unknown_count": {"type": "integer", "values": "any"},
+            "source_commit": {"type": "string", "values": "any"},
+            "generated_at": {"type": "datetime", "values": "any"},
+            "stripe_live_mode_allowed": {"type": "boolean", "values": [True, False]},
+        },
+        "operations": ["overview", "lookup", "compare", "summarize", "explain", "find_gaps", "recommend"],
+        "capability": "get_nexus_study_overview",
+        "detail_capabilities": {
+            "snapshot": "get_nexus_study_snapshot",
+            "gaps": "get_nexus_gap_summary",
+            "unknowns": "get_nexus_unknowns",
+        },
+    },
+    "governed_action": {
+        "description": (
+            "Nexus governed operating loop — what Nova is allowed to safely recommend, approvals waiting "
+            "for Ray, work order states, results, and governed action history. Use for questions about what "
+            "actions Nova can perform, pending approvals, work order status, work order results, and recent "
+            "governed work. Do NOT use for arbitrary writes or execution intent."
+        ),
+        "fields": {
+            "action_id": {"type": "string", "values": "any"},
+            "executable": {"type": "boolean", "values": [True, False]},
+            "risk_level": {"type": "enum", "values": ["low", "moderate", "high", "prohibited"]},
+            "approval_status": {"type": "enum", "values": [
+                "pending", "approved", "rejected", "expired", "consumed", "cancelled",
+            ]},
+            "work_order_status": {"type": "enum", "values": [
+                "pending_approval", "approved", "queued", "running", "completed",
+                "blocked", "failed", "cancelled", "expired", "stale",
+            ]},
+            "pending_count": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview", "list", "count", "lookup", "status", "result", "history", "recommend"],
+        "capability": "get_available_actions",
+        "detail_capabilities": {
+            "approvals": "get_approval_status",
+            "work_orders": "get_recent_work_orders",
+            "queue": "get_work_queue",
+            "result": "get_work_order_result",
+        },
+    },
+}
+
+# ═══════════════════════════════════════════════════════════════
+# QUERY PLAN CONTRACT
+# ═══════════════════════════════════════════════════════════════
+
+ALLOWED_OPERATIONS = {
+    "overview", "list", "filter", "count", "group_count",
+    "lookup", "compare", "summarize", "provenance",
+    "explain", "find_gaps", "recommend", "status", "result", "history",
+}
+
+ALLOWED_OPERATORS = {"eq", "neq", "in", "not_in", "contains", "exists"}
+
+# Fields that support ambiguity (map to multiple dimensions)
+AMBIGUOUS_FIELDS = {
+    "blocked": ["configuration_state", "execution_mode", "runtime_state"],
+}
+
+# Source requirements per domain
+SOURCE_REQUIREMENTS = {
+    "processes": "structural",
+    "tools": "structural",
+    "agents": "structural",
+    "reports": "operational_state",
+    "approvals": "operational_state",
+    "research": "operational_state",
+    "company_goals": "operational_state",
+    "system_health": "operational_state",
+    "recent_activity": "execution_telemetry",
+    "runtime_execution": "execution_telemetry",
+    "incomplete_areas": "structural",
+    "overview": "structural",
+    "nexus_system": "structural",
+    "governed_action": "operational_state",
+}
+
+# ═══════════════════════════════════════════════════════════════
+# PLANNER — model-driven intent → structured plan
+# ═══════════════════════════════════════════════════════════════
+
+PLANNER_SYSTEM_PROMPT = """You are a Nexus query planner. Your ONLY job is to convert a user question into a structured query plan.
+
+You have access to these Nexus domains and their fields:
+
+{schema_text}
+
+WHAT IS NEXUS?
+Nexus is an automation platform with processes (jobs/workflows), tools, agents, reports, approvals, research, system health, and activity tracking. A question is about Nexus if it asks about ANY of these things — even in casual or indirect language.
+
+Do NOT classify generic reasoning, epistemology, philosophy, or ordinary machine examples as Nexus unless the user explicitly mentions Nexus/system data/processes/jobs/workflows/approvals/tools/reports, or the bounded conversation context clearly says the follow-up is about Nexus.
+
+Examples of Nexus questions (and their domains):
+- "Which processes are enabled?" → processes
+- "What jobs are running?" → processes
+- "How many tools are installed?" → tools
+- "Do I have pending approvals?" → approvals
+- "What happened recently?" → recent_activity
+- "What happened in Nexus in the last hour?" → runtime_execution
+- "Is the system healthy?" → system_health
+- "Which jobs aren't doing anything?" → processes (asks about idle/inactive processes)
+- "What's turned on but not working?" → processes (asks about enabled but non-executing)
+- "How many are blocked?" → processes (asks about blocked processes)
+- "Can you prove something ran?" → runtime_execution (asks about execution evidence)
+- "What actually ran today?" → runtime_execution
+- "What is running right now?" → runtime_execution
+- "What completed today?" → runtime_execution
+- "When did System Health Check last run?" → runtime_execution
+- "Which worker executed the most recent run?" → runtime_execution
+- "Which enabled processes have no verified run today?" → runtime_execution
+- "What did you learn about Nexus?" → nexus_system
+- "What did your study uncover?" → nexus_system
+- "Based on your Nexus study, how many gaps, contradictions, and unknowns did you identify?" → nexus_system
+- "What were the three unknowns from your study?" → nexus_system
+- "What did the study say about integrations?" → nexus_system
+- "What did the study say about offers?" → nexus_system
+- "How many offers did the study find operational versus planned?" → nexus_system
+- "How many integrations did you study, and how many were live?" → nexus_system
+- "Was verified execution telemetry available when the study snapshot was made?" → nexus_system
+- "Is verified execution telemetry available now?" → runtime_execution
+- "What has changed since your study snapshot?" → nexus_system
+- "Which study findings are stale now?" → nexus_system
+- "What's the overview?" → overview
+- "Which of those are simulated?" → processes (follow-up filter)
+- "Is that configuration or operational state?" → provenance (follow-up clarification)
+
+Examples of NON-Nexus questions (domain: "none"):
+- "How are you?" → none
+- "What's the weather?" → none
+- "Tell me a joke" → none
+- "What do you think about coffee?" → none
+
+OUTPUT FORMAT — return ONLY a JSON object (no markdown, no explanation):
+
+{{
+  "domain": "<domain_name>",
+  "operation": "<operation>",
+  "conditions": [
+    {{"field": "<field>", "operator": "<op>", "value": "<value>"}}
+  ],
+  "projection": ["<field1>", "<field2>"],
+  "aggregate": null,
+  "window": "all|today|last_hour|last_24_hours|latest|most_recent",
+  "ambiguity": null,
+  "source_requirement": "structural|operational_state|execution_telemetry|any",
+  "reason": "<brief explanation of what this query answers>"
+}}
+
+RULES:
+1. Only use domains and fields listed above.
+2. Operations: overview, list, filter, count, group_count, lookup, compare, summarize, provenance.
+3. Operators: eq, neq, in, not_in, contains, exists.
+4. If "blocked" is mentioned without context, set ambiguity field to "blocked" and still use processes domain.
+5. If the question asks about execution evidence or proof, set source_requirement to "execution_telemetry".
+6. If the question is about provenance/source, set operation to "provenance".
+7. Do NOT answer the question. Only output the plan.
+8. If the question is clearly NOT about Nexus data (greetings, opinions, weather, jokes, generic logic/reasoning, generic machines, etc.), output: {{"domain": "none"}}
+9. Use domain "runtime_execution" for actual runtime questions: really ran, actually ran, completed, failed, skipped today, active right now, stuck/stale, last run, proof/evidence of execution, recent real executions, or worker that executed a run.
+10. Use window "today" for today/since midnight, "last_hour" for last hour, "last_24_hours" for last 24 hours, and "latest" or "most_recent" for latest/most recent.
+11. For Telegram proof, distinguish worker_poll from telegram_update_run. A worker_poll proves the poll cycle ran; only telegram_update_run proves a Telegram update/message was actually handled.
+12. If a question combines configuration with execution telemetry, such as enabled processes with no verified run, use runtime_execution. The executor will provide the structural cross-reference.
+13. If the user asks what "the study" said, found, learned, uncovered, identified, or left unknown about Nexus topics such as gaps, contradictions, integrations, offers, architecture, or business model, use nexus_system. The study snapshot is historical structural evidence, not current execution telemetry.
+
+FILTER CONDITION RULES FOR PROCESSES:
+- If the user asks for a process configuration state, include a condition on configuration_state.
+- If the user asks for an execution mode, include a condition on execution_mode.
+- If the user asks for a runtime state, include a condition on runtime_state.
+- "at runtime", "during runtime", and "runtime blocked" refer to runtime_state, not execution_mode.
+- Conditions across different process dimensions are intersections, not alternatives.
+- Preserve independent dimensions: enabled/disabled, DRY_RUN/BLOCKED/SANDBOX_TEST, and simulated/skipped/blocked are separate fields.
+- Do not omit conditions for explicit process states in filter operations.
+- If the user asks for categories separately, overlapping categories, or A/B/C "or" categories, do NOT combine those category conditions as an intersection. Use a list, overview, or group_count plan with no category filters so the executor returns raw records and dimension counts for Nova to separate."""
+
+
+def _build_schema_text() -> str:
+    """Build schema description for the planner prompt."""
+    lines = []
+    for domain, schema in DOMAIN_SCHEMAS.items():
+        fields = ", ".join(schema["fields"].keys())
+        ops = ", ".join(schema["operations"])
+        lines.append(f"- {domain}: fields=[{fields}], operations=[{ops}]")
+    return "\n".join(lines)
+
+
+def plan_query(
+    user_question: str,
+    conversation_context: Optional[str] = None,
+    model_call_fn: Optional[Callable] = None,
+) -> Dict[str, Any]:
+    """Convert a user question into a structured Nexus query plan.
+
+    Uses model reasoning to understand intent, then validates the output
+    against allowed schemas.
+
+    Returns a validated query plan dict, or {"domain": "none"} if the
+    question is not about Nexus data.
+
+    Includes planner_mode metadata:
+      - "model": plan was generated by LLM
+      - "deterministic_fallback": plan was generated by regex fallback
+    """
+    schema_text = _build_schema_text()
+    system_prompt = PLANNER_SYSTEM_PROMPT.format(schema_text=schema_text)
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if conversation_context:
+        messages.append({"role": "user", "content": f"Context from conversation:\n{conversation_context}\n\nUser question: {user_question}"})
+    else:
+        messages.append({"role": "user", "content": user_question})
+
+    # Call the model
+    if model_call_fn is None:
+        # Fallback: use deterministic pattern matching
+        plan = _deterministic_plan(user_question)
+        plan["planner_mode"] = "deterministic_fallback"
+        plan["planner_model"] = None
+        plan["planner_provider"] = None
+        plan["fallback_reason"] = "no_model_call_fn"
+        plan["validation_status"] = "deterministic_fallback"
+        return plan
+
+    try:
+        result = model_call_fn(messages)
+        content = result.get("content", "")
+        model_name = result.get("model", "unknown")
+        provider_name = result.get("provider", "unknown")
+        if not content:
+            plan = _deterministic_plan(user_question)
+            plan["planner_mode"] = "deterministic_fallback"
+            plan["planner_model"] = model_name
+            plan["planner_provider"] = provider_name
+            plan["fallback_reason"] = "empty_model_response"
+            plan["validation_status"] = "deterministic_fallback"
+            return plan
+
+        # Parse JSON from response
+        plan = _parse_plan_json(content)
+        if plan is None:
+            plan = _deterministic_plan(user_question)
+            plan["planner_mode"] = "deterministic_fallback"
+            plan["planner_model"] = model_name
+            plan["planner_provider"] = provider_name
+            plan["fallback_reason"] = "json_parse_failure"
+            plan["validation_status"] = "deterministic_fallback"
+            return plan
+
+        # Validate
+        validated = validate_plan(plan)
+        validated["planner_mode"] = "model"
+        validated["planner_model"] = model_name
+        validated["planner_provider"] = provider_name
+        validated["fallback_reason"] = None
+        validated["validation_status"] = "valid"
+        return validated
+
+    except Exception as exc:
+        log.warning("Planner model call failed: %s", exc)
+        plan = _deterministic_plan(user_question)
+        plan["planner_mode"] = "deterministic_fallback"
+        plan["planner_model"] = None
+        plan["planner_provider"] = None
+        plan["fallback_reason"] = f"model_exception: {exc}"
+        plan["validation_status"] = "deterministic_fallback"
+        return plan
+
+
+def _parse_plan_json(content: str) -> Optional[Dict[str, Any]]:
+    """Parse JSON from model response, handling markdown fences."""
+    # Strip markdown code fences
+    content = content.strip()
+    if content.startswith("```"):
+        lines = content.split("\n")
+        # Remove first and last lines (fences)
+        if lines[-1].strip() == "```":
+            lines = lines[1:-1]
+        else:
+            lines = lines[1:]
+        content = "\n".join(lines)
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Try to find JSON object in the content
+        match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════
+# DETERMINISTIC FALLBACK PLANNER
+# ═══════════════════════════════════════════════════════════════
+
+# Semantic intent patterns for deterministic planning
+_INTENT_PATTERNS: List[Tuple[str, str, str, List[str]]] = [
+    # (pattern, domain, operation, reason)
+    # Process queries
+    (r'process|workflow|automation|job', "processes", "list", "Process listing or query"),
+    (r'enabled.*not.*(?:running|executing|active|doing)', "processes", "filter",
+     "Comparative: enabled but not executing"),
+    (r'(?:not|isn\'t|aren\'t).*running.*enabled', "processes", "filter",
+     "Comparative: not running but enabled"),
+    (r'configured.*(?:not|isn\'t|aren\'t).*(?:running|active|executing)', "processes", "filter",
+     "Comparative: configured but not active"),
+    (r'simulated|skipped|blocked', "processes", "filter", "Process state filter"),
+    (r'running|executing|active|live', "processes", "filter", "Process runtime query"),
+    (r'evidence.*(?:ran|executed|run)', "recent_activity", "summarize", "Execution evidence query"),
+    (r'(?:did|do|can).*(?:anything|something).*(?:run|execute|ran|executed)', "recent_activity", "summarize",
+     "Execution evidence query"),
+    (r'prove|proof.*(?:ran|executed|run)', "recent_activity", "summarize", "Execution proof query"),
+
+    # Tool queries
+    (r'tool|software|installed|available', "tools", "list", "Tool listing or query"),
+    (r'(?:require|need|approval|gated)', "tools", "filter", "Tool approval query"),
+
+    # Agent queries
+    (r'agent|bot|nova|hermes|alpha', "agents", "list", "Agent listing or query"),
+
+    # Report queries
+    (r'report|generated|recent.*document', "reports", "list", "Report listing or query"),
+
+    # Approval queries
+    (r'approv|pending|review.*queue|waiting', "approvals", "overview", "Approval queue query"),
+
+    # Research queries
+    (r'research|finding|alpha.*research', "research", "overview", "Research pipeline query"),
+
+    # Durable company-goal queries
+    (r'goal|objective|portfolio|what.*working|what.*focus|company.*roadmap|accomplish|advance', "company_goals", "overview", "Company goal portfolio query"),
+
+    # Health queries
+    (r'health|system.*status|broken|down|degraded', "system_health", "overview", "System health query"),
+
+    # Activity queries
+    (r'happened|what.*new|activity|recent|today', "recent_activity", "overview", "Recent activity query"),
+
+    # Incomplete queries
+    (r'incomplete|unavailable|mock|missing|not.*live|not.*working|gap', "incomplete_areas", "overview",
+     "Incomplete areas query"),
+
+    # Overview queries
+    (r'nexus|overview|what.*is.*this|architecture|structure', "overview", "overview", "System overview query"),
+]
+
+
+def _deterministic_plan(user_question: str) -> Dict[str, Any]:
+    """Deterministic fallback planner using pattern matching."""
+    lower = user_question.lower()
+
+    # Check for non-Nexus questions
+    non_nexus = re.search(
+        r'^(?:hello|hi|hey|how are you|what do you think|opinion|coffee|cadillac|real estate|buying)',
+        lower
+    )
+    if non_nexus:
+        return {"domain": "none", "reason": "Not a Nexus data question"}
+
+    best_match = None
+    best_score = 0
+
+    for pattern, domain, operation, reason in _INTENT_PATTERNS:
+        if re.search(pattern, lower):
+            # Score by specificity (longer patterns = more specific)
+            score = len(pattern)
+            if score > best_score:
+                best_score = score
+                best_match = {
+                    "domain": domain,
+                    "operation": operation,
+                    "conditions": [],
+                    "projection": [],
+                    "aggregate": None,
+                    "ambiguity": None,
+                    "source_requirement": SOURCE_REQUIREMENTS.get(domain, "any"),
+                    "reason": reason,
+                }
+
+    if best_match is None:
+        return {"domain": "none", "reason": "No matching Nexus domain"}
+
+    # Add conditions based on keywords
+    plan = best_match
+    conditions = []
+
+    if plan["domain"] == "processes":
+        # Configuration state conditions
+        if re.search(r'\benabled\b', lower) and not re.search(r'not.*enabled|disabled', lower):
+            conditions.append({"field": "configuration_state", "operator": "eq", "value": "enabled"})
+        if re.search(r'\bdisabled\b', lower):
+            conditions.append({"field": "configuration_state", "operator": "eq", "value": "disabled"})
+
+        # Runtime state conditions
+        if re.search(r'\brunning\b', lower) and not re.search(r'not.*running|isn.*running|aren.*running', lower):
+            conditions.append({"field": "runtime_state", "operator": "eq", "value": "running"})
+        if re.search(r'not.*running|isn.*running|aren.*running|not.*executing|isn.*executing', lower):
+            conditions.append({"field": "runtime_state", "operator": "neq", "value": "running"})
+        if re.search(r'\bsimulated\b', lower):
+            conditions.append({"field": "runtime_state", "operator": "eq", "value": "simulated"})
+        if re.search(r'\bskipped\b', lower):
+            conditions.append({"field": "runtime_state", "operator": "eq", "value": "skipped"})
+
+        # Blocked ambiguity
+        if re.search(r'\bblocked\b', lower):
+            ambiguous_field = "blocked"
+            if ambiguous_field in AMBIGUOUS_FIELDS:
+                plan["ambiguity"] = {
+                    "field": ambiguous_field,
+                    "matches": AMBIGUOUS_FIELDS[ambiguous_field],
+                }
+
+        # Execution mode conditions
+        if re.search(r'execution.?mode.*blocked|mode.*BLOCKED', lower):
+            conditions.append({"field": "execution_mode", "operator": "eq", "value": "BLOCKED"})
+        if re.search(r'runtime.*blocked|blocked.*runtime', lower):
+            conditions.append({"field": "runtime_state", "operator": "eq", "value": "blocked"})
+        if re.search(r'\bdry.?run\b', lower):
+            conditions.append({"field": "execution_mode", "operator": "eq", "value": "DRY_RUN"})
+
+    plan["conditions"] = conditions
+    return plan
+
+
+# ═══════════════════════════════════════════════════════════════
+# PLAN VALIDATOR
+# ═══════════════════════════════════════════════════════════════
+
+def validate_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate a query plan against schemas. Returns validated plan or error."""
+    if not isinstance(plan, dict):
+        return {"domain": "none", "error": "Plan must be a dict"}
+
+    domain = plan.get("domain", "none")
+
+    # Allow "none" domain (non-Nexus question)
+    if domain == "none":
+        return {"domain": "none", "reason": plan.get("reason", "Not a Nexus data question")}
+
+    # Validate domain
+    if domain not in DOMAIN_SCHEMAS:
+        return {"domain": "none", "error": f"Unknown domain: {domain}"}
+
+    schema = DOMAIN_SCHEMAS[domain]
+
+    # Validate operation
+    operation = plan.get("operation", "overview")
+    if operation not in schema["operations"]:
+        plan["operation"] = schema["operations"][0]  # fallback to first allowed
+
+    # Validate conditions
+    valid_conditions = []
+    for cond in plan.get("conditions", []):
+        field = cond.get("field", "")
+        operator = cond.get("operator", "eq")
+        value = cond.get("value")
+
+        if field not in schema["fields"]:
+            continue  # skip invalid fields
+        if operator not in ALLOWED_OPERATORS:
+            continue  # skip invalid operators
+
+        field_schema = schema["fields"][field]
+        if field_schema["type"] == "enum":
+            if operator in ("in", "not_in") and isinstance(value, list):
+                # For in/not_in, all values in the list must be valid enums
+                if not all(v in field_schema["values"] for v in value):
+                    continue
+            elif value not in field_schema["values"]:
+                continue  # skip invalid enum values
+
+        valid_conditions.append(cond)
+
+    plan["conditions"] = valid_conditions
+
+    source_requirement = plan.get("source_requirement")
+    if source_requirement not in ("structural", "operational_state", "execution_telemetry", "any"):
+        source_requirement = SOURCE_REQUIREMENTS.get(domain, "any")
+    if domain != "processes":
+        source_requirement = SOURCE_REQUIREMENTS.get(domain, source_requirement)
+
+    # Ensure required fields
+    plan.setdefault("projection", [])
+    plan.setdefault("aggregate", None)
+    if plan.get("window") not in ("all", "today", "last_hour", "last_24_hours", "latest", "most_recent", None):
+        plan["window"] = "all"
+    else:
+        plan.setdefault("window", "all")
+    plan.setdefault("ambiguity", None)
+    plan["source_requirement"] = source_requirement
+    plan.setdefault("reason", "")
+
+    return plan
+
+
+# ═══════════════════════════════════════════════════════════════
+# QUERY EXECUTOR — deterministic execution over certified reads
+# ═══════════════════════════════════════════════════════════════
+
+# Lazy imports to avoid circular dependencies
+_capability_executor: Optional[Callable] = None
+
+
+def register_executor(executor: Callable) -> None:
+    """Register the capability executor function."""
+    global _capability_executor
+    _capability_executor = executor
+
+
+def execute_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """Execute a validated query plan against existing Nexus capabilities.
+
+    Returns structured verified result with provenance.
+    """
+    domain = plan.get("domain", "none")
+
+    if domain == "none":
+        return {
+            "status": "not_nexus",
+            "plan": plan,
+            "data": None,
+            "provenance": None,
+            "coverage": {"structural": False, "operational_state": False, "execution_telemetry": False},
+        }
+
+    if domain not in DOMAIN_SCHEMAS:
+        return {
+            "status": "error",
+            "plan": plan,
+            "data": None,
+            "error": f"Unknown domain: {domain}",
+        }
+
+    schema = DOMAIN_SCHEMAS[domain]
+    capability = schema.get("capability")
+
+    if capability is None:
+        return {
+            "status": "error",
+            "plan": plan,
+            "data": None,
+            "error": f"No capability for domain: {domain}",
+        }
+
+    # Execute the capability
+    if _capability_executor is None:
+        return {
+            "status": "error",
+            "plan": plan,
+            "data": None,
+            "error": "No capability executor registered",
+        }
+
+    capability_args: Dict[str, Any] = {}
+    if domain == "runtime_execution":
+        capability_args = {
+            "operation": plan.get("operation", "overview"),
+            "conditions": plan.get("conditions", []),
+            "window": plan.get("window", "all"),
+            "limit": 50,
+        }
+    elif domain == "governed_action":
+        # Map governed operations to the narrow detail capability that serves them.
+        operation = plan.get("operation", "overview")
+        detail = schema.get("detail_capabilities", {})
+        if operation == "status":
+            capability = detail.get("approvals", capability)
+            capability_args = {"approval_id": ""}
+        elif operation == "result":
+            capability = detail.get("result", capability)
+            capability_args = {"work_order_id": ""}
+        elif operation == "history":
+            capability = detail.get("work_orders", capability)
+            capability_args = {"limit": 20, "status": None}
+        elif operation in ("list", "count", "overview"):
+            capability_args = {"limit": 20}
+
+    try:
+        try:
+            result = _capability_executor(capability, capability_args)
+        except TypeError:
+            result = _capability_executor(capability)
+    except Exception as exc:
+        return {
+            "status": "error",
+            "plan": plan,
+            "data": None,
+            "error": f"Capability execution failed: {exc}",
+        }
+
+    if not isinstance(result, dict):
+        return {
+            "status": "error",
+            "plan": plan,
+            "data": None,
+            "error": "Invalid capability result",
+        }
+
+    status = result.get("status", "unknown")
+    data = result.get("data", result)
+
+    # Apply filters from conditions
+    conditions = plan.get("conditions", [])
+    if conditions and domain == "processes" and "processes" in data:
+        filtered = _apply_process_filters(data["processes"], conditions)
+        data = {**data, "processes": filtered, "filtered_count": len(filtered)}
+
+    # Apply projection. Process state dimensions are a fact contract: keep them
+    # together so Nova can reason over intersections and overlapping categories.
+    projection = plan.get("projection", [])
+    if projection and domain == "processes" and "processes" in data:
+        required_process_fields = {
+            "process_id", "name",
+            "configuration_state", "execution_mode", "runtime_state",
+        }
+        projection_fields = set(projection) | required_process_fields
+        projected = []
+        for item in data["processes"]:
+            projected.append({k: v for k, v in item.items() if k in projection_fields})
+        data = {**data, "processes": projected}
+
+    # Build coverage
+    source_req = plan.get("source_requirement", "any")
+    coverage = {
+        "structural": source_req in ("structural", "any"),
+        "operational_state": source_req in ("operational_state", "any"),
+        "execution_telemetry": source_req in ("execution_telemetry", "any"),
+    }
+
+    # For execution telemetry: check if real execution exists
+    if source_req == "execution_telemetry":
+        has_real = False
+        if domain == "processes" and "has_real_execution" in data:
+            has_real = data["has_real_execution"]
+        elif domain == "recent_activity" and "has_any_real_execution" in data:
+            has_real = data["has_any_real_execution"]
+        elif domain == "runtime_execution":
+            has_real = data.get("summary", {}).get("event_count", 0) > 0
+        coverage["execution_telemetry"] = has_real
+
+    return {
+        "status": status if status == "success" else "partial",
+        "plan": plan,
+        "data": data,
+        "provenance": {
+            "capability": capability,
+            "source_type": result.get("source_type", domain),
+            "freshness": result.get("freshness", "unknown"),
+        },
+        "coverage": coverage,
+        "capability_selected": capability,
+        "source_requirement": source_req,
+    }
+
+
+def _apply_process_filters(
+    processes: List[Dict[str, Any]],
+    conditions: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Apply filter conditions to a list of normalized processes."""
+    result = list(processes)
+
+    for cond in conditions:
+        field = cond.get("field", "")
+        operator = cond.get("operator", "eq")
+        value = cond.get("value")
+
+        filtered = []
+        for p in result:
+            pval = p.get(field)
+            if operator == "eq" and pval == value:
+                filtered.append(p)
+            elif operator == "neq" and pval != value:
+                filtered.append(p)
+            elif operator == "in" and isinstance(value, list) and pval in value:
+                filtered.append(p)
+            elif operator == "not_in" and isinstance(value, list) and pval not in value:
+                filtered.append(p)
+            elif operator == "contains" and isinstance(pval, str) and isinstance(value, str) and value in pval:
+                filtered.append(p)
+            elif operator == "exists" and pval is not None:
+                filtered.append(p)
+
+        result = filtered
+
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════
+# RESULT FORMATTER — structured result → Nova context
+# ═══════════════════════════════════════════════════════════════
+
+def format_plan_result(result: Dict[str, Any]) -> str:
+    """Format a plan execution result into Nova context."""
+    plan = result.get("plan", {})
+    data = result.get("data", {})
+    provenance = result.get("provenance", {})
+    coverage = result.get("coverage", {})
+    status = result.get("status", "unknown")
+    domain = plan.get("domain", "none")
+
+    if domain == "none":
+        return ""
+
+    lines = [
+        "[VERIFIED NEXUS KNOWLEDGE]",
+        f"domain: {domain}",
+        f"operation: {plan.get('operation', 'unknown')}",
+        f"status: {status}",
+        f"source: {provenance.get('source_type', 'unknown')}",
+        f"freshness: {provenance.get('freshness', 'unknown')}",
+        f"reason: {plan.get('reason', '')}",
+        "",
+    ]
+
+    # Source classification
+    lines.append("Source classification:")
+    lines.append(f"  structural: {str(coverage.get('structural', False)).lower()}")
+    lines.append(f"  operational_state: {str(coverage.get('operational_state', False)).lower()}")
+    lines.append(f"  execution_telemetry: {str(coverage.get('execution_telemetry', False)).lower()}")
+    lines.append("")
+
+    # Conditions applied
+    conditions = plan.get("conditions", [])
+    if conditions:
+        lines.append("Filters applied:")
+        for c in conditions:
+            lines.append(f"  {c.get('field', '?')} {c.get('operator', '?')} {c.get('value', '?')}")
+        lines.append("")
+
+    # Ambiguity
+    ambiguity = plan.get("ambiguity")
+    if ambiguity:
+        if isinstance(ambiguity, dict):
+            lines.append(f"Ambiguity: '{ambiguity.get('field', '?')}' maps to {ambiguity.get('matches', [])}")
+        else:
+            lines.append(f"Ambiguity: {ambiguity}")
+        lines.append("")
+
+    # Data (domain-specific formatting)
+    if domain == "processes":
+        lines.extend(_format_process_data(data, plan))
+    elif domain == "tools":
+        lines.extend(_format_tool_data(data))
+    elif domain == "agents":
+        lines.extend(_format_agent_data(data))
+    elif domain == "reports":
+        lines.extend(_format_report_data(data))
+    elif domain == "approvals":
+        lines.extend(_format_approval_data(data))
+    elif domain == "recent_activity":
+        lines.extend(_format_activity_data(data))
+    elif domain == "runtime_execution":
+        lines.extend(_format_runtime_execution_data(data, plan))
+    elif domain == "incomplete_areas":
+        lines.extend(_format_incomplete_data(data))
+    elif domain == "overview":
+        lines.extend(_format_overview_data(data))
+    elif domain == "nexus_system":
+        lines.extend(_format_nexus_system_data(data, plan))
+    else:
+        lines.append(f"data: {json.dumps(data, default=str)[:500]}")
+
+    lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+    return "\n".join(lines)
+
+
+def _format_process_data(data: Dict, plan: Dict) -> List[str]:
+    """Format process data for Nova context."""
+    lines = []
+    total = data.get("total", 0)
+    config = data.get("configuration_counts", {})
+    modes = data.get("mode_counts", {})
+    runtime = data.get("runtime_counts", {})
+    recon = data.get("reconciliation", {})
+    has_real = data.get("has_real_execution", False)
+    all_sim = data.get("all_simulated_or_skipped", False)
+    processes = data.get("processes", [])
+    filtered_count = data.get("filtered_count")
+
+    lines.append(f"Total: {total}")
+    if filtered_count is not None:
+        lines.append(f"Filtered count: {filtered_count}")
+
+    lines.append("")
+    lines.append("Configuration state:")
+    for s, c in sorted(config.items()):
+        lines.append(f"  {s}: {c}")
+    lines.append(f"  reconciliation: {str(recon.get('configuration', False)).lower()}")
+
+    lines.append("")
+    lines.append("Execution mode:")
+    for m, c in sorted(modes.items()):
+        lines.append(f"  {m}: {c}")
+    lines.append(f"  reconciliation: {str(recon.get('execution_mode', False)).lower()}")
+
+    lines.append("")
+    lines.append("Runtime state:")
+    for s, c in sorted(runtime.items()):
+        lines.append(f"  {s}: {c}")
+    lines.append(f"  reconciliation: {str(recon.get('runtime_state', False)).lower()}")
+
+    lines.append("")
+    lines.append("Execution telemetry:")
+    lines.append(f"  coverage: {'observed' if has_real else 'unavailable'}")
+    lines.append(f"  has_real_execution: {str(has_real).lower()}")
+    lines.append(f"  all_simulated_or_skipped: {str(all_sim).lower()}")
+
+    if processes:
+        lines.append("")
+        lines.append("Processes:")
+        for p in processes[:20]:  # bound output
+            lines.append(
+                f"  - {p.get('process_id', '?')}: {p.get('name', '?')} "
+                f"[config: {p.get('configuration_state', '?')}, "
+                f"mode: {p.get('execution_mode', '?')}, "
+                f"runtime: {p.get('runtime_state', '?')}]"
+            )
+
+    return lines
+
+
+def _format_runtime_execution_data(data: Dict, plan: Dict) -> List[str]:
+    """Format verified execution telemetry for Nova context."""
+    lines: List[str] = []
+    summary = data.get("summary", {})
+    coverage = data.get("coverage", {})
+    health = data.get("telemetry_health", {})
+    runs = data.get("runs", [])
+    processes = data.get("processes", [])
+
+    lines.append(f"Window: {plan.get('window', 'all')}")
+    lines.append(f"Total matching runs: {data.get('total_count', 0)}")
+    lines.append(f"Returned runs: {data.get('returned_count', 0)}")
+    lines.append(f"Truncated: {str(data.get('truncated', False)).lower()}")
+    lines.append("")
+    lines.append("Telemetry coverage:")
+    lines.append(f"  coverage_status: {coverage.get('coverage_status', 'unknown')}")
+    lines.append(f"  window_start: {coverage.get('window_start')}")
+    lines.append(f"  window_end: {coverage.get('window_end')}")
+    lines.append(f"  source_count: {coverage.get('source_count', 0)}")
+    covered = coverage.get("covered_processes", [])
+    if covered:
+        lines.append(f"  covered_processes: {', '.join(covered)}")
+    lines.append("")
+    lines.append("Run summary:")
+    for key in (
+        "event_count", "run_count", "active_count", "completed_count",
+        "failed_count", "skipped_count", "blocked_count", "stale_count",
+    ):
+        lines.append(f"  {key}: {summary.get(key, 0)}")
+    lines.append("")
+    lines.append("Telemetry health:")
+    lines.append(f"  status: {health.get('status', 'unknown')}")
+    lines.append(f"  last_event_at: {health.get('last_event_at')}")
+    lines.append(f"  event_count_24h: {health.get('event_count_24h', 0)}")
+
+    if processes:
+        lines.append("")
+        lines.append("Current/last-known process execution state:")
+        for p in processes[:20]:
+            lines.append(
+                f"  - {p.get('process_id', '?')}: {p.get('process_name', '?')} "
+                f"[current_state: {p.get('current_state', '?')}, "
+                f"last_terminal_status: {p.get('last_terminal_status', '?')}, "
+                f"last_run_id: {p.get('last_run_id', '?')}, "
+                f"last_started_at: {p.get('last_started_at')}, "
+                f"last_completed_at: {p.get('last_completed_at')}, "
+                f"worker: {p.get('last_worker_id', '?')}, stale: {str(p.get('stale', False)).lower()}]"
+            )
+
+    if runs:
+        lines.append("")
+        lines.append("Verified execution runs:")
+        for r in runs[:20]:
+            lines.append(
+                f"  - {r.get('run_id', '?')}: {r.get('process_id', '?')} "
+                f"[status: {r.get('status', '?')}, current_state: {r.get('current_state', '?')}, "
+                f"terminal: {r.get('last_terminal_status', '?')}, "
+                f"started_at: {r.get('started_at')}, completed_at: {r.get('completed_at')}, "
+                f"duration_ms: {r.get('duration_ms')}, worker: {r.get('worker_id', '?')}, "
+                f"source_type: {r.get('source_type', '?')}]"
+            )
+
+    missing_enabled = data.get("enabled_processes_without_verified_run", [])
+    if missing_enabled:
+        lines.append("")
+        lines.append("Enabled processes without verified telemetry in this window:")
+        for p in missing_enabled[:20]:
+            lines.append(
+                f"  - {p.get('process_id', '?')}: {p.get('name', '?')} "
+                f"[config: {p.get('configuration_state', '?')}, "
+                f"mode: {p.get('execution_mode', '?')}, runtime: {p.get('runtime_state', '?')}]"
+            )
+        lines.append("  note: missing telemetry is not proof the process did not run unless coverage is complete.")
+
+    lines.append("")
+    lines.append("Execution proof rules:")
+    lines.append("  running right now requires a non-stale started run with no terminal event.")
+    lines.append("  completed requires a completed terminal event.")
+    lines.append("  failed requires a failed terminal event.")
+    lines.append("  partial or unavailable coverage means absence of a matching run is not proof nothing ran.")
+    return lines
+
+
+def _format_tool_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"Total: {data.get('total', 0)}")
+    lines.append(f"Usable now: {data.get('usable_now', 0)}")
+    cats = data.get("categories", {})
+    for cat, cat_data in cats.items():
+        lines.append(f"  {cat}: {cat_data.get('count', 0)}")
+    return lines
+
+
+def _format_agent_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"Total: {data.get('total', 0)}")
+    for a in data.get("agents", []):
+        lines.append(
+            f"  - {a.get('agent_id', '?')}: {a.get('name', '?')} "
+            f"(reads: {a.get('read_count', 0)}, writes: {a.get('write_count', 0)})"
+        )
+    return lines
+
+
+def _format_report_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"Total latest: {data.get('total_latest', 0)}")
+    for r in data.get("reports", [])[:5]:
+        lines.append(f"  - {r.get('name', '?')} ({r.get('modified', '?')})")
+    return lines
+
+
+def _format_approval_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"Pending: {data.get('count', 0)}")
+    return lines
+
+
+def _format_activity_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"Has real execution: {str(data.get('has_any_real_execution', False)).lower()}")
+    lines.append(f"Telemetry: {data.get('telemetry_summary', 'unknown')}")
+    components = data.get("components", {})
+    for comp, cdata in components.items():
+        lines.append(f"  {comp}: {cdata.get('status', 'unknown')}")
+    return lines
+
+
+def _format_incomplete_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"Unique incomplete: {data.get('unique_incomplete_count', 0)}")
+    cats = data.get("categories", {})
+    for cat, cat_data in cats.items():
+        count = cat_data.get("count", 0)
+        if count > 0:
+            items = cat_data.get("items", [])
+            lines.append(f"  {cat} ({count}):")
+            for item in items[:3]:
+                lines.append(f"    - {item}")
+    return lines
+
+
+def _format_overview_data(data: Dict) -> List[str]:
+    lines = []
+    lines.append(f"System: {data.get('system_name', '?')} v{data.get('version', '?')}")
+    lines.append(f"Agents: {data.get('agent_count', 0)}")
+    lines.append(f"Processes: {data.get('process_count', 0)}")
+    return lines
+
+
+def _format_nexus_system_data(data: Dict, plan: Dict) -> List[str]:
+    """Format a bounded nexus_system study snapshot for Nova context."""
+    lines = []
+    system = data.get("system", {})
+    lines.append(f"System: {system.get('name', '?')}")
+    lines.append(f"Purpose: {system.get('purpose', '?')}")
+    lines.append(f"Agents: {system.get('agent_count', 0)} | Processes: {system.get('process_count', 0)} | Enabled: {system.get('enabled_processes', 0)}")
+    lines.append(f"Source commit: {data.get('source_commit', '?')}")
+    lines.append(f"Generated at: {data.get('generated_at', '?')}")
+
+    operation = plan.get("operation", "overview")
+    domains = data.get("domains", {})
+    compact = data.get("context_profile") == "compact_overview"
+    if compact:
+        findings = data.get("study_findings", {})
+        gaps_domain = {"gap_count": findings.get("gap_count", 0), "gaps": data.get("top_gaps", [])}
+        unknowns_domain = {"unknown_count": findings.get("unknown_count", 0), "unknowns": data.get("unknowns", [])}
+        contradictions = data.get("contradiction_summary", {}).get("examples", [])
+        contradiction_count = findings.get("contradiction_count", data.get("contradiction_summary", {}).get("count", 0))
+    else:
+        gaps_domain = domains.get("gaps", {}) if isinstance(domains, dict) else {}
+        unknowns_domain = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
+        contradictions = data.get("contradictions", [])
+        contradiction_count = len(contradictions)
+    lines.append(
+        "Study counts: "
+        f"gaps={gaps_domain.get('gap_count', 0)} "
+        f"contradictions={contradiction_count} "
+        f"unknowns={unknowns_domain.get('unknown_count', 0)}"
+    )
+
+    if operation in ("overview", "summarize", "lookup", "explain"):
+        # Bounded key facts per study domain
+        summaries = {
+            "system_architecture": lambda d: (
+                f"Architecture: {d.get('architecture', '?')} | runtime: {d.get('runtime_model', '?')}"
+            ),
+            "agents": lambda d: (
+                f"Agents: {len(d.get('agents', []))} total"
+            ),
+            "tools": lambda d: (
+                f"Tools: total={d.get('total', 0)} counts={d.get('counts', {})}"
+            ),
+            "processes": lambda d: (
+                f"Processes: total={d.get('total', 0)} "
+                f"config={d.get('configuration_counts', {})} "
+                f"runtime={d.get('runtime_counts', {})} "
+                f"has_real_execution={str(d.get('has_real_execution', False)).lower()}"
+            ),
+            "product": lambda d: (
+                f"Products: {d.get('product_count', 0)} offers "
+                f"stripe={d.get('stripe', {}).get('mode', '?')}"
+            ),
+            "client_workflow": lambda d: (
+                f"Client journey: stages={d.get('funnel_stage_count', len(d.get('funnel_stages', [])))}"
+            ),
+            "business_model": lambda d: (
+                f"Business: {d.get('offers_count', 0)} offers | operational={len(d.get('operational_revenue_paths', []))} | "
+                f"planned={len(d.get('planned_revenue_paths', []))} | "
+                f"stripe_live={str(d.get('stripe_live_mode_allowed', '?')).lower()}"
+            ),
+            "integrations": lambda d: (
+                f"Integrations: {d.get('connector_count', 0)} connectors | "
+                f"live={d.get('live_enabled_count', 0)} | "
+                f"status={d.get('status_counts', {})}"
+            ),
+            "security": lambda d: (
+                f"Security: nova_reads={d.get('nova_read_capability_count', 0)} "
+                f"nova_writes={d.get('nova_write_capability_count', 0)} "
+                f"writes_frozen={str(d.get('nova_writes_frozen', '?')).lower()}"
+            ),
+        }
+        for domain_name, fmt in summaries.items():
+            d = domains.get(domain_name, {})
+            if isinstance(d, dict) and d.get("status") == "success":
+                try:
+                    lines.append(f"- {domain_name}: {fmt(d)}")
+                except Exception:
+                    lines.append(f"- {domain_name}: unavailable")
+
+    # Operation-specific blocks
+    if operation == "find_gaps":
+        gaps = gaps_domain.get("gaps", []) if isinstance(gaps_domain, dict) else []
+        lines.append(f"Identified gaps: {len(gaps)}")
+        for g in gaps[:8]:
+            lines.append(f"  - {g.get('gap_id', '?')} [{g.get('domain', '?')}] {g.get('title', '?')}")
+
+    unknowns = unknowns_domain.get("unknowns", []) if isinstance(unknowns_domain, dict) else []
+    if unknowns:
+        lines.append("Unknowns:")
+        for u in unknowns[:5]:
+            lines.append(f"  - {u.get('unknown_id', u.get('id', '?'))}: {u.get('title', '?')}")
+
+    if operation == "recommend":
+        if isinstance(data.get("recommendations"), list):
+            for rec in data["recommendations"][:8]:
+                lines.append(f"  - {rec.get('title', '?')}")
+
+    errors = data.get("errors", {})
+    if errors:
+        lines.append(f"Study errors: {', '.join(errors.keys())}")
+
+    lines.append(f"Source commit: {data.get('source_commit', 'unknown')}")
+    return lines

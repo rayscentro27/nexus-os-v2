@@ -1,0 +1,209 @@
+"""Small, read-only company context projection for Nova.
+
+This is a view over canonical reports/runtime state, not a second state store.
+It deliberately exposes source references and freshness so Nova can distinguish
+briefing context from current TruthKernel evidence.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _read(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return default
+
+
+def _timestamp(value: Any, path: Path) -> str:
+    if isinstance(value, dict):
+        for key in ("generated_at", "completed_at", "updated_at", "retrieved_at"):
+            if value.get(key):
+                return str(value[key])
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
+    except OSError:
+        return "UNKNOWN"
+
+
+def _age_seconds(timestamp: str) -> Any:
+    try:
+        when = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return max(0, int((datetime.now(timezone.utc) - when).total_seconds()))
+    except (TypeError, ValueError):
+        return None
+
+
+def _governed_review_items() -> list[dict[str, Any]]:
+    """Read the current governed approval store, never the legacy dashboard."""
+    try:
+        from nexus_agent_platform.governed.approvals import get_pending_approvals
+        return get_pending_approvals(requested_for="ray", include_self=False)
+    except Exception:
+        return []
+
+
+def build_company_context() -> Dict[str, Any]:
+    brief_path = ROOT / "reports/hermes_modernization/daily_brief.json"
+    program_path = ROOT / "data/runtime/nexus_rebuild_program.json"
+    review_path = ROOT / "reports/runtime/ray_review_queue_latest.json"
+    operator_path = ROOT / "reports/runtime/active_operator_latest.json"
+    brief = _read(brief_path, {})
+    program = _read(program_path, {})
+    review = _read(review_path, {})
+    operator = _read(operator_path, {})
+    from nexus_agent_platform.research_operational_state import build_research_operational_state
+    research_state = build_research_operational_state()
+    try:
+        from nexus_agent_platform.governed import persistence
+        open_research_followups = [row for row in persistence.read_records("research_requests")
+            if row.get("schema_version") == "nexus.research-followup-contract.v1"
+            and str(row.get("status", "")).upper() not in {"CLOSED", "CANCELLED", "RETURNED"}]
+        research_followups = [{"research_request_id": row.get("research_request_id"),
+            "requesting_department": row.get("requesting_department"), "subject": row.get("subject_id"),
+            "reason": row.get("reason_more_research_required"),
+            "questions": [{"question": q.get("question"), "status": q.get("status", "OPEN")} for q in row.get("research_questions", [])],
+            "decision_unlocked_by_answers": row.get("decision_unlocked_by_answers"),
+            "return_to_department": row.get("return_to_department"), "return_to_goal_id": row.get("return_to_goal_id"),
+            "next_action": row.get("next_action"), "status": row.get("status")} for row in open_research_followups[-20:]]
+    except Exception:
+        research_followups = "UNAVAILABLE"
+    brief_timestamp = _timestamp(brief, brief_path)
+    operator_timestamp = _timestamp(operator, operator_path)
+    brief_age = _age_seconds(brief_timestamp)
+    brief_is_current = brief_age is not None and brief_age <= 48 * 60 * 60
+    review_items = _governed_review_items()
+    # Prefer the canonical structured readers for live Nexus and Alpha state.
+    # The daily brief remains useful as a dated briefing source, but it is not
+    # allowed to stand in for current operational or research truth.
+    try:
+        from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
+        from nexus_agent_platform.nova_truth_view import capability_discovery
+        nexus_read = read_operational_capability("SYSTEM_HEALTH")
+        alpha_read = read_operational_capability("ALPHA_LATEST")
+    except Exception as exc:
+        nexus_read = {"status": "UNAVAILABLE", "errors": [str(exc)], "data": {}}
+        alpha_read = {"status": "UNAVAILABLE", "errors": [str(exc)], "data": {}}
+        capability_discovery = lambda: {}
+    canonical_operations = nexus_read.get("data", {}) if nexus_read.get("status") == "OK" else {"status": "UNKNOWN", "reason": "Canonical Nexus health read unavailable."}
+    canonical_research = alpha_read.get("data", {}) if alpha_read.get("status") == "OK" else {"status": "UNKNOWN", "reason": "Canonical Alpha research read unavailable."}
+    safety = program.get("safety") if isinstance(program.get("safety"), dict) else {}
+    return {
+        "context_type": "NOVA_COMPANY_CONTEXT_VIEW",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "freshness": "MIXED_REPORT_AND_RUNTIME",
+        "current_status": {
+            "program_configuration_state": program.get("state", "UNKNOWN"),
+            "current_work_package": program.get("current_work_package", "UNKNOWN"),
+            "active_operator_runtime": operator.get("status", operator.get("run_status", "UNKNOWN")),
+            "active_operator_mode": operator.get("mode", "UNKNOWN"),
+            "active_operator_last_cycle": operator.get("completed_at", operator.get("started_at", "UNKNOWN")),
+            "active_operator_policy_paused": safety.get("active_operator_paused", "UNKNOWN"),
+            "source": "reports/runtime/active_operator_latest.json + canonical program policy",
+            "source_freshness": operator_timestamp,
+        },
+        "overnight_activity": brief.get("loop_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."},
+        "what_changed": brief.get("opportunity_updates", []) if brief_is_current else [],
+        "research": {"canonical_alpha": canonical_research, "brief": brief.get("research_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
+        "research_operational_state": research_state,
+        "research_followups": research_followups,
+        "operations": {"canonical_nexus": canonical_operations, "brief": brief.get("system_health", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
+        "business": {
+            "top_priority": brief.get("top_priority", {}) if brief_is_current else {},
+            "revenue_status": brief.get("revenue_status", {}) if brief_is_current else {},
+            "confidence": brief.get("confidence", "UNKNOWN") if brief_is_current else "UNKNOWN",
+        },
+        "ray_attention": {"pending_count": len(review_items), "items": review_items, "source": "governed.approvals"},
+        "active_work": program.get("active_work_packages", []),
+        "completed_work": program.get("completed_work_packages", []),
+        "failed_work": program.get("blocked_work_packages", []),
+        "risks": brief.get("revenue_risks", []) if brief_is_current else [],
+        "blockers": brief.get("blockers", []) if brief_is_current else [{"reason": "Daily brief stale; current blockers not established."}],
+        "unknown": [{"daily_brief_age_seconds": brief_age, "daily_brief_timestamp": brief_timestamp}, "Current company context is a bounded view; revalidate consequential facts."],
+        "recommended_priorities": brief.get("recommended_actions", []) if brief_is_current else [],
+        "sources": [str(path.relative_to(ROOT)) for path in (program_path, operator_path) if path.exists()] + ([str(brief_path.relative_to(ROOT))] if brief_is_current else []) + [nexus_read.get("source_path", "UNKNOWN"), alpha_read.get("source_path", "UNKNOWN")],
+        "authority": "CONTEXT_ONLY_TRUTHKERNEL_REVALIDATES",
+        "capability_discovery": capability_discovery(),
+        "data_quality": {"daily_brief_current": brief_is_current, "daily_brief_timestamp": brief_timestamp, "review_source": "governed.approvals"},
+    }
+
+
+def context_for_prompt(context: Dict[str, Any]) -> str:
+    """Return a compact, non-secret prompt projection."""
+    status = context.get("current_status", {})
+    business = context.get("business", {})
+    research_state = context.get("research_operational_state", {})
+    today_activity = research_state.get("today_activity", {})
+    return json.dumps({
+        "current_status": status,
+        "operations": context.get("operations", {}),
+        "research": context.get("research", {}),
+        "research_operational_state": {
+            key: research_state.get(key)
+            for key in (
+                "research_department_operational_state",
+                "alpha_primary_agent_activity",
+                "alpha_specialist_availability",
+                "research_background_process_state",
+                "research_work_state",
+                "research_health",
+                "research_effective_readiness",
+                "active_research_jobs",
+                "queued_research_jobs",
+                "blocked_research_jobs",
+                "open_research_objectives",
+                "last_successful_research_activity",
+                "current_research_objective",
+                "today_activity",
+                "current_work",
+                "recent_findings",
+                "mission_state",
+                "human_review_queue_count",
+                "global_machine_work_remains",
+                "youtube",
+                "research_v2_metrics",
+                "scheduler",
+            )
+            if key in research_state
+        },
+        "research_followups": context.get("research_followups", "UNAVAILABLE"),
+        "capability_awareness": {
+            "youtube_research": {
+                "status": "CAN_ROUTE",
+                "description": "Nexus can route a YouTube URL into bounded Research V2 processing.",
+                "limitations": [
+                    "source accessibility and captions/transcript availability determine the result",
+                    "processing must complete before findings can be claimed",
+                ],
+            },
+            "bounded_research_missions": {
+                "status": "CAN_ROUTE_WITH_GOVERNANCE",
+                "description": "Bounded Research requests use the approved intake and remain subject to evidence and routing controls.",
+            },
+            "read_only_boundary": "Nova may read approved context and submit bounded requests; it cannot claim arbitrary execution or invent completed findings.",
+        },
+        "research_authority": "For current Research answers, research_operational_state, today_activity, mission_state, and canonical_alpha are authoritative. The daily brief is historical context only and must not override these current reads.",
+        "current_research_answer_rule": (
+            f"Phoenix-local date is {today_activity.get('local_date', 'UNKNOWN')}. "
+            f"The canonical Research ledger observed {today_activity.get('records_observed', 'UNKNOWN')} records on that date. "
+            "If that count is zero, say that no Research records/findings were observed today and give the latest dated activity if useful; "
+            "never convert that into a generic 'I do not have access' disclaimer."
+        ),
+        "active_work": context.get("active_work", [])[:8],
+        "completed_work": context.get("completed_work", [])[:8],
+        "capability_discovery": context.get("capability_discovery", {}),
+        "ray_attention": context.get("ray_attention", {}),
+        "top_priority": business.get("top_priority", {}),
+        "blockers": context.get("blockers", [])[:5],
+        "unknown": context.get("unknown", []),
+        "authority": context.get("authority"),
+        "data_quality": context.get("data_quality", {}),
+        "final_context_rule": "Use current canonical Research state supplied above. Historical daily-brief staleness does not mean current Research state is unavailable.",
+    }, sort_keys=True, default=str)

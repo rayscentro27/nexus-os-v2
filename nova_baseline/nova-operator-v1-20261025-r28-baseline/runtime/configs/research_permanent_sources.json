@@ -1,0 +1,60 @@
+{
+  "schema_version": "nexus.permanent-research-sources.v1",
+  "sources": [
+    {
+      "source_id": "stedman_waiters_funding",
+      "source_type": "YOUTUBE_CHANNEL",
+      "canonical_url": "https://www.youtube.com/@StedmanWaiters/videos",
+      "objective": "business funding, business credit, and funding-business intelligence",
+      "department": "CLYDE_CREDIT",
+      "lane_id": "FUNDING_LENDER",
+      "state": "ACTIVE_RESEARCH",
+      "categories": ["business_funding", "business_credit"],
+      "refresh_policy": "new uploads plus bounded historical backfill"
+    },
+    {
+      "source_id": "luuk_alleman_systems",
+      "source_type": "YOUTUBE_CHANNEL",
+      "canonical_url": "https://www.youtube.com/@LuukAlleman",
+      "objective": "agentic engineering, production AI systems, and systems capability intelligence",
+      "department": "SYSTEMS",
+      "lane_id": "GITHUB_TECHNOLOGY",
+      "state": "ACTIVE_RESEARCH",
+      "categories": ["ai_engineering", "agentic_software", "systems_research"],
+      "refresh_policy": "new uploads plus bounded historical backfill"
+    },
+    {
+      "source_id": "jt_hustlez_opportunity",
+      "source_type": "YOUTUBE_CHANNEL",
+      "canonical_url": "https://www.youtube.com/@JTHustlez/videos",
+      "objective": "business opportunity discovery grounded in customer problems and current demand",
+      "department": "REVENUE_OPPORTUNITY_DISCOVERY",
+      "lane_id": "BUSINESS_MARKET",
+      "state": "ACTIVE_RESEARCH",
+      "categories": ["business_opportunity_discovery", "services", "entrepreneurship"],
+      "refresh_policy": "new uploads plus bounded historical backfill"
+    },
+    {
+      "source_id": "tradingview_editors_picks",
+      "source_type": "TRADINGVIEW_PUBLIC_SCRIPTS",
+      "canonical_url": "https://www.tradingview.com/scripts/editors-picks/",
+      "objective": "renewable discovery of trading strategies, indicators, and risk concepts",
+      "department": "TRADING",
+      "lane_id": "TRADING_MARKETS",
+      "state": "ACTIVE_RESEARCH",
+      "categories": ["strategy", "indicator", "risk_management"],
+      "refresh_policy": "bounded public discovery; no mass scraping"
+    },
+    {
+      "source_id": "cardright_user_cc_results",
+      "source_type": "OBSERVED_OUTCOME_DATABASE",
+      "canonical_url": "https://cardright.com/user-cc-results/?card_id=&sort=&bank=&state=&bureau=&paged=&quickFilter=&date_f=&date_range=",
+      "objective": "aggregate user-reported credit-card approval observations without treating them as underwriting policy",
+      "department": "CLYDE_CREDIT",
+      "lane_id": "FUNDING_LENDER",
+      "state": "ACTIVE_RESEARCH",
+      "categories": ["observed_approval_pattern", "credit_card_intelligence"],
+      "refresh_policy": "bounded windows when legitimately accessible"
+    }
+  ]
+}

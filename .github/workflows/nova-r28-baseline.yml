@@ -1,0 +1,50 @@
+name: Nova R28 verified R27 baseline
+
+on:
+  push:
+    branches: [nova/r28-verified-r27-baseline]
+    paths:
+      - "nova_baseline/nova-operator-v1-20261025-r28-baseline/**"
+      - ".github/workflows/nova-r28-baseline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install packaged Nova dependencies
+        run: python -m pip install -r nova_baseline/nova-operator-v1-20261025-r28-baseline/runtime/requirements-agent-platform.txt
+      - name: Certify baseline imports, lineage, and read-only MCP evidence
+        working-directory: nova_baseline/nova-operator-v1-20261025-r28-baseline
+        run: python -B -m unittest discover -s certification/tests -v
+      - name: Build deterministic immutable release
+        run: python -B nova_baseline/nova-operator-v1-20261025-r28-baseline/build_release.py
+      - name: Verify artifact manifest and source commit
+        run: |
+          python -B - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path
+          root=Path("dist/nova-operator-v1-20261025-r28-baseline")
+          manifest=json.loads((root/"R28_BASELINE_MANIFEST.json").read_text())
+          assert manifest["source_commit"] == os.environ["GITHUB_SHA"]
+          for rel,digest in manifest["payload_sha256"].items():
+              assert hashlib.sha256((root/rel).read_bytes()).hexdigest() == digest, rel
+          print("R28_ARTIFACT_SOURCE_MATCH=YES")
+          print("R28_PAYLOAD_FILE_COUNT="+str(manifest["payload_file_count"]))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-operator-v1-20261025-r28-baseline
+          path: |
+            dist/nova-operator-v1-20261025-r28-baseline.tar.gz
+            dist/nova-operator-v1-20261025-r28-baseline.sha256
+          if-no-files-found: error

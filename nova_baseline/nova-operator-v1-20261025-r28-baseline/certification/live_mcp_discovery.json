@@ -1,0 +1,19 @@
+{
+  "authentication": "Keychain token loaded in memory; value omitted",
+  "checked_at_utc": "2026-10-25T20:34:24.095393+00:00",
+  "endpoint": "http://127.0.0.1:18765/mcp",
+  "initialize": "PASS",
+  "operations_performed": [
+    "initialize",
+    "list_tools"
+  ],
+  "required_tools": {
+    "nexus_assign_research": true,
+    "nexus_get_durable_jobs": true
+  },
+  "research_jobs_created": "NO",
+  "result": "PASS",
+  "supabase_mutations": "NO",
+  "tool_count": 49,
+  "transport": "Streamable HTTP"
+}
