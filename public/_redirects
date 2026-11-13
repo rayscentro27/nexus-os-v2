@@ -7,6 +7,10 @@ https://postiz-auth.goclearonline.cc/* /postiz-auth/404.html 404!
 /api/alpha/search /.netlify/functions/alpha-search 200
 /api/alpha/url-review /.netlify/functions/alpha-url-review 200
 /api/alpha/* /.netlify/functions/alpha-provider/:splat 200
+/terms/nexus-social-publisher /terms/nexus-social-publisher/index.html 200
+/terms/nexus-social-publisher/ /terms/nexus-social-publisher/index.html 200
+/privacy/nexus-social-publisher /privacy/nexus-social-publisher/index.html 200
+/privacy/nexus-social-publisher/ /privacy/nexus-social-publisher/index.html 200
 /privacy/nexus-postiz /privacy/nexus-postiz/index.html 200
 /privacy/nexus-postiz/ /privacy/nexus-postiz/index.html 200
 /privacy/nexus-postiz/data-deletion /privacy/nexus-postiz/data-deletion/index.html 200

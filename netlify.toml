@@ -46,6 +46,26 @@
   status = 200
 
 [[redirects]]
+  from = "/terms/nexus-social-publisher"
+  to = "/terms/nexus-social-publisher/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms/nexus-social-publisher/"
+  to = "/terms/nexus-social-publisher/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy/nexus-social-publisher"
+  to = "/privacy/nexus-social-publisher/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy/nexus-social-publisher/"
+  to = "/privacy/nexus-social-publisher/index.html"
+  status = 200
+
+[[redirects]]
   from = "/privacy/nexus-postiz"
   to = "/privacy/nexus-postiz/index.html"
   status = 200
