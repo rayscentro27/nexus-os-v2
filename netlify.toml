@@ -20,6 +20,31 @@
   to = "/got-funding/index.html"
   status = 200
 
+# postiz-auth.goclearonline.cc: Meta OAuth bounce pages only (to the private tailnet Postiz). All else 404.
+[[redirects]]
+  from = "https://postiz-auth.goclearonline.cc/integrations/social/facebook"
+  to = "/postiz-auth/facebook/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://postiz-auth.goclearonline.cc/integrations/social/instagram"
+  to = "/postiz-auth/instagram/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://postiz-auth.goclearonline.cc/*"
+  to = "/postiz-auth/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/integrations/social/*"
+  to = "/postiz-auth/404.html"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/privacy/nexus-postiz"
   to = "/privacy/nexus-postiz/index.html"
@@ -102,3 +127,23 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/postiz-auth/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'sha256-Hb7XuGfmFJ2/0bp1gmrwgyX5KE0u/UtpB7lN3SQSUOc=' 'sha256-1rEYNZI0b5tvCPCWxbyymqcaB0mYPmL4vLM8MiUmNE0='; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-store"
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/integrations/social/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'sha256-Hb7XuGfmFJ2/0bp1gmrwgyX5KE0u/UtpB7lN3SQSUOc=' 'sha256-1rEYNZI0b5tvCPCWxbyymqcaB0mYPmL4vLM8MiUmNE0='; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-store"
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
