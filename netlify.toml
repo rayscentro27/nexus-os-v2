@@ -21,6 +21,26 @@
   status = 200
 
 [[redirects]]
+  from = "/privacy/nexus-postiz"
+  to = "/privacy/nexus-postiz/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy/nexus-postiz/"
+  to = "/privacy/nexus-postiz/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy/nexus-postiz/data-deletion"
+  to = "/privacy/nexus-postiz/data-deletion/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy/nexus-postiz/data-deletion/"
+  to = "/privacy/nexus-postiz/data-deletion/index.html"
+  status = 200
+
+[[redirects]]
   from = "/api/alpha/search"
   to = "/.netlify/functions/alpha-search"
   status = 200

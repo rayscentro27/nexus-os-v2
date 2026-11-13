@@ -3,4 +3,8 @@
 /api/alpha/search /.netlify/functions/alpha-search 200
 /api/alpha/url-review /.netlify/functions/alpha-url-review 200
 /api/alpha/* /.netlify/functions/alpha-provider/:splat 200
+/privacy/nexus-postiz /privacy/nexus-postiz/index.html 200
+/privacy/nexus-postiz/ /privacy/nexus-postiz/index.html 200
+/privacy/nexus-postiz/data-deletion /privacy/nexus-postiz/data-deletion/index.html 200
+/privacy/nexus-postiz/data-deletion/ /privacy/nexus-postiz/data-deletion/index.html 200
 /* /index.html 200
