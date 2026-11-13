@@ -10,16 +10,6 @@
 
 # Explicit static rewrites must precede the SPA fallback. These rules preserve
 # all three supported Got Funding paths without affecting hash-based Nexus UI routes.
-[[redirects]]
-  from = "/got-funding"
-  to = "/got-funding/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/got-funding/"
-  to = "/got-funding/index.html"
-  status = 200
-
 # postiz-auth.goclearonline.cc: Meta OAuth bounce pages only (to the private tailnet Postiz). All else 404.
 [[redirects]]
   from = "https://postiz-auth.goclearonline.cc/integrations/social/facebook"
@@ -44,6 +34,16 @@
   to = "/postiz-auth/404.html"
   status = 404
   force = true
+
+[[redirects]]
+  from = "/got-funding"
+  to = "/got-funding/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/got-funding/"
+  to = "/got-funding/index.html"
+  status = 200
 
 [[redirects]]
   from = "/privacy/nexus-postiz"

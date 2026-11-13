@@ -1,3 +1,7 @@
+https://postiz-auth.goclearonline.cc/integrations/social/facebook /postiz-auth/facebook/index.html 200!
+https://postiz-auth.goclearonline.cc/integrations/social/instagram /postiz-auth/instagram/index.html 200!
+https://postiz-auth.goclearonline.cc/* /postiz-auth/404.html 404!
+/integrations/social/* /postiz-auth/404.html 404!
 /got-funding /got-funding/index.html 200
 /got-funding/ /got-funding/index.html 200
 /api/alpha/search /.netlify/functions/alpha-search 200
@@ -7,8 +11,4 @@
 /privacy/nexus-postiz/ /privacy/nexus-postiz/index.html 200
 /privacy/nexus-postiz/data-deletion /privacy/nexus-postiz/data-deletion/index.html 200
 /privacy/nexus-postiz/data-deletion/ /privacy/nexus-postiz/data-deletion/index.html 200
-https://postiz-auth.goclearonline.cc/integrations/social/facebook /postiz-auth/facebook/index.html 200!
-https://postiz-auth.goclearonline.cc/integrations/social/instagram /postiz-auth/instagram/index.html 200!
-https://postiz-auth.goclearonline.cc/* /postiz-auth/404.html 404!
-/integrations/social/* /postiz-auth/404.html 404!
 /* /index.html 200
