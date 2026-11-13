@@ -24,6 +24,12 @@
   force = true
 
 [[redirects]]
+  from = "https://postiz-auth.goclearonline.cc/integrations/social/tiktok"
+  to = "/postiz-auth/tiktok/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "https://postiz-auth.goclearonline.cc/*"
   to = "/postiz-auth/404.html"
   status = 404
@@ -151,7 +157,7 @@
 [[headers]]
   for = "/postiz-auth/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'none'; script-src 'sha256-Hb7XuGfmFJ2/0bp1gmrwgyX5KE0u/UtpB7lN3SQSUOc=' 'sha256-1rEYNZI0b5tvCPCWxbyymqcaB0mYPmL4vLM8MiUmNE0='; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'none'; script-src 'sha256-Hb7XuGfmFJ2/0bp1gmrwgyX5KE0u/UtpB7lN3SQSUOc=' 'sha256-rRIk00MPT6S8TSa0DOPX2mhj5FZ41++yemReNa9RRRY=' 'sha256-1rEYNZI0b5tvCPCWxbyymqcaB0mYPmL4vLM8MiUmNE0='; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
     Referrer-Policy = "no-referrer"
     Cache-Control = "no-store"
     X-Robots-Tag = "noindex, nofollow"
@@ -161,7 +167,7 @@
 [[headers]]
   for = "/integrations/social/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'none'; script-src 'sha256-Hb7XuGfmFJ2/0bp1gmrwgyX5KE0u/UtpB7lN3SQSUOc=' 'sha256-1rEYNZI0b5tvCPCWxbyymqcaB0mYPmL4vLM8MiUmNE0='; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'none'; script-src 'sha256-Hb7XuGfmFJ2/0bp1gmrwgyX5KE0u/UtpB7lN3SQSUOc=' 'sha256-rRIk00MPT6S8TSa0DOPX2mhj5FZ41++yemReNa9RRRY=' 'sha256-1rEYNZI0b5tvCPCWxbyymqcaB0mYPmL4vLM8MiUmNE0='; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
     Referrer-Policy = "no-referrer"
     Cache-Control = "no-store"
     X-Robots-Tag = "noindex, nofollow"
