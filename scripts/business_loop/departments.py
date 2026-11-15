@@ -333,7 +333,8 @@ def _graph_metrics(graph, receipts: list[dict]) -> list[dict]:
                    "REACTIONS": ((base.get("reactions") or {}).get("summary") or {}).get("total_count") if st == 200 else None,
                    "COMMENTS": ((base.get("comments") or {}).get("summary") or {}).get("total_count") if st == 200 else None,
                    "SHARES": (base.get("shares") or {}).get("count", 0) if st == 200 else None}
-            for metric, key in (("post_impressions", "IMPRESSIONS"), ("post_impressions_unique", "REACH"), ("post_clicks", "CLICKS")):
+            # Graph v23: post_impressions* are rejected/empty; media-view metrics are the supported replacements.
+            for metric, key in (("post_media_view", "IMPRESSIONS"), ("post_total_media_view_unique", "REACH"), ("post_clicks", "CLICKS")):
                 s2, ins = graph._request("GET", f"{pid}/insights", params={"metric": metric})
                 vals = (ins.get("data") or [{}])[0].get("values") if s2 == 200 and ins.get("data") else None
                 row[key] = vals[0].get("value") if vals else None

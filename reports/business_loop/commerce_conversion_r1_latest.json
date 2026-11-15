@@ -1,0 +1,291 @@
+{
+  "task": "NEXUS_COMMERCE_CONVERSION_AND_MEASUREMENT_R1",
+  "project_id": "proj_98ef515bccee4b58",
+  "generated_at": "2026-11-15T23:34:44.923285+00:00",
+  "tracked_urls": {
+    "FACEBOOK_H1": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=facebook&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_fa",
+    "FACEBOOK_H2": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=facebook&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_fa",
+    "INSTAGRAM_H1": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=instagram&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_in",
+    "INSTAGRAM_H2": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=instagram&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_in",
+    "TIKTOK_H1": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=tiktok&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_ti",
+    "TIKTOK_H2": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=tiktok&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_ti"
+  },
+  "copy": {
+    "copy": {
+      "FACEBOOK": "The only fifteen minutes of the holidays that belong entirely to you.\n\nA ceramic mug concept for the quiet minutes before the holiday rush. Not yet for sale - register interest to hear when it opens.\nRegister interest: https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=facebook&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_fa",
+      "INSTAGRAM": "Zero snowflakes. Zero Santas. Just a quiet ceramic mug for slow winter mornings.\n\nStudio concept preview. Not yet for sale - register interest to hear when it opens.\nRegister interest: https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=instagram&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_in\n\n#QuietRitual #SlowMornings",
+      "TIKTOK": "The only fifteen minutes of the holidays that belong entirely to you. Not yet for sale - register interest to hear when it opens. https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=tiktok&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_ti"
+    },
+    "checks": {
+      "FACEBOOK": {
+        "truth": "PASS",
+        "violations": [],
+        "cta_real": true,
+        "link_tracked": true,
+        "claims_for_sale": false
+      },
+      "INSTAGRAM": {
+        "truth": "PASS",
+        "violations": [],
+        "cta_real": true,
+        "link_tracked": true,
+        "claims_for_sale": false
+      },
+      "TIKTOK": {
+        "truth": "PASS",
+        "violations": [],
+        "cta_real": true,
+        "link_tracked": true,
+        "claims_for_sale": false
+      }
+    },
+    "CTA_VALIDATED": true,
+    "cta": "Register interest"
+  },
+  "printify": {
+    "product_id": "NONE (no products in shops; draft creation not authorized)",
+    "blueprint_id": 478,
+    "blueprint": "Ceramic Mug, (11oz, 15oz)",
+    "provider_id": 99,
+    "provider": "Printify Choice",
+    "variant_id": 104692,
+    "variant": "15oz",
+    "print_area_px": [
+      {
+        "position": "front",
+        "width": 2475,
+        "height": 1275
+      }
+    ],
+    "us_shipping_first_item_usd": 7.09,
+    "us_shipping_additional_item_usd": 2.99,
+    "handling_time": {
+      "value": 10,
+      "unit": "day"
+    },
+    "regions_sample": [
+      "CA",
+      "REST_OF_THE_WORLD",
+      "US"
+    ],
+    "description_facts": "white ceramic, BPA/lead-free, microwave & dishwasher safe (Printify catalog)",
+    "base_cost_usd": null,
+    "fulfillment": "Printify print-on-demand; no inventory",
+    "orders_placed": 0
+  },
+  "pricing": {
+    "base_cost": {
+      "value": null,
+      "status": "NOT_VERIFIED (requires Printify draft product)"
+    },
+    "shipping": {
+      "value_usd": 7.09,
+      "status": "VERIFIED (Printify catalog, US first item)",
+      "charged_to_customer": "at cost (assumption)"
+    },
+    "payment_processing_estimate": {
+      "at_48": 1.9,
+      "at_29": 1.35,
+      "basis": "2.9% + $0.30 on price+shipping (ESTIMATE)"
+    },
+    "current_staged_price": 48.0,
+    "recommended_price": 29.0,
+    "PRICE_CHANGE_RECOMMENDED": "YES",
+    "gross_profit_formula": {
+      "at_48": "48 - 1.9 - base_cost = 46.1 - base_cost",
+      "at_29": "29 - 1.35 - base_cost = 27.65 - base_cost"
+    },
+    "gross_profit_at_recommended": "27.65 - base_cost (base cost NOT_VERIFIED)",
+    "gross_margin_at_recommended": "NOT_AVAILABLE until base cost verified",
+    "why": "$48 was set for a stoneware concept with an unglazed clay base. The actual fulfillable Printify item is a standard white glossy 15oz ceramic mug, so $48 is not supported by the product. Recommend $29 PROPOSED and test it; do not change the staged price without authorization."
+  },
+  "stripe": {
+    "status": "NOT_CREATED (no test key)"
+  },
+  "offer": {
+    "PRODUCT_ID": "prod_stoneware_mug_14oz",
+    "PRINTIFY_PRODUCT_ID": null,
+    "PRINTIFY_BLUEPRINT": "478 / provider 99 / variant 104692 (15oz)",
+    "PRODUCT_NAME": "The 6:12 AM Ritual Mug (Studio Preview)",
+    "PRICE": {
+      "value": 48.0,
+      "status": "ESTIMATED (staged; not authoritative)",
+      "recommended": {
+        "value": 29.0,
+        "status": "PROPOSED"
+      }
+    },
+    "BASE_COST": {
+      "value": null,
+      "status": "NOT_VERIFIED"
+    },
+    "SHIPPING_ESTIMATE": {
+      "value": 7.09,
+      "status": "VERIFIED (Printify catalog, US)"
+    },
+    "GROSS_MARGIN_ESTIMATE": {
+      "value": "NOT_AVAILABLE until base cost verified",
+      "status": "NOT_AVAILABLE until base cost VERIFIED"
+    },
+    "FULFILLMENT_METHOD": {
+      "value": "Printify print-on-demand; no inventory",
+      "status": "VERIFIED (catalog availability)"
+    },
+    "STOREFRONT_URL": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/",
+    "INTEREST_FORM_STATUS": "LIVE (verified in production)",
+    "CHECKOUT_STATUS": "BLOCKED: no Stripe TEST key exists (the 'test' credential holds a LIVE key - refused)",
+    "PUBLICATION_STATUS": "WAITING_FOR_RAY_APPROVAL",
+    "SALES_STATUS": "NOT_FOR_SALE (interest capture only)",
+    "updated_at": "2026-11-15T23:34:44.860736+00:00"
+  },
+  "publication_approval": {
+    "OLD_APPROVAL_STATUS": "SUPERSEDED",
+    "OLD_REQUEST_HASH_STILL_BINDS_OLD_CONTENT": true,
+    "NEW_APPROVAL_REQUIRED": "YES",
+    "PUBLICATION_APPROVAL_ID": "apr_req_a385caddb64d1c34",
+    "path": "dist/creative/bl_proj_98ef515bccee4b58_facebook_tracked_h1_approval_request.json",
+    "owner_commands": [
+      "./bin/nexus distribution approve apr_req_a385caddb64d1c34",
+      "./bin/nexus distribution publish apr_req_a385caddb64d1c34"
+    ]
+  },
+  "go_live_approval": {
+    "approval_id": "apr_commerce_golive_d63811377a125ef6",
+    "status": "WAITING_FOR_RAY_APPROVAL"
+  },
+  "ab_test": {
+    "AB_TEST_ID": "ab_holiday_mug_h1_vs_h2_r1",
+    "H1": "The only fifteen minutes of the holidays that belong entirely to you.",
+    "H2": "Zero snowflakes. Zero Santas. Just a quiet ceramic mug for slow winter mornings.",
+    "controlled": [
+      "same square creative template",
+      "same caption body + CTA",
+      "same landing page",
+      "same posting window (+/-1h)",
+      "$0 spend"
+    ],
+    "variants": {
+      "H1": [
+        "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=facebook&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_fa",
+        "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=instagram&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_in",
+        "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=tiktok&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_ti"
+      ],
+      "H2": [
+        "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=facebook&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_fa",
+        "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=instagram&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_in",
+        "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=tiktok&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_ti"
+      ]
+    },
+    "PRIMARY_METRIC": "INTEREST_SUBMISSION_RATE (interest submissions / attributed sessions)",
+    "secondary": [
+      "CLICK_THROUGH_RATE where Meta exposes it",
+      "LANDING_PAGE_VISITS",
+      "CTA_CLICKS",
+      "ENGAGEMENT",
+      "CHECKOUT_STARTS",
+      "PURCHASES"
+    ],
+    "MINIMUM_EVIDENCE_RULE": "No winner unless each variant has >=100 attributed sessions AND >=10 interest submissions (or 7 days elapsed with >=100 sessions each) and the difference in interest rate is > 2x the pooled standard error; otherwise INSUFFICIENT_EVIDENCE.",
+    "status": "READY_PENDING_PUBLICATION_APPROVAL"
+  },
+  "meta_capability": {
+    "facebook": {
+      "field:shares": 200,
+      "field:reactions.summary(total_count)": "400:(#10) This endpoint requires the 'pages_read_user_content' permission or the 'Page Public ",
+      "field:comments.summary(total_count)": "400:(#10) This endpoint requires the 'pages_read_user_content' permission or the 'Page Public ",
+      "field:created_time,permalink_url": 200,
+      "metric:post_clicks": "OK:[{\"value\": 0}]",
+      "metric:post_impressions": "400:(#100) The value must be a valid insights metric",
+      "metric:post_impressions_unique": "200:empty",
+      "metric:post_media_view": "OK:[{\"value\": 1}]",
+      "metric:post_total_media_view_unique": "OK:[{\"value\": 1}]",
+      "metric:post_reactions_by_type_total": "OK:[{\"value\": {}}]",
+      "metric:post_clicks_by_type": "OK:[{\"value\": {}}]"
+    },
+    "instagram": {
+      "field:like_count": 200,
+      "field:comments_count": 200,
+      "field:media_product_type": 200,
+      "metric:reach": "400:(#10) Application does not have permission for this action",
+      "metric:views": "400:(#10) Application does not have permission for this action",
+      "metric:saved": "400:(#10) Application does not have permission for this action",
+      "metric:shares": "400:(#10) Application does not have permission for this action",
+      "metric:total_interactions": "400:(#10) Application does not have permission for this action"
+    }
+  },
+  "measurement": {
+    "available": true,
+    "include_test": false,
+    "PAGE_VIEWS": 0,
+    "UNIQUE_SESSIONS": 0,
+    "CTA_CLICKS": 0,
+    "INTEREST_FORM_STARTS": 0,
+    "INTEREST_SUBMISSIONS": 0,
+    "CHECKOUT_CLICKS": 0,
+    "CHECKOUT_STARTS": 0,
+    "PURCHASES": 0,
+    "PURCHASES_TEST_MODE": "NOT_AVAILABLE",
+    "PURCHASE_EVENTS_VERIFIED": 0,
+    "REVENUE": 0.0,
+    "REVENUE_NOTE": "LIVE revenue only; TEST-mode orders are never revenue. Live checkout is not enabled, so 0 is structural.",
+    "CONVERSION_RATE": {
+      "interest_per_session": "NOT_AVAILABLE",
+      "checkout_click_per_session": "NOT_AVAILABLE",
+      "purchase_per_session": "NOT_AVAILABLE"
+    },
+    "SOURCE_BREAKDOWN": {},
+    "CONTENT_VARIANT_BREAKDOWN": {},
+    "SOCIAL_PLATFORM_METRICS": {
+      "facebook": {
+        "field:shares": 200,
+        "field:reactions.summary(total_count)": "400:(#10) This endpoint requires the 'pages_read_user_content' permission or the 'Page Public ",
+        "field:comments.summary(total_count)": "400:(#10) This endpoint requires the 'pages_read_user_content' permission or the 'Page Public ",
+        "field:created_time,permalink_url": 200,
+        "metric:post_clicks": "OK:[{\"value\": 0}]",
+        "metric:post_impressions": "400:(#100) The value must be a valid insights metric",
+        "metric:post_impressions_unique": "200:empty",
+        "metric:post_media_view": "OK:[{\"value\": 1}]",
+        "metric:post_total_media_view_unique": "OK:[{\"value\": 1}]",
+        "metric:post_reactions_by_type_total": "OK:[{\"value\": {}}]",
+        "metric:post_clicks_by_type": "OK:[{\"value\": {}}]"
+      },
+      "instagram": {
+        "field:like_count": 200,
+        "field:comments_count": 200,
+        "field:media_product_type": 200,
+        "metric:reach": "400:(#10) Application does not have permission for this action",
+        "metric:views": "400:(#10) Application does not have permission for this action",
+        "metric:saved": "400:(#10) Application does not have permission for this action",
+        "metric:shares": "400:(#10) Application does not have permission for this action",
+        "metric:total_interactions": "400:(#10) Application does not have permission for this action"
+      }
+    },
+    "measured_at": "2026-11-15T23:34:44.860687+00:00"
+  },
+  "analysis": {
+    "WHICH_SOURCE_PERFORMED_BEST": "INSUFFICIENT_EVIDENCE",
+    "WHICH_HOOK_PERFORMED_BEST": "INSUFFICIENT_EVIDENCE",
+    "WHICH_CREATIVE_PERFORMED_BEST": "INSUFFICIENT_EVIDENCE",
+    "LANDING_PAGE_CONVERSION": "NOT_AVAILABLE",
+    "INTEREST_RATE": "NOT_AVAILABLE",
+    "CHECKOUT_RATE": "NOT_AVAILABLE",
+    "PURCHASE_RATE": "NOT_AVAILABLE",
+    "ANALYSIS_READY": true,
+    "NEXT_BEST_ACTION": {
+      "action": "PUBLISH_TRACKED_H1_H2_POSTS",
+      "owner": "DISTRIBUTION",
+      "why": "Funnel is instrumented but has no real sessions yet; publication approval is the gate."
+    },
+    "NO_AUTOMATIC_SPEND": true
+  },
+  "costs": {
+    "AI_MODEL_COST": 0.0,
+    "MEDIA_COST": 0.0,
+    "ANALYTICS_COST": 0.0,
+    "COMMERCE_COST": 0.0,
+    "AD_SPEND": 0.0,
+    "TOTAL_COST": 0.0,
+    "UNAUTHORIZED_COST": 0.0,
+    "basis": "Supabase/Cloudflare Pages free usage; Printify reads free; no Stripe calls made; no orders; no ads."
+  }
+}
