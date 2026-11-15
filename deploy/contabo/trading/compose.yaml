@@ -19,7 +19,7 @@ services:
     cap_drop: ["ALL"]
     tmpfs: ["/tmp:size=32m,mode=1777"]
     working_dir: /nexus
-    user: "1000:1000"                           # non-root; state/ and reports/ chowned to 1000
+    user: "1001:1001"                           # nexusadmin on Contabo; owns state/ and reports/
     environment:
       NEXUS_TRADING_CORE_DATA_DIR: /state/trading_core
       NEXUS_GOVERNOR_DB: /state/governor.sqlite3   # local governor; only OANDA/TRADING_PAPER_CERTIFICATION is allowed
