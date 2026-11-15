@@ -1,0 +1,34 @@
+# Nexus Trading Core R1 (PREPARED, NOT DEPLOYED). One bounded cycle per run, triggered by
+# the host timer (systemd) — no daemon, no published ports. Hard cgroup limits keep it far
+# below Postiz, n8n, and REA. Practice only: the adapter refuses any non-practice host.
+name: nexus-trading
+services:
+  trading-cycle:
+    image: python:3.12-slim
+    container_name: nexus-trading-cycle
+    restart: "no"
+    mem_limit: 256m
+    memswap_limit: 256m
+    mem_reservation: 64m
+    cpus: 0.5
+    cpu_shares: 256
+    pids_limit: 64
+    oom_score_adj: 700
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    working_dir: /nexus
+    environment:
+      NEXUS_TRADING_CORE_DATA_DIR: /state/trading_core
+      OANDA_ENVIRONMENT: practice
+      PYTHONDONTWRITEBYTECODE: "1"
+    env_file: ["./secrets/oanda_practice.env"]   # mode 0600, practice token + account only
+    volumes:
+      - ./release:/nexus:ro                      # immutable release dir (scripts/, configs/)
+      - ./state:/state
+      - ./reports:/nexus/reports/trading
+    command: ["python3", "-I", "scripts/trading/core/worker.py"]   # observe-only; --execute needs owner approval
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}

@@ -93,14 +93,27 @@ def http_json(
             return _http_json_unchecked(method, url, headers, payload, timeout)
 
         try:
+            # OANDA's dedicated fxPractice host is an explicitly simulated,
+            # zero-money environment: reads and practice orders there are
+            # non-billable. Whether a job may call it at all is still decided
+            # by a scoped governor policy (provider OANDA + job type). Live
+            # OANDA (api-fxtrade) and every other host keep the ordinary
+            # default-deny cost path. (Owner-approved for Trading Core R1.)
+            practice_host = host == "api-fxpractice.oanda.com"
+            estimate = {"requests": 1, "api_calls": 1,
+                        "tokens": int((payload or {}).get("max_tokens", 0) or 0),
+                        "billable": not practice_host,
+                        "cost": 0.0 if practice_host else None}
             return execute(
                 provider, service, "PROVIDER_HTTP_REQUEST",
-                {"requests": 1, "api_calls": 1, "tokens": int((payload or {}).get("max_tokens", 0) or 0),
-                 "billable": True, "cost": None},
+                estimate,
                 governed_request,
                 job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
                 job_type=os.environ.get("NEXUS_JOB_TYPE"),
                 correlation_id=os.environ.get("NEXUS_CORRELATION_ID"),
+                # Separate bounded reads within one durable job while keeping
+                # retries of the same request idempotent.
+                purpose=f"{method.upper()}:{urlsplit(url).path}?{urlsplit(url).query}",
             )
         except Exception as exc:
             return False, None, {}, f"GOVERNOR_DENIED:{getattr(exc, 'code', type(exc).__name__)}", 0

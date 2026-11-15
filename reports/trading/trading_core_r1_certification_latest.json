@@ -1,0 +1,168 @@
+{
+  "task": "TRADING_ENGINE_RECOVERY_AND_PAPER_CERTIFICATION_R1",
+  "started_at": "2026-11-15T22:06:52.524652+00:00",
+  "through": "G",
+  "strategy_id": "strat_wick_sequence_breakout",
+  "strategy_version_id": "wsb-eurusd-h1-v1-75177e50d316",
+  "policy_version": "trading-risk-policy-r1.0+certification-r1",
+  "live_trading_used": false,
+  "stages": {
+    "B_OANDA_READONLY": {
+      "result": "PASS",
+      "host": "https://api-fxpractice.oanda.com",
+      "health_reason": "ok",
+      "account": {
+        "account_id_masked": "101***01",
+        "currency": "USD",
+        "openTradeCount": 0,
+        "openPositionCount": 0,
+        "pendingOrderCount": 0
+      },
+      "instrument": {
+        "ok": true,
+        "http_status": 200,
+        "error": null,
+        "name": "EUR_USD",
+        "type": "CURRENCY",
+        "pip_location": -4,
+        "minimum_trade_size": "1",
+        "display_precision": 5
+      },
+      "pricing": {
+        "instrument": "EUR_USD",
+        "bid": 1.10213,
+        "ask": 1.10276,
+        "time": "2026-11-15T22:06:54.148747902Z",
+        "tradeable": true
+      },
+      "broker_open_trades": 0,
+      "live_endpoint_configured": false
+    },
+    "C_DRY_RUN": {
+      "result": "PASS",
+      "candles": 499,
+      "rule_state": {
+        "bars": 499,
+        "last_bar_time": "2026-11-13T21:00:00.000000000Z",
+        "breakouts_in_window": 3,
+        "last_breakout": {
+          "signal_index": 370,
+          "signal_time": "2026-11-06T13:00:00.000000000Z",
+          "direction": -1,
+          "signal_close": 1.11451,
+          "atr": 0.0013233166308446178,
+          "risk_dist": 0.0026466332616892356,
+          "target_multiple_r": 2.0,
+          "buy_share": 0.3034042681155766,
+          "box_top": 1.11924,
+          "box_bottom": 1.11674
+        },
+        "actionable_now": false
+      },
+      "signal_origin": "CERTIFICATION_FIXTURE",
+      "signal": {
+        "direction": "LONG",
+        "reference_price": 1.10245,
+        "stop_price": 1.10025,
+        "target_price": 1.10685,
+        "proposed_units": 1,
+        "expires_at": "2026-11-15T22:09:05.085948+00:00"
+      },
+      "risk_decision": "APPROVE",
+      "failed_rules": [],
+      "would_submit": {
+        "environment": "PRACTICE",
+        "instrument": "EUR_USD",
+        "units": 1,
+        "client_id": "ntc-b655bf7680450330a09d7aaa5278",
+        "signal_id": "sig_734b7bd1b1832072341cd527",
+        "stop_price": 1.10025,
+        "target_price": 1.10685
+      }
+    },
+    "D_PRACTICE_EXECUTION": {
+      "result": "PASS",
+      "order_state": "ORDER_FILLED",
+      "receipt_id": "rcpt_a5cc7d48e0db4233a660",
+      "receipt": {
+        "ok": true,
+        "http_status": 201,
+        "error": null,
+        "fill_price": 1.10272,
+        "units_filled": "1",
+        "reject_reason": null,
+        "cancel_reason": null,
+        "idempotent_replay": false
+      }
+    },
+    "E_RECONCILIATION": {
+      "result": "PASS",
+      "reconciliation_id": "recon_a67e716ebece47338b35",
+      "findings": [
+        "MATCHED"
+      ]
+    },
+    "F_CLOSE_RECONCILE": {
+      "result": "PASS",
+      "position_state": "TRADE_FINALIZED",
+      "reconciliation_id": "recon_696e648964984628b2fd",
+      "findings": []
+    },
+    "G_JOURNAL_PERFORMANCE": {
+      "result": "PASS",
+      "linkage_complete": true,
+      "trade": {
+        "direction": "LONG",
+        "entry_price": 1.10272,
+        "exit_price": 1.10208,
+        "position_size": 1.0,
+        "realized_pnl": -0.0006,
+        "r_multiple": -0.25910931174088303,
+        "execution_costs": {
+          "commission": 0.0,
+          "financing": 0.0,
+          "half_spread_close": 0.0003,
+          "half_spread_open": 0.0003,
+          "total": 0.0006
+        },
+        "entry_slippage_price": 0.00026999999999999247,
+        "duration_seconds": 3.311638,
+        "exit_reason": "CERTIFICATION_CLOSE",
+        "broker_receipts": [
+          "rcpt_a5cc7d48e0db4233a660",
+          "rcpt_03a9e61f7be448b2831d",
+          "rcpt_03a9e61f7be448b2831d"
+        ]
+      },
+      "performance": {
+        "snapshot_id": "perf_0b9f9f1aeabd42a6af86",
+        "total_trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "win_rate": 0.0,
+        "net_pnl": -0.0006,
+        "profit_factor": 0.0,
+        "expectancy": -0.0006,
+        "max_drawdown": 0.0006,
+        "statistical_edge_claim": "NONE"
+      },
+      "nova_summary_path": "reports/trading/trading_core_nova_summary_latest.json"
+    }
+  },
+  "governor_job_context": {
+    "correlation_id": "trading-core-r1-cert-20261115T220652Z",
+    "department": "TRADING",
+    "job_type": "TRADING_PAPER_CERTIFICATION",
+    "per_stage_job_ids": true
+  },
+  "ids": {
+    "STRATEGY_ID": "strat_wick_sequence_breakout",
+    "STRATEGY_VERSION_ID": "wsb-eurusd-h1-v1-75177e50d316",
+    "SIGNAL_ID": "sig_734b7bd1b1832072341cd527",
+    "RISK_EVENT_ID": "risk_cc596200c61e473280a6",
+    "ORDER_ID": "ord_1909a5cc99d447bc8639",
+    "POSITION_ID": "pos_51a4b4d23f6f495e8def",
+    "TRADE_ID": "trd_01967cc1a3be42db96f7"
+  },
+  "finished_at": "2026-11-15T22:07:18.019967+00:00"
+}
