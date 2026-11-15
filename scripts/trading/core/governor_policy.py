@@ -25,8 +25,29 @@ LIMITS = {
 }
 
 
+def _ensure_local_without_resolver(store) -> dict:
+    """Older LocalGovernorStore (no resolve/ensure API): insert only if the exact scope is absent."""
+    out = {}
+    for period in ("DAILY", "MONTHLY"):
+        with store.connect() as db:
+            row = db.execute("SELECT state,autonomous_usage_allowed,autonomous_spend_allowed,concurrency_limit FROM policies "
+                             "WHERE provider=? AND service=? AND job_type=? AND budget_period=?", (PROVIDER, SERVICE, JOB_TYPE, period)).fetchone()
+        created = row is None
+        if created:
+            store.set_policy(PROVIDER, SERVICE, JOB_TYPE, period, autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+                             soft_limits=LIMITS, hard_limits=LIMITS, concurrency_limit=1, resource_creation_limit=0,
+                             state="NORMAL", approval_required=False)
+            with store.connect() as db:
+                row = db.execute("SELECT state,autonomous_usage_allowed,autonomous_spend_allowed,concurrency_limit FROM policies "
+                                 "WHERE provider=? AND service=? AND job_type=? AND budget_period=?", (PROVIDER, SERVICE, JOB_TYPE, period)).fetchone()
+        out[period] = {"created": created, "provider": PROVIDER, "service": SERVICE, "job_type": JOB_TYPE, **dict(row)}
+    return out
+
+
 def ensure() -> dict:
     store = default_store()
+    if not hasattr(store, "resolve_policy") and hasattr(store, "connect"):
+        return _ensure_local_without_resolver(store)
     out = {}
     for period in ("DAILY", "MONTHLY"):
         current = store.resolve_policy(PROVIDER, SERVICE, JOB_TYPE, period)

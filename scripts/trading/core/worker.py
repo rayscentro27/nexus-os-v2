@@ -45,10 +45,12 @@ def cycle(execute: bool) -> dict:
     for vid in versions:
         version = store.get("strategy_versions", vid)
         scope(f"signal-{vid[-6:]}")
-        candles = wick_rules.candles_from_oanda(adapter.get_candles(version["instrument"], version["timeframe"], 500)["candles"])
+        raw = adapter.get_candles(version["instrument"], version["timeframe"], 500)
+        candles = wick_rules.candles_from_oanda(raw["candles"])
         price = adapter.get_pricing(version["instrument"])
-        if not price["ok"]:
-            out["actions"].append({"signal": "pricing_unavailable"}); continue
+        if not raw["ok"] or not candles or not price["ok"]:
+            # Transient broker/data failure: record and let the next cycle retry (no in-job retry: governor replay guard).
+            out["actions"].append({"signal": "market_data_unavailable", "candles_error": raw["error"], "pricing_error": price["error"]}); continue
         sig = signal_engine.generate(version, candles, reference_price=(price["bid"] + price["ask"]) / 2, units=policy["max_order_units"])
         if not sig:
             out["actions"].append({"signal": None, "state": signal_engine.latest_rule_state(version, candles)["last_bar_time"]}); continue
