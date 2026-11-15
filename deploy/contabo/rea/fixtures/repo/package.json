@@ -1,0 +1,8 @@
+{
+  "name": "nexus-rea-cert-fixture",
+  "version": "1.0.0",
+  "description": "Nexus-authored certification fixture for the REA harness (MIT). Not a real product.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/server.js"
+}

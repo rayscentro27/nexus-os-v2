@@ -1,0 +1,23 @@
+{
+  "schema_version": "nexus.rea-tool-profiles.v1",
+  "default": "rea_general",
+  "budget_note": "Full 213-tool catalog = 277,504 schema chars (~69-79K tokens) > 32K context. Profiles keep tool schemas well under 40% of context.",
+  "always": {"read": true, "glob": true, "grep": true, "list": true, "bash": false},
+  "profile_always": {
+    "rea_web": {"read": false, "glob": false, "grep": false, "list": false}
+  },
+  "profile_always_note": "A URL target has no local files; disabling read/glob/grep for rea_web removes the escape hatch a model otherwise loops on (trying to read a returned evidence_id as a file). The capture tool result carries the DOM, URL, network and screenshot inline.",
+  "profiles": {
+    "rea_general": ["binary_session", "open_binary", "close_binary", "binary_overview", "list_procedures", "search_procedures",
+                    "procedure_pseudo_code", "search_strings", "xrefs", "analyze_javascript_application", "inspect_artifact",
+                    "capture_browser_scenario", "capture_web_screenshot", "list_unknowns", "record_unknown"],
+    "rea_repo": ["analyze_javascript_application", "trace_javascript_semantics", "trace_application_feature", "inspect_artifact",
+                 "extract_artifact", "recover_javascript_sources", "list_unknowns", "record_unknown"],
+    "rea_web": ["capture_browser_scenario"],
+    "rea_binary": ["binary_session", "open_binary", "close_binary", "binary_overview", "list_procedures", "search_procedures",
+                   "procedure_info", "procedure_pseudo_code", "procedure_assembly", "procedure_callers", "procedure_callees",
+                   "search_strings", "list_strings", "xrefs", "analyze_function", "inspect_binary_layout", "inspect_native_exports",
+                   "list_unknowns", "record_unknown"],
+    "rea_full": "__ALL__"
+  }
+}

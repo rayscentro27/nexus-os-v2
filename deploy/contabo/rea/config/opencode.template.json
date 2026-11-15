@@ -1,0 +1,85 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "share": "disabled",
+  "enabled_providers": ["nexus_rea_model"],
+  "model": "nexus_rea_model/rea-default",
+  "small_model": "nexus_rea_model/rea-default",
+  "default_agent": "rea",
+  "provider": {
+    "nexus_rea_model": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Nexus REA model",
+      "options": {
+        "baseURL": "__BASE_URL__",
+        "apiKey": "{env:NEXUS_REA_MODEL_API_KEY}"
+      },
+      "models": {
+        "rea-default": {
+          "id": "__MODEL_NAME__",
+          "name": "Nexus REA default model",
+          "tool_call": true,
+          "limit": {"context": 32768, "output": 4096}
+        }
+      }
+    }
+  },
+  "mcp": {
+    "rea": {
+      "type": "local",
+      "command": ["rea", "mcp"],
+      "enabled": true,
+      "timeout": 120000,
+      "environment": {
+        "REA_MCP_INPUT_SCHEMA_PROFILE": "compact"
+      }
+    }
+  },
+  "agent": {
+    "rea": {
+      "description": "Nexus REA harness: clean-room behavioral analysis through the REA MCP.",
+      "mode": "primary",
+      "prompt": "{file:/rea/config/harness/REA_HARNESS.md}",
+      "steps": 40,
+      "tools": {
+        "write": false,
+        "edit": false,
+        "patch": false,
+        "todowrite": false,
+        "webfetch": false,
+        "websearch": false,
+        "task": false,
+        "rea_start_frida_session": false,
+        "rea_load_frida_script": false,
+        "rea_instrument_with_frida": false,
+        "rea_resume_frida_session": false,
+        "rea_cutter_command": false,
+        "rea_gdb_console": false,
+        "rea_start_gdb_session": false,
+        "rea_rizin_debug_command": false,
+        "rea_start_rizin_debug_session": false,
+        "rea_push_adb_file": false,
+        "rea_install_adb_package": false,
+        "rea_uninstall_adb_package": false,
+        "rea_start_adb_app": false,
+        "rea_start_adb_activity": false,
+        "rea_stop_adb_app": false,
+        "rea_update_analysis_settings": false
+      },
+      "permission": {
+        "edit": "deny",
+        "webfetch": "deny",
+        "bash": {
+          "*": "deny",
+          "ls *": "allow",
+          "file *": "allow",
+          "strings *": "allow",
+          "sha256sum *": "allow",
+          "rg *": "allow",
+          "git log*": "allow",
+          "git show --stat*": "allow"
+        }
+      }
+    }
+  }
+}
