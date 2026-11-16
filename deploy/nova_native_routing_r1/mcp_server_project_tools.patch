@@ -1,0 +1,94 @@
+--- /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261108-ai-usage-ledger-v1/services/nexus_mcp/server.py	2026-11-08 14:12:27.000000000 -0700
++++ /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-project-context-v3/services/nexus_mcp/server.py	2026-11-15 19:22:09.000000000 -0700
+@@ -105,6 +105,27 @@
+     }
+ 
+ 
++def _project_read(tool_name: str, fn, **kwargs: Any) -> dict[str, Any]:
++    """Read-only project-store call with the standard read receipt (no cache: project state is volatile)."""
++    from services.nexus_mcp import project_reader
++    authorize_read(tool_name)
++    request_id = f"nexus-mcp-{uuid.uuid4().hex}"
++    started = _now()
++    try:
++        payload = getattr(project_reader, fn)(**kwargs)
++    except Exception as exc:  # explicit unavailable result; never fabricate state
++        payload = unavailable(tool_name, f"project read failed: {type(exc).__name__}")
++    receipt = {"schema_version": "nexus.mcp-receipt.v1", "request_id": request_id, "tool_name": tool_name,
++               "turn_id": os.getenv("NEXUS_MCP_TURN_ID") or None, "update_id": os.getenv("NEXUS_MCP_UPDATE_ID") or None,
++               "started_at": started, "completed_at": _now(), "canonical_source": "business_loop_project_store",
++               "result_status": payload.get("status"), "item_count": payload.get("metadata", {}).get("item_count", 0),
++               "error": payload.get("error"), "read_only": True, "authority_owner": "Nexus"}
++    receipt["receipt_hash"] = hashlib.sha256(json.dumps(receipt, sort_keys=True).encode()).hexdigest()
++    RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
++    (RECEIPT_DIR / f"{request_id}.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
++    return payload
++
++
+ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+     authorize_read(tool_name)
+     request_id = f"nexus-mcp-{uuid.uuid4().hex}"
+@@ -1500,6 +1521,18 @@
+             {"relative_path": relative_path, "expected_sha256": expected_sha256,
+              "note_id": note_id, "file_id": file_id})
+ 
++    @mcp.tool(name="nexus_get_project", description="VOLATILE current-state read of ONE existing Nexus project by exact PROJECT_ID (proj_...): status, current department/stage, next action, blockers, approvals waiting (with live approval-card status), commerce offer, metrics, creative assets, recent handoffs. Use whenever the owner names a project id or asks to resume/continue/check an existing project. Read-only: never resumes, approves, or publishes.")
++    def nexus_get_project(project_id: str) -> dict[str, Any]:
++        return _project_read("nexus_get_project", "get_project", project_id=project_id)
++
++    @mcp.tool(name="nexus_get_project_approvals", description="VOLATILE current-state read of the approvals linked to ONE existing Nexus project by exact PROJECT_ID (proj_...): each approval's live state (WAITING_FOR_RAY, APPROVED, CONSUMED, SUPERSEDED), what it covers, and the owner command that would act on it. Use when the owner asks which approvals are waiting for a specific project. Read-only: never approves, publishes, or activates anything.")
++    def nexus_get_project_approvals(project_id: str) -> dict[str, Any]:
++        return _project_read("nexus_get_project_approvals", "get_project_approvals", project_id=project_id)
++
++    @mcp.tool(name="nexus_get_projects", description="VOLATILE read: list existing Nexus projects (id, opportunity name, venture, status, current department), optionally filtered by words such as a product or venture name. Use to find a project id before nexus_get_project. Read-only.")
++    def nexus_get_projects(query: str = "") -> dict[str, Any]:
++        return _project_read("nexus_get_projects", "list_projects", query=query)
++
+     @mcp.tool(name="nexus_get_reviews", description="VOLATILE current-state read: return only active Ray approvals requiring a decision. For present/current questions, call again; prior answers are not authoritative.")
+     def nexus_get_reviews() -> dict[str, Any]:
+         return _call("nexus_get_reviews")
+@@ -2168,3 +2201,32 @@
+ 
+ if __name__ == "__main__":
+     mcp.run(transport="stdio")
++
++
++# NOVA_OBJECTIVE_INTAKE_AND_NATIVE_ROUTING_REPAIR_R1: advertise a SEP-2549 cache TTL on
++# tools/list. Hermes caches MCP tool schemas on disk and, without a TTL, serves a stale
++# manifest forever, so newly added Nexus tools never reach Nova. With ttlMs, Hermes
++# re-probes the live server once the entry is older than the TTL.
++TOOLS_LIST_TTL_MS = int(os.getenv("NEXUS_MCP_TOOLS_LIST_TTL_MS") or 300000)
++
++
++def _advertise_tools_list_ttl(ttl_ms: int = TOOLS_LIST_TTL_MS) -> None:
++    import mcp.types as _types
++    handlers = mcp._mcp_server.request_handlers
++    original = handlers.get(_types.ListToolsRequest)
++    if original is None or getattr(original, "_nexus_ttl", False):
++        return
++
++    async def _list_tools_with_ttl(request):
++        result = await original(request)
++        root = getattr(result, "root", result)
++        if isinstance(root, _types.ListToolsResult) and getattr(root, "ttlMs", None) is None:
++            stamped = _types.ListToolsResult(**root.model_dump(by_alias=True, exclude_none=True), ttlMs=ttl_ms)
++            return _types.ServerResult(stamped) if hasattr(result, "root") else stamped
++        return result
++
++    _list_tools_with_ttl._nexus_ttl = True
++    handlers[_types.ListToolsRequest] = _list_tools_with_ttl
++
++
++_advertise_tools_list_ttl()
+--- /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261108-ai-usage-ledger-v1/services/nexus_mcp/schemas.py	2026-11-08 14:11:39.000000000 -0700
++++ /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-project-context-v3/services/nexus_mcp/schemas.py	2026-11-15 19:22:09.000000000 -0700
+@@ -31,6 +31,9 @@
+     "nexus_assign_department_query",
+     "nexus_assign_notebooklm_runtime_canary",
+     "nexus_get_codex_assignment",
++    "nexus_get_project",
++    "nexus_get_projects",
++    "nexus_get_project_approvals",
+ )
+ 
+ SYSTEMS_HOST_CONTROL_TOOL_NAMES = (

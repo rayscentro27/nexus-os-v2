@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nexus.admin-read-model</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/admin_read_model/publish_admin_read_model.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NEXUS_REPO_ROOT</key><string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+    <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>Nice</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/admin_read_model.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/admin_read_model.err.log</string>
+</dict>
+</plist>
