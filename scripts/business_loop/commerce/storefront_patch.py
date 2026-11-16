@@ -45,7 +45,7 @@ FORM_HTML = """<!-- NEXUS_CONVERSION_R1_START -->
   <div class="nx-hp" aria-hidden="true"><label for="nx-company">Company</label><input id="nx-company" name="company" tabindex="-1" autocomplete="off"></div>
   <button type="submit" class="btn-primary" id="nx-submit" data-cta="register_interest">Register interest</button>
   <div id="nx-msg" class="nx-msg" role="status" aria-live="polite"></div>
-  <div class="nx-status">Not yet available for purchase. Register to be notified when the studio edition opens. We only use your email for this.</div>
+  <div class="nx-status">Not yet available for purchase. Register to be notified when it opens. We only use your email for this.</div>
   <a id="nx-test-checkout" class="btn-link" href="#" data-cta="test_checkout">Test checkout (Stripe TEST mode, no real charge)</a>
 </form>
 <!-- NEXUS_CONVERSION_R1_END -->"""
@@ -89,7 +89,7 @@ f.addEventListener('submit',function(e){e.preventDefault();if(busy)return;
  var key='nx_lead_'+email.toLowerCase();if(lstore(key)){say("You're already on the list. We'll be in touch.",true);return}
  busy=true;btn.disabled=true;say('Sending...',true);var b=base();b.email=email;if(first)b.first_name=first;
  post('commerce_leads',b).then(function(r){if(r.status===201||r.status===409){lstore(key,'1');
-   say(r.status===201?"You're on the list. We'll email you when the studio edition opens.":"You're already on the list. We'll be in touch.",true);
+   say(r.status===201?"You're on the list. We'll email you when it opens.":"You're already on the list. We'll be in touch.",true);
    ev('INTEREST_FORM_SUBMITTED',{result:r.status===201?'new':'duplicate'})}else{say('Something went wrong. Please try again.',false);ev('INTEREST_FORM_SUBMITTED',{result:'error',http:r.status})}})
   .catch(function(){say('Network error. Please try again.',false)}).then(function(){busy=false;btn.disabled=false})});
 var tc=document.getElementById('nx-test-checkout');
@@ -102,10 +102,73 @@ if(qs.get('checkout')==='success'){ev('PURCHASE_COMPLETED',{mode:qs.get('mode')|
 """ + END.replace("END", "SCRIPT_END")
 
 
+# ---------------------------------------------------------------- R2 product truth
+# Every product statement below is limited to what Printify draft 6afa4814536c7c3c520f7865
+# (blueprint 478, provider 99, variant 104692) would actually ship.
+STAGED_PRICE = "$24"
+MOCKUP = "printify_mockup_612am_15oz_front.jpg"
+BANNED = re.compile(r"stoneware|clay|handcrafted|hand-thrown|handmade|artisan|unglazed|small-batch|small batch|kiln|heft|scorch|chip in the dishwasher|engineered", re.I)
+
+ANATOMY = """<section id="anatomy" class="anatomy-section" aria-labelledby="anatomy-title">
+      <div class="anatomy-header">
+        <div class="eyebrow">WHAT YOU WOULD RECEIVE</div>
+        <h2 id="anatomy-title">A simple white mug for a quiet start.</h2>
+        <p style="color: var(--text-secondary);">Product details come from the print partner's specification for this exact item.</p>
+      </div>
+
+      <div class="specs-list">
+        <div class="spec-item">
+          <div class="spec-num">01 / SIZE</div>
+          <h4>15 oz white ceramic mug</h4>
+          <p>Glossy white ceramic finish, printed with the 6:12 AM mark.</p>
+        </div>
+        <div class="spec-item">
+          <div class="spec-num">02 / CARE</div>
+          <h4>Microwave and dishwasher safe</h4>
+          <p>BPA and lead free, per the print partner's product specification.</p>
+        </div>
+        <div class="spec-item">
+          <div class="spec-num">03 / MADE TO ORDER</div>
+          <h4>Printed on demand</h4>
+          <p>Each mug is printed and shipped by our print partner after an order is placed (about 10 days handling, US shipping at cost).</p>
+        </div>
+      </div>
+    </section>"""
+
+
+def truth_rewrite(html: str) -> str:
+    rep = [
+        (r"<title>.*?</title>", "<title>The 6:12 AM Quiet Ritual · 15 oz White Ceramic Mug</title>"),
+        (r'<meta name="description" content="[^"]*">', '<meta name="description" content="A 15 oz white ceramic mug printed with the 6:12 AM mark, for the quiet minutes before the house wakes. Studio preview - not yet for sale.">'),
+        (r'<span>An Autumn & Winter Craft Concept</span>', '<span>A 15 oz White Ceramic Mug</span>'),
+        (r'<div class="batch-tag">[^<]*</div>', '<div class="batch-tag">15 OZ WHITE CERAMIC · STUDIO PREVIEW</div>'),
+        (r'<img src="\./meta_holiday_ceramic_mug_1794355016\.webp"[^>]*>', f'<img src="./{MOCKUP}" alt="White 15 oz ceramic mug printed with 6:12 AM, the quiet ritual (print partner mockup)" width="1200" height="1200">'),
+        (r'<div class="hero-meta-badge">[^<]*</div>', '<div class="hero-meta-badge">Print partner mockup of the actual product</div>'),
+        (r'<div class="eyebrow">A Counter-Holiday Domestic Anchor</div>', '<div class="eyebrow">A Counter-Holiday Morning Mug</div>'),
+        (r'<p class="hero-lead">.*?</p>', '<p class="hero-lead">Before the house wakes up, before the holiday rush takes over: a 15 oz white ceramic mug for your own quiet fifteen minutes.</p>'),
+        (r'(<h2 id="tension-title">We have enough holiday noise.</h2>)\s*<p>.*?</p>\s*<p>.*?</p>',
+         r'\1\n      <p>December is loud. This mug carries no snowflakes and no Santas - just a small reminder to keep a few quiet minutes for yourself.</p>\n      <p>Plain white ceramic, printed with the 6:12 AM mark, made to order.</p>'),
+        (r'\s*<section class="media-showcase".*?</section>\s*(?=<!-- Anatomy)', "\n\n    "),
+        (r'<!-- Anatomy of Heavy Stoneware[^>]*-->\s*<section id="anatomy".*?</section>', "<!-- Product facts (R2 truth layer) -->\n    " + ANATOMY),
+        (r'(<h3 id="guarantee-title">)[^<]*(</h3>)\s*<p>.*?</p>', r'\1Register interest\2\n      <p>The 6:12 AM mug is not on sale yet. Staged price: ' + STAGED_PRICE + r' plus shipping at cost. Leave your email and we will tell you when it opens.</p>'),
+        (r'<div class="price">Concept Preview · Studio Edition</div>', f'<div class="price">{STAGED_PRICE} (staged) · not yet for sale</div>'),
+    ]
+    for pat, new in rep:
+        html, n = re.subn(pat, new, html, count=1, flags=re.S)
+        if n != 1:
+            raise RuntimeError(f"truth_rewrite_pattern_missing:{pat[:40]}")
+    return html
+
+
+def visible_text(html: str) -> str:
+    body = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.S)
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body))
+
+
 def patch(payment_link: str = "") -> dict:
     if not BACKUP.exists():
         BACKUP.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(PAGE, BACKUP)
-    html = BACKUP.read_text()  # always rebuild from the pre-conversion page (idempotent)
+    html = truth_rewrite(BACKUP.read_text())  # always rebuild from the pre-conversion page (idempotent)
     # The section's dead CTA becomes the real form; the sticky bar CTA states the real action.
     html = html.replace('<a href="#preview" class="btn-primary">Request Campaign Updates</a>', FORM_HTML, 1)
     html = html.replace('class="btn-primary" style="padding: 12px 24px; font-size: 14px;">Stay Informed</a>',

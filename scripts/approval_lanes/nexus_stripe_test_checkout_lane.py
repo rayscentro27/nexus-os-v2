@@ -27,7 +27,7 @@ def create_checkout_request(tier, test_email="test@example.com", success_url="ht
         "risk_level": "low",
         "required_approval": "billing_approval",
         "required_runner": "stripe_test_checkout_runner",
-        "required_env": "STRIPE_SECRET_KEY",
+        "required_env": "NEXUS_STRIPE_PAYMENTS_TEST_SECRET_KEY (sk_test_*)",
         "required_receipt": "stripe_checkout_receipt",
         "current_status": "DRAFT",
         "next_action": f"Submit for Ray Review via /approve {item_id}",
@@ -86,10 +86,19 @@ def approve_and_create_session(item_id):
             json.dump(packet, f, indent=2)
         print(json.dumps({"status": "governor_denied", "item_id": item_id}))
         return packet
-    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
+    # TEST lane: use only a TEST key, verified by prefix (labels/env names are not trusted;
+    # STRIPE_SECRET_KEY held an sk_live_ key as of 2026-11-16).
+    stripe_key = os.environ.get("NEXUS_STRIPE_PAYMENTS_TEST_SECRET_KEY") or os.environ.get("STRIPE_TEST_SECRET_KEY")
+    if stripe_key and not stripe_key.startswith(("sk_test_", "rk_test_")):
+        packet["current_status"] = "REFUSED_NON_TEST_KEY"
+        packet["next_action"] = "Store a real sk_test_ key under NEXUS_STRIPE_PAYMENTS_TEST_SECRET_KEY; live keys are never used by this lane."
+        with open(packet_path, "w") as f:
+            json.dump(packet, f, indent=2)
+        print(json.dumps({"status": "refused_non_test_key", "item_id": item_id}))
+        return packet
     if not stripe_key:
         packet["current_status"] = "APPROVED_BUT_ENV_MISSING"
-        packet["next_action"] = "Set STRIPE_SECRET_KEY env var, then re-run"
+        packet["next_action"] = "Set NEXUS_STRIPE_PAYMENTS_TEST_SECRET_KEY (sk_test_*), then re-run"
         with open(packet_path, "w") as f:
             json.dump(packet, f, indent=2)
         print(json.dumps({"status": "approved_but_env_missing", "item_id": item_id}))

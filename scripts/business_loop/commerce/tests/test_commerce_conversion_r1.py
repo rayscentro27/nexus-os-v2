@@ -151,7 +151,7 @@ def test_go_live_package_never_executes():
     pkg = F.go_live_package({"blueprint_id": 478}, pr, {}, [])
     assert pkg["status"] == "WAITING_FOR_RAY_APPROVAL" and pkg["live_financial_activation_performed"] is False
     assert pr["base_cost"]["value"] is None and "NOT_VERIFIED" in pr["base_cost"]["status"]
-    assert pr["gross_margin_at_recommended"] == "NOT_AVAILABLE until base cost verified"
+    assert pr["gross_margin_at_recommended"] == F.NA  # unverified cost never becomes a margin
 
 
 def test_governor_policy_scope_is_spend_free():

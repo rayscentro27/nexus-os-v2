@@ -51,8 +51,8 @@ def copy_package(form_verified: bool) -> dict:
     cta = "Register interest" if form_verified else "See the studio preview"
     tail = "Not yet for sale - register interest to hear when it opens." if form_verified else "Studio preview - not yet for sale."
     copy = {
-        "FACEBOOK": f"{HOOKS['H1']}\n\nA ceramic mug concept for the quiet minutes before the holiday rush. {tail}\n{cta}: {tracked_url('FACEBOOK', 'H1')}",
-        "INSTAGRAM": f"{HOOKS['H2']}\n\nStudio concept preview. {tail}\n{cta}: {tracked_url('INSTAGRAM', 'H2')}\n\n#QuietRitual #SlowMornings",
+        "FACEBOOK": f"{HOOKS['H1']}\n\nA 15 oz white ceramic mug for the quiet minutes before the holiday rush. {tail}\n{cta}: {tracked_url('FACEBOOK', 'H1')}",
+        "INSTAGRAM": f"{HOOKS['H2']}\n\n15 oz white ceramic, printed with the 6:12 AM mark. {tail}\n{cta}: {tracked_url('INSTAGRAM', 'H2')}\n\n#QuietRitual #SlowMornings",
         "TIKTOK": f"{HOOKS['H1']} {tail} {tracked_url('TIKTOK', 'H1')}",
     }
     checks = {}
@@ -181,23 +181,29 @@ def analyze(m: dict) -> dict:
 
 
 # ------------------------------------------------------------------ approvals
-def supersede_and_request_facebook(project: dict, asset_path: str, copy_text: str, old_request_id: str = "apr_req_4fe6eb45cb6cc2fa") -> dict:
+def supersede_and_request_facebook(project: dict, asset_path: str, copy_text: str, old_request_id: str = "apr_req_4fe6eb45cb6cc2fa",
+                                   file_tag: str = "tracked_h1", purpose: str = "COMMERCE_CONVERSION_R1_TRACKED_H1") -> dict:
     import facebook_live_publisher as fb
     old_path, old = fb.find_request(old_request_id)
     asset = ROOT / asset_path
     sha = hashlib.sha256(asset.read_bytes()).hexdigest()
     rid = "apr_req_" + hashlib.sha256((project["project_id"] + sha + copy_text).encode()).hexdigest()[:16]
     req = {k: v for k, v in old.items() if k not in ("request_hash", "idempotency_key", "approval_request_id", "copy", "copy_sha256", "status", "approval_id", "superseded_by")}
+    req["media"] = {**req["media"], "asset_id": f"asset_{file_tag}_{sha[:12]}", "path": asset_path, "sha256": sha, "format": "JPEG 1080x1080",
+                    "provider_derivative": {**req["media"]["provider_derivative"], "asset_id": f"asset_{file_tag}_{sha[:12]}_fb", "path": asset_path, "sha256": sha,
+                                            "format": "JPEG 1080x1080", "parent_asset_id": f"asset_{file_tag}_{sha[:12]}"}}
     req.update({"approval_request_id": rid, "status": "WAITING_FOR_RAY_APPROVAL", "approval_id": None, "copy": copy_text,
                 "copy_sha256": hashlib.sha256(copy_text.encode()).hexdigest(), "target_url": tracked_url("FACEBOOK", "H1"),
-                "certification_purpose": "COMMERCE_CONVERSION_R1_TRACKED_H1", "supersedes": old_request_id,
+                "certification_purpose": purpose, "supersedes": old_request_id,
                 "created_at": datetime.now(timezone.utc).isoformat()})
     req["idempotency_key"] = fb.expected_idempotency_key(req)
     req["request_hash"] = fb.compute_request_hash(req)
     problems = fb.verify_request(req)
     if problems:
         raise RuntimeError(f"new_request_invalid:{problems}")
-    new_path = fb.REQUESTS_DIR / f"bl_{project['project_id']}_facebook_tracked_h1_approval_request.json"
+    new_path = fb.REQUESTS_DIR / f"bl_{project['project_id']}_facebook_{file_tag}_approval_request.json"
+    if new_path.exists() and json.loads(new_path.read_text()).get("approval_request_id") != rid:
+        raise RuntimeError(f"refusing_to_overwrite_other_request:{new_path.name}")
     new_path.write_text(json.dumps(req, indent=1) + "\n")
     if old.get("status") == "WAITING_FOR_RAY_APPROVAL":
         # Mark superseded. 'status'/'superseded_by' are not protected fields, so the old hash stays
@@ -220,24 +226,51 @@ def go_live_package(printify: dict, pricing: dict, stripe_state: dict, storefron
     return body
 
 
+PRICE_CANDIDATES = (24.0, 26.0, 29.0, 32.0, 35.0)
+RECOMMENDED_PRICE = 24.0
+
+
 def pricing(printify: dict) -> dict:
+    """Shipping treatment (explicit assumption): customer pays Printify US shipping at cost, so shipping is margin-neutral;
+    the card fee is charged on price + shipping. Base cost must be VERIFIED from a Printify product or margins are NOT_AVAILABLE."""
     ship = printify["us_shipping_first_item_usd"]
-    base = printify.get("base_cost_usd")  # None unless verified from a Printify product
-    def gp(price: float, base_cost: float | None):
-        fee = round(0.029 * (price + ship) + 0.30, 2)  # Stripe standard card estimate; customer pays shipping at cost
-        return fee, (round(price - fee - base_cost, 2) if base_cost is not None else None)
-    rec = 29.0
-    fee48, gp48 = gp(48.0, base); fee29, gp29 = gp(29.0, base)
-    return {"base_cost": {"value": base, "status": "VERIFIED" if base is not None else "NOT_VERIFIED (requires Printify draft product)"},
-            "shipping": {"value_usd": ship, "status": "VERIFIED (Printify catalog, US first item)", "charged_to_customer": "at cost (assumption)"},
-            "payment_processing_estimate": {"at_48": fee48, "at_29": fee29, "basis": "2.9% + $0.30 on price+shipping (ESTIMATE)"},
-            "current_staged_price": 48.0, "recommended_price": rec, "PRICE_CHANGE_RECOMMENDED": "YES",
-            "gross_profit_formula": {"at_48": f"48 - {fee48} - base_cost = {round(48 - fee48, 2)} - base_cost",
-                                     "at_29": f"29 - {fee29} - base_cost = {round(29 - fee29, 2)} - base_cost"},
-            "gross_profit_at_recommended": gp29 if gp29 is not None else f"{round(29 - fee29, 2)} - base_cost (base cost NOT_VERIFIED)",
-            "gross_margin_at_recommended": round(gp29 / 29, 3) if gp29 is not None else "NOT_AVAILABLE until base cost verified",
-            "why": ("$48 was set for a stoneware concept with an unglazed clay base. The actual fulfillable Printify item is a standard white glossy "
-                    "15oz ceramic mug, so $48 is not supported by the product. Recommend $29 PROPOSED and test it; do not change the staged price without authorization.")}
+    base = printify.get("base_cost_usd")
+    rows = []
+    for price in PRICE_CANDIDATES:
+        fee = round(0.029 * (price + ship) + 0.30, 2)
+        gp = round(price - fee - base, 2) if base is not None else None
+        rows.append({"RETAIL_PRICE": price, "BASE_COST": base, "PAYMENT_PROCESSING_ESTIMATE": fee,
+                     "SHIPPING_TREATMENT": f"customer pays ${ship:.2f} US shipping at cost (margin-neutral)",
+                     "ESTIMATED_GROSS_PROFIT": gp if gp is not None else NA,
+                     "ESTIMATED_GROSS_MARGIN": round(gp / price, 3) if gp is not None else NA,
+                     "CUSTOMER_TOTAL_WITH_SHIPPING": round(price + ship, 2)})
+    rec = next(r for r in rows if r["RETAIL_PRICE"] == RECOMMENDED_PRICE)
+    return {"base_cost": {"value": base, "status": "VERIFIED (Printify draft product variant cost)" if base is not None else "NOT_VERIFIED"},
+            "shipping": {"value_usd": ship, "additional_item_usd": printify.get("us_shipping_additional_item_usd"), "status": "VERIFIED (Printify catalog, US)"},
+            "options": rows, "current_staged_price": 48.0, "recommended_price": RECOMMENDED_PRICE, "PRICE_CHANGE_RECOMMENDED": "YES",
+            "gross_profit_at_recommended": rec["ESTIMATED_GROSS_PROFIT"], "gross_margin_at_recommended": rec["ESTIMATED_GROSS_MARGIN"],
+            "why": ("The item that ships is a standard 15 oz white printed ceramic mug (Printify base $%.2f). The customer already pays $%.2f "
+                    "shipping, so $24 lands at about $%.2f delivered - an impulse-friendly holiday gift price that still clears ~69%% gross margin. "
+                    "$29-$35 widen margin but push a plain printed mug past $36-$42 delivered, which reads as inflated for the product type and "
+                    "would weaken the interest test. Market price comparisons are an assumption, not measured.") % (base or 0, ship, RECOMMENDED_PRICE + ship),
+            "fee_basis": "Stripe standard card estimate 2.9%% + $0.30 on price + shipping (ESTIMATE)".replace("%%", "%")}
+
+
+def go_live_package(printify: dict, pricing: dict, stripe_state: dict, storefront_issues: list[str]) -> dict:
+    rec = next(r for r in pricing["options"] if r["RETAIL_PRICE"] == pricing["recommended_price"])
+    covers = {"PRINTIFY_PRODUCT_ID": printify.get("product_id"), "PRODUCT_NAME": printify.get("product_name"), "VARIANT": printify.get("variant"),
+              "VERIFIED_BASE_COST": pricing["base_cost"], "SHIPPING": pricing["shipping"], "RECOMMENDED_PRICE": pricing["recommended_price"],
+              "ESTIMATED_MARGIN": {"gross_profit": rec["ESTIMATED_GROSS_PROFIT"], "gross_margin": rec["ESTIMATED_GROSS_MARGIN"], "status": "ESTIMATE (fee estimated)"},
+              "STOREFRONT_URL": STORE_URL, "FULFILLMENT_METHOD": "Printify print-on-demand, provider Printify Choice (99), ~10 days handling, no inventory",
+              "PAYMENT_STATUS": "NOT_ACTIVE", "TEST_CHECKOUT_STATUS": "BLOCKED_MISSING_REAL_TEST_KEY",
+              "LIVE_CHECKOUT_STATUS": "BLOCKED_PENDING_TEST_CERTIFICATION_AND_RAY_APPROVAL (live key exists as credential.stripe.payments.live.v1; unused)"}
+    body = {"approval_kind": "COMMERCE_GO_LIVE", "project_id": PROJECT_ID, "status": "WAITING_FOR_RAY_APPROVAL", "covers": covers,
+            "preconditions_before_execution": ["Store a real sk_test_ key and certify TEST checkout end to end",
+                                               "Ray approves price and live payment activation"] + storefront_issues,
+            "will_not_execute_without": "recorded Ray approval", "live_financial_activation_performed": False,
+            "created_at": datetime.now(timezone.utc).isoformat()}
+    body["approval_id"] = "apr_commerce_golive_" + hashlib.sha256(json.dumps(covers, sort_keys=True, default=str).encode()).hexdigest()[:16]
+    return body
 
 
 def write_reports(payload: dict) -> None:
