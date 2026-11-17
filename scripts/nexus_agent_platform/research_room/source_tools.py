@@ -5,10 +5,11 @@ import re
 import hashlib
 import os
 import re
+import base64
 import urllib.request
 import uuid
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 class SourceTools:
@@ -49,11 +50,15 @@ class SourceTools:
                 "remain", "uncertain", "supports", "them", "and", "the", "for", "with", "from", "that",
                 "this", "should", "could", "would", "about", "into", "existing", "research", "case",
                 "continue", "leave", "open", "question", "explicitly", "citation", "verification"}
-        objective_terms = [x for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", objective)
-                           if len(x) > 2 and x.casefold() not in stop]
         question_terms = [x for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", question)
                           if len(x) > 2 and x.casefold() not in stop]
-        selected = list(dict.fromkeys(objective_terms[:5] + question_terms[:8]))
+        # The question is already scoped to the owner-supplied objective. Put
+        # its topical terms first; project/action words from the parent
+        # objective (for example, "prepare launch campaign") can poison public
+        # search relevance and should not outrank the actual evidence query.
+        objective_terms = [x for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", objective)
+                           if len(x) > 2 and x.casefold() not in stop]
+        selected = list(dict.fromkeys(question_terms[:10] + (objective_terms[:3] if len(question_terms) < 4 else [])))
         return " ".join(selected)[:240]
 
     def _record_attempt(self, attempt: dict[str, Any]) -> None:
@@ -70,6 +75,21 @@ class SourceTools:
                  if len(x) > 3 and x.casefold() not in stop}
         folded = text.casefold()
         return sorted(term for term in terms if term in folded)
+
+    @staticmethod
+    def _resolve_result_url(value: str) -> str:
+        """Unwrap a Bing redirect URL to its public destination before reading."""
+        parsed = urlparse(value)
+        if (parsed.hostname or "").lower() not in {"bing.com", "www.bing.com"}:
+            return value
+        token = (parse_qs(parsed.query).get("u") or [""])[0]
+        if not token.startswith("a1"):
+            return value
+        try:
+            raw = base64.urlsafe_b64decode(token[2:] + "=" * (-len(token[2:]) % 4)).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            return value
+        return raw if raw.startswith(("https://", "http://")) else value
 
     def research_questions(self, objective: str, questions: list[dict[str, Any]]) -> dict[str, Any]:
         """Bounded search→read→evidence path; every route writes an attempt receipt."""
@@ -102,7 +122,7 @@ class SourceTools:
                         self._record_attempt(attempt)
                         continue
                     candidate = candidates[0]
-                    url = str(candidate.get("url") or "").strip()
+                    url = self._resolve_result_url(str(candidate.get("url") or "").strip())
                     attempt["source_url"] = url
                     try:
                         page = self.acquire(url, objective=question)

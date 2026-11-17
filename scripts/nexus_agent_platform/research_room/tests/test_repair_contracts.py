@@ -61,6 +61,24 @@ def test_first_source_failure_triggers_alternate_route():
     assert calls == ["first", "second"]
 
 
+def test_focused_source_query_prioritizes_question_over_campaign_action_words():
+    query = SourceTools.focused_query(
+        "Prepare GoClear Business Funding Launch campaign",
+        "Small business funding eligibility readiness documentation gaps from official sources")
+    assert "GoClear" not in query
+    assert "campaign" not in query
+    assert "funding" in query and "eligibility" in query
+
+
+def test_bing_result_redirect_is_unwrapped_to_public_source():
+    from urllib.parse import quote
+    import base64
+    target = "https://www.sba.gov/funding-programs/loans"
+    encoded = base64.urlsafe_b64encode(target.encode()).decode().rstrip("=")
+    redirect = "https://www.bing.com/ck/a?u=a1" + quote(encoded)
+    assert SourceTools._resolve_result_url(redirect) == target
+
+
 def test_source_attempts_keep_same_case_and_question_ids():
     attempts = []
     SourceTools(methods=[], search_routes=[("offline", lambda _q: {"status": "error", "notes": ["offline"]})],
@@ -760,3 +778,53 @@ def test_source_retry_receipt_is_upserted_on_same_case(monkeypatch):
     assert len(attempts) == 1
     assert attempts[0]["case_id"] == IDS["case_id"]
     assert attempts[0]["result"] == "SOURCE_ACQUIRED"
+
+
+def test_research_room_steering_updates_existing_room_idempotently(monkeypatch):
+    from nexus_agent_platform.research_room import workflow_backend as backend
+    case = {"case_id": IDS["case_id"], "research_room_state": {"steering_instructions": []}}
+    saved = []
+    workflow = {"workflow_id": "wf-fixture", "durable_job_id": "job-fixture", "current_step": "DEEP_RESEARCH",
+        "dynamic_tasks": [], "steering_instructions": [], "revision": 1}
+    class Store:
+        def list(self, limit=100): return [workflow]
+        def save(self, _job_id, value): workflow.update(value)
+    monkeypatch.setattr(backend, "default_state_store", Store, raising=False)
+    from nexus_agent_platform import workflow_fabric
+    monkeypatch.setattr(workflow_fabric, "default_state_store", lambda: Store())
+    monkeypatch.setattr(backend, "ensure_room", lambda *_: (IDS["case_id"], case))
+    def save(room_id, state, event):
+        case["research_room_state"] = dict(state)
+        saved.append(event)
+        return {"persisted": True, "persistence_receipt": {"status": "PASS"}, "case": case}
+    monkeypatch.setattr(backend, "_save_room", save)
+    first = backend.steer(workflow_id="wf-fixture", objective="manual objective", instruction="Verify that claim")
+    second = backend.steer(workflow_id="wf-fixture", objective="manual objective", instruction="Verify that claim")
+    assert first["status"] == "COMPLETE"
+    assert second["deduplicated"] is True
+    assert len(case["research_room_state"]["steering_instructions"]) == 1
+    assert first["workflow_graph_updated"] is True
+    assert len(workflow["dynamic_tasks"]) == 1
+    assert saved == ["RESEARCH_ROOM_OWNER_STEERING_ADDED", "RESEARCH_ROOM_OWNER_STEERING_ADDED"]
+
+
+def test_manual_research_intake_is_explicit_and_preserves_reference(monkeypatch):
+    from research import research_case_engine as engine
+    from nexus_agent_platform.research_room import workflow_backend as backend
+    case = {"case_id": IDS["case_id"], "sources": [], "research_room_state": {}}
+    monkeypatch.setattr(backend, "ensure_room", lambda *_: (IDS["case_id"], case))
+    def add_source(_case_id, source):
+        case["sources"].append(source)
+        return {"ok": True, "case": case}
+    monkeypatch.setattr(engine, "add_source", add_source)
+    monkeypatch.setattr(backend, "_save_room", lambda room_id, state, event:
+        {"persisted": True, "persistence_receipt": {"status": "PASS"},
+         "case": {**case, "research_room_state": state}})
+    result = backend.manual_intake(workflow_id="wf-fixture", objective="Research this funding claim",
+        input_type="URL", content="Source supplied by Ray", reference="https://example.gov/source")
+    assert result["status"] == "COMPLETE"
+    assert case["sources"][0]["url"] == "https://example.gov/source"
+    assert case["sources"][0]["provenance"]["manual_intake"] is True
+    rejected = backend.manual_intake(workflow_id="wf-fixture", objective="x", input_type="FEED",
+        content="Should not be accepted")
+    assert rejected["status"] == "VALIDATION_FAILED"
