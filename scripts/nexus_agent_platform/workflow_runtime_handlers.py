@@ -1,8 +1,4 @@
-"""Bounded real runtime handlers for the canonical Workflow Fabric.
-
-This first activation binds only Nova objective intake and deterministic Research
-planning. The controller remains the sole owner of workflow state transitions.
-"""
+"""Bounded real runtime handlers for the canonical Workflow Fabric."""
 from __future__ import annotations
 
 import hashlib
@@ -81,7 +77,71 @@ def research_plan(packet: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _research_authorized(packet: dict[str, Any], *, agent: str, bot: str,
+                         skill: str, profile: str) -> dict[str, Any] | None:
+    proof = packet.get("authorization") if isinstance(packet.get("authorization"), dict) else {}
+    required = {"authorization": "AUTHORIZED", "agent_id": agent, "bot_id": bot,
+        "skill_id": skill, "model_profile": profile, "model_profile_status": "AVAILABLE"}
+    if any(proof.get(key) != value for key, value in required.items()):
+        return {"status": "VALIDATION_FAILED", "error_code": "WORKFLOW_AUTHORIZATION_PROOF_MISSING"}
+    if not proof.get("environment_id"):
+        return {"status": "VALIDATION_FAILED", "error_code": "WORKFLOW_ENVIRONMENT_PROOF_MISSING"}
+    return proof
+
+
+def alpha_deep_research(packet: dict[str, Any]) -> dict[str, Any]:
+    proof = _research_authorized(packet, agent="ALPHA", bot="ALPHA_DEEP_RESEARCH",
+        skill="research.deep_analysis", profile="RESEARCH_DEEP")
+    if isinstance(proof, dict) and proof.get("status"):
+        return proof
+    from nexus_agent_platform.research_room.workflow_backend import deep_research
+    result = deep_research(workflow_id=str(packet.get("workflow_id") or ""),
+                           durable_job_id=str(packet.get("durable_job_id") or ""),
+                           objective=str(packet.get("objective") or ""))
+    if result.get("status") in {"COMPLETE", "PARTIAL"}:
+        result.update({"environment_id": proof["environment_id"],
+            "model_profile": "RESEARCH_DEEP", "model_profile_status": proof["model_profile_status"],
+            "authorization": proof["authorization"], "external_side_effects": False})
+        result.setdefault("generation_receipt_id", _receipt_id("alpha-deep-research", packet, result))
+    return result
+
+
+def research_fact_check(packet: dict[str, Any]) -> dict[str, Any]:
+    proof = _research_authorized(packet, agent="RESEARCH_LEAD", bot="FACT_CHECKER",
+        skill="research.fact_check", profile="FACT_CHECK")
+    if isinstance(proof, dict) and proof.get("status"):
+        return proof
+    from nexus_agent_platform.research_room.workflow_backend import fact_check
+    result = fact_check(workflow_id=str(packet.get("workflow_id") or ""),
+                         durable_job_id=str(packet.get("durable_job_id") or ""),
+                         room_id=packet.get("research_room_id"))
+    if result.get("status") == "COMPLETE":
+        result.update({"environment_id": proof["environment_id"], "model_profile": "FACT_CHECK",
+            "authorization": proof["authorization"], "external_side_effects": False})
+        result.setdefault("generation_receipt_id", _receipt_id("research-fact-check", packet, result))
+    return result
+
+
+def research_synthesis(packet: dict[str, Any]) -> dict[str, Any]:
+    proof = _research_authorized(packet, agent="RESEARCH_LEAD", bot="RESEARCH_SYNTHESIZER",
+        skill="research.synthesis", profile="SYNTHESIS")
+    if isinstance(proof, dict) and proof.get("status"):
+        return proof
+    from nexus_agent_platform.research_room.workflow_backend import synthesize
+    result = synthesize(workflow_id=str(packet.get("workflow_id") or ""),
+                        durable_job_id=str(packet.get("durable_job_id") or ""),
+                        room_id=packet.get("research_room_id"))
+    if result.get("status") == "COMPLETE":
+        result.update({"environment_id": proof["environment_id"], "model_profile": "SYNTHESIS",
+            "authorization": proof["authorization"], "external_side_effects": False})
+        result.setdefault("generation_receipt_id", _receipt_id("research-synthesis", packet, result))
+    return result
+
+
 def minimum_runtime_handlers() -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     """Handlers genuinely implemented and bound today; absent handlers stay unavailable."""
     return {"NOVA_COORDINATOR": nova_objective_intake,
-            "RESEARCH_PLANNER": research_plan}
+            "RESEARCH_PLANNER": research_plan,
+            "ALPHA_DEEP_RESEARCH": alpha_deep_research,
+            "FACT_CHECKER": research_fact_check,
+            "RESEARCH_SYNTHESIZER": research_synthesis}

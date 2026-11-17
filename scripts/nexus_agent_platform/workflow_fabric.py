@@ -70,6 +70,8 @@ def context_packet(workflow: dict[str, Any], step: dict[str, Any], *, relevant_f
     """Construct a bounded handoff packet; never accepts or includes raw transcripts."""
     packet = {"workflow_id": workflow["workflow_id"], "objective": workflow["objective"],
         "current_step": step["step_id"], "current_domain_agent": step["owner"],
+        "durable_job_id": workflow.get("durable_job_id"),
+        "research_room_id": workflow.get("research_room_id"),
         "relevant_facts": (relevant_facts or [])[:max_items], "evidence": (evidence or [])[:max_items],
         "artifact_ids": list(workflow.get("artifact_ids", []))[:max_items],
         "constraints": load_definition(workflow["workflow_type"]).get("governance", {}),
@@ -319,6 +321,31 @@ class WorkflowController:
         safe = {k: v for k, v in result.items() if k not in {"secret", "token", "credential_value", "api_key"}}
         step["result"] = safe
         step["last_error"] = result.get("error_code")
+        if safe.get("room_id"):
+            workflow["research_room_id"] = str(safe["room_id"])
+        artifact_ids = safe.get("artifact_ids")
+        if isinstance(artifact_ids, list):
+            known_artifacts = set(workflow.get("artifact_ids") or [])
+            workflow.setdefault("artifact_ids", []).extend(
+                str(value) for value in artifact_ids if value and str(value) not in known_artifacts)
+        if safe.get("generation_receipt_id"):
+            step["generation_receipt_id"] = str(safe["generation_receipt_id"])
+        handoff = safe.get("handoff")
+        if status == "COMPLETE" and isinstance(handoff, dict) and handoff.get("target_domain_agent"):
+            target = str(handoff["target_domain_agent"])
+            already = next((row for row in workflow.get("handoffs", [])
+                if row.get("source_step") == step["step_id"] and row.get("target_domain_agent") == target), None)
+            if not already:
+                create_handoff(workflow, source_step=step["step_id"], source_bot=step["bot_id"],
+                    source_domain_agent=step["owner"], target_domain_agent=target,
+                    objective=str(handoff.get("objective") or workflow.get("objective") or ""),
+                    summary=str(handoff.get("summary") or ""),
+                    evidence=[str(value) for value in handoff.get("evidence", [])[:20]],
+                    artifacts=[str(value) for value in handoff.get("artifacts", [])[:50]],
+                    constraints=[str(value) for value in handoff.get("constraints", [])[:20]],
+                    open_questions=[str(value) for value in handoff.get("open_questions", [])[:20]],
+                    recommended_next_action=str(handoff.get("recommended_next_action") or "CONTINUE"),
+                    approval_required=bool(handoff.get("approval_required", False)))
         step["receipt_id"] = "sr_" + _hash([workflow["workflow_id"], step["step_id"], step["attempt_count"], safe])[:24]
         workflow["receipts"].append({"receipt_id": step["receipt_id"], "step_id": step["step_id"], "status": status,
             "created_at": utcnow(), "error_code": step["last_error"], "partial_output": result.get("partial_output")})

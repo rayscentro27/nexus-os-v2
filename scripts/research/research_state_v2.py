@@ -250,6 +250,19 @@ def _upsert_current(row: dict[str, Any]) -> dict[str, Any]:
     status, body = supabase.rest("POST", "research_proactive_memory?on_conflict=memory_id", body=[payload],
                                  prefer="return=representation,resolution=merge-duplicates")
     echoed = next((item for item in body if isinstance(item, dict) and item.get("memory_id") == memory_id), None) if isinstance(body, list) else None
+    if status in {200, 201, 204} and (not echoed or echoed.get("recorded_at") != row["recorded_at"]):
+        # Some PostgREST paths commit an upsert but omit the representation.
+        # Accept only an exact readback of this event marker and timestamp;
+        # otherwise retain the existing fail-closed pending-intent behavior.
+        try:
+            exact = _exact_current(memory_id)
+        except CurrentStateUnavailable:
+            exact = None
+        if (isinstance(exact, dict)
+                and str(exact.get("last_state_event_id") or "") == str(row.get("last_state_event_id") or "")
+                and str(exact.get("recorded_at") or "") == str(row.get("recorded_at") or "")):
+            return {"status": "PASS", "verified": True, "memory_id": memory_id,
+                    "namespace": "PRODUCTION", "readback_verified": True}
     if status not in {200, 201, 204} or not echoed or echoed.get("recorded_at") != row["recorded_at"]:
         raise StateWriteFailure(f"CURRENT_STATE_WRITE_FAILED:HTTP_{status}")
     return {"status": "PASS", "verified": True, "memory_id": memory_id, "namespace": "PRODUCTION"}
@@ -578,10 +591,23 @@ def _apply_pending(event_id: str, pending: dict[str, Any]) -> dict[str, Any]:
         receipt = json.loads(receipt_path.read_text())
         _pending_path(event_id).unlink(missing_ok=True)
         return receipt
-    # Reconciliation always retries current state first. Pending state is
-    # durable before either authoritative write, so crashes are replayable.
+    # Reconciliation always establishes current state before history. Some
+    # PostgREST deployments commit an idempotent upsert but omit the returned
+    # representation despite HTTP 200; verify the exact event marker before
+    # retrying, so we can safely finish the history/receipt half of that write.
     row["last_state_event_id"] = event_id
-    current_receipt = _upsert_current(row)
+    try:
+        existing = _exact_current(str(row.get("memory_id") or ""))
+    except CurrentStateUnavailable:
+        existing = None
+    if (isinstance(existing, dict)
+            and str(existing.get("last_state_event_id") or "") == event_id
+            and str(existing.get("recorded_at") or "") == str(row.get("recorded_at") or "")):
+        current_receipt = {"status": "PASS", "verified": True, "memory_id": row["memory_id"],
+            "namespace": "CERTIFICATION" if _certification() else "PRODUCTION",
+            "reconciled_committed_state": True}
+    else:
+        current_receipt = _upsert_current(row)
     event = pending["history_event"]
     archive_path = _append_event(event, pending.get("history_path"))
     receipt = {"event_id": event_id, "memory_id": row["memory_id"], "current_state": current_receipt,

@@ -122,6 +122,61 @@ def test_context_packet_is_bounded_and_has_no_transcript_field():
     assert packet["workflow_id"] == workflow["workflow_id"]
 
 
+def test_research_room_id_and_artifacts_flow_across_durable_steps():
+    controller = WorkflowController(WorkflowStateStore(DurableJobStore(":memory:")))
+    workflow = _workflow()
+    step = workflow["steps"][2]
+    controller.record_result(workflow, step, {"status": "COMPLETE", "room_id": "rcase-room-1",
+        "artifact_ids": ["alpha-pack:job-1"], "generation_receipt_id": "alpha-receipt-1"})
+    next_packet = context_packet(workflow, workflow["steps"][3])
+    assert workflow["research_room_id"] == "rcase-room-1"
+    assert "alpha-pack:job-1" in workflow["artifact_ids"]
+    assert next_packet["research_room_id"] == "rcase-room-1"
+
+
+def test_research_synthesis_result_creates_compact_department_handoff():
+    controller = WorkflowController(WorkflowStateStore(DurableJobStore(":memory:")))
+    workflow = _workflow()
+    step = {"step_id": "RESEARCH_SYNTHESIS", "owner": "RESEARCH_LEAD",
+        "bot_id": "RESEARCH_SYNTHESIZER", "status": "RUNNING", "attempt_count": 0,
+        "max_retries": 2, "depends_on": []}
+    result = controller.record_result(workflow, step, {"status": "COMPLETE", "handoff": {
+        "target_domain_agent": "CLYDE", "objective": "Apply research to GoClear plan",
+        "summary": "Evidence-backed summary", "evidence": ["sba-source-1"],
+        "constraints": ["No approval promises"], "recommended_next_action": "BUILD_PLAN"}})
+    assert result["step_status"] == "COMPLETE"
+    assert len(workflow["handoffs"]) == 1
+    assert workflow["handoffs"][0]["target_domain_agent"] == "CLYDE"
+    assert workflow["handoffs"][0]["evidence"] == ["sba-source-1"]
+
+
+def test_research_room_handlers_require_workflow_authorization_proof():
+    from nexus_agent_platform.workflow_runtime_handlers import (
+        alpha_deep_research, minimum_runtime_handlers, research_fact_check, research_synthesis,
+    )
+    assert {"ALPHA_DEEP_RESEARCH", "FACT_CHECKER", "RESEARCH_SYNTHESIZER"} <= set(minimum_runtime_handlers())
+    packet = {"workflow_id": "wf-test", "objective": "Research a public topic"}
+    assert alpha_deep_research(packet)["error_code"] == "WORKFLOW_AUTHORIZATION_PROOF_MISSING"
+    assert research_fact_check(packet)["error_code"] == "WORKFLOW_AUTHORIZATION_PROOF_MISSING"
+    assert research_synthesis(packet)["error_code"] == "WORKFLOW_AUTHORIZATION_PROOF_MISSING"
+
+
+def test_research_step_execution_uses_bounded_child_job_not_control_root(monkeypatch, tmp_path):
+    from nexus_agent_platform import durable_jobs
+    from nexus_agent_platform.research_room import workflow_backend
+    store = DurableJobStore(tmp_path / "research-step.sqlite3")
+    monkeypatch.setattr(durable_jobs, "default_store", lambda: store)
+    first, budget = workflow_backend._ensure_step_execution_job("root-job", "wf-test", "DEEP_RESEARCH")
+    second, _ = workflow_backend._ensure_step_execution_job("root-job", "wf-test", "DEEP_RESEARCH")
+    row = store.get(first)
+    assert first == second
+    assert row.parent_job_id == "root-job"
+    assert row.job_type == "RESEARCH_CASE_CONTINUATION"
+    assert row.budget_envelope["max_requests"] == 20
+    assert row.budget_envelope["max_estimated_cost"] == 0.0
+    assert budget["max_response_bytes"] == 500_000
+
+
 def test_ai_sensitive_values_are_redacted_before_context_creation():
     from scripts.nexus_agent_platform.ai_sensitive_data import redact_ai_context
     safe = redact_ai_context({"full_ssn": "123-45-6789", "ein": "12-3456789",

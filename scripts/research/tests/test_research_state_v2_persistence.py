@@ -131,6 +131,40 @@ def test_pending_intent_is_detected_and_reconciled(monkeypatch, tmp_path):
     assert state.detect_divergence()["consistent"] is True
 
 
+def test_reconciliation_finishes_history_when_current_upsert_committed_without_echo(monkeypatch, tmp_path):
+    _isolated(monkeypatch, tmp_path)
+    row = state._bounded_record({**_row(), "memory_id": "case-committed-without-echo"})
+    event = state._event_for(row)
+    event_id = event["event_id"]
+    committed = {**row, "last_state_event_id": event_id}
+    state._upsert_current(committed)
+    pending = {"event_id": event_id, "current_state": row, "history_event": event}
+    state._atomic_write(state._pending_path(event_id), json.dumps(pending).encode())
+    monkeypatch.setattr(state, "_upsert_current", lambda _value: pytest.fail("duplicate current write"))
+    monkeypatch.setattr(state, "_append_event", lambda _value, target_hint=None: "history-partition")
+    result = state.reconcile_pending(limit=1)
+    assert result == {"status": "PASS", "processed": 1, "failed": 0}
+    receipt = json.loads((state._state_root() / "receipts" / (event_id + ".json")).read_text())
+    assert receipt["current_state"]["reconciled_committed_state"] is True
+    assert state.detect_divergence()["consistent"] is True
+
+
+def test_production_upsert_accepts_only_exact_readback_when_representation_is_omitted(monkeypatch):
+    class SupabaseWithoutRepresentation:
+        @staticmethod
+        def configured(): return True
+        @staticmethod
+        def rest(*args, **kwargs): return 200, []
+    monkeypatch.setattr(state, "_certification", lambda: False)
+    monkeypatch.setattr(state, "supabase", SupabaseWithoutRepresentation())
+    row = state._bounded_record({**_row(), "last_state_event_id": "evt-exact", "memory_id": "case-exact"})
+    monkeypatch.setattr(state, "_exact_current", lambda _memory_id: {
+        "last_state_event_id": "evt-exact", "recorded_at": row["recorded_at"]})
+    result = state._upsert_current(row)
+    assert result["verified"] is True
+    assert result["readback_verified"] is True
+
+
 def test_partition_rotation_uses_numbered_bounded_segments(monkeypatch, tmp_path):
     root = _isolated(monkeypatch, tmp_path)
     first_event = state._event_for(_row())
