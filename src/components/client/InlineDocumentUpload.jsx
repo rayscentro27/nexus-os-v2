@@ -159,16 +159,9 @@ export default function InlineDocumentUpload({ category = '', onUploaded = () =>
       onUploaded?.({ documentId: docMeta.id, fileName: file.name, category: cat, requirementKey, stage: track })
       trackEvent({ event: 'upload_completed', stage: track, requirement: requirementKey, route: pageContext, detail: cat })
 
-      if (cat === 'credit_reports' || cat === 'credit_report') {
-        const { error: jobError } = await supabase.from('credit_analysis_jobs').insert({
-          tenant_id: docMeta.tenant_id,
-          client_id: docMeta.client_id,
-          document_id: docMeta.id,
-          status: 'queued',
-          requested_by: 'inline_upload',
-        })
-        if (jobError) console.warn('Failed to queue analysis job:', jobError)
-      }
+      // Credit analysis is enqueued transactionally by the database trigger on
+      // the document insert into the governed durable queue. Do not create a
+      // second client-side legacy credit_analysis_jobs entry here.
     } catch (err) {
       setResult({ ok: false, message: err?.message || 'Upload failed' })
       trackEvent({ event: 'upload_failed', stage: track, requirement: requirementKey, route: pageContext, detail: err?.message || 'Upload failed' })

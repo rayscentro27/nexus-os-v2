@@ -32,11 +32,11 @@ import { DepartmentWorkspace } from './common/DepartmentWorkspace';
 import { DEPARTMENT_WORKSPACES } from '../config/nexusProjectTypes';
 
 // ── reusable list ──
-function DataList({ table, render, what, order }: {
-  table: string; what: string; order?: string;
+function DataList({ table, render, what, order, columns }: {
+  table: string; what: string; order?: string; columns?: string;
   render: (r: Row) => React.ReactNode;
 }) {
-  const { data } = useData<TableQueryResult>(() => listTableDetailed(table, { order }), emptyTableResult(table, order));
+  const { data } = useData<TableQueryResult>(() => listTableDetailed(table, { order, columns }), emptyTableResult(table, order));
   if (data.data.length === 0) return <ConnectionEmpty result={data} what={what} />;
   return (
     <>
@@ -665,14 +665,14 @@ export function GoClearWorkspace() {
         <Card title="Compliance"><div className="meta muted">No guaranteed funding/approval/credit-repair/score claims.</div></Card>
       </div>
       <SectionTitle>Partner offers</SectionTitle>
-      <DataList table="partner_offers" what="partner offers" order="created_at" render={(o) => (
+      <DataList table="partner_offers" what="partner offers" order="created_at" columns="id,name,approval_status,category,risk_level,secret_env_name,why_it_matters,affiliate_disclosure" render={(o) => (
         <><div className="t">{o.name} <Pill status={o.approval_status} /></div>
           <div className="meta">{o.category} · risk {o.risk_level} · token via {o.secret_env_name || '—'} (not stored)</div>
           {o.why_it_matters && <div className="body">{o.why_it_matters}</div>}
           <div className="meta muted" style={{ marginTop: 4 }}>{o.affiliate_disclosure}</div></>
       )} />
       <SectionTitle>Client recommendations</SectionTitle>
-      <DataList table="client_recommendations" what="client recommendations" render={(r) => (
+      <DataList table="client_recommendations" what="client recommendations" columns="id,title,status,recommendation_type,reason" render={(r) => (
         <><div className="t">{r.title} <Pill status={r.status} /></div><div className="meta">{r.recommendation_type}</div>{r.reason && <div className="body">{r.reason}</div>}</>
       )} />
     </>
@@ -780,19 +780,19 @@ export function ModelRouter() {
           <div className="meta muted" style={{ marginTop: 6 }}>{p.provider_type} · privacy: {p.privacy_level} · env: {p.secret_env_name || '—'}</div></div>
       ))}</div>}
       <SectionTitle>Routes (policy-gated)</SectionTitle>
-      <DataList table="model_routes" what="routes" order="priority" render={(r) => (
+      <DataList table="model_routes" what="routes" order="priority" columns="id,route_key,route_type,policy,active,provider_key,primary_provider_key,external_call_allowed,sensitive_data_allowed,requires_approval,cost_tier,notes" render={(r) => (
         <><div className="t">{r.route_key} <Pill status={r.route_type === 'blocked' ? 'failed' : (r.active ? 'active' : 'registered')} label={r.route_type || r.policy} />{!r.active && r.route_type !== 'blocked' && <span className="pill warn" style={{ marginLeft: 6 }}>candidate</span>}</div>
           <div className="meta">provider: {r.provider_key || r.primary_provider_key || '—'} · external call: {r.external_call_allowed ? '✅' : '⛔'} · sensitive: {r.sensitive_data_allowed ? '✅' : '⛔'} · approval: {r.requires_approval ? '✅' : '—'} · cost: {r.cost_tier || '—'}</div>
           {r.notes && <div className="meta muted">{r.notes}</div>}</>
       )} />
       <SectionTitle>Recent route decisions</SectionTitle>
-      <DataList table="model_route_decisions" what="route decisions" render={(d) => (
+      <DataList table="model_route_decisions" what="route decisions" columns="id,decision,sensitivity,task_type,selected_route_key,requires_approval,reason" render={(d) => (
         <><div className="t"><Pill status={d.decision === 'blocked' ? 'failed' : (d.decision === 'selected' ? 'ok' : 'pending')} label={d.decision} /> {d.sensitivity}</div>
           <div className="meta">{d.task_type} → {d.selected_route_key || '—'}{d.requires_approval ? ' · approval required' : ''}</div>
           {d.reason && <div className="meta muted">{d.reason}</div>}</>
       )} />
       <SectionTitle>Recent Hermes model requests</SectionTitle>
-      <DataList table="hermes_model_requests" what="Hermes requests" render={(h) => (
+      <DataList table="hermes_model_requests" what="Hermes requests" columns="id,status,sensitivity,task_type,selected_route_key,dry_run,response_summary" render={(h) => (
         <><div className="t"><Pill status={h.status === 'blocked' ? 'failed' : 'info'} label={h.status} /> {h.sensitivity}</div>
           <div className="meta">{h.task_type} → {h.selected_route_key || '—'} · dry_run {String(h.dry_run)}</div>
           {h.response_summary && <div className="body" style={{ opacity: .85 }}>{String(h.response_summary).slice(0, 160)}</div>}</>
@@ -807,7 +807,7 @@ export function Integrations() {
   return (
     <>
       <div className="note">Registered, not activated. Each integration lists its secret env names (never the secret) and risk level. Enabling happens later, deliberately.</div>
-      <DataList table="integration_registry" what="integrations" order="integration_key" render={(i) => (
+      <DataList table="integration_registry" what="integrations" order="integration_key" columns="id,name,enabled,category,risk_level,requires_secret,secret_env_names,purpose" render={(i) => (
         <><div className="t">{i.name} <Pill status={i.enabled ? 'enabled' : 'registered'} /></div>
           <div className="meta">{i.category} · risk {i.risk_level}{i.requires_secret ? ` · secrets: ${(i.secret_env_names || []).join(', ')}` : ' · no secret'}</div>
           {i.purpose && <div className="body">{i.purpose}</div>}</>
@@ -835,20 +835,20 @@ export function IntakeOrientation() {
     <>
       <div className="note">Paste videos/transcripts/ideas → Nexus decides what to do (use now / phase 2 / improvement candidate / GoClear test / content / research / park / reject). Deterministic + compliance-gated; no external model calls. High-compliance items (credit/funding/trading) require human review.</div>
       <SectionTitle>Transcript reviews</SectionTitle>
-      <DataList table="transcript_reviews" what="transcript reviews" render={(r) => (
+      <DataList table="transcript_reviews" what="transcript reviews" columns="id,title,decision,score,category,usefulness_score,money_now_score,automation_score,risk_score,compliance_risk,recommended_action,claim_flags" render={(r) => (
         <><div className="t">{r.title} <Pill status={r.decision} /> {r.score != null ? '' : ''}<span className="pill info" style={{ marginLeft: 6 }}>{r.category}</span></div>
           <div className="meta">use {r.usefulness_score} · money {r.money_now_score} · auto {r.automation_score} · risk {r.risk_score} · compliance: <b style={{ color: (r.compliance_risk === 'very_high' || r.compliance_risk === 'high') ? 'var(--bad)' : 'var(--muted)' }}>{r.compliance_risk}</b></div>
           <div className="body" style={{ opacity: .85 }}>{r.recommended_action}</div>
           {r.claim_flags?.length > 0 && <div className="meta" style={{ color: 'var(--warn)' }}>claim flags: {(r.claim_flags || []).join(', ')}</div>}</>
       )} />
       <SectionTitle>Claim risk / compliance queue</SectionTitle>
-      <DataList table="orientation_notes" what="orientation notes" render={(o) => (
+      <DataList table="orientation_notes" what="orientation notes" columns="id,summary,decision,category,risk_flags,reason" render={(o) => (
         <><div className="t">{o.summary} <Pill status={o.decision} /></div>
           <div className="meta">{o.category}{o.risk_flags?.length ? ` · flags: ${(o.risk_flags || []).join(', ')}` : ''}</div>
           {o.reason && <div className="body" style={{ opacity: .8 }}>{o.reason}</div>}</>
       )} />
       <SectionTitle>Intake inbox</SectionTitle>
-      <DataList table="intake_events" what="intake events" render={(e) => (
+      <DataList table="intake_events" what="intake events" columns="id,title,status,source_type,category,created_at" render={(e) => (
         <><div className="t">{e.title} <Pill status={e.status} /></div>
           <div className="meta">{e.source_type}{e.category ? ` · ${e.category}` : ''} · {timeAgo(e.created_at)}</div></>
       )} />
@@ -860,7 +860,7 @@ export function IntakeOrientation() {
 // ── Events Feed ──
 export function EventsFeed() {
   return (
-    <DataList table="nexus_events" what="events" render={(e) => (
+    <DataList table="nexus_events" what="events" columns="id,status,title,action,lane,source,created_at,summary" render={(e) => (
       <><div className="t"><Pill status={e.status} /> {e.title ?? e.action}</div>
         <div className="meta">{e.lane} · {e.source} · {timeAgo(e.created_at)}{e.summary ? ` · ${e.summary}` : ''}</div></>
     )} />

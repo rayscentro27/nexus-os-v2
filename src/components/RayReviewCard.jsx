@@ -15,6 +15,19 @@ export default function RayReviewCard({ card, decision, onDecision, persisting }
       </div>
       <h3>{card.title}</h3>
       <p>{card.recommendation}</p>
+      {card.promptDetails && (
+        <details className="nxos-prompt-review" open>
+          <summary>Exact Creative prompt · v{card.promptDetails.version} · {card.promptDetails.campaign_id}</summary>
+          <dl>
+            {Object.entries(card.promptDetails.prompt_fields || {}).map(function(entry) {
+              return <div key={entry[0]}><dt>{entry[0].replaceAll('_', ' ')}</dt><dd>{Array.isArray(entry[1]) ? entry[1].join('; ') : String(entry[1] ?? 'not provided')}</dd></div>;
+            })}
+          </dl>
+          <strong>Exact prompt Creative will receive</strong>
+          <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 360, overflow: 'auto' }}>{card.promptDetails.exact_creative_prompt}</pre>
+          <small>Prompt SHA-256: {card.promptDetails.exact_prompt_sha256}</small>
+        </details>
+      )}
       <dl>
         <div><dt>Status</dt><dd>{current}</dd></div>
         <div><dt>External action</dt><dd>{card.externalAction ? 'Yes \u2014 separately gated' : 'No'}</dd></div>
@@ -25,13 +38,13 @@ export default function RayReviewCard({ card, decision, onDecision, persisting }
       <label className="nxos-field">Feedback<textarea value={feedback} onChange={function(event) { setFeedback(event.target.value); }} placeholder="Optional direction for Hermes or the assigned specialist" /></label>
       <div className="nxos-actions">
         <button type="button" className="primary" disabled={persisting} onClick={function() { onDecision(card, 'approved', feedback); }}>
-          {persisting ? 'Saving...' : 'Approve'}
+          {persisting ? 'Saving...' : card.promptDetails ? 'Approve prompt' : 'Approve'}
         </button>
         <button type="button" disabled={persisting} onClick={function() { onDecision(card, 'rejected', feedback); }}>
-          {persisting ? 'Saving...' : 'Reject'}
+          {persisting ? 'Saving...' : card.promptDetails ? 'Reject prompt' : 'Reject'}
         </button>
         <button type="button" disabled={persisting} onClick={function() { onDecision(card, 'held', feedback); }}>
-          {persisting ? 'Saving...' : 'Hold'}
+          {persisting ? 'Saving...' : card.promptDetails ? 'Request changes' : 'Hold'}
         </button>
       </div>
       {decision && (

@@ -51,7 +51,7 @@ function categorizeError(error: unknown): ConnectionStatus {
   return 'query_error';
 }
 
-function filterLabel(opts: { limit?: number; order?: string; ascending?: boolean; eq?: [string, string] } = {}): string {
+function filterLabel(opts: { limit?: number; order?: string; ascending?: boolean; eq?: [string, string]; columns?: string } = {}): string {
   const parts = [`limit=${opts.limit ?? 50}`, `order=${opts.order ?? 'created_at'}.${opts.ascending ? 'asc' : 'desc'}`];
   if (opts.eq) parts.push(`${opts.eq[0]}=eq.${opts.eq[1]}`);
   return parts.join(' ');
@@ -81,7 +81,7 @@ function emptyResult<T extends Row>(
 
 export async function listTableDetailed<T extends Row = Row>(
   table: string,
-  opts: { limit?: number; order?: string; ascending?: boolean; eq?: [string, string] } = {},
+  opts: { limit?: number; order?: string; ascending?: boolean; eq?: [string, string]; columns?: string } = {},
 ): Promise<TableQueryResult<T>> {
   if (!supabase || !isSupabaseConfigured) return emptyResult<T>(table, opts, 'missing_env');
 
@@ -94,7 +94,7 @@ export async function listTableDetailed<T extends Row = Row>(
   };
   if (!session) return emptyResult<T>(table, opts, 'no_authenticated_session', base);
 
-  let q = supabase.from(table).select('*').limit(opts.limit ?? 50);
+  let q = supabase.from(table).select(opts.columns || '*').limit(opts.limit ?? 50);
   q = q.order(opts.order ?? 'created_at', { ascending: opts.ascending ?? false });
   if (opts.eq) q = q.eq(opts.eq[0], opts.eq[1]);
   const { data, error } = await q;
@@ -107,7 +107,7 @@ export async function listTableDetailed<T extends Row = Row>(
     });
   }
 
-  const rows = (data ?? []) as T[];
+  const rows = (data ?? []) as unknown as T[];
   return {
     table,
     filter: filterLabel(opts),
@@ -143,7 +143,7 @@ export async function getAdminDiagnostic(): Promise<AdminDiagnostic> {
 /** Generic read for any table the admin can SELECT. Empty array when unconfigured/blocked. */
 export async function listTable(
   table: string,
-  opts: { limit?: number; order?: string; ascending?: boolean; eq?: [string, string] } = {},
+  opts: { limit?: number; order?: string; ascending?: boolean; eq?: [string, string]; columns?: string } = {},
 ): Promise<Row[]> {
   const result = await listTableDetailed(table, opts);
   if (result.errorMessage) console.warn(`[db] ${table}:`, result.errorMessage);

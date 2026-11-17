@@ -51,6 +51,8 @@ export interface ExecutiveApprovalItem {
 
 export interface GovernedWorkItem {
   id: string;
+  goalId: string;
+  parentGoalId: string;
   title: string;
   department: string;
   assignee: string;
@@ -58,23 +60,96 @@ export interface GovernedWorkItem {
   approvalState: string;
   executionStatus: string;
   blocker: string;
+  evidenceRequest?: string;
   nextAction: string;
   evidence: ExecutiveEvidence;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface DepartmentStatus {
   departmentId: string;
   displayName: string;
   purpose: string;
-  currentStatus: 'ACTIVE' | 'PARTIAL' | 'PLANNED' | 'BLOCKED' | 'PAUSED' | 'NOT_CONFIGURED';
+  currentStatus: 'ACTIVE' | 'PARTIAL' | 'PLANNED' | 'BLOCKED' | 'PAUSED' | 'IDLE' | 'NOT_PROVEN' | 'NOT_CONFIGURED';
   owner: string;
   activeCapabilities: string[];
   activeGovernedWork: number;
+  activeGoals: number;
+  currentGoal: string;
+  evidenceRequest: string;
+  currentWork: string;
+  currentWorkItem: string;
+  currentStage: string;
+  currentAction: string;
+  lastAction: string;
+  nextAction: string;
+  lastResult: string;
+  valueOutput: string;
+  completedLast24h: number;
+  handoffsIn: number;
+  handoffsOut: number;
+  waitingHuman: number;
+  lastActivityAt: string | null;
   pendingApprovals: number;
   blockers: string[];
   kpis: string[];
   activationState: string;
   evidence: ExecutiveEvidence;
+}
+
+export interface CompanyHandoff {
+  handoffId: string;
+  sourceDepartment: string;
+  targetDepartment: string;
+  subject: string;
+  status: string;
+  createdAt: string | null;
+  acknowledgedAt: string | null;
+  currentOwner: string;
+  currentGoal: string;
+  currentAction: string;
+  outcome: string;
+  workOrderId: string;
+  currentStage: string;
+  rejection?: {
+    reason: string;
+    evidence: unknown[];
+    failedCriteria: unknown[];
+    whatWasTested: string;
+    whatWasObserved: unknown;
+    whatWouldChangeTheDecision: string;
+    nextAction: string;
+    nextActionOwner: string;
+    parentGoalStatus: string;
+  } | null;
+}
+
+export interface ResearchObservability {
+  evidenceStatus: string;
+  designatedSources: Array<{ name: string; type: string; category: string; targetDepartment: string; priority: string; enabled: string; mode: string }>;
+  providers: Array<{ name: string; purpose: string; enabled: string; liveStatus: string }>;
+  monitoredItems24h: number | string;
+  casesOpen: number | string;
+  currentlyProcessing: string;
+  currentCaseId: string;
+  currentCaseTopic: string;
+  currentCaseStatus: string;
+  currentCaseNextAction: string;
+  findings24h: number | string;
+  handoffs24h: number | string;
+  proactiveObjectives: number | string;
+  queries24h: number | string;
+  queryFamilies24h: number | string;
+  repeatSkips24h: number | string;
+  novelResults24h: number | string;
+  duplicates24h: number | string;
+  saturatedFamilies: number | string;
+  openBranches: number | string;
+  currentFamily: string;
+  nextQueryDirection: string;
+  notebookWorkspaces: number | string;
+  researchFollowups: Array<{ requestId: string; requestingDepartment: string; subject: string; reason: string; questions: Array<{ question: string; status: string }>; currentAction: string; answersReceived: number; remainingGaps: string[]; returnDepartment: string; returnGoalId: string; decisionUnlocked: string; nextAction: string }> | 'UNAVAILABLE' | 'NOT_CONNECTED';
 }
 
 export interface ExecutiveHealthItem {
@@ -125,6 +200,9 @@ export interface ExecutiveCommandCenterState {
   approvals: ExecutiveApprovalItem[];
   governedWork: GovernedWorkItem[];
   departments: DepartmentStatus[];
+  handoffs: CompanyHandoff[];
+  handoffEvidenceStatus: string;
+  researchObservability: ResearchObservability;
   customerSummary: ExecutiveMetric[];
   revenueSummary: ExecutiveMetric[];
   systemHealth: ExecutiveHealthItem[];
