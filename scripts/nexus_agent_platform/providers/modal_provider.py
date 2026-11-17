@@ -75,11 +75,26 @@ class ModalRemoteWorkerProvider:
         timestamp = str(int(time.time()))
         from ..provider_enforcement import execute
         estimate = {"requests": 1, "operations": 1, "runtime_seconds": self.timeout,
-                    "billable": True}
+                    "billable": True, "budget_period": "MONTHLY"}
         try:
-            estimate["cost"] = float(os.environ["NEXUS_MODAL_ESTIMATED_COST_PER_JOB"])
-        except (KeyError, ValueError):
-            pass
+            job_cost = float((job.get("limits") or {}).get("estimated_cost_usd",
+                          os.environ.get("NEXUS_MODAL_ESTIMATED_COST_PER_JOB", "")))
+        except (TypeError, ValueError):
+            job_cost = None
+        if job_cost is None or job_cost < 0:
+            from ..resource_spend_governor import GovernanceDenied
+            raise GovernanceDenied("HUMAN_APPROVAL_REQUIRED", "MODAL_JOB_COST_REQUIRED")
+        from ..modal_usage_governor import preflight_modal_job, read_confirmed_monthly_usage
+        try:
+            confirmed = read_confirmed_monthly_usage(modal_bin=self.modal_bin, profile=self.profile)
+        except Exception as exc:
+            from ..resource_spend_governor import GovernanceDenied
+            raise GovernanceDenied("HUMAN_APPROVAL_REQUIRED", "MODAL_BILLING_USAGE_UNAVAILABLE") from exc
+        monthly = preflight_modal_job(proposed_job_usd=job_cost, confirmed_usage_usd=confirmed)
+        if monthly["status"] != "AUTO_ALLOWED":
+            from ..resource_spend_governor import GovernanceDenied
+            raise GovernanceDenied("HUMAN_APPROVAL_REQUIRED", f"MODAL_{monthly['band']}")
+        estimate["cost"] = job_cost
         result = execute("MODAL", "remote_worker", "REMOTE_WORKER_SUBMIT", estimate,
             lambda: self._function(self.function_name).remote(job, timestamp, sign_request(job, self.shared_secret, timestamp)),
             job_id=durable_job_id,
