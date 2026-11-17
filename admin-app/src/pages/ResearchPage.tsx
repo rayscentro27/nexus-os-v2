@@ -39,8 +39,9 @@ import {
 import { useNexus } from '../context/NexusContext';
 import { TruthBadge } from '../components/common/TruthBadge';
 import { NexusDepartmentName } from '../types';
+import ResearchRoomWorkspace from '../../../src/components/ResearchRoomWorkspace';
 
-type ResearchTab = 'findings' | 'diagnostics';
+type ResearchTab = 'findings' | 'diagnostics' | 'rooms';
 
 export const ResearchPage: React.FC = () => {
   const {
@@ -342,6 +343,17 @@ export const ResearchPage: React.FC = () => {
               }`}
             >
               Ingestion &amp; Queue Diagnostics ({researchQueue.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('rooms')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                activeTab === 'rooms'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Research Rooms
             </button>
           </div>
 
@@ -954,6 +966,7 @@ export const ResearchPage: React.FC = () => {
           </div>
         </div>
       )}
+      {activeTab === 'rooms' && <ResearchRoomWorkspace />}
     </div>
   );
 };

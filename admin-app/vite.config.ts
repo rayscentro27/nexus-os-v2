@@ -8,6 +8,9 @@ export default defineConfig(() => {
     base: '/admin/',
     plugins: [react(), tailwindcss()],
     resolve: {
+      // The Research Room workspace is shared from the repository source tree.
+      // Keep React hooks bound to the Admin app's React 19 runtime.
+      dedupe: ['react', 'react-dom'],
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
