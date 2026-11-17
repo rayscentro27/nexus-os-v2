@@ -1,0 +1,6 @@
+gradio>=5,<7
+spaces>=0.37,<1
+imageio-ffmpeg>=0.5,<1
+faster-whisper==1.2.1
+ctranslate2==4.8.2
+supabase>=2.10,<3
