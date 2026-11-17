@@ -1,0 +1,32 @@
+{
+  "schema_version": "nexus.systems.oracle-host-control-capabilities.v1",
+  "owner": "SYSTEMS",
+  "transport": {
+    "kind": "fixed_ssh_stdin_json",
+    "host_id": "nexus-llm-worker",
+    "hostname": "161.153.40.41",
+    "user": "opc",
+    "identity": "~/.ssh/oracle_vm",
+    "remote_client": "/home/opc/.nexus/host-control/nexus-oracle-host-control/nexus_oracle_host_control.py --invoke",
+    "path": "/home/opc/.nexus/state/host-control/host-control.sock",
+    "request_channel": "stdin_json",
+    "caller_controlled_command": false,
+    "caller_controlled_target": false
+  },
+  "service": "nexus-oracle-host-control.service",
+  "invocation_module": "nexus_agent_platform.systems_oracle_host_control_transport",
+  "invocation_entrypoint": "invoke_systems_host_control",
+  "capabilities": [
+    {"id": "systems.oracle.release.inspect", "class": "READ"},
+    {"id": "systems.oracle.release.stage", "class": "WRITE", "approval_required": true},
+    {"id": "systems.oracle.nova.snapshot", "class": "READ_WITH_SNAPSHOT_STATE_WRITE"},
+    {"id": "systems.oracle.nova.snapshot_validate", "class": "READ"},
+    {"id": "systems.oracle.nova.poller_status", "class": "READ"},
+    {"id": "systems.oracle.nova.activate", "class": "WRITE", "approval_required": true},
+    {"id": "systems.oracle.nova.verify", "class": "READ"},
+    {"id": "systems.oracle.nova.rollback", "class": "WRITE", "approval_required": true},
+    {"id": "systems.oracle.receipt.read", "class": "READ"},
+    {"id": "systems.oracle.hermes.mcp_provider_status", "class": "READ"}
+  ],
+  "forbidden": ["arbitrary_path", "arbitrary_command", "arbitrary_shell", "arbitrary_service", "arbitrary_process"]
+}
