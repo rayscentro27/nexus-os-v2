@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.modal_usage_governor.v1",
+  "monthly_included_budget_usd": 30.0,
+  "thresholds": {
+    "warning_fraction": 0.70,
+    "conserve_fraction": 0.90,
+    "approval_fraction": 1.0
+  },
+  "billing_source": "modal billing summary --for this month --json",
+  "usage_basis": "metered_cost_before_credits",
+  "unknown_usage_policy": "DENY_SPEND_CAPABLE_JOB",
+  "unknown_job_cost_policy": "DENY_SPEND_CAPABLE_JOB",
+  "autonomous_job_cost_ceiling_usd": 5.0
+}
