@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "nexus.research-sync-eligibility.v1",
+  "title": "Compact finalized Research intelligence handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "subject", "summary", "key_findings", "recommendation", "evidence_limitations", "evidence_references", "category", "storage_class", "supabase_eligible", "sync_status", "department_destination", "summary_version", "source_size", "final_size", "finalized_at"],
+  "properties": {
+    "job_id": {"type": "string"},
+    "subject": {"type": "string", "maxLength": 500},
+    "summary": {"type": "string", "maxLength": 8000},
+    "key_findings": {"type": "array", "maxItems": 50, "items": {"type": "string", "maxLength": 3000}},
+    "recommendation": {"type": ["string", "null"], "maxLength": 3000},
+    "evidence_limitations": {"type": "array", "maxItems": 50, "items": {"type": "string", "maxLength": 1000}},
+    "validated_claims": {"type": "array", "items": {"type": "object"}},
+    "evidence_references": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {"type": "string"},
+          "public_url": {"type": ["string", "null"]},
+          "title": {"type": ["string", "null"]},
+          "content_hash": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "category": {"type": "string"},
+    "department_destination": {"type": ["string", "null"]},
+    "storage_class": {"enum": ["RAW_LOCAL", "WORKING_LOCAL", "FINAL_LOCAL", "SYNC_READY", "SYNCED_REMOTE", "ARCHIVED_LOCAL"]},
+    "supabase_eligible": {"type": "boolean"},
+    "sync_status": {"enum": ["NOT_ELIGIBLE", "READY_NOT_SENT", "SYNCED", "FAILED_RETRYABLE", "WITHHELD"]},
+    "sync_timestamp": {"type": ["string", "null"], "format": "date-time"},
+    "summary_version": {"type": "string"},
+    "source_size": {"type": "integer", "minimum": 0},
+    "final_size": {"type": "integer", "minimum": 0},
+    "finalized_at": {"type": "string", "format": "date-time"}
+  },
+  "policy": {
+    "default_storage_class": "FINAL_LOCAL",
+    "supabase_sync_enabled": false,
+    "eligible_statuses": ["COMPLETED", "COMPLETED_WITH_LIMITATIONS"],
+    "minimum_required": ["summary", "key_findings", "evidence_limitations", "evidence_references", "finalized_at"],
+    "excluded_material": ["raw_transcript", "raw_webpage", "working_notes", "intermediate_evidence_blob", "queue_or_retry_state", "debug_log", "credential_or_private_data"],
+    "destination_approval": "explicit Systems sync decision is required before transfer"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "playbook_id": "nexus.notebook.funding_grant",
+  "case_type": "FUNDING_GRANT",
+  "version": "1.0.0",
+  "objective_description": "Verify funding/grant programs against authoritative requirements and client fit.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What is the program name and official source URL?",
+    "What amount, eligibility, geography, industry, business-age, revenue, and credit requirements apply?",
+    "What documents, deadline, allowable uses, exclusions, and application steps apply?",
+    "How competitive is it and what is the evidence for that assessment?",
+    "Which client match rules and missing client data determine fit?",
+    "What is the next action and recommendation?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "OFFICIAL_GOVERNMENT",
+    "SBA",
+    "STATE_LOCAL_PROGRAMS",
+    "FOUNDATION_PROGRAMS",
+    "VERIFIED_LENDERS"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "eligibility",
+        "eligible",
+        "requirement",
+        "documents",
+        "deadline",
+        "amount"
+      ],
+      "source_classes": [
+        "OFFICIAL_PROGRAM_PAGE",
+        "GOVERNMENT_SOURCE",
+        "SBA"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "program_name": "",
+    "official_source": "",
+    "amount": "",
+    "eligibility": [],
+    "deadline": "",
+    "use_of_funds": "",
+    "documents": [],
+    "client_match_rules": [],
+    "missing_client_data": [],
+    "recommendation": ""
+  },
+  "handoff_destination": "FUNDING",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

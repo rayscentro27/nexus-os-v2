@@ -1,0 +1,37 @@
+{
+  "schema_version": "nexus.research.evidence-contracts.v1",
+  "result_states": {
+    "FINDING_SUPPORTED": "Credible attributable evidence supports a useful claim.",
+    "RESEARCH_INCONCLUSIVE": "Question remains valid; query/source/evidence has not adequately answered it.",
+    "HYPOTHESIS_NOT_SUPPORTED": "Only after appropriate source coverage, multiple independent checks, and evidence review fail to support the hypothesis."
+  },
+  "execution_quality_is_research_quality": false,
+  "negative_conclusion_requires_explicit_coverage_receipt": true,
+  "source_strategy_required_before_query": ["research_question", "evidence_needed", "best_source_classes", "why_these_sources"],
+  "raw_signal_required": ["signal_id", "objective_family", "research_question", "query", "source_class", "source_url", "source_title", "source_date", "evidence_snippet", "firsthand_or_secondary", "detected_need_or_signal", "why_relevant", "evidence_quality", "source_fit", "qualification_score", "qualification_threshold", "failed_criteria", "more_research_could_rescue", "missing_evidence", "potential_routing_if_qualified"],
+  "market_cluster": {
+    "required_fields": ["topic", "customer", "problem_or_desire", "first_seen", "last_seen", "trend_direction", "customer_evidence", "product_evidence", "affiliate_evidence", "merch_evidence", "search_demand", "video_social_signal", "competition", "current_alternatives", "monetization_options", "build_vs_affiliate_vs_service", "confidence", "evidence_sources", "more_research_needed"],
+    "trend_states": ["EMERGING", "ACCELERATING", "PEAKING", "DECLINING", "SATURATED", "UNKNOWN"],
+    "minimum_independent_sources": 3,
+    "minimum_source_classes": 2
+  },
+  "commerce_access": {
+    "clickbank": "NOT_CONFIGURED_OR_AUTHENTICATED; do not infer private rank or earnings",
+    "amazon": "PUBLIC_REVIEWS_AND_LISTINGS_ONLY; sales and affiliate economics require verified source",
+    "bonfire": "PUBLIC_CAMPAIGN_PAGES_ONLY; campaign presence is not sales evidence",
+    "affiliate_watch": "BOUNDED_PUBLIC_DISCOVERY; official terms required for economics",
+    "partnerstack": "PUBLIC_DISCOVERY_ONLY; member-only marketplace requires legitimate existing access"
+  },
+  "tradingview": {
+    "source_registry_id": "tradingview_editors_picks",
+    "source_url": "https://www.tradingview.com/scripts/editors-picks/",
+    "source_type": "TRADINGVIEW_PUBLIC_SCRIPTS",
+    "enabled": true,
+    "public_bounded_fetch_only": true,
+    "live_trading_allowed": false,
+    "qualification_requires_open_source_for_logic_recreation": true,
+    "protected_or_invite_only_is_informational_only": true,
+    "claims_are_not_backtest_evidence": true,
+    "workflow": ["Research classification", "durable finding", "Trading handoff", "independent Nexus logic recreation", "independent backtest", "robustness review", "paper/tournament only"]
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "playbook_id": "nexus.notebook.competitor_market",
+  "case_type": "COMPETITOR_MARKET",
+  "version": "1.0.0",
+  "objective_description": "Map a market and competitors around a defined customer objective.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "Who is the target customer and what job/problem is being solved?",
+    "Which direct and adjacent competitors serve this customer, and what are their products and positioning?",
+    "What official pricing, terms, features, distribution, and customer reviews can be verified?",
+    "What unmet gaps or differentiated approaches appear across independent evidence?",
+    "What market trend evidence exists and what remains uncertain?",
+    "What next comparison or validation action is warranted?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "OFFICIAL_PRODUCT_PAGES",
+    "OFFICIAL_PRICING",
+    "REVIEWS",
+    "CUSTOMER_DISCUSSIONS",
+    "MARKET_REPORTS",
+    "SEARCH_DEMAND"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "pricing",
+        "cost",
+        "features",
+        "terms"
+      ],
+      "source_classes": [
+        "OFFICIAL_PRODUCT_PAGES",
+        "OFFICIAL_PRICING"
+      ]
+    },
+    {
+      "match_any": [
+        "complaint",
+        "gap",
+        "unmet",
+        "feedback"
+      ],
+      "source_classes": [
+        "REVIEWS",
+        "CUSTOMER_DISCUSSIONS"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "customer": "",
+    "competitors": [],
+    "pricing": [],
+    "features": [],
+    "customer_feedback": [],
+    "gaps": [],
+    "trend_evidence": [],
+    "next_action": ""
+  },
+  "handoff_destination": "ATLAS_OPPORTUNITY",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}
