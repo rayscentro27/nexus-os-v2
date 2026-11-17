@@ -23,3 +23,8 @@ def test_runtime_env_loader_does_not_load_service_role_for_unlisted_caller(tmp_p
     loaded = nexus_runtime_env.load_runtime_env(override=True)
     assert "SUPABASE_SERVICE_ROLE_KEY" not in loaded
     assert "SUPABASE_SERVICE_ROLE_KEY" not in __import__("os").environ
+
+
+def test_department_handoff_has_only_its_required_supabase_credentials():
+    allowed = nexus_runtime_env._CALLER_SECRET_ALLOWLIST["scripts/operations/nexus_handoff.py"]
+    assert allowed == {"SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"}

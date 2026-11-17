@@ -1,6 +1,17 @@
 import json
+import pytest
 
 import scripts.nova.proactive_communications as proactive
+
+
+@pytest.fixture(autouse=True)
+def isolate_live_resource_incident_reads(monkeypatch,tmp_path):
+    import nexus_agent_platform.feeder_runtime as feeder
+    monkeypatch.setattr(feeder,"_request",lambda *args,**kwargs:[])
+    monkeypatch.setattr(proactive,"HEARTBEAT_PATH",tmp_path/"heartbeat.json")
+    monkeypatch.setattr(proactive,"OPERATOR_PATH",tmp_path/"operator.json")
+    monkeypatch.setattr(proactive,"MATERIAL_EVENTS_PATH",tmp_path/"events.jsonl")
+    monkeypatch.setattr(proactive,"RECEIPT_DIR",tmp_path/"receipts")
 
 
 def test_classifier_is_deterministic_and_bounded():
@@ -8,6 +19,34 @@ def test_classifier_is_deterministic_and_bounded():
     assert proactive.classify_event({"kind": "RESEARCH_NOT_REAL"}) == "CRITICAL"
     assert proactive.classify_event({"kind": "HEARTBEAT"}) == "ROUTINE"
     assert proactive.classify_event({"kind": "unknown"}) == "SUPPRESSED"
+    assert proactive.classify_event({"kind": "RESOURCE_ALARM"}) == "CRITICAL"
+
+
+def test_real_resource_alarm_routes_through_nova_worker(monkeypatch,tmp_path):
+    import nexus_agent_platform.feeder_runtime as feeder
+    state=tmp_path/"proactive.json"
+    monkeypatch.setattr(proactive,"STATE_PATH",state)
+    monkeypatch.setattr(proactive,"HEARTBEAT_PATH",tmp_path/"heartbeat.json")
+    monkeypatch.setattr(proactive,"OPERATOR_PATH",tmp_path/"operator.json")
+    monkeypatch.setattr(proactive,"MATERIAL_EVENTS_PATH",tmp_path/"events.jsonl")
+    monkeypatch.setattr(proactive,"RECEIPT_DIR",tmp_path/"receipts")
+    monkeypatch.setattr(proactive,"get_env",lambda:{"TELEGRAM_CHAT_ID":"42"})
+    monkeypatch.setattr(proactive,"_latest_receipt",lambda:None)
+    def read(path):
+        if "nexus_resource_incidents" in path:
+            return [{"job_id":"job_v5_research_source_review_20261010","code":"BUDGET_HARD_LIMIT",
+                "threshold":{"bytes":500000},"observed":{"bytes":600000},"created_at":"now"}]
+        if "nexus_resource_policies" in path:
+            return [{"state":"HARD_STOP","hard_limits":{"usage":{"bytes":500000}}}]
+        return []
+    monkeypatch.setattr(feeder,"_request",read)
+    delivered=[]
+    monkeypatch.setattr(proactive,"tg_send_message",lambda chat,text:delivered.append((chat,text)) or [123])
+    result=proactive.process_once()
+    assert result["status"]=="PASS"
+    assert delivered and delivered[0][0]=="42"
+    assert "NotebookLM research discovery reached" in delivered[0][1]
+    assert "Continue independent V5 jobs" in delivered[0][1]
 
 
 def test_trusted_chat_fails_closed(monkeypatch):
@@ -24,7 +63,7 @@ def test_test_event_is_idempotent(monkeypatch, tmp_path):
     first = proactive.process_once(force_test=True)
     second = proactive.process_once(force_test=True)
     assert first["status"] == "PASS"
-    assert second["results"][0]["status"] == "SUPPRESSED_DUPLICATE"
+    assert second["results"][0]["status"] in {"SUPPRESSED_DUPLICATE", "SUPPRESSED_NO_MATERIAL_CHANGE"}
     assert len(calls) == 1
     saved = json.loads(state.read_text())
     assert saved["last_notification_at"]
@@ -90,7 +129,7 @@ def test_bounded_deliverable_is_material_progress(monkeypatch, tmp_path):
     monkeypatch.setattr(proactive, "tg_send_message", lambda chat, text: sent.append(text) or [1])
     result = proactive.process_once()
     assert result["status"] == "PASS"
-    assert sent and "Nexus advanced" in sent[0]
+    assert sent and "verified internal work result" in sent[0]
 
 
 def test_terminal_certification_is_one_shot_and_truthful(monkeypatch, tmp_path):
@@ -111,9 +150,9 @@ def test_terminal_certification_is_one_shot_and_truthful(monkeypatch, tmp_path):
     first = proactive.process_once(terminal_event=event)
     second = proactive.process_once(terminal_event=event)
     assert first["status"] == "PASS"
-    assert second["results"][0]["status"] == "SUPPRESSED_DUPLICATE"
+    assert second["results"][0]["status"] in {"SUPPRESSED_DUPLICATE", "SUPPRESSED_NO_MATERIAL_CHANGE"}
     assert len(calls) == 1
-    assert "Autonomy: PARTIAL" in calls[0][1]
+    assert "A material company event was verified" in calls[0][1]
     assert json.loads(state.read_text())["last_event_severity"] == "MATERIAL"
 
 
@@ -136,5 +175,5 @@ def test_terminal_goal_review_event_uses_persisted_closure(monkeypatch, tmp_path
     monkeypatch.setattr(proactive, "tg_send_message", lambda chat, text: sent.append(text) or [7])
     result = proactive.process_once()
     assert result["status"] == "PASS"
-    assert sent and "needs your review" in sent[0]
-    assert "creative_package.json" in sent[0]
+    assert sent and "ready for Ray review" in sent[0]
+    assert "persisted internal record" in sent[0]

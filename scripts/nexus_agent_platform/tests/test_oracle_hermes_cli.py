@@ -1,8 +1,19 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 import nexus_agent_platform.bridge.oracle_hermes_cli as oracle
 from nexus_agent_platform.bridge.oracle_hermes_cli import _conversation_needs_correction, _executive_prompt, _remote_command, run_oracle_hermes
+
+
+@pytest.fixture(autouse=True)
+def isolated_governor_context(tmp_path, monkeypatch):
+    """Keep CLI tests inside a bounded local policy with no hosted side effects."""
+    monkeypatch.setenv("NEXUS_GOVERNOR_DB", str(tmp_path / "governor.sqlite3"))
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", "nova-cli-test-" + tmp_path.name)
+    monkeypatch.setenv("NEXUS_CORRELATION_ID", "correlation-" + tmp_path.name)
+    monkeypatch.setenv("NEXUS_DEPARTMENT", "NOVA")
+    monkeypatch.delenv("NEXUS_HERMES_TRANSPORT", raising=False)
 
 
 def test_remote_command_is_fixed_and_session_is_stdin_bound():
@@ -12,6 +23,59 @@ def test_remote_command_is_fixed_and_session_is_stdin_bound():
     assert "-t nexus_mcp_remote" in command
     assert "$prompt" in command
     assert "$session" in command
+
+
+def test_light_reasoning_uses_one_bounded_subscription_turn():
+    limits = oracle._reasoning_limits("LIGHT_REASONING")
+    command = oracle._container_command(reasoning_class="LIGHT_REASONING")
+    assert limits == {"max_turns": 1, "run_budget_seconds": 25,
+                      "max_provider_invocations": 1, "estimated_tokens": 2000}
+    assert "--max-turns 1" in command
+    assert "--run-budget 25" in command
+
+
+def test_research_room_stateless_command_avoids_empty_session_and_disables_tools():
+    command = oracle._container_command(reasoning_class="LIGHT_REASONING", stateless=True)
+    assert "hermes chat" not in command
+    assert "-z" in oracle.REMOTE_STATELESS_SCRIPT
+    assert "--safe-mode" in oracle.REMOTE_STATELESS_SCRIPT
+    assert "--usage-file" in oracle.REMOTE_STATELESS_SCRIPT
+    assert "--continue" not in command
+    assert "--format" not in command
+
+
+def test_research_room_stateless_call_parses_usage_without_session_replay(tmp_path, monkeypatch):
+    key = tmp_path / "key"
+    key.write_text("fixture")
+    monkeypatch.setattr(oracle, "ORACLE_KEY", str(key))
+    import json
+    captured = {}
+    def fake_run(command, **kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(returncode=0, stdout=json.dumps({"returncode": 0,
+            "text": '{"analysis":"Three open questions concern demand, margins, and retention."}',
+            "stderr": "", "usage": {"input_tokens": 31, "output_tokens": 18, "total_tokens": 49,
+                "estimated_cost_usd": 0.0}}), stderr="")
+    monkeypatch.setattr(oracle.subprocess, "run", fake_run)
+    result = oracle._run_oracle_hermes_unchecked("Return JSON", "empty-old-session",
+        timeout_seconds=30, structured_task=True, reasoning_class="LIGHT_REASONING", stateless_task=True)
+    assert result.status == "SUCCEEDED"
+    assert result.response.startswith('{"analysis"')
+    assert result.usage["total_tokens"] == 49
+    assert captured["input"] == "Return JSON"
+
+
+def test_nonzero_hermes_exit_preserves_redacted_bounded_stderr(tmp_path, monkeypatch):
+    key = tmp_path / "key"
+    key.write_text("fixture")
+    monkeypatch.setattr(oracle, "ORACLE_KEY", str(key))
+    monkeypatch.setattr(oracle.subprocess, "run", lambda *a, **k: SimpleNamespace(
+        returncode=1, stdout="", stderr="provider failed: api_key=super-secret-token"))
+    result = oracle._run_oracle_hermes_unchecked("Return JSON", "diagnostic-case",
+        timeout_seconds=10, structured_task=True, reasoning_class="LIGHT_REASONING")
+    assert result.error.startswith("ssh_exit_1:")
+    assert "provider failed" in result.error
+    assert "super-secret-token" not in result.error
 
 
 def test_invalid_session_fails_closed():

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import threading
 from datetime import timedelta
 from pathlib import Path
@@ -48,6 +49,21 @@ def test_bounded_retry_becomes_blocked(tmp_path):
     assert claim and result.state=="BLOCKED"
 
 
+def test_read_only_job_request_capacity_can_be_boundedly_recovered(tmp_path):
+    store=store_at(tmp_path)
+    job=store.enqueue("RESEARCH_ALPHA","NEXUS_DEPARTMENT_QUERY",job_id="public-research",
+        idempotency_key="public-research",max_attempts=3,
+        budget_envelope={"max_requests":12,"max_response_bytes":120000,"max_retries":3})
+    store.ensure_request_capacity(job.job_id,30)
+    assert store.get(job.job_id).budget_envelope["max_requests"]==30
+    with store._connect() as db:
+        db.execute("UPDATE jobs SET receipt_ref='receipt-done',state='COMPLETED' WHERE job_id=?",(job.job_id,))
+    with pytest.raises(JobError,match="JOB_BUDGET_IMMUTABLE"):
+        store.ensure_request_capacity(job.job_id,40)
+    with pytest.raises(JobError,match="JOB_REQUEST_CAPACITY_OUT_OF_RANGE"):
+        store.ensure_request_capacity("public-research",121)
+
+
 def test_scheduler_deduplicates_and_is_one_shot(tmp_path):
     store=store_at(tmp_path); now=utcnow()
     store.add_schedule("once","RESEARCH","MARKET_HEARTBEAT",next_run_at=(now-timedelta(seconds=1)).isoformat())
@@ -66,6 +82,74 @@ def test_supabase_ready_filter_url_encodes_utc_offset(monkeypatch):
     assert "scheduled_at=lte." in requests[0]
     assert "%2B00%3A00" in requests[0]
     assert "+00:00" not in requests[0]
+
+
+def test_supabase_blocked_transition_persists_error_details(monkeypatch):
+    from dataclasses import asdict
+    from nexus_agent_platform.durable_jobs import Job, SupabaseJobStore
+
+    store = SupabaseJobStore()
+    current = Job(job_id="job-synthetic", department="RESEARCH", job_type="NOTEBOOKLM_RESEARCH",
+                  state="RUNNING", attempt_count=1, max_attempts=3, claimed_by="worker-test")
+    captured = {}
+
+    def request(path, method="GET", body=None, prefer="return=minimal"):
+        if method == "PATCH":
+            captured.update(path=path, body=body)
+            row = asdict(current)
+            row.update(body)
+            return [row]
+        return [asdict(current)]
+
+    monkeypatch.setattr(store, "_request", request)
+    result = store.transition("job-synthetic", "BLOCKED", worker_id="worker-test",
+                              error_code="NOTEBOOK_ID_REQUIRED", error_summary="No notebook reference")
+
+    assert result.state == "BLOCKED"
+    assert captured["body"]["last_error_code"] == "NOTEBOOK_ID_REQUIRED"
+    assert captured["body"]["last_error_summary"] == "No notebook reference"
+    assert captured["body"]["completed_at"] is not None
+    assert captured["body"]["lease_until"] is None
+    assert "receipt_ref" not in captured["body"]
+
+
+def test_supabase_failed_retryable_transition_keeps_retry_fields(monkeypatch):
+    from dataclasses import asdict
+    from nexus_agent_platform.durable_jobs import Job, SupabaseJobStore
+
+    store = SupabaseJobStore()
+    current = Job(job_id="job-synthetic-retry", department="RESEARCH", job_type="NOTEBOOKLM_RESEARCH",
+                  state="RUNNING", attempt_count=1, max_attempts=3, claimed_by="worker-test")
+    captured = {}
+
+    def request(path, method="GET", body=None, prefer="return=minimal"):
+        if method == "PATCH":
+            captured.update(path=path, body=body)
+            row = asdict(current)
+            row.update(body)
+            return [row]
+        return [asdict(current)]
+
+    monkeypatch.setattr(store, "_request", request)
+    result = store.transition("job-synthetic-retry", "FAILED_RETRYABLE", worker_id="worker-test",
+                              error_code="TEMPORARY", error_summary="Retry later")
+
+    assert result.state == "FAILED_RETRYABLE"
+    assert captured["body"]["last_error_code"] == "TEMPORARY"
+    assert captured["body"]["last_error_summary"] == "Retry later"
+    assert captured["body"]["scheduled_at"]
+    assert captured["body"]["completed_at"] is None
+
+
+def test_supabase_claim_by_id_never_falls_back_to_unscoped_claim(monkeypatch):
+    from nexus_agent_platform.durable_jobs import SupabaseJobStore
+    store=SupabaseJobStore(); generic_claim=[]
+    monkeypatch.setattr(store,"_request",lambda *args,**kwargs: (_ for _ in ()).throw(
+        RuntimeError('SUPABASE_HTTP_404:{"code":"PGRST202"}')))
+    monkeypatch.setattr(store,"claim",lambda *args,**kwargs: generic_claim.append(True))
+    with pytest.raises(JobError,match="ATOMIC_CLAIM_BY_ID_RPC_REQUIRED"):
+        store.claim_by_id("only-this-job","scoped-worker")
+    assert generic_claim==[]
 
 
 def test_next_job_is_event_created_and_idempotent(tmp_path):
@@ -112,6 +196,29 @@ def test_twenty_ready_jobs_respect_total_worker_limit(tmp_path):
     assert result["started"]==2 and result["active"]==2 and len(store.list_ready(100))==18
 
 
+def test_scoped_dispatcher_never_claims_outside_restoration_canary_ids(tmp_path):
+    store=store_at(tmp_path)
+    allowed=store.enqueue("SYSTEMS","SYSTEMS_INTERNAL_CANARY",idempotency_key="allowed")
+    excluded=store.enqueue("RESEARCH","RESEARCH_SOURCE_REVIEW_AND_OPPORTUNITY_INVENTORY",idempotency_key="excluded")
+    result=dispatch_once(store,launch=False,worker_id="restoration-canary",allowed_job_ids={allowed.job_id})
+    assert result["started"]==1
+    assert store.get(allowed.job_id).state=="RUNNING"
+    assert store.get(excluded.job_id).state=="READY"
+
+
+def test_source_scoped_dispatcher_runs_only_nova_created_department_jobs(tmp_path):
+    store=store_at(tmp_path)
+    allowed=store.enqueue("SYSTEMS","NEXUS_DEPARTMENT_QUERY",idempotency_key="nova-query",
+        governance_context={"source":"NOVA_MCP_DEPARTMENT_QUERY"})
+    excluded=store.enqueue("RESEARCH","RESEARCH_SOURCE_REVIEW_AND_OPPORTUNITY_INVENTORY",
+        idempotency_key="owner-campaign",governance_context={"source":"V5_OWNER_CAMPAIGN"})
+    result=dispatch_once(store,launch=False,worker_id="source-canary",
+        allowed_job_sources={"NOVA_MCP_DEPARTMENT_QUERY"})
+    assert result["started"]==1
+    assert store.get(allowed.job_id).state=="RUNNING"
+    assert store.get(excluded.job_id).state=="READY"
+
+
 def test_research_and_feeder_routing_is_allowlisted():
     for job_type in {"RESEARCH_GAP_VERIFY","NOTEBOOKLM_RESEARCH","PROACTIVE_DISCOVERY","CONTENT_INTELLIGENCE","MARKET_HEARTBEAT"}:
         assert handler_route(job_type)=="RESEARCH"
@@ -119,6 +226,7 @@ def test_research_and_feeder_routing_is_allowlisted():
         assert handler_route(job_type)=="FEEDER"
     assert handler_route("FORMAL_HANDOFF")=="HANDOFF"
     assert handler_route("MARKETING_FINANCE_REVIEW_RESULT")=="MARKETING_CREATIVE"
+    assert handler_route("NOVA_RESOURCE_ALERT_RETRY")=="NOVA_COMMUNICATION"
     with pytest.raises(JobError): handler_route("UNLISTED")
 
 
@@ -170,6 +278,20 @@ def test_resource_pressure_defers_heavy_job(tmp_path,monkeypatch):
     assert result["started"]==0 and len(store.list_ready())==1
 
 
+def test_resource_pressure_process_match_ignores_chrome_remote_desktop():
+    from nexus_agent_platform.durable_jobs import _resource_heavy_process
+    assert not _resource_heavy_process(
+        "remoting_me2me_host",
+        "/Library/PrivilegedHelperTools/ChromeRemoteDesktopHost.app/Contents/MacOS/remoting_me2me_host "
+        "--host-config=/Library/PrivilegedHelperTools/org.chromium.chromoting.json",
+    )
+    assert _resource_heavy_process(
+        "Google Chrome",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --remote-debugging-pipe "
+        "--user-data-dir=/tmp/playwright_chromiumdev_profile-test",
+    )
+
+
 def test_job_scoped_egress_budget_aborts_only_excessive_job(tmp_path,monkeypatch):
     from nexus_agent_platform import supabase_egress_guard as guard
     monkeypatch.setattr(guard,"JOB_EGRESS_DIR",tmp_path/"job-egress")
@@ -185,12 +307,78 @@ def test_job_scoped_egress_budget_aborts_only_excessive_job(tmp_path,monkeypatch
     assert guard.job_egress_snapshot("job-egress-test")["request_count"]==2
 
 
+def test_repaired_job_gets_a_fresh_bounded_egress_allowance_per_attempt(tmp_path,monkeypatch):
+    from nexus_agent_platform import supabase_egress_guard as guard
+    monkeypatch.setattr(guard,"JOB_EGRESS_DIR",tmp_path/"job-egress")
+    monkeypatch.setattr(guard,"SYSTEMS_INCIDENTS",tmp_path/"systems.jsonl")
+    monkeypatch.setattr(guard,"JOB_MAX_REQUESTS",2)
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID","job-retry-egress-test")
+    monkeypatch.setenv("NEXUS_JOB_BUDGET",json.dumps({"max_requests":2,"max_response_bytes":1000}))
+    monkeypatch.setenv("NEXUS_DURABLE_EXECUTION_ID","attempt-one")
+    for _ in range(2):
+        guard.preflight_request("GET","nexus_durable_jobs?select=job_id&limit=1")
+        guard.record_request("GET","nexus_durable_jobs?select=job_id&limit=1",200,16,trace=False)
+    with pytest.raises(guard.JobEgressBudgetExceeded):
+        guard.preflight_request("GET","nexus_durable_jobs?select=job_id&limit=1")
+    monkeypatch.setenv("NEXUS_DURABLE_EXECUTION_ID","attempt-two")
+    guard.preflight_request("GET","nexus_durable_jobs?select=job_id&limit=1")
+    guard.record_request("GET","nexus_durable_jobs?select=job_id&limit=1",200,16,trace=False)
+    snapshot=guard.job_egress_snapshot("job-retry-egress-test")
+    assert snapshot["request_count"]==3
+    assert snapshot["attempt_request_count"]==1
+    assert snapshot["response_bytes"]==48
+    assert snapshot["attempt_response_bytes"]==16
+
+
+def test_full_research_canary_gets_only_its_scoped_request_ceiling(tmp_path,monkeypatch):
+    from nexus_agent_platform import supabase_egress_guard as guard
+    monkeypatch.setattr(guard,"JOB_EGRESS_DIR",tmp_path/"job-egress")
+    monkeypatch.setattr(guard,"SYSTEMS_INCIDENTS",tmp_path/"systems.jsonl")
+    monkeypatch.setattr(guard,"STATE",tmp_path/"egress.json")
+    monkeypatch.setattr(guard,"JOB_MAX_REQUESTS",120)
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID","job_full_research_canary_test")
+    monkeypatch.setenv("NEXUS_JOB_BUDGET",json.dumps({"max_requests":300,"max_response_bytes":2_000_000}))
+    for _ in range(121):
+        guard.preflight_request("GET","nexus_resource_policies?select=job_type&limit=1")
+        guard.record_request("GET","nexus_resource_policies?select=job_type&limit=1",200,16,trace=False)
+    assert guard.job_egress_snapshot("job_full_research_canary_test")["attempt_request_count"]==121
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID","job_other_research_test")
+    monkeypatch.setenv("NEXUS_DURABLE_EXECUTION_ID","other-job-attempt")
+    for _ in range(120):
+        guard.preflight_request("GET","nexus_resource_policies?select=job_type&limit=1")
+        guard.record_request("GET","nexus_resource_policies?select=job_type&limit=1",200,16,trace=False)
+    with pytest.raises(guard.JobEgressBudgetExceeded):
+        guard.preflight_request("GET","nexus_resource_policies?select=job_type&limit=1")
+
+
+def test_egress_guard_allows_bounded_reservation_release_cleanup_after_budget(tmp_path,monkeypatch):
+    from nexus_agent_platform import supabase_egress_guard as guard
+    monkeypatch.setattr(guard,"JOB_EGRESS_DIR",tmp_path/"job-egress")
+    monkeypatch.setattr(guard,"SYSTEMS_INCIDENTS",tmp_path/"systems.jsonl")
+    monkeypatch.setattr(guard,"JOB_MAX_REQUESTS",1)
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID","job-release-cleanup")
+    monkeypatch.setenv("NEXUS_JOB_BUDGET",json.dumps({"max_requests":1,"max_response_bytes":1000}))
+    guard.preflight_request("GET","nexus_resource_policies?select=state&limit=1")
+    guard.record_request("GET","nexus_resource_policies?select=state&limit=1",200,16,trace=False)
+    release_path="nexus_resource_reservations?reservation_id=eq.reserve-one&status=eq.ACTIVE"
+    release_body={"status":"RELEASED","reconciled_at":"2026-10-12T00:00:00Z"}
+    guard.preflight_request("PATCH",release_path,release_body)
+    guard.record_request("PATCH",release_path,200,16,trace=False)
+    with pytest.raises(guard.JobEgressBudgetExceeded):
+        guard.preflight_request("GET","nexus_resource_policies?select=state&limit=1")
+
+
 def test_job_worker_exits_and_persists_one_receipt(tmp_path,monkeypatch):
     from types import SimpleNamespace
     from nexus_agent_platform import job_worker_once
+    from nexus_agent_platform import stability_supervisor
+    monkeypatch.setattr(stability_supervisor,"get_host_execution_gate",lambda:{
+        "heavy_work_allowed":True,"research_execution_allowed":True})
     monkeypatch.setenv("NEXUS_GOVERNOR_DB",str(tmp_path/"governor.sqlite3"))
     store=store_at(tmp_path); job=store.enqueue("RESEARCH","RESEARCH_GAP_VERIFY",payload_ref="work-ref")
     store.claim("test-worker")
+    from nexus_agent_platform import research_work_queue
+    monkeypatch.setattr(research_work_queue,"default_queue",lambda:SimpleNamespace(load=lambda:{"items":[{"work_id":"work-ref","question":"bounded test assignment"}]}))
     from nexus_agent_platform.resource_spend_governor import LocalGovernorStore
     governor=LocalGovernorStore(tmp_path/"governor.sqlite3")
     governor.set_policy("SUPABASE","durable_worker","*","DAILY",autonomous_usage_allowed=True,
@@ -205,7 +393,7 @@ def test_job_worker_exits_and_persists_one_receipt(tmp_path,monkeypatch):
     monkeypatch.setattr("nexus_agent_platform.supabase_egress_guard.job_egress_snapshot",lambda job_id:{"request_count":1,"response_bytes":100})
     result=job_worker_once.run(job.job_id,"test-worker",store)
     assert result["status"]=="COMPLETED" and store.get(job.job_id).state=="COMPLETED"
-    assert purposes==["durable-job-envelope:attempt-1"]
+    assert len(purposes)==1 and purposes[0].startswith("durable-job-envelope:run-")
     with store._connect() as db: assert db.execute("select count(*) from receipts where job_id=?",(job.job_id,)).fetchone()[0]==1
 
 
@@ -229,3 +417,29 @@ def test_worker_defers_transient_governor_throttle_with_bounded_backoff(tmp_path
     assert updated.state=="FAILED_RETRYABLE"
     assert updated.last_error_code=="RATE_LIMIT"
     assert updated.scheduled_at>updated.created_at
+
+
+def test_retry_capacity_can_recover_same_job_after_preexecution_auth_block(tmp_path):
+    store=store_at(tmp_path)
+    job=store.enqueue("NOVA","NOVA_RESOURCE_ALERT_RETRY",job_id="retained-alert",
+        idempotency_key="retained-alert",max_attempts=1,budget_envelope={"max_retries":1})
+    assert store.claim_by_id(job.job_id,"worker")
+    store.transition(job.job_id,"BLOCKED",worker_id="worker",error_code="ACTIVE_CAMPAIGN_IDENTITY_MISMATCH")
+    store.ensure_retry_capacity(job.job_id,2)
+    recovered=store.transition(job.job_id,"READY")
+    assert recovered.job_id==job.job_id and recovered.max_attempts==2
+
+
+def test_reopen_after_repair_retains_same_job_and_records_bounded_window(tmp_path):
+    store=store_at(tmp_path)
+    job=store.enqueue("RESEARCH","NEXUS_NOTEBOOKLM_RUNTIME_CANARY",job_id="same-canary",
+        idempotency_key="same-canary",max_attempts=1,
+        budget_envelope={"max_requests":120,"max_response_bytes":2_000_000})
+    store.claim_by_id(job.job_id,"worker-a")
+    store.transition(job.job_id,"BLOCKED",worker_id="worker-a",error_code="CHECKPOINT_RECONCILIATION")
+    reopened=store.reopen_after_repair(job.job_id,reason="recover local answer statuses",
+        budget_updates={"max_requests":300,"max_response_bytes":4_000_000})
+    assert reopened.job_id==job.job_id and reopened.state=="READY" and reopened.attempt_count==0
+    assert reopened.budget_envelope["max_requests"]==300
+    assert reopened.governance_context["repair_attempt_total"]==1
+    assert reopened.governance_context["repair_retry_windows"][0]["attempt_count"]==1

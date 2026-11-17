@@ -141,12 +141,19 @@ def required_capabilities(goal: str, criterion: str, task: str = "") -> dict[str
         skills = ["software-engineering", "worktree-safety"]
     elif any(x in text for x in ("research", "pricing", "opportunity", "source", "public evidence", "current evidence")):
         classes, skills = ["RESEARCH"], ["research-intelligence"]
-    elif any(x in text for x in ("browser", "visual", "ui")):
-        classes, skills = ["BROWSER"], ["software-engineering"]
-    elif any(x in text for x in ("modal", "cpu", "bounded job")):
+    elif any(x in text for x in ("image", "graphic", "logo", "thumbnail", "creative", "media", "product image", "mockup", "visual asset")):
+        classes, skills = ["CREATIVE_MEDIA"], ["software-engineering"]
+    elif any(x in text for x in ("dataset", "cluster", "clustering", "embedding", "large data", "data analysis")):
         classes, skills = ["REMOTE_EXECUTION"], ["system-operations"]
-    elif any(x in text for x in ("code", "implement", "build", "test", "engineering")):
+    elif any(x in text for x in ("modal", "bounded job")):
+        classes, skills = ["REMOTE_EXECUTION"], ["system-operations"]
+    # ENGINEERING checked before BROWSER: coding/build/repo intents must route to a coding runner.
+    # (word-boundary-ish tokens; avoids the 'build' contains 'ui' substring collision.)
+    elif any(x in text for x in ("landing page", "website", "web app", "build ", "coding", "code ", "implement",
+                                 "fix a bug", "bug in", "repository", "repo ", "run tests", "engineering", "refactor", "frontend")):
         classes, skills = ["ENGINEERING", "CLI"], ["software-engineering", "test-debugging", "worktree-safety"]
+    elif any(x in text for x in ("browser", "screenshot", "scrape", "web page", "user interface")):
+        classes, skills = ["BROWSER"], ["software-engineering"]
     else:
         classes, skills = ["INTERNAL_READ"], ["repo-intelligence"]
     return {"capability_classes": classes, "required_skills": skills,
@@ -181,7 +188,7 @@ def select_skills(*, task_id: str, requirements: dict[str, Any], failure_memory:
 
 
 def _candidate(worker: str, tool: str, backend: str, skills: Iterable[str], fit: float, *, tested: float = 1.0, cost: float = 1.0, reason: str = "") -> Candidate:
-    return Candidate(worker, tool, backend, tuple(skills), fit, 1.0, 1.0, tested, 1.0 if worker in {"nexus_ai_workforce", "hermes_orchestrator"} else .5, 0.0, 1.0, cost, 1.0, 1.0, 1.0, 1.0, reason=reason)
+    return Candidate(worker, tool, backend, tuple(skills), fit, 1.0, 1.0, tested, 1.0 if worker in {"nexus_ai_workforce", "hermes_orchestrator", "antigravity"} else .5, 0.0, 1.0, cost, 1.0, 1.0, 1.0, 1.0, reason=reason)
 
 
 def discover_candidates(requirements: dict[str, Any], *, failure_memory: Iterable[dict[str, Any]] = ()) -> list[Candidate]:
@@ -193,17 +200,30 @@ def discover_candidates(requirements: dict[str, Any], *, failure_memory: Iterabl
             _candidate("nexus_mcp", "mcp.nexus_mcp", "LOCAL_ORACLE_BRIDGE", requirements["required_skills"], .9, tested=1.0, reason="certified Nexus MCP read path"),
         ]
     if "ENGINEERING" in classes:
+        import shutil as _sh
+        agy_ok = 1.0 if _sh.which("agy") else 0.0          # antigravity_cli: certified routable (Sec 30A)
         return [
-            _candidate("hermes_orchestrator", "hermes.kanban.executor", "ORACLE_HERMES_KANBAN", requirements["required_skills"], 1.0, reason="live Hermes dispatcher and worker receipts"),
-            _candidate("nexus_ai_workforce", "engineering.portal_beta", "LOCAL", requirements["required_skills"], 1.0, reason="certified Nexus engineering receipt path"),
-            _candidate("opencode", "opencode.run", "LOCAL_ISOLATED_WORKTREE", requirements["required_skills"], .9, tested=.8, cost=.5, reason="installed and governed adapter; candidate requires bounded certification"),
+            _candidate("hermes_orchestrator", "hermes.kanban.executor", "ORACLE_HERMES_KANBAN", requirements["required_skills"], 1.0, reason="live Hermes dispatcher (orchestration); heavy build Oracle-protected downstream"),
+            _candidate("antigravity", "cli.antigravity_cli", "MAC_MINI_CODING", requirements["required_skills"], 1.0, tested=agy_ok, cost=.9, reason="antigravity_cli 1.5.5 Mac-local coding CLI; Sec 30A bounded build PASS"),
+            _candidate("nexus_ai_workforce", "engineering.portal_beta", "LOCAL", requirements["required_skills"], .95, reason="certified Nexus engineering receipt path (non-CLI fallback)"),
+            _candidate("opencode", "opencode.run", "LOCAL_ISOLATED_WORKTREE", requirements["required_skills"], .9, tested=.8, cost=.5, reason="installed and governed opencode adapter"),
+            _candidate("codex", "cli.codex_cli", "MAC_MINI_CODING", requirements["required_skills"], 1.0, tested=0.0, cost=.6, reason="codex-cli installed but quota-exhausted (DEGRADED); excluded by REAL_TEST gate"),
         ]
     if "RESEARCH" in classes:
         return [_candidate("hermes_orchestrator", "hermes.kanban.executor", "ORACLE_HERMES_KANBAN", requirements["required_skills"], 1.0, reason="live Hermes dispatcher and worker receipts"), _candidate("research", "research.alpha", "LOCAL_OR_SEARXNG", requirements["required_skills"], 1.0, reason="existing Research/Alpha path"), _candidate("oracle", "oracle.browser.read", "ORACLE", requirements["required_skills"], .7, tested=.6, reason="historical read-only browser path")]
+    if "CREATIVE_MEDIA" in classes:
+        # Meta browser image route EXISTS but is UNPROVEN (WP8_11A) -> tested=0 -> filtered out.
+        # Deterministic creative brief/direction is the currently-executable creative output.
+        return [_candidate("creative_meta", "meta_ai_browser_creative", "CREATIVE_BROWSER", requirements["required_skills"], 1.0, tested=0.0, reason="Meta browser image route exists but unproven (WP8_11A); excluded until verified"),
+                _candidate("creative_engine", "creative.brief_direction", "LOCAL", requirements["required_skills"], .9, tested=1.0, reason="deterministic creative brief/direction (text) READY; media RENDER needs an approved provider")]
     if "BROWSER" in classes:
         return [_candidate("playwright", "browser.playwright", "LOCAL", requirements["required_skills"], .95, tested=.7), _candidate("oracle", "browser.oracle", "ORACLE", requirements["required_skills"], .9, tested=.8)]
     if "REMOTE_EXECUTION" in classes:
-        return [_candidate("modal", "modal.bounded_job", "MODAL", requirements["required_skills"], 1.0, tested=1.0, cost=.5), _candidate("oracle", "remote.cpu", "ORACLE", requirements["required_skills"], .7, tested=.8, cost=.7)]
+        # Free/included compute preferred over metered; Oracle remote excluded downstream for heavy work.
+        return [_candidate("kaggle", "kaggle.bounded_job", "KAGGLE", requirements["required_skills"], 1.0, tested=1.0, cost=1.0, reason="free bounded GPU/CPU notebook"),
+                _candidate("colab", "colab.bounded_job", "COLAB", requirements["required_skills"], .95, tested=1.0, cost=.9, reason="included-subscription compute units"),
+                _candidate("modal", "modal.bounded_job", "MODAL", requirements["required_skills"], 1.0, tested=1.0, cost=.5, reason="metered; approval-gated fallback"),
+                _candidate("oracle", "remote.cpu", "ORACLE", requirements["required_skills"], .7, tested=.8, cost=.7, reason="Oracle remote (excluded for heavy work by protection)")]
     return [_candidate("nexus_ai_workforce", "internal.create_bounded_work_artifact", "LOCAL", requirements["required_skills"], .8)]
 
 
@@ -263,20 +283,177 @@ def select_candidate(*, task_id: str, goal_id: str, criterion_id: str, goal: str
     return receipt
 
 
-def execute_selected_candidate(selection: dict[str, Any], task_spec: dict[str, Any]) -> dict[str, Any]:
-    """Execute a selected candidate without replacing its provider lifecycle.
+# Dispatch map: selected tool -> EXISTING governed runner category (no new executor built).
+_TOOL_RUNNER = {
+    "hermes.kanban.executor": ("HERMES_KANBAN", "hermes_kanban_executor"),
+    "cli.antigravity_cli": ("CODING_CLI", "coding_worker_supervisor"),
+    "cli.codex_cli": ("CODING_CLI", "coding_worker_supervisor"),
+    "opencode.run": ("CODING_CLI", "coding_worker_supervisor"),
+    "engineering.portal_beta": ("SCRIPT_ENGINE", "department_engine"),
+    "research.alpha": ("RESEARCH", "research_r16_engine"),
+    "mcp.nexus_mcp": ("MCP", "hermes_native_mcp"),
+    "hermes.native.gateway.read_only": ("MCP", "hermes_native_gateway"),
+    "hermes.native.mcp": ("MCP", "hermes_native_mcp"),
+    "browser.playwright": ("BROWSER", "playwright_governed"),
+    "browser.oracle": ("BROWSER", "oracle_browser_readonly"),
+    "meta_ai_browser_creative": ("BROWSER", "creative_meta_surface"),
+    "creative.brief_direction": ("SCRIPT_ENGINE", "creative_engine"),
+    "modal.bounded_job": ("REMOTE", "remote_worker"),
+    "kaggle.bounded_job": ("REMOTE", "remote_worker"),
+    "colab.bounded_job": ("REMOTE", "remote_worker"),
+    "remote.cpu": ("REMOTE", "remote_worker"),
+    "internal.create_bounded_work_artifact": ("SCRIPT_ENGINE", "department_engine"),
+}
+_ORACLE_BACKENDS = {"ORACLE", "ORACLE_HERMES_KANBAN", "ORACLE_SSH_GATEWAY"}
+_HEAVY_CLASSES = {"ENGINEERING", "BROWSER", "REMOTE_EXECUTION", "RESEARCH"}
+_PAID_TOOLS = {"modal.bounded_job"}
 
-    Hermes is the only candidate with a broker-native executor here; other
-    providers remain available to their established runners. This function is
-    intentionally called after ``select_candidate`` and never selects a
-    business child action itself.
-    """
-    if selection.get("selected_tool") == "hermes.kanban.executor":
+
+def _reselect_non_oracle(selection: dict[str, Any]):
+    """Oracle protection: for heavy work, drop Oracle-backed candidates and re-pick the best."""
+    discovered = selection.get("candidates_discovered") or []
+    non_oracle = [c for c in discovered if c.get("backend") not in _ORACLE_BACKENDS
+                  and c.get("real_test_confidence", 0) > 0 and c.get("authorized", True)]
+    if not non_oracle:
+        return None
+    best = max(non_oracle, key=lambda c: c.get("score", 0))
+    return best
+
+
+def execute_selected_candidate(selection: dict[str, Any], task_spec: dict[str, Any]) -> dict[str, Any]:
+    """Resolve the selected capability to its EXISTING governed runner and return a
+    normalized EXECUTION_RECEIPT. Consults resource/worker routers + execution-truth,
+    enforces Oracle protection + cost/approval governance. Does NOT build a new executor
+    and does NOT auto-run heavy/destructive work (the governed runner performs it when
+    task_spec['execute'] is True and the method is safe). Preserves hermes.kanban behavior."""
+    tool = selection.get("selected_tool")
+    classes = set((selection.get("requirements") or {}).get("capability_classes", []))
+    heavy = bool(classes & _HEAVY_CLASSES)
+    reroute = None
+    # --- Oracle protection: heavy work never lands on an Oracle backend ---
+    sel_backend = next((c.get("backend") for c in (selection.get("candidates_discovered") or [])
+                        if c.get("tool") == tool), None)
+    if heavy and sel_backend in _ORACLE_BACKENDS:
+        alt = _reselect_non_oracle(selection)
+        if alt:
+            reroute = {"from": tool, "from_backend": sel_backend, "to": alt["tool"], "to_backend": alt.get("backend"),
+                       "reason": "ORACLE_PROTECTION_HEAVY_WORK"}
+            tool = alt["tool"]; sel_backend = alt.get("backend")
+        else:
+            return _receipt(selection, task_spec, tool, "WAITING_FOR_RAY_APPROVAL", runner=None,
+                            approval_reason="No non-Oracle execution route for heavy work; wait/approval required.",
+                            reroute={"blocked": "ONLY_ORACLE_AVAILABLE_FOR_HEAVY_WORK"})
+    category, runner = _TOOL_RUNNER.get(tool, ("UNKNOWN", None))
+    # --- execution-truth routability gate (registered != routable) ---
+    truth = _execution_truth_routable(tool)
+    if truth is False:
+        return _receipt(selection, task_spec, tool, "NOT_ROUTABLE", runner=runner, category=category,
+                        approval_reason="Execution method registered but not routable per execution-truth (unverified/unhealthy).",
+                        reroute=reroute)
+    # --- cost / approval governance ---
+    approved_spend = float(task_spec.get("approved_spend", 0) or 0)
+    if tool in _PAID_TOOLS and approved_spend <= 0:
+        return _receipt(selection, task_spec, tool, "WAITING_FOR_RAY_APPROVAL", runner=runner, category=category,
+                        approval_reason=f"{tool} is PAID_METERED; no approved budget -> approval required.", reroute=reroute)
+    # --- preserve existing broker-native Hermes execution ---
+    if tool == "hermes.kanban.executor" and not heavy:
         from nexus_agent_platform.hermes_kanban_executor import execute_with_hermes_kanban
-        return execute_with_hermes_kanban({**task_spec,
+        result = execute_with_hermes_kanban({**task_spec,
             "skills": task_spec.get("skills") or selection.get("selected_skills", []),
             "profile": task_spec.get("profile") or "nexus_research_test"})
-    return {"schema_version": "nexus.selected-executor-result.v1", "status": "UNSUPPORTED_IN_BROKER", "selected_tool": selection.get("selected_tool"), "recovery_hint": "invoke the established provider runner"}
+        return _receipt(selection, task_spec, tool, result.get("status", "COMPLETED"), runner="hermes_kanban_executor",
+                        category="HERMES_KANBAN", runner_result=result, reroute=reroute)
+    # --- coding worker supervisor governed execution when requested ---
+    if task_spec.get("execute") and runner == "coding_worker_supervisor":
+        from nexus_agent_platform import coding_worker_supervisor as CWS
+        task_id = str(task_spec.get("task_id") or "task_coding")
+        prompt = str(task_spec.get("prompt") or task_spec.get("goal") or "Build a simple responsive test landing page. Do not deploy.")
+        allowed_paths = tuple(task_spec.get("allowed_paths") or ("tmp/nova_coding_jobs/",))
+        checkpoint_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        coding_task = CWS.CodingTask(
+            task_id=task_id, objective_id=task_id, prompt=prompt,
+            allowed_paths=allowed_paths,
+            protected_paths=("scripts/", "services/", "configs/", "data/", "src/"),
+            acceptance=("artifact exists",), checkpoint_sha=checkpoint_sha,
+        )
+        worker_id = "antigravity" if "antigravity" in str(tool) else "opencode"
+        runner_res = CWS.execute_coding_task(coding_task, worker_id=worker_id, timeout=int(task_spec.get("timeout") or 90))
+        st = "COMPLETED" if runner_res.get("status") == "PASS" else "FAILED"
+        return _receipt(selection, task_spec, tool, st, runner=runner, category=category,
+                        runner_result=runner_res, reroute=reroute, note="Executed by coding_worker_supervisor.")
+    # --- all other categories: hand to the EXISTING governed runner (resolve + route) ---
+    return _receipt(selection, task_spec, tool, "ROUTED_TO_RUNNER", runner=runner, category=category, reroute=reroute,
+                    note="Handed to the existing governed runner; the runner performs the work and returns its own receipt.")
+
+
+def _execution_truth_routable(tool: str):
+    """Best-effort execution-truth consult; None if the layer is unavailable (not a hard fail)."""
+    mapping = {"cli.antigravity_cli": "antigravity_cli", "cli.codex_cli": "codex_cli", "opencode.run": "opencode_cli",
+               "mcp.nexus_mcp": "nexus_mcp", "modal.bounded_job": "modal", "research.alpha": "deterministic_scripts",
+               "meta_ai_browser_creative": "meta_ai_browser_creative"}
+    eid = mapping.get(tool)
+    if not eid:
+        return None
+    try:
+        import sys as _sys
+        _rd = str(ROOT / "scripts")
+        if _rd not in _sys.path: _sys.path.insert(0, _rd)
+        from resource_directory import execution_truth as _ET
+        return _ET.routable(eid)
+    except Exception:
+        return None
+
+
+_CATEGORY_WORKLOAD = {"CODING_CLI": "coding", "REMOTE": "data_processing", "BROWSER": "media_generation",
+                      "RESEARCH": "research", "MCP": "reasoning", "SCRIPT_ENGINE": "reasoning",
+                      "HERMES_KANBAN": "control"}
+
+
+def _consult_routers(category, selection):
+    """Best-effort consult of the Section-28 resource + worker routers (cross-check / enrichment)."""
+    try:
+        import sys as _sys
+        _rd = str(ROOT / "scripts")
+        if _rd not in _sys.path: _sys.path.insert(0, _rd)
+        from resource_directory import router as _RR
+        workload = _CATEGORY_WORKLOAD.get(category, "reasoning")
+        rt = _RR.route_task(f"broker:{category}", workload=workload)
+        wr = _RR.route_worker([workload])
+        return {"resource_router_candidates": [r["environment_id"] for r in rt.get("ranked", []) if r.get("eligible")][:4],
+                "resource_router_selected": (rt.get("selected") or {}).get("environment_id"),
+                "worker_router_candidates": [w["worker_id"] for w in wr.get("registered_workers_ranked", [])][:3]}
+    except Exception:
+        return {"resource_router_candidates": "UNKNOWN", "worker_router_candidates": "UNKNOWN"}
+
+
+def _receipt(selection, task_spec, tool, status, *, runner=None, category=None, runner_result=None,
+             approval_reason=None, reroute=None, note=None) -> dict[str, Any]:
+    """Normalized EXECUTION_RECEIPT (spec 1A). Unknown values stay UNKNOWN; never fabricated."""
+    routers = _consult_routers(category, selection)
+    return {
+        "schema_version": "nexus.execution-receipt.v1",
+        "execution_receipt_id": "exec_" + hashlib.sha256(
+            f"{task_spec.get('task_id')}:{tool}:{status}".encode()).hexdigest()[:18],
+        "task_id": task_spec.get("task_id", "UNKNOWN"), "parent_work_id": task_spec.get("parent_work_id", "UNKNOWN"),
+        "venture_id": task_spec.get("venture_id", "UNKNOWN"), "department": task_spec.get("department", "UNKNOWN"),
+        "selected_capability": (selection.get("requirements") or {}).get("capability_classes", "UNKNOWN"),
+        "selected_tool": tool, "execution_method": category or "UNKNOWN", "executor_runner": runner or "UNKNOWN",
+        "environment": task_spec.get("environment", "UNKNOWN"), "worker": selection.get("selected_worker", "UNKNOWN"),
+        "provider": task_spec.get("provider", "UNKNOWN"), "model": task_spec.get("model", "UNKNOWN"),
+        "start_time": task_spec.get("start_time", "UNKNOWN"), "end_time": task_spec.get("end_time", "UNKNOWN"),
+        "status": status, "artifacts": (runner_result or {}).get("artifacts", []) if runner_result else [],
+        "files_changed": (runner_result or {}).get("files_changed", "UNKNOWN") if runner_result else "UNKNOWN",
+        "usage_reference": task_spec.get("ai_usage_ref", "UNKNOWN"), "cost_class": task_spec.get("cost_class", "UNKNOWN"),
+        "cost_if_known": task_spec.get("cost_if_known", "UNKNOWN"),
+        "approval_state": ("WAITING_FOR_RAY_APPROVAL" if status == "WAITING_FOR_RAY_APPROVAL" else "AUTONOMOUS_OK"),
+        "approval_reason": approval_reason, "error": None, "retry_state": "NONE",
+        "oracle_reroute": reroute, "note": note,
+        "resource_router": routers.get("resource_router_candidates"),
+        "resource_router_selected": routers.get("resource_router_selected"),
+        "worker_router": routers.get("worker_router_candidates"),
+        "next_action": ("REQUEST_RAY_APPROVAL" if status == "WAITING_FOR_RAY_APPROVAL" else
+                        "INVOKE_RUNNER" if status == "ROUTED_TO_RUNNER" else "CONTINUE"),
+    }
 
 
 def select_and_execute(*, task_id: str, goal_id: str, criterion_id: str, goal: str, criterion: str, task: str, task_spec: dict[str, Any], failure_memory: Iterable[dict[str, Any]] = (), persist: bool = True) -> dict[str, Any]:

@@ -44,3 +44,16 @@ def test_avatar_contract_preserves_identity_and_allows_campaign_variation():
 def test_brand_registry_blocks_random_reinvention():
     registry = build_brand_registry({"GOCLEAR": {"canonical_assets": {"logo": "logo.svg"}}})
     assert registry["brands"]["GOCLEAR"]["random_brand_reinvention"] == "BLOCKED"
+def test_disposable_nova_logo_asset_is_persisted_by_creative_studio(tmp_path, monkeypatch):
+    monkeypatch.setenv("NEXUS_GOVERNED_DATA_DIR", str(tmp_path / "governed"))
+    monkeypatch.setenv("NEXUS_CREATIVE_ARTIFACT_DIR", str(tmp_path / "assets"))
+    from nexus_agent_platform.creative.studio import create_internal_logo_asset
+
+    result = create_internal_logo_asset("Nexus Test", "Create a simple internal certification logo.", asset_id="test-creative-job")
+    artifact = __import__("pathlib").Path(result["artifact_path"])
+    assert artifact.is_file()
+    assert artifact.suffix == ".svg"
+    assert "Nexus Test" in artifact.read_text(encoding="utf-8")
+    assert result["asset"]["asset_type"] == "SVG_LOGO_CONCEPT"
+    assert result["asset"]["persistence"] == "CREATED"
+    assert result["receipt"]["artifact_ref"] == str(artifact)

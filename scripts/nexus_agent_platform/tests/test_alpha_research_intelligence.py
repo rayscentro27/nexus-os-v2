@@ -62,3 +62,23 @@ def test_evidence_limit_and_tenant_context_are_preserved(tmp_path):
     result = run_alpha_research(job, [evidence("ev-1"), evidence("ev-2")], runtime_root=tmp_path)
     assert len(result["pack"]["sources"]) == 1
     assert result["job"]["tenant_context"]["tenant_id"] == "tenant-a"
+
+
+def test_packaged_alpha_defaults_use_configured_external_runtime_roots(tmp_path, monkeypatch):
+    from nexus_agent_platform import alpha_research
+
+    canonical = tmp_path / "canonical"
+    for name in ("data", "scripts", "reports"):
+        (canonical / name).mkdir(parents=True)
+    (canonical / "RELEASE_MANIFEST.sha256").write_text("immutable\n")
+    release = tmp_path / ".nexus" / "releases" / "candidate"
+    (release / "data").mkdir(parents=True)
+    monkeypatch.setenv("NEXUS_REPO_ROOT", str(canonical))
+
+    runtime = alpha_research._default_runtime()
+    reports = alpha_research._default_reports()
+
+    assert runtime == canonical / "data/runtime/alpha_research"
+    assert reports == canonical / "reports/runtime/alpha_research"
+    assert not runtime.is_relative_to(release)
+    assert not reports.is_relative_to(release)

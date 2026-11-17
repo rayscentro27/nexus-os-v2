@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import pytest
-from nexus_agent_platform.google_workspace import SCOPES, validate_client_secrets, validate_scopes, certify_read_only, build_google_credentials
+from nexus_agent_platform.google_workspace import SCOPES, validate_client_secrets, validate_scopes, certify_read_only, build_google_credentials, reauthorize_existing
 from nexus_agent_platform import credential_control_plane as cp
 
 def test_exact_scopes_only():
@@ -46,3 +46,39 @@ def test_credentials_use_refresh_token_only():
     creds=build_google_credentials(FakeCredentials, client_id='id', client_secret='secret', refresh_token='refresh')
     assert creds.kwargs['token'] is None
     assert creds.kwargs['refresh_token'] == 'refresh'
+
+def test_reauthorize_existing_reuses_client_and_replaces_only_refresh_token(monkeypatch):
+    import sys
+    import types
+    import nexus_agent_platform.google_workspace as workspace
+    calls = {}
+    class Flow:
+        @classmethod
+        def from_client_config(cls, config, scopes):
+            calls['config'] = config
+            calls['scopes'] = scopes
+            return cls()
+        def run_local_server(self, **kwargs):
+            calls['flow'] = kwargs
+            return types.SimpleNamespace(refresh_token='new-refresh')
+    package = types.ModuleType('google_auth_oauthlib')
+    flow_module = types.ModuleType('google_auth_oauthlib.flow')
+    flow_module.InstalledAppFlow = Flow
+    package.flow = flow_module
+    monkeypatch.setitem(sys.modules, 'google_auth_oauthlib', package)
+    monkeypatch.setitem(sys.modules, 'google_auth_oauthlib.flow', flow_module)
+    monkeypatch.setattr(workspace, '_configured', lambda: {'client_id':'CONFIGURED','client_secret':'CONFIGURED','refresh_token':'CONFIGURED'})
+    monkeypatch.setattr(workspace, '_keychain_value', lambda credential_id, component: {'client_id':'existing-id','client_secret':'existing-secret'}[component])
+    stored = []
+    monkeypatch.setattr(workspace, 'store_keychain', lambda credential_id, component, value, replace=False: stored.append((credential_id,component,value,replace)) or 'STORED')
+
+    result = reauthorize_existing(open_browser=False)
+
+    assert calls['config']['installed']['client_id'] == 'existing-id'
+    assert calls['config']['installed']['client_secret'] == 'existing-secret'
+    assert calls['scopes'] == SCOPES
+    assert calls['flow']['host'] == '127.0.0.1'
+    assert calls['flow']['open_browser'] is False
+    assert stored == [('credential.google.workspace.prod.v1','refresh_token','new-refresh',True)]
+    assert result['oauth_client_replaced'] is False
+    assert result['secret_values_exposed'] is False

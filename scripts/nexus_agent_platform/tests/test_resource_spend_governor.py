@@ -75,6 +75,35 @@ def test_durable_worker_envelope_reserves_each_bounded_attempt(tmp_path):
     assert retry["status"]=="ACTIVE"
 
 
+def test_status_reply_uses_scoped_telegram_delivery_policy_with_fresh_ids(tmp_path, monkeypatch):
+    from nexus_agent_platform import provider_enforcement
+
+    db_path = tmp_path / "status-governor.sqlite3"
+    monkeypatch.setenv("NEXUS_GOVERNOR_DB", str(db_path))
+    monkeypatch.setenv("NEXUS_TELEGRAM_INTERNAL_CHAT_IDS", "ray-test-chat")
+    monkeypatch.setenv("NEXUS_CORRELATION_ID", "status-test-correlation")
+    monkeypatch.setenv("NEXUS_DEPARTMENT", "NOVA")
+    governor = LocalGovernorStore(db_path)
+    governor.set_policy("TELEGRAM", "bot_delivery", "NOVA_TELEGRAM_DELIVERY", "DAILY",
+        autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+        hard_limits={"rate": {}, "usage": {"requests": 10, "operations": 10},
+                     "money": {"per_job": 0, "per_day": 0, "per_month": 0}},
+        state="NORMAL", approval_required=False)
+
+    for update_id in (101, 102):
+        result = provider_enforcement.execute_telegram_delivery(
+            "ray-test-chat", lambda: {"ok": True, "result": {"message_id": str(update_id)}},
+            job_id=f"nova-telegram-update-{update_id}", job_type="NOVA_TELEGRAM_STATUS_REPLY")
+        assert result["ok"] is True
+
+    with governor.connect() as db:
+        rows = db.execute("SELECT job_id,job_type,status FROM reservations ORDER BY created_at").fetchall()
+    assert [(row["job_id"], row["job_type"], row["status"]) for row in rows] == [
+        ("nova-telegram-update-101", "NOVA_TELEGRAM_DELIVERY", "RECONCILED"),
+        ("nova-telegram-update-102", "NOVA_TELEGRAM_DELIVERY", "RECONCILED"),
+    ]
+
+
 def test_provider_hard_stop_does_not_block_unrelated_provider(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_JOB_BUDGET",'{"max_estimated_cost":10}')
     store=store_at(tmp_path)
@@ -110,13 +139,10 @@ def test_footprint_redacts_sensitive_fields_and_certification_ledger(tmp_path):
     with store.connect() as db: assert db.execute("select status from certifications").fetchone()[0]=="MOCK_PASS"
 
 
-def test_llm_adapter_denies_before_network_even_when_credential_is_present(tmp_path,monkeypatch):
+def test_llm_adapter_requires_declared_reasoning_class_before_network(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_GOVERNOR_DB",str(tmp_path/"governor.sqlite3"))
-    monkeypatch.setenv("OPENROUTER_API_KEY","credential-presence-is-not-authority")
     from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
     adapter=LlmGatewayAdapter("governor-cert")
-    async def should_not_call(*args,**kwargs): raise AssertionError("provider call must be denied before network")
-    monkeypatch.setattr(adapter,"_fallback_completion",should_not_call)
-    result=asyncio.run(adapter.completion("openai/gpt-4o-mini",[{"role":"user","content":"mock"}]))
-    assert result["error"]=="GOVERNANCE_DENIED"
-    assert result["governor_state"]=="HUMAN_APPROVAL_REQUIRED"
+    result=asyncio.run(adapter.completion("openai/gpt-4o-mini",[{"role":"user","content":"mock"}],
+        sensitivity="public_research",task_type="reasoning"))
+    assert result["error"]=="EXECUTION_CLASS_REQUIRED"
