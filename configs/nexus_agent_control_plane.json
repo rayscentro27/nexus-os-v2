@@ -688,7 +688,7 @@
     {
       "bot_id": "ALPHA_DEEP_RESEARCH",
       "display_name": "Alpha Deep Research",
-      "domain": "RESEARCH_LEAD",
+      "domain": "ALPHA",
       "one_sentence_responsibility": "Alpha Deep Research performs its single registered research_lead responsibility.",
       "bot_class": "DEEP_REASONING_WORKER",
       "model_required": true,
@@ -714,7 +714,7 @@
       "allowed_connectors": [
         "RESEARCH_R10",
         "RESEARCH_MCP",
-        "SUPABASE_GOVERNED"
+        "HERMES_WEB_SEARCH"
       ],
       "allowed_execution_environments": [
         "MAC_MINI"
