@@ -141,8 +141,9 @@ export default function ResearchRoomWorkspace() {
     }])
     try {
       const result = await askAlphaLive(roomId, question)
-      const response = result?.response || result?.data || result?.result || result?.structuredContent || result
+      const response = result?.alpha_message || result?.response || result?.data || result?.result || result?.structuredContent || result
       const answer = [
+        result?.alpha_message?.content,
         result?.answer,
         result?.alpha_answer,
         response?.answer,
