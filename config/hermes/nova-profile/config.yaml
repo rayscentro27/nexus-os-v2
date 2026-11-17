@@ -8,28 +8,28 @@ memory:
 mcp_servers:
   nexus_mcp:
     enabled: true
-    command: /Users/raymonddavis/nexus-hermes-runtime/.venv/bin/python
+    command: /Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3
     args:
       - -m
       - services.nexus_mcp.server
     env:
-      PYTHONPATH: /Users/raymonddavis/nexus-os-v2
+      PYTHONPATH: /Users/raymonddavis/nexus-os-v2-canonical:/Users/raymonddavis/nexus-os-v2-canonical/scripts
       # Explicit correlation fields are safe metadata, not credentials. The
       # Hermes MCP launcher only passes configured environment entries to the
       # stdio child, so these preserve the current turn boundary.
       NEXUS_MCP_TURN_ID: "${NEXUS_MCP_TURN_ID}"
       NEXUS_MCP_UPDATE_ID: "${NEXUS_MCP_UPDATE_ID}"
       NOVA_LANGFUSE_TRACE_ID: "${NOVA_LANGFUSE_TRACE_ID}"
-    timeout: 30
-    connect_timeout: 10
+    timeout: 60
+    connect_timeout: 30
   google_mcp:
     enabled: true
-    command: /Users/raymonddavis/nexus-hermes-runtime/.venv/bin/python
+    command: /Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3
     args:
       - -m
       - services.google_mcp.server
     env:
-      PYTHONPATH: /Users/raymonddavis/nexus-os-v2
-      GOOGLE_MCP_RECEIPT_DIR: /Users/raymonddavis/nexus-os-v2/data/runtime/google_mcp_receipts
+      PYTHONPATH: /Users/raymonddavis/nexus-os-v2-canonical:/Users/raymonddavis/nexus-os-v2-canonical/scripts
+      GOOGLE_MCP_RECEIPT_DIR: /Users/raymonddavis/nexus-os-v2-canonical/data/runtime/google_mcp_receipts
     timeout: 30
     connect_timeout: 10
