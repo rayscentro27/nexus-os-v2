@@ -13,55 +13,60 @@
       "task_type": "deterministic",
       "sensitivity": "internal_strategy",
       "reasoning_class": "DETERMINISTIC",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": "2026-11-17"
     },
     {
       "profile_id": "ROUTING_LIGHT",
       "model_manager_task_class": "routing.light",
       "provider_or_model": null,
       "max_cost_usd": null,
-      "status": "REGISTERED_ROUTE_REQUIRED",
+      "status": "RESOLVES_IN_MODEL_MANAGER",
       "notes": "Bots request this profile only; Model Manager resolves provider/model. No provider/model values in bot contract.",
       "task_type": "reasoning",
       "sensitivity": "internal_strategy",
       "reasoning_class": "LIGHT_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": "2026-11-17"
     },
     {
       "profile_id": "RESEARCH_FAST",
       "model_manager_task_class": "research.fast",
       "provider_or_model": null,
       "max_cost_usd": null,
-      "status": "REGISTERED_ROUTE_REQUIRED",
+      "status": "RESOLVES_IN_MODEL_MANAGER",
       "notes": "Bots request this profile only; Model Manager resolves provider/model. No provider/model values in bot contract.",
       "task_type": "reasoning",
       "sensitivity": "public_research",
       "reasoning_class": "LIGHT_REASONING",
-      "allow_free_tier": true
+      "allow_free_tier": true,
+      "last_resolved": "2026-11-17"
     },
     {
       "profile_id": "RESEARCH_DEEP",
       "model_manager_task_class": "research.deep",
       "provider_or_model": null,
       "max_cost_usd": null,
-      "status": "REGISTERED_ROUTE_REQUIRED",
+      "status": "RESOLVES_IN_MODEL_MANAGER",
       "notes": "Bots request this profile only; Model Manager resolves provider/model. No provider/model values in bot contract.",
       "task_type": "research",
       "sensitivity": "public_research",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": true
+      "allow_free_tier": true,
+      "last_resolved": "2026-11-17"
     },
     {
       "profile_id": "FACT_CHECK",
       "model_manager_task_class": "research.fact_check",
       "provider_or_model": null,
       "max_cost_usd": null,
-      "status": "REGISTERED_ROUTE_REQUIRED",
+      "status": "RESOLVES_IN_MODEL_MANAGER",
       "notes": "Bots request this profile only; Model Manager resolves provider/model. No provider/model values in bot contract.",
       "task_type": "research",
       "sensitivity": "public_research",
       "reasoning_class": "LIGHT_REASONING",
-      "allow_free_tier": true
+      "allow_free_tier": true,
+      "last_resolved": "2026-11-17"
     },
     {
       "profile_id": "SYNTHESIS",
@@ -73,7 +78,8 @@
       "task_type": "reasoning",
       "sensitivity": "public_research",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": true
+      "allow_free_tier": true,
+      "last_resolved": null
     },
     {
       "profile_id": "BUSINESS_PLANNING",
@@ -85,7 +91,8 @@
       "task_type": "business",
       "sensitivity": "internal_strategy",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "FUNDING_REASONING",
@@ -97,7 +104,8 @@
       "task_type": "funding",
       "sensitivity": "client_financial",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "MARKETING_STRATEGY",
@@ -109,7 +117,8 @@
       "task_type": "marketing",
       "sensitivity": "internal_strategy",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "MARKETING_ANALYSIS",
@@ -121,19 +130,21 @@
       "task_type": "marketing",
       "sensitivity": "internal_strategy",
       "reasoning_class": "LIGHT_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "CREATIVE_DIRECTOR",
       "model_manager_task_class": "creative.direction",
       "provider_or_model": null,
       "max_cost_usd": null,
-      "status": "REGISTERED_ROUTE_REQUIRED",
+      "status": "RESOLVES_IN_MODEL_MANAGER",
       "notes": "Bots request this profile only; Model Manager resolves provider/model. No provider/model values in bot contract.",
       "task_type": "creative",
       "sensitivity": "internal_strategy",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": "2026-11-17"
     },
     {
       "profile_id": "CREATIVE_PROMPT",
@@ -145,7 +156,8 @@
       "task_type": "creative",
       "sensitivity": "internal_strategy",
       "reasoning_class": "LIGHT_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "CODE_GENERATION",
@@ -157,7 +169,8 @@
       "task_type": "engineering",
       "sensitivity": "source_code",
       "reasoning_class": "SPECIALIZED_EXECUTOR",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "TRADING_REASONING",
@@ -169,7 +182,8 @@
       "task_type": "trading",
       "sensitivity": "market_data",
       "reasoning_class": "STRONG_REASONING",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     },
     {
       "profile_id": "FAILSAFE_LOCAL",
@@ -181,7 +195,8 @@
       "task_type": "reasoning",
       "sensitivity": "internal_strategy",
       "reasoning_class": "OFFLINE_EXPERIMENT",
-      "allow_free_tier": false
+      "allow_free_tier": false,
+      "last_resolved": null
     }
   ]
 }
