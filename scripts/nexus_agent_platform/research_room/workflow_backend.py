@@ -23,18 +23,19 @@ def _room_id(workflow_id: str) -> str:
     return "rcase_rr_" + digest
 
 
-def _ensure_step_execution_job(parent_job_id: str, workflow_id: str, step_id: str) -> tuple[str, dict[str, Any]]:
-    """Create/reuse a bounded provider-accounting job for one Workflow step."""
+def _ensure_step_execution_job(parent_job_id: str, workflow_id: str, step_id: str,
+                               attempt_number: int = 1) -> tuple[str, dict[str, Any]]:
+    """Create/reuse one bounded provider-accounting job per dispatched step attempt."""
     from nexus_agent_platform.durable_jobs import default_store
-    budget = {"max_requests": 20, "max_response_bytes": 500_000, "max_tokens": 8_000,
+    budget = {"max_requests": 20, "max_response_bytes": 2_000_000, "max_tokens": 8_000,
         "max_gpu_seconds": 0, "max_runtime_seconds": 240, "max_resource_creations": 0,
         "max_estimated_cost": 0.0, "max_retries": 1}
     row = default_store().enqueue("RESEARCH", "RESEARCH_CASE_CONTINUATION", priority=65,
         scheduled_at="2099-01-01T00:00:00+00:00", parent_job_id=parent_job_id,
         correlation_id=workflow_id, max_attempts=1,
-        idempotency_key=f"workflow-fabric:{workflow_id}:{step_id}:research-execution-v1",
+        idempotency_key=f"workflow-fabric:{workflow_id}:{step_id}:attempt:{max(1, int(attempt_number))}:research-execution-v1",
         budget_envelope=budget, governance_context={"source": "WORKFLOW_FABRIC_RESEARCH_STEP",
-            "workflow_id": workflow_id, "workflow_step": step_id,
+            "workflow_id": workflow_id, "workflow_step": step_id, "step_attempt": max(1, int(attempt_number)),
             "controller_owns_execution": True, "provider_budget_class": "ZERO_SPEND_BOUNDED"})
     return str(row.job_id), budget
 
@@ -81,6 +82,30 @@ def ensure_room(workflow_id: str, objective: str) -> tuple[str, dict[str, Any]]:
     from research import research_case_engine as engine
 
     objective = " ".join(str(objective or "").split())[:2400]
+    # A durable workflow's explicit room link is authoritative. A follow-up
+    # objective may differ from the original case objective, so objective-key
+    # matching alone can accidentally open a second Research Room.
+    from nexus_agent_platform.workflow_fabric import default_state_store
+    workflow = next((row for row in default_state_store().list(100)
+        if row.get("workflow_id") == workflow_id), None)
+    linked_room_id = str((workflow or {}).get("research_room_id") or "")
+    if linked_room_id:
+        linked_case = engine.get_case(linked_room_id)
+        if not linked_case:
+            raise RuntimeError("RESEARCH_ROOM_LINKED_CASE_NOT_FOUND")
+        state = dict(linked_case.get("research_room_state") or {})
+        state.update({"schema_version": "nexus.research-room.v1", "room_id": linked_room_id,
+            "workflow_id": workflow_id, "objective": state.get("objective") or linked_case.get("primary_question") or objective,
+            "autonomous_research_ingestion": False, "manual_research_intake": True,
+            "status": state.get("status") or "OPEN", "updated_at": _now()})
+        participants = state.setdefault("participants", {})
+        for name in ("RESEARCH_LEAD", "ALPHA", "SOURCE_ANALYST", "FACT_CHECKER", "SYNTHESIZER"):
+            participants.setdefault(name, {"status": "READY"})
+        saved = _save_room(linked_room_id, state, "RESEARCH_ROOM_REUSED_FROM_WORKFLOW_LINK")
+        if not saved["persisted"]:
+            raise RuntimeError("RESEARCH_ROOM_STATE_PERSISTENCE_UNVERIFIED")
+        return linked_room_id, saved["case"]
+
     result = engine.open_or_join_case(
         objective=objective, objective_family="BUSINESS_FUNDING_RESEARCH",
         business_or_nexus_goal=("Prepare evidence-backed GoClear business funding launch research for workflow "
@@ -210,12 +235,13 @@ def _advisor_call(role: str, objective: str, context: dict[str, Any], *,
         return AdvisorRouter(free_only=True).ask(role=role, case_context=context, objective=objective)
 
 
-def deep_research(*, workflow_id: str, durable_job_id: str, objective: str) -> dict[str, Any]:
+def deep_research(*, workflow_id: str, durable_job_id: str, objective: str,
+                  attempt_number: int = 1) -> dict[str, Any]:
     """Run targeted public follow-up, Alpha analysis, and durable evidence capture."""
     from research import research_case_engine as engine
     from .source_tools import SourceTools
 
-    execution_job_id, budget = _ensure_step_execution_job(durable_job_id, workflow_id, "DEEP_RESEARCH")
+    execution_job_id, budget = _ensure_step_execution_job(durable_job_id, workflow_id, "DEEP_RESEARCH", attempt_number)
     room_id, case = ensure_room(workflow_id, objective)
     state = dict(case.get("research_room_state") or {})
     state["status"] = "RESEARCHING"
@@ -226,9 +252,9 @@ def deep_research(*, workflow_id: str, durable_job_id: str, objective: str) -> d
         "external_actions": 0, "autonomous_ingestion": False, "created_at": state.get("created_at") or _now(),
     }
     question_specs = [
-        ("funding-readiness", "Small business funding eligibility, readiness, and documentation gaps: what do official or credible public sources say?"),
-        ("provider-positioning", "Small business funding provider positioning, service offers, and customer next steps based on public sources."),
-        ("funding-risks", "Small business financing costs, qualification uncertainty, and borrower risks: public evidence and warnings."),
+        ("funding-readiness", "SBA small business loan readiness checklist and funding application financial documents and projections."),
+        ("provider-positioning", "SBA Lender Match process lender offers fees and whether matching guarantees a loan offer."),
+        ("funding-risks", "SBA 7(a) eligibility requirements creditworthiness reasonable repayment ability and loan uses."),
     ]
     questions = []
     for suffix, question in question_specs:
@@ -265,7 +291,7 @@ def deep_research(*, workflow_id: str, durable_job_id: str, objective: str) -> d
         # Existing Nexus/Hermes search and public page extraction routes. A
         # missing route is recorded as a limitation; broad ingestion stays off.
         with _governed_research_context(workflow_id=workflow_id, durable_job_id=execution_job_id,
-                call_id=f"{workflow_id}:alpha-source-followup", budget=budget):
+            call_id=f"{workflow_id}:alpha-source-followup:{max(1, int(attempt_number))}", budget=budget):
             acquisition = SourceTools(timeout=12).research_questions(objective, questions[:3])
     source_rows = acquisition.get("sources") or []
     persisted_sources = []

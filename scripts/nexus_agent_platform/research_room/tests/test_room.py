@@ -150,7 +150,39 @@ def test_production_http_source_fetch_uses_durable_governance(monkeypatch):
     assert captured["action_type"] == "RESEARCH_READ"
     assert captured["job_id"] == "job-case-fixture"
     assert captured["correlation_id"] == "objective-fixture"
+    assert captured["estimate"]["bytes"] <= 500_000
     assert captured["purpose"].startswith("research-room-source:case-fixture:controller-turn:1:")
+
+
+def test_workflow_linked_research_room_is_reused_for_changed_followup_objective(monkeypatch):
+    from research import research_case_engine as engine
+    from nexus_agent_platform import workflow_fabric
+    from nexus_agent_platform.research_room import workflow_backend
+    workflow_id = "wf_existing-room"
+    room_id = "rcase_existing-room"
+    source_id = "manual-objective-" + __import__("hashlib").sha256(workflow_id.encode()).hexdigest()[:18]
+    case = {"case_id": room_id, "primary_question": "Original funding research objective",
+        "project_id": workflow_id, "objective_id": workflow_id,
+        "sources": [{"source_id": source_id}],
+        "research_room_state": {"room_id": room_id, "objective": "Original funding research objective",
+            "participants": {}, "status": "OPEN"}}
+    class Store:
+        def list(self, limit=100):
+            return [{"workflow_id": workflow_id, "research_room_id": room_id}]
+    saved = {}
+    monkeypatch.setattr(workflow_fabric, "default_state_store", lambda: Store())
+    monkeypatch.setattr(engine, "get_case", lambda _case_id: case)
+    monkeypatch.setattr(engine, "open_or_join_case", lambda **_kw: pytest.fail("duplicate room creation attempted"))
+    def save(_room_id, state, event):
+        saved.update(room_id=_room_id, state=state, event=event)
+        return {"case": {**case, "research_room_state": state}, "persisted": True,
+            "persistence_receipt": {"verified": True}}
+    monkeypatch.setattr(workflow_backend, "_save_room", save)
+    result_id, result_case = workflow_backend.ensure_room(workflow_id, "Verify a new SBA claim")
+    assert result_id == room_id
+    assert result_case["case_id"] == room_id
+    assert saved["state"]["objective"] == "Original funding research objective"
+    assert saved["event"] == "RESEARCH_ROOM_REUSED_FROM_WORKFLOW_LINK"
 
 
 def test_nexus_source_registry_selects_transcript_and_optional_long_form_digest():

@@ -4,7 +4,6 @@ from __future__ import annotations
 import re
 import hashlib
 import os
-import re
 import base64
 import urllib.request
 import uuid
@@ -50,6 +49,7 @@ class SourceTools:
                 "remain", "uncertain", "supports", "them", "and", "the", "for", "with", "from", "that",
                 "this", "should", "could", "would", "about", "into", "existing", "research", "case",
                 "continue", "leave", "open", "question", "explicitly", "citation", "verification"}
+        stop.update({"official", "credible", "public", "source", "sources", "evidence", "information", "guidance", "say"})
         question_terms = [x for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", question)
                           if len(x) > 2 and x.casefold() not in stop]
         # The question is already scoped to the owner-supplied objective. Put
@@ -71,6 +71,7 @@ class SourceTools:
                 "remain", "uncertain", "supports", "them", "and", "the", "for", "with", "from", "that",
                 "this", "should", "could", "would", "about", "into", "existing", "research", "case",
                 "continue", "leave", "open", "question", "explicitly", "citation", "verification"}
+        stop.update({"official", "credible", "public", "source", "sources", "evidence", "information", "guidance", "say"})
         terms = {x.casefold() for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", question)
                  if len(x) > 3 and x.casefold() not in stop}
         folded = text.casefold()
@@ -121,45 +122,56 @@ class SourceTools:
                         failures.append(dict(attempt))
                         self._record_attempt(attempt)
                         continue
-                    candidate = candidates[0]
-                    url = self._resolve_result_url(str(candidate.get("url") or "").strip())
-                    attempt["source_url"] = url
-                    try:
-                        page = self.acquire(url, objective=question)
-                    except Exception as exc:
-                        page = {"status": "PAGE_READ_FAILED", "text": "", "error": exc}
-                    body = str(page.get("text") or "")
-                    if not body:
-                        err = page.get("error")
-                        code = getattr(err, "code", None) or type(err).__name__ if err else "PAGE_READ_EMPTY"
-                        summary = getattr(err, "detail", None) or (str(err) if err else "Page reader returned no extracted text.")
-                        attempt.update({"result": "PAGE_READ_FAILED", "error_code": str(code)[:100],
-                                        "error_summary": str(summary)[:300]})
+                    candidate_failures = []
+                    source = None
+                    # Search providers may rank a broad landing page above a
+                    # useful source. Try a small fixed number of ranked URLs
+                    # before falling through to the next existing provider.
+                    for candidate in candidates[:3]:
+                        url = self._resolve_result_url(str(candidate.get("url") or "").strip())
+                        if not url.startswith(("https://", "http://")):
+                            continue
+                        try:
+                            page = self.acquire(url, objective=question)
+                        except Exception as exc:
+                            page = {"status": "PAGE_READ_FAILED", "text": "", "error": exc}
+                        body = str(page.get("text") or "")
+                        if not body:
+                            err = page.get("error")
+                            code = getattr(err, "code", None) or type(err).__name__ if err else "PAGE_READ_EMPTY"
+                            summary = getattr(err, "detail", None) or (str(err) if err else "Page reader returned no extracted text.")
+                            candidate_failures.append(f"{code}:{summary}"[:220])
+                            continue
+                        evidence_terms = self._relevant_terms(question, body)
+                        if len(body.strip()) < 120 or not evidence_terms:
+                            candidate_failures.append("EVIDENCE_NOT_MATERIAL:" + url[:180])
+                            continue
+                        source_id = "rrsrc_" + hashlib.sha256(url.encode()).hexdigest()[:20]
+                        text_claims = [re.sub(r"\s+", " ", part).strip()[:600]
+                            for part in re.split(r"(?<=[.!?])\s+", body) if len(part.strip()) >= 35
+                            and any(term in part.casefold() for term in evidence_terms)][:8]
+                        source = {"status": "SOURCE_ACQUIRED", "url": url,
+                            "title": str(page.get("title") or candidate.get("title") or url)[:240],
+                            "text": body[:16000], "summary": str(page.get("summary") or " ".join(text_claims[:3]))[:1800],
+                            "source_type": page.get("source_type") or "WEB", "method": provider,
+                            "source_content_hash": hashlib.sha256(body.encode("utf-8", errors="replace")).hexdigest(),
+                            "source_character_count": len(body), "claims": text_claims,
+                            "evidence_terms": evidence_terms, "question_id": question_id,
+                            "attempt_id": attempt_id, "source_id": source_id,
+                            "source_refs": [{"url": url, "question_id": question_id, "source_id": source_id}]}
+                        attempt.update({"source_url": url, "result": "SOURCE_ACQUIRED", "error_code": None,
+                                        "error_summary": None, "source_id": source_id,
+                                        "candidate_attempts": len(candidate_failures) + 1})
+                        self._record_attempt(attempt)
+                        reports.append(source)
+                        break
+                    if source is None:
+                        attempt.update({"result": "PAGE_READ_FAILED" if candidate_failures else "EVIDENCE_NOT_MATERIAL",
+                            "error_code": "PAGE_READ_FAILED" if candidate_failures else "EVIDENCE_NOT_MATERIAL",
+                            "error_summary": "; ".join(candidate_failures)[:300] or "No ranked candidate contained sufficient question-specific evidence.",
+                            "candidate_attempts": min(3, len(candidates))})
                         failures.append(dict(attempt)); self._record_attempt(attempt)
                         continue
-                    evidence_terms = self._relevant_terms(question, body)
-                    if len(body.strip()) < 120 or not evidence_terms:
-                        attempt.update({"result": "EVIDENCE_NOT_MATERIAL", "error_code": "EVIDENCE_NOT_MATERIAL",
-                                        "error_summary": "Retrieved page did not contain enough question-specific evidence."})
-                        failures.append(dict(attempt)); self._record_attempt(attempt)
-                        continue
-                    source_id = "rrsrc_" + hashlib.sha256(url.encode()).hexdigest()[:20]
-                    text_claims = [re.sub(r"\s+", " ", part).strip()[:600]
-                        for part in re.split(r"(?<=[.!?])\s+", body) if len(part.strip()) >= 35
-                        and any(term in part.casefold() for term in evidence_terms)][:8]
-                    source = {"status": "SOURCE_ACQUIRED", "url": url,
-                        "title": str(page.get("title") or candidate.get("title") or url)[:240],
-                        "text": body[:16000], "summary": str(page.get("summary") or " ".join(text_claims[:3]))[:1800],
-                        "source_type": page.get("source_type") or "WEB", "method": provider,
-                        "source_content_hash": hashlib.sha256(body.encode("utf-8", errors="replace")).hexdigest(),
-                        "source_character_count": len(body), "claims": text_claims,
-                        "evidence_terms": evidence_terms, "question_id": question_id,
-                        "attempt_id": attempt_id, "source_id": source_id,
-                        "source_refs": [{"url": url, "question_id": question_id, "source_id": source_id}]}
-                    attempt.update({"result": "SOURCE_ACQUIRED", "error_code": None, "error_summary": None,
-                                    "source_id": source_id})
-                    self._record_attempt(attempt)
-                    reports.append(source)
                     break
                 except Exception as exc:
                     code = getattr(exc, "code", None) or type(exc).__name__
@@ -253,7 +265,7 @@ class SourceTools:
         def fetch():
             request = urllib.request.Request(url, headers={"User-Agent": "NexusResearchRoom/1.0", "Accept": "text/html,text/plain"})
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                raw = response.read(1_000_000).decode("utf-8", errors="replace")
+                raw = response.read(400_000).decode("utf-8", errors="replace")
                 title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.I | re.S)
                 title = re.sub(r"\s+", " ", title_match.group(1)).strip() if title_match else url
                 text = re.sub(r"<script\b.*?</script>|<style\b.*?</style>", " ", raw, flags=re.I | re.S)
@@ -264,7 +276,7 @@ class SourceTools:
         from nexus_agent_platform.provider_enforcement import execute
         host = urlparse(url).hostname or "unknown"
         result = execute("PUBLIC_WEB", host, "RESEARCH_READ",
-            {"requests": 1, "operations": 1, "bytes": 1_000_000, "runtime_seconds": self.timeout,
+            {"requests": 1, "operations": 1, "bytes": 400_000, "runtime_seconds": self.timeout,
              "cost": 0, "billable": False}, fetch,
             job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
             job_type=os.environ.get("NEXUS_JOB_TYPE", "RESEARCH_CASE_CONTINUATION"),

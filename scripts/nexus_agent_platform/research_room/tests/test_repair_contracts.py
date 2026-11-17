@@ -103,6 +103,21 @@ def test_successful_alternate_route_returns_question_linked_evidence():
     assert result["sources"][0]["method"] == "alternate"
 
 
+def test_search_route_tries_next_ranked_candidate_after_empty_page():
+    content = "SBA 7(a) eligibility requires a reasonable ability to repay and has specific program requirements. " * 5
+    result = SourceTools(methods=[("fixture_page", lambda url, **_kw:
+            {"text": content, "title": "SBA 7(a) eligibility"} if url.endswith("/eligible") else {"text": ""})],
+        search_routes=[("fixture_search", lambda _q: {"status": "ok", "results": [
+            {"url": "https://example.test/empty", "title": "Broad landing page"},
+            {"url": "https://www.sba.gov/eligible", "title": "SBA eligibility"},
+            {"url": "https://example.test/unused", "title": "Unused"}]})]).research_questions(
+                "SBA funding", [{"case_id": IDS["case_id"], "question_id": "q2",
+                    "question": "SBA 7(a) eligibility and ability to repay requirements"}])
+    assert result["status"] == "SOURCE_ACQUIRED"
+    assert result["sources"][0]["url"] == "https://www.sba.gov/eligible"
+    assert result["source_attempts"][0]["candidate_attempts"] == 2
+
+
 def test_advisor_acceptance_persists_before_enqueue(monkeypatch, tmp_path):
     case = {"case_id": IDS["case_id"], "research_room_controller": {}}
     saved = _queued_fakes(monkeypatch, tmp_path, case)
