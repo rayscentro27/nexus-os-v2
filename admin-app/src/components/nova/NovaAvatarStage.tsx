@@ -71,10 +71,10 @@ export const NovaAvatarStage: React.FC<NovaAvatarStageProps> = ({ state, compact
   return (
     <div className="flex flex-col items-center justify-center pt-1 pb-1 relative select-none">
       {/* Concentric soundwaves / ambient rings container */}
-      <div className={`relative ${compact ? 'w-32 h-32' : 'w-40 h-40'} flex items-center justify-center`}>
+      <div className={`relative ${compact ? 'w-40 h-48' : 'w-44 h-52'} flex items-center justify-center`}>
         {/* Subtle Outer ambient wave rings */}
         <div
-          className={`absolute inset-0 rounded-full border border-sky-300/40 pointer-events-none transition-all duration-700 ${
+          className={`absolute inset-0 rounded-2xl border border-sky-300/40 pointer-events-none transition-all duration-700 ${
             visibleState === 'SPEAKING'
               ? 'scale-105 opacity-60 animate-pulse'
               : visibleState === 'LISTENING'
@@ -85,7 +85,7 @@ export const NovaAvatarStage: React.FC<NovaAvatarStageProps> = ({ state, compact
           }`}
         />
         <div
-          className={`absolute inset-2.5 rounded-full border border-blue-400/30 pointer-events-none transition-all duration-700 ${
+          className={`absolute inset-2.5 rounded-xl border border-blue-400/30 pointer-events-none transition-all duration-700 ${
             visibleState === 'SPEAKING'
               ? 'scale-102 opacity-75'
               : visibleState === 'LISTENING'
@@ -147,15 +147,15 @@ export const NovaAvatarStage: React.FC<NovaAvatarStageProps> = ({ state, compact
         {/* Circular Video Avatar Frame */}
         <div
           className={`relative ${
-            compact ? 'w-24 h-24' : 'w-28 h-28'
-          } rounded-full overflow-hidden p-0.5 bg-gradient-to-b from-blue-400 via-cyan-300 to-indigo-400 shadow-[0_4px_18px_rgba(37,99,235,0.18)]`}
+            compact ? 'w-32 h-40' : 'w-36 h-44'
+          } rounded-2xl overflow-hidden p-0.5 bg-gradient-to-b from-blue-400 via-cyan-300 to-indigo-400 shadow-[0_4px_18px_rgba(37,99,235,0.18)]`}
         >
           <div className="w-full h-full rounded-full overflow-hidden bg-slate-900">
             <NovaVideo
               ref={videoRef}
               muted={!isAudioUnmuted || !isSpeakerOn}
               aria-label="Nova Executive AI Avatar"
-              className={`w-full h-full object-cover object-[50%_18%] transition-transform duration-500 ${
+              className={`w-full h-full object-cover object-[50%_28%] transition-transform duration-500 ${
                 visibleState === 'SPEAKING'
                   ? 'scale-103'
                   : visibleState === 'LISTENING'

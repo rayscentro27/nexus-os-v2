@@ -74,12 +74,14 @@ export const mapNotifications = (a: Record<string, any>): NexusNotification[] =>
     }))
     .sort((x, y) => (x.timestamp < y.timestamp ? 1 : -1)) as NexusNotification[];
 
-const SYS_STATUS: Record<string, DistributedSystemNode['status']> = { ONLINE: 'HEALTHY', UNKNOWN: 'NOT_CONNECTED', DEGRADED: 'DEGRADED' };
+const SYS_STATUS: Record<string, DistributedSystemNode['status']> = {
+  ONLINE: 'HEALTHY', UNKNOWN: 'NOT_CONNECTED', DEGRADED: 'DEGRADED', STOPPED: 'BLOCKED', BLOCKED: 'BLOCKED',
+};
 
 export const mapSystems = (a: Record<string, any>, generatedAt: string | null): DistributedSystemNode[] =>
   arr(a.systems).map(s => {
     const services = Object.entries(s.services || {}) as [string, string][];
-    const down = services.filter(([, v]) => v !== 'RUNNING' && v !== 'ACTIVE' && v !== 'STOPPED');
+    const down = services.filter(([, v]) => v !== 'RUNNING' && v !== 'ACTIVE');
     return {
       id: s.id,
       name: s.name,

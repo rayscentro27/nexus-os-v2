@@ -10,28 +10,25 @@ import {
 } from 'lucide-react';
 import { useNexus } from '../context/NexusContext';
 import { TruthBadge } from '../components/common/TruthBadge';
-import {
-  MARKETING_CONTENT_SCHEDULE,
-  MARKETING_PUBLISHED_CONTENT,
-  AUDIENCE_COMMENTS_DATA,
-  AUDIENCE_INTELLIGENCE_SUMMARY,
-  ATTRIBUTION_PIPELINE,
-} from '../data/creativeMarketingData';
+import { UnavailableState } from '../components/live/UnavailableState';
+
+const MARKETING_CONTENT_SCHEDULE: any[] = [];
+const MARKETING_PUBLISHED_CONTENT: any[] = [];
+const AUDIENCE_COMMENTS_DATA: any[] = [];
+const AUDIENCE_INTELLIGENCE_SUMMARY = { topRecurringQuestions: [] as string[], topObjections: [] as string[] };
+const ATTRIBUTION_PIPELINE: any[] = [];
 
 type MarketingTab = 'overview' | 'schedule' | 'published' | 'audience' | 'attribution';
 
 export const MarketingPage: React.FC = () => {
-  const { campaigns, credentials, navigateToObject } = useNexus();
+  const { liveAreas, navigateToObject } = useNexus();
+  const marketingState = liveAreas.marketing || {};
+  const campaigns = Array.isArray(marketingState.campaigns) ? marketingState.campaigns : [];
   const [activeTab, setActiveTab] = useState<MarketingTab>('overview');
-  const [commentFilter, setCommentFilter] = useState<string>('ALL');
 
-  const metaCred = credentials.find(c => c.id === 'cred-meta');
-  const postizCred = credentials.find(c => c.id === 'cred-postiz');
   const waitingCampaigns = campaigns.filter(c => c.approvalStatus !== 'APPROVED');
 
-  const filteredComments = AUDIENCE_COMMENTS_DATA.filter(
-    c => commentFilter === 'ALL' || c.classification === commentFilter
-  );
+  const filteredComments = AUDIENCE_COMMENTS_DATA;
 
   return (
     <div className="space-y-5">
@@ -61,9 +58,9 @@ export const MarketingPage: React.FC = () => {
         {(
           [
             { id: 'overview', label: 'Strategy & Readiness' },
-            { id: 'schedule', label: `Schedule (${MARKETING_CONTENT_SCHEDULE.length})` },
-            { id: 'published', label: `Published (${MARKETING_PUBLISHED_CONTENT.length})` },
-            { id: 'audience', label: `Audience Response (${AUDIENCE_COMMENTS_DATA.length})` },
+            { id: 'schedule', label: 'Schedule (not connected)' },
+            { id: 'published', label: 'Published (not connected)' },
+            { id: 'audience', label: 'Audience Response (not connected)' },
             { id: 'attribution', label: 'Attribution Funnel' },
           ] as const
         ).map(tab => (
@@ -91,23 +88,23 @@ export const MarketingPage: React.FC = () => {
               <div className="py-3 flex items-center justify-between gap-2">
                 <div>
                   <div className="font-semibold text-slate-900">Facebook / Meta Business API</div>
-                  <div className="text-slate-500 mt-0.5">{metaCred?.impact}</div>
+                  <div className="text-slate-500 mt-0.5">Marketing provider state is not connected.</div>
                 </div>
                 <TruthBadge truth="NOT_CONNECTED" />
               </div>
               <div className="py-3 flex items-center justify-between gap-2">
                 <div>
                   <div className="font-semibold text-slate-900">Postiz Social Scheduler</div>
-                  <div className="text-slate-500 mt-0.5">{postizCred?.impact}</div>
+                  <div className="text-slate-500 mt-0.5">Marketing provider state is not connected.</div>
                 </div>
-                <TruthBadge truth="ESTIMATED" label="SANDBOX" />
+                <TruthBadge truth="NOT_CONNECTED" />
               </div>
               <div className="py-3 flex items-center justify-between gap-2">
                 <div>
                   <div className="font-semibold text-slate-900">LinkedIn / X (Pilot Feeds)</div>
-                  <div className="text-slate-500 mt-0.5">Modeled prototype metrics displayed cleanly as DEMO.</div>
+                  <div className="text-slate-500 mt-0.5">Marketing data not connected.</div>
                 </div>
-                <TruthBadge truth="DEMO" />
+                <TruthBadge truth="NOT_CONNECTED" />
               </div>
             </div>
           </div>
@@ -157,6 +154,7 @@ export const MarketingPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {campaigns.length === 0 && <div className="py-3"><UnavailableState>Campaign records are not connected.</UnavailableState></div>}
             </div>
           </div>
         </div>
@@ -191,6 +189,7 @@ export const MarketingPage: React.FC = () => {
               </button>
             </div>
           ))}
+          {MARKETING_CONTENT_SCHEDULE.length === 0 && <div className="p-4"><UnavailableState>Marketing schedule data is not connected.</UnavailableState></div>}
         </div>
       )}
 
@@ -224,27 +223,18 @@ export const MarketingPage: React.FC = () => {
               )}
             </div>
           ))}
+          {MARKETING_PUBLISHED_CONTENT.length === 0 && <div className="p-4"><UnavailableState>Published campaign data is not connected.</UnavailableState></div>}
         </div>
       )}
 
       {activeTab === 'audience' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
                 <MessageSquare className="w-4 h-4 text-blue-600" />
-                <span>Audience Comments (Demo Dataset)</span>
+                <span>Audience Comments</span>
               </div>
-              <select
-                value={commentFilter}
-                onChange={e => setCommentFilter(e.target.value)}
-                className="px-2.5 py-1 rounded-lg border border-slate-200 text-xs bg-white"
-              >
-                <option value="ALL">All Classifications</option>
-                <option value="BUYING_INTENT">Buying Intent</option>
-                <option value="QUESTION">Question</option>
-                <option value="OBJECTION">Objection</option>
-              </select>
             </div>
             <div className="divide-y divide-slate-100">
               {filteredComments.map(c => (
@@ -261,6 +251,7 @@ export const MarketingPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {filteredComments.length === 0 && <div className="p-4"><UnavailableState>Audience response data is not connected.</UnavailableState></div>}
             </div>
           </div>
 
@@ -293,7 +284,7 @@ export const MarketingPage: React.FC = () => {
               <TrendingUp className="w-4 h-4 text-blue-600" />
               <span>Attribution Truth Funnel</span>
             </div>
-            <TruthBadge truth="DEMO" label="PROTOTYPE + NOT CONNECTED MERGED" />
+            <TruthBadge truth="NOT_CONNECTED" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {ATTRIBUTION_PIPELINE.map((step, i) => (
@@ -307,6 +298,7 @@ export const MarketingPage: React.FC = () => {
                 <TruthBadge truth={step.status} />
               </div>
             ))}
+            {ATTRIBUTION_PIPELINE.length === 0 && <UnavailableState>Attribution data is not connected.</UnavailableState>}
           </div>
         </div>
       )}

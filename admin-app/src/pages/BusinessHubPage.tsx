@@ -41,18 +41,18 @@ import {
   VerificationEvidenceStatus,
   OpportunityWorkflowState
 } from '../types';
-import {
-  INITIAL_FORMAL_HANDOFFS,
-  INITIAL_OPPORTUNITIES,
-  INITIAL_BANKABILITY_CHECKLIST,
-  INITIAL_NAICS_GOVERNANCE,
-  INITIAL_FUNDING_CASES,
-  INITIAL_FUNDING_PRODUCTS,
-  INITIAL_BUSINESS_CREDIT_PRODUCTS,
-  INITIAL_OPPORTUNITY_COMPONENTS
-} from '../data/businessHubData';
+// These panes have no connected live source; keep their existing structure empty.
+const NO_LIVE_FORMAL_HANDOFFS: any[] = [];
+const NO_LIVE_OPPORTUNITIES: any[] = [];
+const NO_LIVE_BANKABILITY_CHECKLIST: any[] = [];
+const NO_LIVE_NAICS_GOVERNANCE: NAICSGovernanceProfile[] = [];
+const NO_LIVE_FUNDING_CASES: any[] = [];
+const NO_LIVE_FUNDING_PRODUCTS: any[] = [];
+const NO_LIVE_BUSINESS_CREDIT_PRODUCTS: any[] = [];
+const NO_LIVE_OPPORTUNITY_COMPONENTS: any[] = [];
 import { useNexus } from '../context/NexusContext';
 import { TruthBadge } from '../components/common/TruthBadge';
+import { UnavailableState } from '../components/live/UnavailableState';
 import { ASSETS } from '../data/assets';
 import { ExecutiveDossierModal, DossierData } from '../components/common/ExecutiveDossierModal';
 import { createDossierFromOpportunity, createDossierFromFundingCase } from '../data/dossierData';
@@ -76,14 +76,14 @@ export const BusinessHubPage: React.FC = () => {
   };
 
   // Opportunities State
-  const [opportunities, setOpportunities] = useState<OpportunityItem[]>(INITIAL_OPPORTUNITIES);
-  const [selectedOppId, setSelectedOppId] = useState<string>(INITIAL_OPPORTUNITIES[0].id);
+  const [opportunities, setOpportunities] = useState<OpportunityItem[]>(NO_LIVE_OPPORTUNITIES);
+  const [selectedOppId, setSelectedOppId] = useState<string>(NO_LIVE_OPPORTUNITIES[0]?.id || '');
   const [oppSearch, setOppSearch] = useState('');
   const [oppFilter, setOppFilter] = useState<'ALL' | 'RAY_REVIEW_REQUIRED' | 'FINAL_SYNTHESIS' | 'FUNDING_REVIEW' | 'BUSINESS_PLAN_BUILD'>('ALL');
 
   // Business Creation State
   const [creationSubTab, setCreationSubTab] = useState<'NEW_BUSINESS' | 'EXISTING_AUDIT'>('NEW_BUSINESS');
-  const [selectedNaicsProfile, setSelectedNaicsProfile] = useState<NAICSGovernanceProfile>(INITIAL_NAICS_GOVERNANCE[0]);
+  const [selectedNaicsProfile, setSelectedNaicsProfile] = useState<NAICSGovernanceProfile>({} as NAICSGovernanceProfile);
 
   // Funding / Clyde State
   const [fundingLane, setFundingLane] = useState<'CLIENT / GOCLEAR' | 'NEXUS / RAY'>('NEXUS / RAY');
@@ -102,14 +102,14 @@ export const BusinessHubPage: React.FC = () => {
   };
 
   const selectedOpp = opportunities.find(o => o.id === selectedOppId) || opportunities[0];
-  const selectedFundingCase = INITIAL_FUNDING_CASES.find(c => c.id === selectedFundingCaseId) || INITIAL_FUNDING_CASES[0];
+  const selectedFundingCase: any = undefined;
 
   // Telemetry Calculations
   const activeOpportunitiesCount = opportunities.length;
   const rayReviewOppCount = opportunities.filter(o => o.currentState === 'RAY_REVIEW_REQUIRED').length;
-  const rayReviewFundingCount = INITIAL_FUNDING_CASES.filter(c => c.decisionAuthority === 'WAITING ON RAY' && c.currentFit === 'CURRENT MATCH').length;
+  const rayReviewFundingCount = NO_LIVE_FUNDING_CASES.filter(c => c.decisionAuthority === 'WAITING ON RAY' && c.currentFit === 'CURRENT MATCH').length;
   const totalRayRequiredCount = rayReviewOppCount + rayReviewFundingCount;
-  const clientDecisionsRequiredCount = INITIAL_FUNDING_CASES.filter(c => c.decisionAuthority === 'WAITING ON CLIENT').length;
+  const clientDecisionsRequiredCount = NO_LIVE_FUNDING_CASES.filter(c => c.decisionAuthority === 'WAITING ON CLIENT').length;
 
   return (
     <div className="space-y-6">
@@ -153,11 +153,11 @@ export const BusinessHubPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/70 text-xs text-amber-800 font-bold">
               <Clock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Ray Review Required: {totalRayRequiredCount}</span>
+              <span>Ray Review Required: Not connected</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200/70 text-xs text-blue-800 font-bold">
               <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Client Decisions: {clientDecisionsRequiredCount}</span>
+              <span>Client Decisions: Not connected</span>
             </div>
           </div>
         </div>
@@ -178,7 +178,7 @@ export const BusinessHubPage: React.FC = () => {
 
           <div className="flex items-center gap-2 text-slate-500">
             <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-slate-600">
-              NOVA CO-PILOT SYNCED
+              LIVE COMMERCE READ MODEL
             </span>
           </div>
         </div>
@@ -191,11 +191,11 @@ export const BusinessHubPage: React.FC = () => {
         <nav className="flex space-x-2 -mb-px overflow-x-auto">
           {[
             { id: 'commerce', label: 'COMMERCE & OFFERS', count: commerceOffers.length, icon: Briefcase },
-            { id: 'overview', label: 'VENTURE PIPELINE', count: null, icon: Layers },
-            { id: 'opportunities', label: 'OPPORTUNITIES (ATLAS)', count: opportunities.length, icon: TrendingUp },
-            { id: 'creation', label: 'BANKABILITY & NAICS', count: 'Checklist', icon: Building2 },
-            { id: 'funding', label: 'FUNDING (CLYDE)', count: 'Clyde', icon: DollarSign },
-            { id: 'knowledge-banks', label: 'KNOWLEDGE BANKS', count: '5 Banks', icon: Layers }
+            { id: 'overview', label: 'VENTURE PIPELINE (NOT CONNECTED)', count: null, icon: Layers, unavailable: true },
+            { id: 'opportunities', label: 'OPPORTUNITIES (NOT CONNECTED)', count: null, icon: TrendingUp, unavailable: true },
+            { id: 'creation', label: 'BANKABILITY & NAICS (NOT CONNECTED)', count: null, icon: Building2, unavailable: true },
+            { id: 'funding', label: 'FUNDING (NOT CONNECTED)', count: null, icon: DollarSign, unavailable: true },
+            { id: 'knowledge-banks', label: 'KNOWLEDGE BANKS (NOT CONNECTED)', count: null, icon: Layers, unavailable: true }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -203,8 +203,9 @@ export const BusinessHubPage: React.FC = () => {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as ExtendedBusinessHubTab)}
-                className={`py-3 px-4 font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                disabled={tab.unavailable}
+                onClick={() => !tab.unavailable && setActiveTab(tab.id as ExtendedBusinessHubTab)}
+                className={`py-3 px-4 font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${tab.unavailable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${
                   isActive
                     ? 'border-blue-600 text-blue-600 bg-blue-50/40 rounded-t-lg'
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
@@ -374,6 +375,7 @@ export const BusinessHubPage: React.FC = () => {
               </div>
             </div>
           ))}
+          {commerceOffers.length === 0 && <UnavailableState>No commerce records were returned by the live Nexus read model.</UnavailableState>}
         </div>
       )}
 
@@ -402,7 +404,7 @@ export const BusinessHubPage: React.FC = () => {
 
             <div className="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-2xs">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Funding Cases</div>
-              <div className="text-2xl font-black text-slate-900 mt-1">{INITIAL_FUNDING_CASES.length}</div>
+              <div className="text-sm font-semibold text-slate-500 mt-1">Not connected</div>
               <div className="text-[11px] text-indigo-600 font-semibold mt-1">
                 <span>Clyde Match Engine</span>
               </div>
@@ -413,7 +415,7 @@ export const BusinessHubPage: React.FC = () => {
                 <Clock className="w-3.5 h-3.5 text-amber-600" />
                 <span>Ray Review Required</span>
               </div>
-              <div className="text-2xl font-black text-amber-900 mt-1">{totalRayRequiredCount}</div>
+              <div className="text-sm font-semibold text-slate-500 mt-1">Not connected</div>
               <div className="text-[11px] text-amber-700 font-semibold mt-1">
                 <span>Final Strategic Gate</span>
               </div>
@@ -424,7 +426,7 @@ export const BusinessHubPage: React.FC = () => {
                 <UserCheck className="w-3.5 h-3.5 text-blue-600" />
                 <span>Client Decisions Req.</span>
               </div>
-              <div className="text-2xl font-black text-blue-900 mt-1">{clientDecisionsRequiredCount}</div>
+              <div className="text-sm font-semibold text-slate-500 mt-1">Not connected</div>
               <div className="text-[11px] text-blue-700 font-semibold mt-1">
                 <span>GoClear Portal Queue</span>
               </div>
@@ -554,7 +556,7 @@ export const BusinessHubPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {INITIAL_FORMAL_HANDOFFS.map(h => (
+                  {NO_LIVE_FORMAL_HANDOFFS.map(h => (
                     <tr key={h.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-4 font-bold text-slate-700">{h.from}</td>
                       <td className="py-3 px-4 font-bold text-blue-700">{h.to}</td>
@@ -949,7 +951,7 @@ export const BusinessHubPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {INITIAL_BANKABILITY_CHECKLIST.map(item => (
+              {NO_LIVE_BANKABILITY_CHECKLIST.map(item => (
                 <div
                   key={item.key}
                   className={`p-3.5 rounded-xl border flex flex-col justify-between ${
@@ -1171,7 +1173,7 @@ export const BusinessHubPage: React.FC = () => {
 
           {/* Funding Cases Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {INITIAL_FUNDING_CASES.filter(c => c.lane === fundingLane).map(fCase => {
+            {NO_LIVE_FUNDING_CASES.filter(c => c.lane === fundingLane).map(fCase => {
               const isSelected = fCase.id === selectedFundingCaseId;
 
               // Color badges for non-binary states
@@ -1350,7 +1352,7 @@ export const BusinessHubPage: React.FC = () => {
               <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Funding Product Bank ({INITIAL_FUNDING_PRODUCTS.length} Audited Products)
+                    Funding Product Bank ({NO_LIVE_FUNDING_PRODUCTS.length} Audited Products)
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     Live bureau pull rules, revenue thresholds, personal guarantee criteria, and verification refresh cadence
@@ -1375,7 +1377,7 @@ export const BusinessHubPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {INITIAL_FUNDING_PRODUCTS
+                    {NO_LIVE_FUNDING_PRODUCTS
                       .filter(p => evidenceFilter === 'ALL' || p.evidenceStatus === evidenceFilter)
                       .map(p => (
                         <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
@@ -1418,7 +1420,7 @@ export const BusinessHubPage: React.FC = () => {
           {/* Sub-View 2: BUSINESS CREDIT PRODUCT BANK */}
           {knowledgeSubTab === 'CREDIT_PRODUCT_BANK' && (
             <div className="space-y-4">
-              {INITIAL_BUSINESS_CREDIT_PRODUCTS.map(tier => (
+              {NO_LIVE_BUSINESS_CREDIT_PRODUCTS.map(tier => (
                 <div key={tier.id} className="rounded-2xl bg-white border border-slate-200/80 p-5 shadow-2xs">
                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-blue-700">
                     {tier.tier}
@@ -1455,7 +1457,7 @@ export const BusinessHubPage: React.FC = () => {
           {/* Sub-View 3: OPPORTUNITY BANK */}
           {knowledgeSubTab === 'OPPORTUNITY_BANK' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {INITIAL_OPPORTUNITIES.map(opp => (
+              {NO_LIVE_OPPORTUNITIES.map(opp => (
                 <div key={opp.id} className="rounded-2xl bg-white border border-slate-200/80 p-5 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono text-slate-400">{opp.notebook}</span>
@@ -1487,7 +1489,7 @@ export const BusinessHubPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {INITIAL_OPPORTUNITY_COMPONENTS.map((comp, idx) => (
+                {NO_LIVE_OPPORTUNITY_COMPONENTS.map((comp, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-extrabold text-slate-900">{comp.component}</span>

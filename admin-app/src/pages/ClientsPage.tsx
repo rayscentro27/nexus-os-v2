@@ -9,36 +9,42 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { TruthBadge } from '../components/common/TruthBadge';
-import { CLIENTS_DATA } from '../data/mockData';
 import { useNexus } from '../context/NexusContext';
 import { ClientItem } from '../types';
 import { GoClearClientPortalView } from '../components/clients/GoClearClientPortalView';
+import { UnavailableState } from '../components/live/UnavailableState';
 
 export const ClientsPage: React.FC = () => {
-  const { sendMessage, navigateToObject, setIsNovaDrawerOpen } = useNexus();
+  const { sendMessage, navigateToObject, setIsNovaDrawerOpen, liveAreas } = useNexus();
+  const liveClients = (liveAreas.clients || []) as ClientItem[];
   const [viewMode, setViewMode] = useState<'OPERATOR' | 'GOCLEAR_CLIENT_PREVIEW'>('OPERATOR');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassification, setSelectedClassification] = useState<'ALL' | 'PILOT' | 'DEMO'>('ALL');
-  const [selectedClientId, setSelectedClientId] = useState<string>(CLIENTS_DATA[0].id);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
 
-  const getClassification = (client: ClientItem): 'PILOT' | 'DEMO' =>
-    client.name.toLowerCase().includes('goclear') ? 'PILOT' : 'DEMO';
+  const getClassification = (client: ClientItem): 'PILOT' | 'DEMO' | 'UNKNOWN' => {
+    const value = String((client as ClientItem & { classification?: string }).classification || '').toUpperCase();
+    return value === 'PILOT' || value === 'DEMO' ? value : 'UNKNOWN';
+  };
 
-  const filteredClients = CLIENTS_DATA.filter(client => {
+  const filteredClients = liveClients.filter(client => {
     const matchesSearch =
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.tenant.toLowerCase().includes(searchTerm.toLowerCase());
     const cls = getClassification(client);
-    const matchesCls = selectedClassification === 'ALL' || cls === selectedClassification;
-    return matchesSearch && matchesCls;
+    return matchesSearch && (selectedClassification === 'ALL' || cls === selectedClassification);
   });
 
   const activeClient: ClientItem =
-    filteredClients.find(c => c.id === selectedClientId) || filteredClients[0] || CLIENTS_DATA[0];
+    filteredClients.find(c => c.id === selectedClientId) || filteredClients[0] || null;
 
-  const pilotCount = CLIENTS_DATA.filter(c => getClassification(c) === 'PILOT').length;
-  const demoCount = CLIENTS_DATA.length - pilotCount;
+  const pilotCount = liveClients.filter(c => getClassification(c) === 'PILOT').length;
+  const demoCount = liveClients.filter(c => getClassification(c) === 'DEMO').length;
+
+  if (liveClients.length === 0) {
+    return <div className="space-y-4 pb-10"><div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs"><div className="flex items-center gap-2"><h1 className="text-lg font-semibold text-slate-900">Clients &amp; Tenant Workspaces</h1><TruthBadge truth="NOT_CONNECTED" /></div><p className="text-xs text-slate-500 mt-0.5">Client and tenant records are shown only when returned by the durable Nexus read model.</p></div><div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-4"><UnavailableState>Client and tenant data is not connected.</UnavailableState></div></div>;
+  }
 
   return (
     <div className="space-y-4 pb-10">
@@ -49,10 +55,10 @@ export const ClientsPage: React.FC = () => {
             <h1 className="text-lg font-semibold text-slate-900 tracking-tight">
               Clients &amp; Tenant Workspaces
             </h1>
-            <TruthBadge truth="DEMO" label="Pilot & Demo Classification" />
+            <TruthBadge truth={liveClients.length ? 'UNKNOWN' : 'NOT_CONNECTED'} label="Tenant classification source" />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Explicit separation between active pilot accounts (GoClear) and sandbox/demo workspaces. Live merchant billing is NOT_CONNECTED.
+            Client and tenant details are rendered from the Nexus read model; unsupported classification fields remain unknown.
           </p>
         </div>
 
@@ -167,8 +173,8 @@ export const ClientsPage: React.FC = () => {
                         </td>
                         <td className="py-2.5 px-3">
                           <TruthBadge
-                            truth={cls === 'PILOT' ? 'TEST' : 'DEMO'}
-                            label={cls === 'PILOT' ? 'PILOT TENANT' : 'DEMO / SANDBOX'}
+                            truth={cls === 'PILOT' ? 'TEST' : cls === 'DEMO' ? 'DEMO' : 'UNKNOWN'}
+                            label={cls === 'UNKNOWN' ? 'CLASSIFICATION UNKNOWN' : `${cls} TENANT`}
                           />
                         </td>
                         <td className="py-2.5 px-3">
@@ -195,12 +201,8 @@ export const ClientsPage: React.FC = () => {
             <div className="pb-3 border-b border-slate-100">
               <div className="flex items-center justify-between gap-2">
                 <TruthBadge
-                  truth={getClassification(activeClient) === 'PILOT' ? 'TEST' : 'DEMO'}
-                  label={
-                    getClassification(activeClient) === 'PILOT'
-                      ? 'PILOT TENANT'
-                      : 'DEMO / SANDBOX'
-                  }
+                  truth={getClassification(activeClient) === 'PILOT' ? 'TEST' : getClassification(activeClient) === 'DEMO' ? 'DEMO' : 'UNKNOWN'}
+                  label={getClassification(activeClient) === 'UNKNOWN' ? 'CLASSIFICATION UNKNOWN' : `${getClassification(activeClient)} TENANT`}
                 />
                 <StatusBadge status={activeClient.status} size="sm" />
               </div>

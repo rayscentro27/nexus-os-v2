@@ -15,11 +15,10 @@ import {
 import { useNexus } from '../context/NexusContext';
 import { TruthBadge } from '../components/common/TruthBadge';
 import { NexusUpgradeCandidate } from '../types';
+import { UnavailableState } from '../components/live/UnavailableState';
 
 export const UpgradeControlPage: React.FC = () => {
   const {
-    upgradeCandidates,
-    certifyUpgradeCandidate,
     approvals,
     navigateToObject,
     setCurrentPage,
@@ -27,6 +26,7 @@ export const UpgradeControlPage: React.FC = () => {
     setIsNovaDrawerOpen,
   } = useNexus();
 
+  const upgradeCandidates: NexusUpgradeCandidate[] = [];
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [selectedCandId, setSelectedCandId] = useState<string>(
     upgradeCandidates[0]?.id || ''
@@ -150,17 +150,17 @@ export const UpgradeControlPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Total Candidates</span>
-          <span className="text-xl font-bold text-slate-900 tabular-nums">{upgradeCandidates.length}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Tracked upgrade packages</span>
         </div>
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Awaiting Human Review</span>
-          <span className="text-xl font-bold text-amber-700 tabular-nums">{humanReviewCount}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Requires certification or Ray approval</span>
         </div>
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Certified for Systems</span>
-          <span className="text-xl font-bold text-emerald-700 tabular-nums">{certifiedCount}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Ready for controlled rollout</span>
         </div>
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
@@ -207,9 +207,7 @@ export const UpgradeControlPage: React.FC = () => {
 
           <div className="divide-y divide-slate-100">
             {filteredCandidates.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-500">
-                No upgrade candidates match this status filter.
-              </div>
+              <div className="p-4"><UnavailableState>Upgrade Control is not connected to a live release source.</UnavailableState></div>
             ) : (
               filteredCandidates.map(cand => {
                 const isSelected = activeCand?.id === cand.id;
@@ -385,10 +383,8 @@ export const UpgradeControlPage: React.FC = () => {
                   {activeCand.status === 'HUMAN_REVIEW' && (
                     <button
                       type="button"
-                      onClick={() => {
-                        certifyUpgradeCandidate(activeCand.id);
-                        showToast(`Certified "${activeCand.name}" for Systems handoff.`);
-                      }}
+                      disabled
+                      onClick={() => showToast('Upgrade certification is not connected to a live backend.')}
                       className="w-full py-2 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />

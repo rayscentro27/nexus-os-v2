@@ -16,11 +16,10 @@ import {
 import { useNexus } from '../context/NexusContext';
 import { TruthBadge } from '../components/common/TruthBadge';
 import { NexusLabExperiment } from '../types';
+import { UnavailableState } from '../components/live/UnavailableState';
 
 export const DevelopmentLabsPage: React.FC = () => {
   const {
-    labExperiments,
-    promoteLabExperiment,
     projects,
     approvals,
     navigateToObject,
@@ -29,6 +28,7 @@ export const DevelopmentLabsPage: React.FC = () => {
     setIsNovaDrawerOpen,
   } = useNexus();
 
+  const labExperiments: NexusLabExperiment[] = [];
   const [filterEnv, setFilterEnv] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -145,14 +145,14 @@ export const DevelopmentLabsPage: React.FC = () => {
                 <h1 className="text-base font-bold text-slate-900 tracking-tight">
                   Development / Labs
                 </h1>
-                <TruthBadge truth="PAPER" label="ISOLATED SANDBOX" />
+                <TruthBadge truth="NOT_CONNECTED" />
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
                   <ShieldAlert className="w-3 h-3 text-rose-600" />
                   CAN DEPLOY DIRECTLY: FALSE
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                What experiments is Nexus evaluating safely? Validated candidates promote only to Upgrade Control for certification.
+                Development Labs data is not connected to a live source.
               </p>
             </div>
           </div>
@@ -185,22 +185,22 @@ export const DevelopmentLabsPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Active Sandboxes</span>
-          <span className="text-xl font-bold text-slate-900 tabular-nums">{runningCount}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Running isolated benchmarks</span>
         </div>
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Validated Candidates</span>
-          <span className="text-xl font-bold text-emerald-700 tabular-nums">{validatedCount}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Ready for Upgrade Control</span>
         </div>
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Blocked in Lab</span>
-          <span className="text-xl font-bold text-amber-700 tabular-nums">{blockedCount}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Stopped by policy guardrail</span>
         </div>
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs">
           <span className="text-[11px] font-semibold text-slate-500 block">Promoted to Upgrade</span>
-          <span className="text-xl font-bold text-teal-700 tabular-nums">{promotedCount}</span>
+          <span className="text-sm font-semibold text-slate-500">Not connected</span>
           <span className="text-[11px] text-slate-500 block mt-0.5">Transferred for review</span>
         </div>
       </div>
@@ -247,9 +247,7 @@ export const DevelopmentLabsPage: React.FC = () => {
 
           <div className="divide-y divide-slate-100">
             {filteredExperiments.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-500">
-                No experiments match the current filter.
-              </div>
+              <div className="p-4"><UnavailableState>Development Labs are not connected to a live source.</UnavailableState></div>
             ) : (
               filteredExperiments.map(exp => {
                 const isSelected = activeExp?.id === exp.id;
@@ -380,10 +378,8 @@ export const DevelopmentLabsPage: React.FC = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => {
-                        promoteLabExperiment(activeExp.id);
-                        showToast(`Promoted "${activeExp.name}" to Upgrade Control.`);
-                      }}
+                      disabled
+                      onClick={() => showToast('Development Labs actions are not connected.')}
                       className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <ArrowRight className="w-3.5 h-3.5" />

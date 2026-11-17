@@ -15,21 +15,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useNexus } from '../context/NexusContext';
-import { CapitalAllocationSimulator } from '../components/dashboard/CapitalAllocationSimulator';
 import { TruthBadge } from '../components/common/TruthBadge';
-import {
-  AI_PROVIDER_COSTS,
-  TOTAL_AI_SPEND,
-  TOKEN_MODEL_USAGE,
-  DEPARTMENT_OPERATING_COSTS,
-  BILLS_COMMITMENTS,
-  BILLS_SUMMARY,
-  INVOICE_LEDGER,
-  GRANT_PIPELINE,
-  RUNWAY_FORECAST,
-  PROVIDER_BURNS
-} from '../data/financeOperatingData';
-
+import { UnavailableState } from '../components/live/UnavailableState';
 type FinanceTab =
   | 'overview'
   | 'spend-approvals'
@@ -46,6 +33,7 @@ export const FinancePage: React.FC = () => {
     navigateToObject,
     sendMessage,
     setIsNovaDrawerOpen,
+    liveAreas,
   } = useNexus();
 
   const [activeTab, setActiveTab] = useState<FinanceTab>('overview');
@@ -66,6 +54,7 @@ export const FinancePage: React.FC = () => {
       a.costImpact !== '$0.00'
   );
   const pendingFinanceApprovals = financeApprovals.filter(a => a.status === 'PENDING');
+  const liveFinance = liveAreas.finance || {};
 
   const holidayOffer = commerceOffers[0];
   const plaidCred = credentials.find(c => c.id === 'cred-plaid');
@@ -119,7 +108,7 @@ export const FinancePage: React.FC = () => {
             <span className="text-[11px] font-medium text-slate-500">Verified Cash</span>
             <TruthBadge truth={plaidCred?.state === 'CONNECTED' ? 'VERIFIED' : 'NOT_CONNECTED'} />
           </div>
-          <div className="text-xl font-semibold text-slate-900 mt-1 tabular-nums">$0.00</div>
+          <div className="text-xl font-semibold text-slate-900 mt-1 tabular-nums">Not connected</div>
           <div className="text-[11px] text-slate-500 mt-0.5">
             Banking (Plaid) is {plaidCred?.state || 'NOT_CONNECTED'} · No fabricated liquidity
           </div>
@@ -132,7 +121,9 @@ export const FinancePage: React.FC = () => {
               truth={stripeCred?.state === 'CONNECTED' ? 'VERIFIED' : 'NOT_CONNECTED'}
             />
           </div>
-          <div className="text-xl font-semibold text-slate-900 mt-1 tabular-nums">$0.00</div>
+          <div className="text-xl font-semibold text-slate-900 mt-1 tabular-nums">
+            {typeof liveFinance.verifiedRevenueUsd === 'number' ? `$${liveFinance.verifiedRevenueUsd.toFixed(2)}` : 'Not connected'}
+          </div>
           <div className="text-[11px] text-slate-500 mt-0.5">
             Stripe checkout {holidayOffer?.liveSales.checkoutStatus || 'BLOCKED'}
           </div>
@@ -144,13 +135,10 @@ export const FinancePage: React.FC = () => {
             <TruthBadge truth="ESTIMATED" />
           </div>
           <div className="text-xl font-semibold text-slate-900 mt-1 tabular-nums">
-            ${TOTAL_AI_SPEND.today.toFixed(2)}{' '}
-            <span className="text-xs font-normal text-slate-500">
-              / ${TOTAL_AI_SPEND.thirtyDays.toFixed(2)}
-            </span>
+            Not connected
           </div>
           <div className="text-[11px] text-slate-500 mt-0.5">
-            OpenRouter balance: $18.50 (Watchdog active)
+            Provider usage and balances are not connected to durable usage records.
           </div>
         </div>
 
@@ -177,9 +165,9 @@ export const FinancePage: React.FC = () => {
             label: `Spend & Go-Live Requests (${pendingFinanceApprovals.length})`,
             icon: ShieldAlert,
           },
-          { id: 'ai-models', label: 'AI & Provider Costs', icon: Cpu },
-          { id: 'bills', label: 'Bills, Grants & Demo Invoices', icon: CreditCard },
-          { id: 'capital-simulator', label: 'Capital Simulator', icon: Sliders },
+          { id: 'ai-models', label: 'AI & Provider Costs (not connected)', icon: Cpu, unavailable: true },
+          { id: 'bills', label: 'Bills & Grants (not connected)', icon: CreditCard, unavailable: true },
+          { id: 'capital-simulator', label: 'Capital Simulator (not connected)', icon: Sliders, unavailable: true },
         ].map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -187,8 +175,9 @@ export const FinancePage: React.FC = () => {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as FinanceTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium inline-flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+              disabled={tab.unavailable}
+              onClick={() => !tab.unavailable && setActiveTab(tab.id as FinanceTab)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium inline-flex items-center gap-1.5 whitespace-nowrap transition-colors ${tab.unavailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${
                 active
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -344,21 +333,21 @@ export const FinancePage: React.FC = () => {
                 </h2>
                 <TruthBadge truth="NOT_CONNECTED" label="Runway Not Proven" />
               </div>
-              <p className="text-xs text-slate-600">{RUNWAY_FORECAST.note}</p>
+              <p className="text-xs text-slate-600">{liveFinance.note || 'Runway and burn details are not connected.'}</p>
               <div className="grid grid-cols-3 gap-2 text-xs pt-1">
                 <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
                   <div className="text-[10px] text-slate-500">Est. Monthly Burn</div>
                   <div className="font-semibold text-slate-900 tabular-nums">
-                    ${RUNWAY_FORECAST.monthlyBurn.toFixed(2)}
+                    {typeof liveFinance.monthlyBurnUsd === 'number' ? `$${liveFinance.monthlyBurnUsd.toFixed(2)}` : 'Not connected'}
                   </div>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
                   <div className="text-[10px] text-slate-500">Verified Revenue</div>
-                  <div className="font-semibold text-slate-900 tabular-nums">$0.00</div>
+                  <div className="font-semibold text-slate-900 tabular-nums">{typeof liveFinance.verifiedRevenueUsd === 'number' ? `$${liveFinance.verifiedRevenueUsd.toFixed(2)}` : 'Not connected'}</div>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
                   <div className="text-[10px] text-slate-500">Paid Ad Spend</div>
-                  <div className="font-semibold text-slate-900 tabular-nums">$0.00 (Locked)</div>
+                  <div className="font-semibold text-slate-900 tabular-nums">Not connected</div>
                 </div>
               </div>
             </div>
@@ -435,234 +424,24 @@ export const FinancePage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: AI & PROVIDER COSTS */}
       {activeTab === 'ai-models' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  AI Provider Metering &amp; Balances
-                </h2>
-                <TruthBadge truth="ESTIMATED" />
-              </div>
-              <span className="text-xs text-slate-500">
-                30D Estimated Total: <strong className="text-slate-900">${TOTAL_AI_SPEND.thirtyDays.toFixed(2)}</strong>
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 text-[10px] font-semibold text-slate-500 uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-2 px-3">Provider</th>
-                    <th className="py-2 px-3">Workload</th>
-                    <th className="py-2 px-3 text-right">Today</th>
-                    <th className="py-2 px-3 text-right">7D</th>
-                    <th className="py-2 px-3 text-right">30D</th>
-                    <th className="py-2 px-3">Balance</th>
-                    <th className="py-2 px-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {AI_PROVIDER_COSTS.map(p => (
-                    <tr key={p.provider} className="hover:bg-slate-50/70">
-                      <td className="py-2.5 px-3 font-medium text-slate-900">{p.provider}</td>
-                      <td className="py-2.5 px-3 text-slate-600">{p.role}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">${p.today.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">${p.sevenDays.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-right font-mono font-medium">
-                        ${p.thirtyDays.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-700">{p.currentBalance}</td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                            p.status === 'LOW BALANCE'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {p.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900">Department Operating Costs</h3>
-                <TruthBadge truth="ESTIMATED" />
-              </div>
-              <div className="space-y-2 text-xs">
-                {DEPARTMENT_OPERATING_COSTS.map(d => (
-                  <div
-                    key={d.department}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100"
-                  >
-                    <div>
-                      <div className="font-medium text-slate-900">{d.department}</div>
-                      <div className="text-[11px] text-slate-500">{d.mainCostDriver}</div>
-                    </div>
-                    <div className="text-right font-mono">
-                      <div className="font-semibold text-slate-900">${d.monthCost.toFixed(2)}/mo</div>
-                      <div className="text-[11px] text-slate-500">${d.todayCost.toFixed(2)} today</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900">Token &amp; Provider Burn</h3>
-                <TruthBadge truth="ESTIMATED" />
-              </div>
-              <div className="space-y-2 text-xs">
-                {TOKEN_MODEL_USAGE.map(m => (
-                  <div
-                    key={m.model}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100"
-                  >
-                    <div>
-                      <div className="font-medium text-slate-900 font-mono">{m.model}</div>
-                      <div className="text-[11px] text-slate-500">
-                        {m.provider} · {m.totalTokens}
-                      </div>
-                    </div>
-                    <div className="text-right font-mono">
-                      <div className="font-semibold text-slate-900">${m.costMonth.toFixed(2)}/mo</div>
-                      <div className="text-[11px] text-slate-500">${m.costToday.toFixed(2)} today</div>
-                    </div>
-                  </div>
-                ))}
-                {PROVIDER_BURNS.slice(0, 2).map(b => (
-                  <div
-                    key={b.provider}
-                    className="p-2 rounded-lg bg-amber-50/50 border border-amber-100 flex items-center justify-between"
-                  >
-                    <span className="font-medium text-slate-800">
-                      {b.provider} Burn Watch ({b.formattedBurn})
-                    </span>
-                    <span className="text-slate-600">{b.formattedBalance} remaining</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
+          <UnavailableState>AI/provider usage data is not connected to a live source.</UnavailableState>
         </div>
       )}
 
-      {/* TAB 4: BILLS, GRANTS & DEMO INVOICES */}
       {activeTab === 'bills' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Recurring Subscriptions &amp; Bills (${BILLS_SUMMARY.dueNext30Days.toFixed(2)} / 30D)
-              </h3>
-              <TruthBadge truth="ESTIMATED" />
-            </div>
-            <div className="space-y-2 text-xs">
-              {BILLS_COMMITMENTS.map(b => (
-                <div
-                  key={b.id}
-                  className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between"
-                >
-                  <div>
-                    <div className="font-medium text-slate-900">{b.vendor}</div>
-                    <div className="text-[11px] text-slate-500">
-                      Due {b.dueDate} · Owner: {b.departmentOwner}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-slate-900 font-mono">{b.formattedAmount}</div>
-                    <div className="text-[10px] text-slate-500">{b.paymentStatus}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="lg:col-span-6 space-y-4">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Client Invoice Ledger (Non-Production / Sandbox)
-                </h3>
-                <TruthBadge truth="DEMO" />
-              </div>
-              <div className="space-y-2 text-xs">
-                {INVOICE_LEDGER.map(inv => (
-                  <div
-                    key={inv.id}
-                    className="p-2.5 rounded-lg bg-purple-50/40 border border-purple-100 flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="font-medium text-slate-900">{inv.client}</div>
-                      <div className="text-[11px] text-slate-500">
-                        {inv.id} · Issued {inv.issuedDate}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TruthBadge truth={inv.truthClass} />
-                      <span className="font-mono font-semibold text-slate-900">
-                        {inv.formattedAmount}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Non-Dilutive Grant Pipeline
-                </h3>
-                <TruthBadge truth="PROPOSED" />
-              </div>
-              {GRANT_PIPELINE.map(g => (
-                <div
-                  key={g.id}
-                  className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <div className="font-medium text-slate-900">{g.program}</div>
-                    <div className="text-[11px] text-slate-500">
-                      {g.status} · {g.probability}
-                    </div>
-                  </div>
-                  <div className="font-mono font-semibold text-emerald-700">{g.formattedAmount}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
+          <UnavailableState>Bills, grants, and invoices data is not connected to a live source.</UnavailableState>
         </div>
       )}
 
-      {/* TAB 5: INTERACTIVE CAPITAL ALLOCATION SIMULATOR */}
       {activeTab === 'capital-simulator' && (
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">
-                Capital Allocation &amp; Treasury Runway Simulator
-              </h2>
-              <p className="text-xs text-slate-500">
-                What-if modeling tool for scenario planning (Estimated/Proposed projections).
-              </p>
-            </div>
-            <TruthBadge truth="ESTIMATED" label="Interactive Scenario" />
-          </div>
-          <CapitalAllocationSimulator />
+          <UnavailableState>Capital simulation data is not connected to a live source.</UnavailableState>
         </div>
       )}
+
     </div>
   );
 };

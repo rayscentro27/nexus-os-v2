@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { TruthBadge } from '../components/common/TruthBadge';
-import { DOCUMENTS_DATA } from '../data/mockData';
 import { useNexus } from '../context/NexusContext';
 import { DocumentItem, TruthClass } from '../types';
+import { UnavailableState } from '../components/live/UnavailableState';
 
 interface EnrichedDocument extends DocumentItem {
   projectId?: string;
@@ -21,74 +21,16 @@ interface EnrichedDocument extends DocumentItem {
   scopeSummary: string;
 }
 
-const NEXUS_DOCUMENTS: EnrichedDocument[] = [
-  {
-    id: 'doc-holiday-spec',
-    name: 'Printify_6afa4814536c7c3c520f7865_Mug_Unit_Cost_Spec.json',
-    size: '48 KB',
-    client: 'Holiday Commerce Pilot',
-    category: 'Financial',
-    status: 'Verified',
-    uploadedDate: 'Today · 08:10 AM',
-    reviewer: { name: 'Commerce Agent', avatar: 'CM' },
-    format: 'pdf',
-    projectId: 'proj_98ef515bccee4b58',
-    projectName: 'The 6:12 AM Quiet Ritual',
-    truthClass: 'VERIFIED',
-    scopeSummary:
-      'Verified Printify product 6afa4814536c7c3c520f7865 (Variant 104692: 15oz white glossy ceramic mug). Base cost $6.13, first-item US shipping $7.09, additional shipping $2.99. Staged retail $24.00 (PROPOSED).',
-  },
-  {
-    id: 'doc-holiday-stage-a',
-    name: 'StageA_Holiday_Mug_H1_Distribution_Brief.docx',
-    size: '215 KB',
-    client: 'Holiday Commerce Pilot',
-    category: 'Marketing',
-    status: 'Needs Review',
-    uploadedDate: 'Today · 12m ago',
-    reviewer: { name: 'Ray Davis', avatar: 'RD' },
-    format: 'docx',
-    projectId: 'proj_98ef515bccee4b58',
-    projectName: 'The 6:12 AM Quiet Ritual',
-    truthClass: 'PROPOSED',
-    scopeSummary:
-      'Stage A interest-capture publication packet for Holiday Mug H1. Includes UTM waitlist URLs and copy hooks; live checkout remains BLOCKED pending Stripe test credential.',
-  },
-  {
-    id: 'doc-trading-r1',
-    name: 'Trading_R1_Wick_Sequence_Breakout_v1_Manifest.pdf',
-    size: '412 KB',
-    client: 'Trading R1 Core',
-    category: 'Research',
-    status: 'Verified',
-    uploadedDate: 'Today · 07:00 AM',
-    reviewer: { name: 'Risk Guardrail', avatar: 'RG' },
-    format: 'pdf',
-    projectId: 'proj_trading_r1_wick',
-    projectName: 'Trading R1 Core · Wick Sequence Breakout v1',
-    truthClass: 'PAPER',
-    scopeSummary:
-      'Certification manifest locking EUR_USD H1 strategy execution strictly to OANDA Practice paper mode with 0.75% max risk per trade and continuous receipt parity.',
-  },
-  ...DOCUMENTS_DATA.map(d => ({
-    ...d,
-    projectId: d.client.toLowerCase().includes('goclear') ? 'proj_goclear_pilot' : undefined,
-    projectName: d.client.toLowerCase().includes('goclear')
-      ? 'GoClear Institutional Clearing Pilot'
-      : undefined,
-    truthClass: 'DEMO' as TruthClass,
-    scopeSummary:
-      'Sample governance agreement template staged for sandbox validation and legal workflow verification.',
-  })),
-];
+const NEXUS_DOCUMENTS: EnrichedDocument[] = [];
 
 export const DocumentsPage: React.FC = () => {
-  const { sendMessage, navigateToObject, setIsNovaDrawerOpen } = useNexus();
+  const { sendMessage, navigateToObject, setIsNovaDrawerOpen, liveAreas } = useNexus();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedDocId, setSelectedDocId] = useState<string>(NEXUS_DOCUMENTS[0].id);
+  const liveDocuments = (liveAreas.documents || liveAreas.artifacts || []) as EnrichedDocument[];
+  const [selectedDocId, setSelectedDocId] = useState<string>('');
 
-  const filteredDocs = NEXUS_DOCUMENTS.filter(doc => {
+  const filteredDocs = liveDocuments.filter(doc => {
     const matchesSearch =
       doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,10 +40,10 @@ export const DocumentsPage: React.FC = () => {
   });
 
   const activeDoc =
-    filteredDocs.find(d => d.id === selectedDocId) || filteredDocs[0] || NEXUS_DOCUMENTS[0];
+    filteredDocs.find(d => d.id === selectedDocId) || filteredDocs[0] || null;
 
-  const verifiedCount = NEXUS_DOCUMENTS.filter(d => d.status === 'Verified').length;
-  const needsSignatureOrReview = NEXUS_DOCUMENTS.filter(
+  const verifiedCount = liveDocuments.filter(d => d.status === 'Verified').length;
+  const needsSignatureOrReview = liveDocuments.filter(
     d => d.status === 'Needs Signature' || d.status === 'Needs Review'
   ).length;
 
@@ -118,7 +60,7 @@ export const DocumentsPage: React.FC = () => {
             <TruthBadge truth="VERIFIED" label="Indexed Manifest" />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Project specs, Printify cost verification proofs, campaign briefs, and sample governance templates.
+            Project specs, campaign briefs, and other durable Nexus artifacts when connected.
           </p>
         </div>
 
@@ -282,4 +224,8 @@ export const DocumentsPage: React.FC = () => {
       </div>
     </div>
   );
+
+  if (liveDocuments.length === 0) {
+    return <div className="space-y-4 pb-10"><div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs"><h1 className="text-lg font-semibold text-slate-900">Documents &amp; Operational Artifacts</h1><p className="text-xs text-slate-500 mt-0.5">Project and evidence artifacts from durable Nexus records.</p></div><div className="grid grid-cols-1 lg:grid-cols-12 gap-4"><div className="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 shadow-2xs p-4"><UnavailableState>Documents are not connected to the live Nexus read model.</UnavailableState></div><div className="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs p-4"><UnavailableState>No live artifact is available to inspect.</UnavailableState></div></div></div>;
+  }
 };

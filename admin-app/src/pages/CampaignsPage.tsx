@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useNexus } from '../context/NexusContext';
 import { TruthBadge } from '../components/common/TruthBadge';
+import { UnavailableState } from '../components/live/UnavailableState';
 
 export const CampaignsPage: React.FC = () => {
   const {
@@ -78,10 +79,11 @@ export const CampaignsPage: React.FC = () => {
               </button>
             );
           })}
+          {campaigns.length === 0 && <div className="p-4"><UnavailableState>Campaign records are not connected to the live Nexus read model.</UnavailableState></div>}
         </div>
 
         {/* Campaign Detail Panel (8 cols) */}
-        {activeCampaign && (
+        {activeCampaign ? (
           <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 space-y-5">
             <div className="pb-4 border-b border-slate-100 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -231,7 +233,7 @@ export const CampaignsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        ) : <div className="lg:col-span-8"><UnavailableState>No live campaign record is available.</UnavailableState></div>}
       </div>
     </div>
   );

@@ -19,11 +19,11 @@ import { TruthBadge } from '../components/common/TruthBadge';
 import { NovaAvatarStage } from '../components/nova/NovaAvatarStage';
 import { ASSETS } from '../data/assets';
 import { NovaVideo } from '../components/nova/NovaVideo';
+import { UnavailableState } from '../components/live/UnavailableState';
 
 export const NovaExecutiveConsolePage: React.FC = () => {
   const {
     messages,
-    sendMessage,
     quickActions,
     novaState,
     setNovaState,
@@ -37,6 +37,7 @@ export const NovaExecutiveConsolePage: React.FC = () => {
     navigateToObject,
     markNotificationRead,
     markAllNotificationsRead,
+    liveAreas,
   } = useNexus();
 
   const [inputText, setInputText] = useState('');
@@ -50,19 +51,7 @@ export const NovaExecutiveConsolePage: React.FC = () => {
   const pendingApprovals = approvals.filter(a => a.status === 'PENDING');
   const activeProjects = projects.filter(p => p.status === 'ACTIVE' || p.status === 'AWAITING_APPROVAL');
 
-  const handleToggleListening = () => {
-    if (isListening) {
-      setIsListening(false);
-      setNovaState('idle');
-    } else {
-      setIsListening(true);
-      setNovaState('listening');
-      setTimeout(() => {
-        setIsListening(false);
-        sendMessage('What needs Ray right now?');
-      }, 2200);
-    }
-  };
+  const handleToggleListening = () => setIsListening(false);
 
   const handleStop = () => {
     if ('speechSynthesis' in window) {
@@ -73,8 +62,6 @@ export const NovaExecutiveConsolePage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-    sendMessage(inputText);
     setInputText('');
   };
 
@@ -103,7 +90,7 @@ export const NovaExecutiveConsolePage: React.FC = () => {
             {pendingApprovals.length} Pending Approvals
           </span>
           <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-medium">
-            State: {novaState}
+            Nova: {liveAreas.nova?.service || 'UNKNOWN'}
           </span>
         </div>
       </div>
@@ -123,7 +110,7 @@ export const NovaExecutiveConsolePage: React.FC = () => {
               <div>
                 <div className="text-sm font-semibold text-slate-900">Nova Control-Plane Query</div>
                 <div className="text-[11px] text-slate-500">
-                  Backed by nexus_get_project &amp; nexus_get_project_approvals
+                  Read-only project and approval state from the live Nexus read model
                 </div>
               </div>
             </div>
@@ -132,6 +119,7 @@ export const NovaExecutiveConsolePage: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
+                disabled
                 onClick={handleToggleListening}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-medium inline-flex items-center gap-1 cursor-pointer ${
                   isListening
@@ -167,8 +155,8 @@ export const NovaExecutiveConsolePage: React.FC = () => {
               <button
                 key={q}
                 type="button"
-                onClick={() => sendMessage(q)}
-                className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 text-[11px] font-medium text-slate-700 hover:text-blue-700 transition-colors cursor-pointer"
+                disabled
+                className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-medium text-slate-400 cursor-not-allowed"
               >
                 {q}
               </button>
@@ -177,7 +165,8 @@ export const NovaExecutiveConsolePage: React.FC = () => {
 
           {/* Chat Thread */}
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-3">
-            {messages.map(msg => {
+            <UnavailableState>Nova conversation transport is not connected in Admin. Service status and current durable activity are shown from live Nexus records.</UnavailableState>
+            {false && messages.map(msg => {
               const isNova = msg.sender === 'nova';
               return (
                 <div
@@ -217,17 +206,18 @@ export const NovaExecutiveConsolePage: React.FC = () => {
             onSubmit={handleSubmit}
             className="p-3 border-t border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0"
           >
-            <input
+              <input
               type="text"
               value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              placeholder="Ask about The 6:12 AM Quiet Ritual, Printify costs, approvals, or Trading R1..."
+                onChange={() => setInputText('')}
+                placeholder="Nova conversation transport not connected"
+                disabled
               className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
             />
             <button
               type="submit"
-              disabled={!inputText.trim()}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer"
+              disabled
+              className="px-4 py-2 rounded-lg bg-blue-600 disabled:opacity-50 text-white text-xs font-medium inline-flex items-center gap-1.5 cursor-not-allowed"
             >
               Send <Send className="w-3.5 h-3.5" />
             </button>
@@ -242,7 +232,7 @@ export const NovaExecutiveConsolePage: React.FC = () => {
               <span className="text-xs font-semibold text-slate-900">Nova Operator Presence</span>
               <span className="text-[11px] font-medium text-blue-600">Live Avatar</span>
             </div>
-            <NovaAvatarStage state={novaState} compact />
+            <NovaAvatarStage state="idle" compact />
           </div>
 
           {/* Live Notifications Feed */}
