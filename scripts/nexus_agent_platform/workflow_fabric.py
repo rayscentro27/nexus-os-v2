@@ -5,7 +5,7 @@ import copy
 import hashlib
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -113,6 +113,9 @@ def continue_workflow(workflow: dict[str, Any], step: dict[str, Any], result: di
         return {"decision": "WAIT_FOR_APPROVAL", "workflow_status": "WAITING_APPROVAL"}
     if outcome == "WAITING_DEPENDENCY" or not dependencies_satisfied:
         return {"decision": "WAIT_FOR_DEPENDENCY", "workflow_status": "WAITING_DEPENDENCY"}
+    if outcome == "CAPABILITY_UNAVAILABLE":
+        return {"decision": "WAIT_FOR_DEPENDENCY", "workflow_status": "WAITING_DEPENDENCY",
+                "reason": result.get("error_code", "CAPABILITY_UNAVAILABLE")}
     if outcome == "COMPLETE":
         return {"decision": "NEXT_STEP", "workflow_status": "RUNNING"}
     if outcome == "PARTIAL":
@@ -229,6 +232,16 @@ class WorkflowController:
         self.store.save(job_id, workflow)
         return workflow
 
+    def start(self, workflow: dict[str, Any]) -> None:
+        if workflow.get("status") not in {"QUEUED", "PLANNING"}:
+            raise ValueError("WORKFLOW_NOT_STARTABLE")
+        workflow["status"] = "RUNNING"
+        workflow["started_at"] = workflow.get("started_at") or utcnow()
+        workflow["updated_at"] = utcnow()
+        workflow["next_action"] = "DISPATCH_CURRENT_STEP"
+        workflow["revision"] = int(workflow["revision"]) + 1
+        self.persist(workflow)
+
     @staticmethod
     def _connector_available(connector_id: str) -> bool:
         rows = {x.get("connector_id"): x for x in ac.public_registry_snapshot()["connectors"]}
@@ -260,6 +273,8 @@ class WorkflowController:
         if any(dep not in completed for dep in step.get("depends_on", [])):
             return self.record_result(workflow, step, {"status": "WAITING_DEPENDENCY",
                 "error_code": "STEP_DEPENDENCY_NOT_COMPLETE", "worker_invoked": False})
+        if workflow.get("status") in {"QUEUED", "PLANNING"}:
+            self.start(workflow)
         try:
             authorization = self.authorize_step(workflow, step)
         except ac.AuthorizationDenied as exc:
@@ -300,6 +315,16 @@ class WorkflowController:
         decision = continue_workflow(workflow, step, {**safe, "status": status})
         workflow["status"], workflow["next_action"] = decision["workflow_status"], decision["decision"]
         workflow["retry_count"] += decision["decision"] in {"RETRY_SAME_WORKER", "SCHEDULE_RETRY"}
+        if decision["decision"] in {"RETRY_SAME_WORKER", "SCHEDULE_RETRY", "RETRY_ALTERNATE_MODEL_PROFILE",
+                                    "RETRY_ALTERNATE_WORKER", "RETRY_ALTERNATE_ENVIRONMENT"}:
+            delay = min(3600, 30 * (2 ** min(6, int(step.get("attempt_count", 1)) - 1)))
+            workflow["next_retry_at"] = (datetime.now(timezone.utc) + timedelta(seconds=delay)).isoformat()
+        elif decision["decision"] == "WAIT_FOR_DEPENDENCY":
+            dependency = safe.get("error_code", "WORKFLOW_DEPENDENCY")
+            self.park_for_dependency(workflow, dependency=dependency,
+                                      reason=f"Step {step['step_id']} is waiting for an authorized capability or dependency.")
+        elif decision["decision"] == "WAIT_FOR_APPROVAL":
+            workflow["approval_state"] = "WAITING_APPROVAL"
         if status == "COMPLETE":
             workflow["last_certified_step"] = step["step_id"]
             next_step = next((s for s in workflow["steps"] if step["step_id"] in s.get("depends_on", []) and s["status"] == "QUEUED"), None)
@@ -308,6 +333,8 @@ class WorkflowController:
             elif all(s["status"] == "COMPLETE" for s in workflow["steps"]):
                 workflow["status"], workflow["next_action"] = "PARTIAL", "COMPLETION_RECEIPT_REQUIRED"
         workflow["updated_at"], workflow["revision"] = utcnow(), int(workflow.get("revision", 0)) + 1
+        if workflow.get("durable_job_id"):
+            self.persist(workflow)
         return {"workflow_status": workflow["status"], "step_status": status, "continuation": decision, "receipt_id": step["receipt_id"]}
 
     def persist(self, workflow: dict[str, Any]) -> None:
@@ -346,9 +373,26 @@ class WorkflowController:
             "next_action": workflow.get("next_action"), "completion_receipt_id": workflow.get("completion_receipt_id")}
 
     def resume(self, workflow: dict[str, Any]) -> None:
-        if workflow["status"] not in {"PAUSED", "PARTIAL", "RETRY_SCHEDULED", "WAITING_DEPENDENCY", "ESCALATED"}:
+        if workflow["status"] not in {"PAUSED", "PARTIAL", "RETRY_SCHEDULED", "ESCALATED"}:
             raise ValueError("WORKFLOW_NOT_RESUMABLE")
+        if workflow.get("blockers"):
+            raise ValueError("WORKFLOW_DEPENDENCIES_UNRESOLVED")
         workflow.update(status="RUNNING", updated_at=utcnow(), revision=workflow["revision"] + 1); self.persist(workflow)
+
+    def resolve_dependency(self, workflow: dict[str, Any], dependency: str, *, verification_ref: str) -> None:
+        if not verification_ref.strip():
+            raise ValueError("DEPENDENCY_VERIFICATION_REQUIRED")
+        prior = len(workflow.get("blockers", []))
+        workflow["blockers"] = [x for x in workflow.get("blockers", []) if x.get("dependency") != dependency]
+        for task in workflow.get("dependency_tasks", []):
+            if task.get("dependency") == dependency and task.get("status") == "OPEN":
+                task.update(status="RESOLVED", verification_ref=verification_ref, resolved_at=utcnow())
+        if prior == len(workflow["blockers"]):
+            raise ValueError("DEPENDENCY_NOT_FOUND")
+        workflow["status"] = "PARTIAL" if not workflow["blockers"] else "WAITING_DEPENDENCY"
+        workflow["updated_at"] = utcnow()
+        workflow["revision"] += 1
+        self.persist(workflow)
 
     def resume_after_approval(self, workflow: dict[str, Any], approval_id: str) -> None:
         step = next((s for s in workflow["steps"] if s["step_id"] == workflow.get("current_step")), None)

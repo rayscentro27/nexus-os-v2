@@ -68,6 +68,32 @@ def test_durable_restart_restores_checkpoint(tmp_path):
     assert reloaded["steps"][0]["result"]["output"] == "intake"
 
 
+def test_dispatch_persists_failure_as_dependency_without_invoking_worker(tmp_path):
+    store = WorkflowStateStore(DurableJobStore(tmp_path / "jobs.sqlite3"))
+    called = []
+    controller = WorkflowController(store, handlers={"CAMPAIGN_CREATION": lambda packet: called.append(packet)})
+    workflow = controller.create(objective="Test objective", owner="RAY", created_by="RAY")
+    step = next(s for s in workflow["steps"] if s["step_id"] == "CAMPAIGN_CREATION")
+    step["depends_on"] = []
+    result = controller.dispatch(workflow, step["step_id"])
+    stored = store.load(workflow["durable_job_id"])
+    assert result["workflow_status"] == "WAITING_DEPENDENCY"
+    assert called == []
+    assert stored["status"] == "WAITING_DEPENDENCY"
+
+
+def test_dependency_requires_verified_resolution_before_resume(tmp_path):
+    store = WorkflowStateStore(DurableJobStore(tmp_path / "jobs.sqlite3"))
+    controller = WorkflowController(store)
+    workflow = controller.create(objective="Test objective", owner="RAY", created_by="RAY")
+    controller.park_for_dependency(workflow, dependency="CAPABILITY", reason="not available")
+    with pytest.raises(ValueError, match="NOT_RESUMABLE|DEPENDENCIES_UNRESOLVED"):
+        controller.resume(workflow)
+    controller.resolve_dependency(workflow, "CAPABILITY", verification_ref="health-receipt-1")
+    controller.resume(workflow)
+    assert workflow["status"] == "RUNNING"
+
+
 def test_context_packet_is_bounded_and_has_no_transcript_field():
     workflow = _workflow()
     packet = context_packet(workflow, workflow["steps"][0], relevant_facts=["x" * 20000])
