@@ -64,6 +64,40 @@ def inspect_readonly(timeout: float = 8.0) -> dict:
         return {"status": "UNAVAILABLE", "error_code": str(code), "values_included": False}
 
 
+def list_workflows_readonly(timeout: float = 8.0) -> dict:
+    """Return bounded workflow identity/state only; never expose node parameters."""
+    config = json.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.exists() else DEFAULT_CONFIG
+    try:
+        agent_control_plane.authorize(agent_id="SYSTEMS_LEAD", connector_id="N8N")
+    except agent_control_plane.AuthorizationDenied:
+        return {"status": "AUTHORIZATION_DENIED", "workflows": []}
+    resolved = apply_to_process(config["credential_id"])
+    if "api_key" not in resolved.get("components_applied", []):
+        return {"status": "AUTH_UNAVAILABLE", "workflows": []}
+    key = os.environ.get(config["api_key_environment_name"])
+    if not key:
+        return {"status": "AUTH_UNAVAILABLE", "workflows": []}
+    base = config["base_url"].rstrip("/")
+    req = Request(base + f"/api/v1/workflows?limit={int(config['workflow_list_limit'])}",
+                  headers={"X-N8N-API-KEY": key, "Accept": "application/json"})
+    try:
+        with urlopen(req, timeout=timeout) as response:
+            rows = json.loads(response.read(256_000)).get("data", [])
+        workflows = []
+        for row in rows[:int(config["workflow_list_limit"])]:
+            nodes = row.get("nodes") or []
+            workflows.append({"id": row.get("id"), "name": row.get("name"),
+                "active": bool(row.get("active")), "node_count": len(nodes),
+                "node_types": sorted({str(n.get("type", "UNKNOWN")).rsplit(".", 1)[-1]
+                                       for n in nodes if isinstance(n, dict)}),
+                "updated_at": row.get("updatedAt")})
+        return {"status": "PASS", "count": len(workflows), "workflows": workflows,
+                "values_included": False, "parameters_included": False}
+    except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+        code = exc.code if isinstance(exc, HTTPError) else type(exc).__name__
+        return {"status": "UNAVAILABLE", "error_code": str(code), "workflows": []}
+
+
 def trigger_registered_webhook(*, webhook_id: str, approval_valid: bool = False) -> dict:
     """No live workflow trigger is exposed until a specific webhook is registered and approved."""
     config = json.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.exists() else DEFAULT_CONFIG
