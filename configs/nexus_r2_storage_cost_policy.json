@@ -1,0 +1,24 @@
+{
+  "provider": "CLOUDFLARE_R2",
+  "storage_class": "STANDARD",
+  "source": "https://developers.cloudflare.com/r2/pricing/",
+  "source_verified_date": "2026-11-17",
+  "rates_usd": {
+    "storage_gb_month": 0.015,
+    "class_a_per_million": 4.5,
+    "class_b_per_million": 0.36,
+    "egress_per_gb": 0.0
+  },
+  "free_tier_allowances_monthly": {
+    "storage_gb_month": 10,
+    "class_a_operations": 1000000,
+    "class_b_operations": 10000000,
+    "egress_per_gb": "FREE"
+  },
+  "free_tier_remaining": "UNKNOWN",
+  "estimate_policy": "GROSS_UPPER_BOUND_DO_NOT_SUBTRACT_UNKNOWN_FREE_TIER",
+  "units": {
+    "gb": "DECIMAL_1000000000_BYTES",
+    "storage_duration": "ONE_FULL_MONTH_PER_NEW_UPLOAD_FOR_RESERVATION"
+  }
+}
