@@ -220,8 +220,12 @@ class WorkflowStateStore:
 
 class WorkflowController:
     def __init__(self, store: WorkflowStateStore, *, runtime_health: dict[str, str] | None = None,
+                 runtime_health_observations: dict[str, dict[str, Any]] | None = None,
                  handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] | None = None,
                  model_resolver: Callable[..., dict[str, Any]] | None = None):
+        if runtime_health_observations is not None:
+            from scripts.nexus_agent_platform.workflow_runtime_health import fresh_environment_health
+            runtime_health = fresh_environment_health(runtime_health_observations)
         self.store, self.runtime_health, self.handlers = store, runtime_health or {}, handlers or {}
         self.model_resolver = model_resolver or ac.resolve_model_profile
 
