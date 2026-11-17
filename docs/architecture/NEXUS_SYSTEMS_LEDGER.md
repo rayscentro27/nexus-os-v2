@@ -62,17 +62,30 @@ feed ledger is an event summarizer, not an architecture decision register.
   rates ($0.015/GB-month, $4.50/million Class A, $0.36/million Class B, free
   egress) and does not subtract unknown remaining free-tier allowances.
   Estimate mode is `BOUNDED_ADVISORY`; source verified 2026-11-17.
-- **Live certification state:** PARTIAL. The governed boto3 path passed
-  authenticated object HEAD, image and video PUT/HEAD/GET, fetched-content hash
-  verification, signed-read URL generation, and repeat-ingestion deduplication
-  on 2026-11-17. The private test objects are retained under
-  `certification/r2-governor/r2cert-20261117-8bce6584477b/`; the current
-  adapter has no authorized certification-delete verifier, so it did not
-  attempt deletion. Full Asset Persistence Bot completion and Creative Studio
-  delivery remain uncertified because the canonical Creative metadata store is
-  not configured (`metadata_store_configured() = false`); no asset metadata
-  rows were written. Supabase contains only the exact R2 Governor policy rows
-  created/updated for certification and approval-gated production.
+- **Live certification state:** R2 and Asset Persistence Bot certification
+  passed on 2026-11-17. Governed boto3 calls passed authenticated object HEAD,
+  image/video PUT, bounded GET, downloaded-content SHA-256 comparison,
+  short-lived signed-read URL generation, and deduplication. Asset Persistence
+  Bot ingested an image and video to R2, verified each object, registered
+  metadata in Supabase, linked both to the existing canary campaign
+  `campaign-marketing-creative-canary-20261009-20042`, and recorded generation
+  receipts. Test asset IDs:
+  `r2cert_image_r2botcert-20261117-76d6efba6b` and
+  `r2cert_video_r2botcert-20261117-76d6efba6b`. Generation receipts:
+  `generation:r2botcert-20261117-76d6efba6b_image_dedup:f6095f3e92fb3e87` and
+  `generation:r2botcert-20261117-76d6efba6b_video:9b65c2c2fe41c752`.
+- **Certification object cleanup:** Test objects under
+  `certification/r2-governor/r2cert-20261117-8bce6584477b/` and the linked
+  canary assets remain in the private bucket. No approved delete verifier is
+  configured, so no object deletion was attempted. Production deletion remains
+  denied.
+- **Creative Studio delivery:** Supabase asset metadata lookup and the
+  governed short-lived R2 signed-read operation passed. The browser-authenticated
+  Admin route was not exercised in this run; the existing `asset_signed_url`
+  route requires an authenticated Admin session.
+- **Supabase changes:** Two exact Data Governor policy scopes were provisioned
+  or updated, and two canary Creative asset metadata records were registered.
+  No media bytes were stored in Supabase.
 - **Usage visibility:** Local registered-object and operation receipts provide
   bounded visibility. Account-wide Cloudflare usage and billing are not
   inferred.
