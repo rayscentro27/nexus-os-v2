@@ -7,17 +7,345 @@
     "No reused content is published automatically."
   ],
   "channels": [
-    {"id":"credit_plug","name":"Credit Plug","handle":"creditplug","channel_id":"UCDkcjwvWxUqWUmkDEIQrkuQ","url":"https://www.youtube.com/@creditplug","categories":["credit_repair","business_credit","business_funding"],"approved_by_ray":true,"enabled":true},
-    {"id":"michael_ionita","name":"Michael Ionita","handle":"michaelionita","channel_id":"UCC0O5FKSMcjzrvOUa08hS_A","url":"https://www.youtube.com/@michaelionita","categories":["ai_automation","marketing","product_strategy"],"approved_by_ray":true,"enabled":true},
-    {"id":"alec_delpuech","name":"Alec Delpuech","handle":"alecdelpuech","channel_id":"UCM5hFWTmFaXJ-POnxIrRFTg","url":"https://www.youtube.com/@alecdelpuech","categories":["online_business","marketing","content_strategy"],"approved_by_ray":true,"enabled":true},
-    {"id":"stedman_waiters","name":"Stedman Waiters","handle":"StedmanWaiters","channel_id":"UC-HxFRHtj1WCepZiruL3nUQ","url":"https://www.youtube.com/@StedmanWaiters","categories":["business_funding","business_credit","funding_business_operations"],"approved_by_ray":true,"enabled":true},
-    {"id":"luuk_alleman","name":"Luuk Alleman","handle":"LuukAlleman","channel_id":"UCJ2PJj3yRgUvzHb4XCCCLEw","url":"https://www.youtube.com/@LuukAlleman","categories":["ai_engineering","agentic_software","systems_research"],"approved_by_ray":true,"enabled":true},
-    {"id":"jt_hustlez","name":"JT Automations","handle":"JTHustlez","channel_id":"UC4jHUmvcEiBPwOX_fo2_Dfg","url":"https://www.youtube.com/@JTHustlez","categories":["business_opportunity_discovery","entrepreneurship","services"],"approved_by_ray":true,"enabled":true}
+    {
+      "id": "credit_plug",
+      "name": "Credit Plug",
+      "handle": "creditplug",
+      "channel_id": "UCDkcjwvWxUqWUmkDEIQrkuQ",
+      "url": "https://www.youtube.com/@creditplug",
+      "categories": [
+        "credit_repair",
+        "business_credit",
+        "business_funding"
+      ],
+      "approved_by_ray": true,
+      "enabled": true
+    },
+    {
+      "id": "michael_ionita",
+      "name": "Michael Ionita",
+      "handle": "michaelionita",
+      "channel_id": "UCC0O5FKSMcjzrvOUa08hS_A",
+      "url": "https://www.youtube.com/@michaelionita",
+      "categories": [
+        "ai_automation",
+        "marketing",
+        "product_strategy"
+      ],
+      "approved_by_ray": true,
+      "enabled": true
+    },
+    {
+      "id": "alec_delpuech",
+      "name": "Alec Delpuech",
+      "handle": "alecdelpuech",
+      "channel_id": "UCM5hFWTmFaXJ-POnxIrRFTg",
+      "url": "https://www.youtube.com/@alecdelpuech",
+      "categories": [
+        "online_business",
+        "marketing",
+        "content_strategy"
+      ],
+      "approved_by_ray": true,
+      "enabled": true
+    },
+    {
+      "id": "stedman_waiters",
+      "name": "Stedman Waiters",
+      "handle": "StedmanWaiters",
+      "channel_id": "UC-HxFRHtj1WCepZiruL3nUQ",
+      "url": "https://www.youtube.com/@StedmanWaiters",
+      "categories": [
+        "business_funding",
+        "business_credit",
+        "funding_business_operations"
+      ],
+      "approved_by_ray": true,
+      "enabled": true
+    },
+    {
+      "id": "luuk_alleman",
+      "name": "Luuk Alleman",
+      "handle": "LuukAlleman",
+      "channel_id": "UCJ2PJj3yRgUvzHb4XCCCLEw",
+      "url": "https://www.youtube.com/@LuukAlleman",
+      "categories": [
+        "ai_engineering",
+        "agentic_software",
+        "systems_research"
+      ],
+      "approved_by_ray": true,
+      "enabled": true
+    },
+    {
+      "id": "jt_hustlez",
+      "name": "JT Automations",
+      "handle": "JTHustlez",
+      "channel_id": "UC4jHUmvcEiBPwOX_fo2_Dfg",
+      "url": "https://www.youtube.com/@JTHustlez",
+      "categories": [
+        "business_opportunity_discovery",
+        "entrepreneurship",
+        "services"
+      ],
+      "approved_by_ray": true,
+      "enabled": true
+    },
+    {
+      "id": "sharbel_a",
+      "name": "Sharbel A.",
+      "handle": "sharbelxyz",
+      "channel_id": "UCxLzvFAUbpdNUIh0hGsEH0w",
+      "url": "https://www.youtube.com/@sharbelxyz",
+      "categories": [
+        "ai_automation"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "buildonaut_ai",
+      "name": "Buildonaut AI",
+      "handle": "Buildonaut-AI",
+      "channel_id": "UC9RSX-NhdJJesTExEY0TK4A",
+      "url": "https://www.youtube.com/@Buildonaut-AI",
+      "categories": [
+        "ai_automation"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "codacus",
+      "name": "Codacus",
+      "handle": "Codacus",
+      "channel_id": "UCsRvxZErBo0ByyWUX_aVuvg",
+      "url": "https://www.youtube.com/@Codacus",
+      "categories": [
+        "ai_technology"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "julian_goldie_seo",
+      "name": "Julian Goldie SEO",
+      "handle": "JulianGoldieSEO",
+      "channel_id": "UCGpsgNbzdF7BECCVbB1COHw",
+      "url": "https://www.youtube.com/@JulianGoldieSEO",
+      "categories": [
+        "marketing",
+        "seo"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "success_stephen_smith",
+      "name": "Success with Stephen Smith",
+      "handle": "Successwithstephensmith",
+      "channel_id": "UCxrRw5EiHfbxXwhpJlH14YQ",
+      "url": "https://www.youtube.com/@Successwithstephensmith",
+      "categories": [
+        "business_opportunities",
+        "business_credit"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "credit_with_colin",
+      "name": "Credit With Colin",
+      "handle": "CreditWithColin",
+      "channel_id": "UCgoqmTqVBUs8tDoK9aqb4dw",
+      "url": "https://www.youtube.com/@CreditWithColin",
+      "categories": [
+        "business_credit",
+        "funding"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "the_build_ai",
+      "name": "The Build AI",
+      "handle": "thebuildai",
+      "channel_id": "UC4agFbUB9o6QcF8YqR_Q7Xg",
+      "url": "https://www.youtube.com/@thebuildai",
+      "categories": [
+        "ai_technology"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "lyfe_accounting",
+      "name": "LYFE Accounting",
+      "handle": "LYFEAccounting",
+      "channel_id": "UCSPh1bFTdDalKnZPgQoOYUg",
+      "url": "https://www.youtube.com/@LYFEAccounting",
+      "categories": [
+        "business",
+        "finance"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "marvin_francois",
+      "name": "Marvin Francois",
+      "handle": "marvinfrancois1",
+      "channel_id": "UCCU8OcQzN6X00j-CXvWnAog",
+      "url": "https://www.youtube.com/@marvinfrancois1",
+      "categories": [
+        "business_funding",
+        "business_credit"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "jared_rhod",
+      "name": "Jared Rhod",
+      "handle": "jaredrhod",
+      "channel_id": "UCPDh8LQYVI4VQopfFqFf_Bg",
+      "url": "https://www.youtube.com/@jaredrhod",
+      "categories": [
+        "ai_automation"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "monica_main",
+      "name": "Monica Main",
+      "handle": "MonicaMain",
+      "channel_id": "UCndkL8Td8ZUoXrFg3E4n2xw",
+      "url": "https://www.youtube.com/@MonicaMain",
+      "categories": [
+        "business_credit",
+        "funding"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "money_talk_rashad",
+      "name": "Money Talk With Rashad",
+      "handle": "moneytalkrashad",
+      "channel_id": "UC5dfFy2gqd_GqdmphEVObEA",
+      "url": "https://www.youtube.com/@moneytalkrashad",
+      "categories": [
+        "business_finance"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "roberts_tech_toolbox",
+      "name": "Robert's Tech Toolbox",
+      "handle": "RobertsTechToolbox",
+      "channel_id": "UC6ply6NPG-puafzbAQL1-DA",
+      "url": "https://www.youtube.com/@RobertsTechToolbox",
+      "categories": [
+        "ai_technology"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "the_moving_average",
+      "name": "The Moving Average",
+      "handle": "TheMovingAverage",
+      "channel_id": "UCYFQzaZyTUzY-Tiytyv3HhA",
+      "url": "https://www.youtube.com/@TheMovingAverage",
+      "categories": [
+        "trading_markets"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    },
+    {
+      "id": "trading_strategy_testing",
+      "name": "Trading Strategy Testing",
+      "handle": "TradingStrategyTesting",
+      "channel_id": "UCWeqA6O3quJZNwZWsnZrivg",
+      "url": "https://www.youtube.com/@TradingStrategyTesting",
+      "categories": [
+        "trading_markets"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "approval_basis": "Explicit Ray instruction 2026-11-03; restored from CURATED_UNVERIFIED portfolio record"
+    }
   ],
   "videos": [
-    {"id":"video_zbAmmnMh5ew","name":"Ray-approved YouTube video zbAmmnMh5ew","video_id":"zbAmmnMh5ew","url":"https://www.youtube.com/watch?v=zbAmmnMh5ew","categories":["approved_video_research"],"approved_by_ray":true,"enabled":true,"no_video_download":true,"no_audio_download":true,"no_cookies":true,"transcript_import_requires_approval":true},
-    {"id":"video_IBONLMfA3Cw","name":"Jev use-case review","video_id":"IBONLMfA3Cw","url":"https://www.youtube.com/watch?v=IBONLMfA3Cw","categories":["systems_research","jev_technology"],"approved_by_ray":true,"enabled":true,"no_video_download":true,"no_audio_download":true,"no_cookies":true,"transcript_import_requires_approval":true},
-    {"id":"video_p3_Ql5nq4t4","name":"Hermes Bot Mode review","video_id":"p3_Ql5nq4t4","url":"https://www.youtube.com/watch?v=p3_Ql5nq4t4","categories":["systems_research","hermes_monitoring"],"approved_by_ray":true,"enabled":true,"no_video_download":true,"no_audio_download":true,"no_cookies":true,"transcript_import_requires_approval":true}
+    {
+      "id": "video_zbAmmnMh5ew",
+      "name": "Ray-approved YouTube video zbAmmnMh5ew",
+      "video_id": "zbAmmnMh5ew",
+      "url": "https://www.youtube.com/watch?v=zbAmmnMh5ew",
+      "categories": [
+        "approved_video_research"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "no_video_download": true,
+      "no_audio_download": true,
+      "no_cookies": true,
+      "transcript_import_requires_approval": true
+    },
+    {
+      "id": "video_IBONLMfA3Cw",
+      "name": "Jev use-case review",
+      "video_id": "IBONLMfA3Cw",
+      "url": "https://www.youtube.com/watch?v=IBONLMfA3Cw",
+      "categories": [
+        "systems_research",
+        "jev_technology"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "no_video_download": true,
+      "no_audio_download": true,
+      "no_cookies": true,
+      "transcript_import_requires_approval": true
+    },
+    {
+      "id": "video_p3_Ql5nq4t4",
+      "name": "Hermes Bot Mode review",
+      "video_id": "p3_Ql5nq4t4",
+      "url": "https://www.youtube.com/watch?v=p3_Ql5nq4t4",
+      "categories": [
+        "systems_research",
+        "hermes_monitoring"
+      ],
+      "approved_by_ray": true,
+      "enabled": true,
+      "no_video_download": true,
+      "no_audio_download": true,
+      "no_cookies": true,
+      "transcript_import_requires_approval": true
+    }
   ],
-  "unfilled_categories": ["personal_credit_education","grants","seo_content_marketing","local_business_marketing"]
+  "unfilled_categories": [
+    "personal_credit_education",
+    "grants",
+    "seo_content_marketing",
+    "local_business_marketing"
+  ]
 }

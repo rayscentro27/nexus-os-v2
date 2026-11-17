@@ -1,14 +1,61 @@
 {
   "version": 1,
   "routes": [
-    {"name_pattern": "credit", "research_lane": "credit_funding"},
-    {"name_pattern": "funding", "research_lane": "business_credit"},
-    {"name_pattern": "grant", "research_lane": "grants"},
-    {"name_pattern": "payment", "research_lane": "payment_monetization"},
-    {"name_pattern": "trading", "research_lane": "trading"},
-    {"name_pattern": "marketing", "research_lane": "marketing_content"},
-    {"name_pattern": "operations", "research_lane": "nexus_upgrade"},
-    {"name_pattern": "automation", "research_lane": "ai_automation"},
-    {"name_pattern": "*", "research_lane": "general_research"}
+    {
+      "name_pattern": "nexus feeder — options strategies",
+      "research_lane": "options"
+    },
+    {
+      "name_pattern": "nexus feeder — forex & indicator strategies",
+      "research_lane": "forex"
+    },
+    {
+      "name_pattern": "nexus feeder — business creation & bankability",
+      "research_lane": "business_creation"
+    },
+    {
+      "name_pattern": "nexus feeder — business opportunities",
+      "research_lane": "business_opportunities"
+    },
+    {
+      "name_pattern": "nexus feeder — business funding",
+      "research_lane": "business_funding"
+    },
+    {
+      "name_pattern": "credit",
+      "research_lane": "credit_funding"
+    },
+    {
+      "name_pattern": "funding",
+      "research_lane": "business_credit"
+    },
+    {
+      "name_pattern": "grant",
+      "research_lane": "grants"
+    },
+    {
+      "name_pattern": "payment",
+      "research_lane": "payment_monetization"
+    },
+    {
+      "name_pattern": "trading",
+      "research_lane": "trading"
+    },
+    {
+      "name_pattern": "marketing",
+      "research_lane": "marketing_content"
+    },
+    {
+      "name_pattern": "operations",
+      "research_lane": "nexus_upgrade"
+    },
+    {
+      "name_pattern": "automation",
+      "research_lane": "ai_automation"
+    },
+    {
+      "name_pattern": "*",
+      "research_lane": "general_research"
+    }
   ]
 }
