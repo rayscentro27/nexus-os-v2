@@ -103,3 +103,8 @@ a later implementation phase. A registration is not an activation or health
 certificate. Current unverified providers/environments remain unroutable.
 
 Runtime placement remains split: Nova/Hermes uses the Oracle runtime; Research orchestration and Alpha use the Mac Research runtime. The registry does not grant Nova Research-host execution or grant Alpha Oracle execution. Oracle service presence is recorded separately from protocol health.
+
+On 2026-11-17, authenticated Hermes MCP initialization and tool discovery
+passed for Research (9 tools) and Nexus (154 tools) through the approved Oracle
+resolver. This certifies endpoint discovery, not blanket tool permission or
+model/browser generation availability.
