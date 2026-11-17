@@ -30,6 +30,6 @@ export const listResearchRoomsLive = (filters: { status?: string; query?: string
 export const getResearchRoomLive = (roomId: string) => request(roomIdPath(roomId), 'GET')
 export const createResearchRoomLive = (input: { title: string }) => request(roomPath, 'POST', input)
 export const addResearchRoomSourceLive = (roomId: string, input: { source_type: string; content_or_url: string; title?: string }) => request(`${roomIdPath(roomId)}/sources`, 'POST', input)
-export const askAlphaLive = (roomId: string, question: string) => request(`${roomIdPath(roomId)}/alpha`, 'POST', { question })
+export const askAlphaLive = (roomId: string, question: string) => request(`${roomIdPath(roomId)}/ask`, 'POST', { question })
 export const scoreResearchRoomLive = (roomId: string) => request(`${roomIdPath(roomId)}/score`, 'POST', {})
 export const promoteResearchRoomLive = (roomId: string, requested_objective = '') => request(`${roomIdPath(roomId)}/promote`, 'POST', { requested_objective })
