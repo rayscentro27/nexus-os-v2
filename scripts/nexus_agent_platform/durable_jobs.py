@@ -358,6 +358,14 @@ class DurableJobStore:
         with self._connect() as db: row = db.execute("SELECT * FROM jobs WHERE job_id=?",(job_id,)).fetchone()
         return self._job(row) if row else None
 
+    def list_workflow_roots(self, limit: int = 50) -> list[Job]:
+        limit = max(1, min(int(limit), 100))
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT * FROM jobs WHERE json_extract(governance_context,'$.workflow_fabric.workflow_id') IS NOT NULL "
+                "ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+        return [self._job(row) for row in rows]
+
     def list_ready(self, limit: int = 20) -> list[Job]:
         with self._connect() as db: rows = db.execute("SELECT * FROM jobs WHERE state IN ('READY','FAILED_RETRYABLE') AND scheduled_at<=? ORDER BY priority DESC,scheduled_at LIMIT ?",(_iso(),max(1,min(100,limit)))).fetchall()
         return [self._job(row) for row in rows]
