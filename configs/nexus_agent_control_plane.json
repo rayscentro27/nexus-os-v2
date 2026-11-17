@@ -1,0 +1,3789 @@
+{
+  "schema_version": "nexus.agent_control_plane.v1",
+  "default_deny": true,
+  "standing_rules": [
+    "AI_WORKER_CANNOT_TERMINATE_WORKFLOW",
+    "agents_and_bots_request_model_profiles_only",
+    "model_manager_owns_provider_selection",
+    "execution_environment_router_owns_environment_selection",
+    "credentials_only_via_credential_authority",
+    "temporary_creative_output_is_not_complete_until_r2_persisted",
+    "nova_is_not_a_universal_specialist",
+    "hermes_is_capability_infrastructure_not_governance_authority"
+  ],
+  "domain_agents": [
+    {
+      "agent_id": "NOVA",
+      "role": "Executive Operator / Company Orchestrator",
+      "responsibility": "Objective intake, workflow selection, status, approvals, escalation, handoff tracking, company state and completion notification",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "nova.workflow_coordination"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "SUPABASE_GOVERNED",
+        "NEXUS_MESSAGING",
+        "SYSTEM_HEALTH_READ"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "CREATIVE_PROVIDER",
+        "CLOUDFLARE_R2_RAW",
+        "LIVE_TRADING",
+        "PRODUCTION_DEPLOY",
+        "ARBITRARY_BROWSER"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "RESEARCH_LEAD",
+      "role": "Research Program Lead",
+      "responsibility": "Plan and coordinate evidence-based research objectives",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "research.plan",
+        "research.source_discovery",
+        "research.source_verification",
+        "research.handoff"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "RESEARCH_FAST",
+        "FACT_CHECK",
+        "SYNTHESIS"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "PUBLISHING",
+        "CAMPAIGN_SPEND",
+        "CLOUDFLARE_R2_RAW"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "ALPHA",
+      "role": "Deep Research Specialist",
+      "responsibility": "Analyze attached and retrieved evidence; Alpha is not workflow owner",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "research.deep_analysis",
+        "research.fact_check",
+        "research.synthesis"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "HERMES_WEB_SEARCH"
+      ],
+      "allowed_model_profiles": [
+        "RESEARCH_FAST",
+        "RESEARCH_DEEP",
+        "FACT_CHECK",
+        "SYNTHESIS"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "PUBLISHING",
+        "CAMPAIGN_SPEND",
+        "LIVE_TRADING",
+        "CLOUDFLARE_R2_RAW"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "CLYDE",
+      "role": "GoClear / Business Funding Domain Lead",
+      "responsibility": "Funding readiness, documentation, funding paths and GoClear client journey",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "funding.readiness",
+        "funding.document_checklist",
+        "funding.gap_analysis",
+        "funding.path_analysis"
+      ],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "BUSINESS_PLANNING",
+        "FUNDING_REASONING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "TRADING",
+        "RAW_CREATIVE_PROVIDER",
+        "LENDER_APPROVAL_PROMISE"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "MERCURY",
+      "role": "Trading Domain Lead",
+      "responsibility": "Quantitative research, backtesting interpretation, market structure and paper risk analysis",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "trading.paper_research"
+      ],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "TRADING_REASONING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "LIVE_TRADING",
+        "PUBLISHING",
+        "CLOUDFLARE_R2_RAW"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "MARKETING_LEAD",
+      "role": "Marketing Strategy and Growth Lead",
+      "responsibility": "Audience, positioning, offer, channel, campaign and measurement strategy",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "marketing.audience_analysis",
+        "marketing.strategy",
+        "marketing.copy",
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "MARKETING_STRATEGY",
+        "MARKETING_ANALYSIS"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "RAW_CREATIVE_PROVIDER",
+        "PUBLISHING_WITHOUT_APPROVAL",
+        "TRADING"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "CREATIVE_LEAD",
+      "role": "Creative Director + Digital Art Director + Conversion Designer",
+      "responsibility": "Translate Marketing strategy into visual and story direction",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "creative.intent",
+        "creative.prompting",
+        "creative.route",
+        "creative.quality_check"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "CREATIVE_DIRECTOR",
+        "CREATIVE_PROMPT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "forbidden_connectors": [
+        "RAW_PROVIDER_CREDENTIALS",
+        "TRADING",
+        "UNAPPROVED_PUBLISHING"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "SYSTEMS_LEAD",
+      "role": "Infrastructure / Reliability Domain Lead",
+      "responsibility": "Health, runtime state, incidents, workers and deployment readiness recommendations",
+      "status": "REGISTERED",
+      "allowed_skills": [
+        "systems.health"
+      ],
+      "allowed_connectors": [
+        "SYSTEM_HEALTH_READ",
+        "NEXUS_GIT_GOVERNOR"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "CODE_GENERATION"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "UNAPPROVED_PRODUCTION_CHANGE",
+        "CLOUDFLARE_ACCOUNT_ADMIN"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    },
+    {
+      "agent_id": "COMMERCE_LEAD",
+      "role": "Commerce / Merchandising Domain Lead",
+      "responsibility": "Store operations, merchandising, fulfillment and commerce handoffs",
+      "status": "DEFINED_NOT_ACTIVE",
+      "allowed_skills": [
+        "commerce.merchandising"
+      ],
+      "allowed_connectors": [
+        "COMMERCE_CATALOG"
+      ],
+      "allowed_model_profiles": [
+        "NO_MODEL",
+        "ROUTING_LIGHT",
+        "BUSINESS_PLANNING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "forbidden_connectors": [
+        "TRADING",
+        "PUBLISHING_WITHOUT_APPROVAL"
+      ],
+      "forbidden_environments": [
+        "ORACLE_HERMES_FOR_RESEARCH",
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+    }
+  ],
+  "microbots": [
+    {
+      "bot_id": "RESEARCH_PLANNER",
+      "display_name": "Research Planner",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Research Planner performs its single registered research_lead responsibility.",
+      "bot_class": "COORDINATOR",
+      "model_required": true,
+      "model_profile": "ROUTING_LIGHT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.plan"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "ROUTING_LIGHT"
+      ]
+    },
+    {
+      "bot_id": "SOURCE_DISCOVERY",
+      "display_name": "Source Discovery",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Source Discovery performs its single registered research_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.source_discovery"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "BROWSER_RESEARCH",
+      "display_name": "Browser Research",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Browser Research performs its single registered research_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.browser"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "YOUTUBE_INTAKE",
+      "display_name": "Youtube Intake",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Youtube Intake performs its single registered research_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.youtube_intake"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "DOCUMENT_INTAKE",
+      "display_name": "Document Intake",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Document Intake performs its single registered research_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.document_intake"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "SOURCE_VERIFICATION",
+      "display_name": "Source Verification",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Source Verification performs its single registered research_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "FACT_CHECK",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.source_verification"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "FACT_CHECK"
+      ]
+    },
+    {
+      "bot_id": "ALPHA_DEEP_RESEARCH",
+      "display_name": "Alpha Deep Research",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Alpha Deep Research performs its single registered research_lead responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "RESEARCH_DEEP",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.deep_analysis"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "RESEARCH_DEEP"
+      ]
+    },
+    {
+      "bot_id": "FACT_CHECKER",
+      "display_name": "Fact Checker",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Fact Checker performs its single registered research_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "FACT_CHECK",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.fact_check"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "FACT_CHECK"
+      ]
+    },
+    {
+      "bot_id": "RESEARCH_SYNTHESIZER",
+      "display_name": "Research Synthesizer",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Research Synthesizer performs its single registered research_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "SYNTHESIS",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.synthesis"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "SYNTHESIS"
+      ]
+    },
+    {
+      "bot_id": "RESEARCH_HANDOFF",
+      "display_name": "Research Handoff",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Research Handoff performs its single registered research_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.handoff"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "RESEARCH_PERSISTENCE",
+      "display_name": "Research Persistence",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Research Persistence performs its single registered research_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.persistence"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "RESEARCH_CONTINUATION",
+      "display_name": "Research Continuation",
+      "domain": "RESEARCH_LEAD",
+      "one_sentence_responsibility": "Research Continuation performs its single registered research_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "ROUTING_LIGHT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "research.continuation"
+      ],
+      "allowed_connectors": [
+        "RESEARCH_R10",
+        "RESEARCH_MCP",
+        "SUPABASE_GOVERNED"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "ROUTING_LIGHT"
+      ]
+    },
+    {
+      "bot_id": "FUNDING_INTAKE",
+      "display_name": "Funding Intake",
+      "domain": "CLYDE",
+      "one_sentence_responsibility": "Funding Intake performs its single registered clyde responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "FUNDING_READINESS",
+      "display_name": "Funding Readiness",
+      "domain": "CLYDE",
+      "one_sentence_responsibility": "Funding Readiness performs its single registered clyde responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "FUNDING_REASONING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "funding.readiness"
+      ],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "FUNDING_REASONING"
+      ]
+    },
+    {
+      "bot_id": "DOCUMENT_CHECKLIST",
+      "display_name": "Document Checklist",
+      "domain": "CLYDE",
+      "one_sentence_responsibility": "Document Checklist performs its single registered clyde responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "funding.document_checklist"
+      ],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "FUNDING_GAP_ANALYSIS",
+      "display_name": "Funding Gap Analysis",
+      "domain": "CLYDE",
+      "one_sentence_responsibility": "Funding Gap Analysis performs its single registered clyde responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "FUNDING_REASONING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "funding.gap_analysis"
+      ],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "FUNDING_REASONING"
+      ]
+    },
+    {
+      "bot_id": "FUNDING_PATH_ANALYSIS",
+      "display_name": "Funding Path Analysis",
+      "domain": "CLYDE",
+      "one_sentence_responsibility": "Funding Path Analysis performs its single registered clyde responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "FUNDING_REASONING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "funding.path_analysis"
+      ],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "FUNDING_REASONING"
+      ]
+    },
+    {
+      "bot_id": "GOCLEAR_ADVISOR",
+      "display_name": "Goclear Advisor",
+      "domain": "CLYDE",
+      "one_sentence_responsibility": "Goclear Advisor performs its single registered clyde responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "FUNDING_REASONING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "funding.path_analysis"
+      ],
+      "allowed_connectors": [
+        "GOCLEAR_APPLICATIONS",
+        "GOCLEAR_DOCUMENTS",
+        "RESEARCH_R10"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "FUNDING_REASONING"
+      ]
+    },
+    {
+      "bot_id": "STRATEGY_RESEARCH",
+      "display_name": "Strategy Research",
+      "domain": "MERCURY",
+      "one_sentence_responsibility": "Strategy Research performs its single registered mercury responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "TRADING_REASONING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "TRADING_REASONING"
+      ]
+    },
+    {
+      "bot_id": "STRATEGY_TEST",
+      "display_name": "Strategy Test",
+      "domain": "MERCURY",
+      "one_sentence_responsibility": "Strategy Test performs its single registered mercury responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "SIGNAL_ANALYSIS",
+      "display_name": "Signal Analysis",
+      "domain": "MERCURY",
+      "one_sentence_responsibility": "Signal Analysis performs its single registered mercury responsibility.",
+      "bot_class": "DEEP_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "TRADING_REASONING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "TRADING_REASONING"
+      ]
+    },
+    {
+      "bot_id": "RISK_GATE",
+      "display_name": "Risk Gate",
+      "domain": "MERCURY",
+      "one_sentence_responsibility": "Risk Gate performs its single registered mercury responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "PAPER_EXECUTION",
+      "display_name": "Paper Execution",
+      "domain": "MERCURY",
+      "one_sentence_responsibility": "Paper Execution performs its single registered mercury responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "TRADING_RESULTS",
+      "display_name": "Trading Results",
+      "domain": "MERCURY",
+      "one_sentence_responsibility": "Trading Results performs its single registered mercury responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "MARKET_DATA_READ",
+        "PAPER_TRADING"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "AUDIENCE_ANALYSIS",
+      "display_name": "Audience Analysis",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Audience Analysis performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_ANALYSIS",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.audience_analysis"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_ANALYSIS"
+      ]
+    },
+    {
+      "bot_id": "COMPETITIVE_CREATIVE_INTELLIGENCE",
+      "display_name": "Competitive Creative Intelligence",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Competitive Creative Intelligence performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_ANALYSIS",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.audience_analysis"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_ANALYSIS"
+      ]
+    },
+    {
+      "bot_id": "MARKETING_STRATEGY",
+      "display_name": "Marketing Strategy",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Marketing Strategy performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_STRATEGY",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.strategy"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_STRATEGY"
+      ]
+    },
+    {
+      "bot_id": "CAMPAIGN_CREATION",
+      "display_name": "Campaign Creation",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Campaign Creation performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_STRATEGY",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.strategy"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_STRATEGY"
+      ]
+    },
+    {
+      "bot_id": "COPY",
+      "display_name": "Copy",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Copy performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_STRATEGY",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.copy"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_STRATEGY"
+      ]
+    },
+    {
+      "bot_id": "CAMPAIGN_OPERATIONS",
+      "display_name": "Campaign Operations",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Campaign Operations performs its single registered marketing_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "AD_METRICS_COLLECTOR",
+      "display_name": "Ad Metrics Collector",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Ad Metrics Collector performs its single registered marketing_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "SOCIAL_METRICS_COLLECTOR",
+      "display_name": "Social Metrics Collector",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Social Metrics Collector performs its single registered marketing_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "WEB_ANALYTICS_COLLECTOR",
+      "display_name": "Web Analytics Collector",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Web Analytics Collector performs its single registered marketing_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "FUNNEL_MEASUREMENT",
+      "display_name": "Funnel Measurement",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Funnel Measurement performs its single registered marketing_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "ATTRIBUTION_ANALYST",
+      "display_name": "Attribution Analyst",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Attribution Analyst performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_ANALYSIS",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_ANALYSIS"
+      ]
+    },
+    {
+      "bot_id": "MARKETING_MEASUREMENT",
+      "display_name": "Marketing Measurement",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Marketing Measurement performs its single registered marketing_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "CAMPAIGN_OPTIMIZATION",
+      "display_name": "Campaign Optimization",
+      "domain": "MARKETING_LEAD",
+      "one_sentence_responsibility": "Campaign Optimization performs its single registered marketing_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "MARKETING_ANALYSIS",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "marketing.measurement"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "MARKETING_MEASUREMENT"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "MARKETING_ANALYSIS"
+      ]
+    },
+    {
+      "bot_id": "CREATIVE_BRIEF",
+      "display_name": "Creative Brief",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Creative Brief performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_DIRECTOR",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.intent"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_DIRECTOR"
+      ]
+    },
+    {
+      "bot_id": "CREATIVE_CONCEPT",
+      "display_name": "Creative Concept",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Creative Concept performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_DIRECTOR",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.intent"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_DIRECTOR"
+      ]
+    },
+    {
+      "bot_id": "CREATIVE_INTENT",
+      "display_name": "Creative Intent",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Creative Intent performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_DIRECTOR",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.intent"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_DIRECTOR"
+      ]
+    },
+    {
+      "bot_id": "WEBSITE_PROMPT_SPECIALIST",
+      "display_name": "Website Prompt Specialist",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Website Prompt Specialist performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_PROMPT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.prompting"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_PROMPT"
+      ]
+    },
+    {
+      "bot_id": "LANDING_PAGE_PROMPT_SPECIALIST",
+      "display_name": "Landing Page Prompt Specialist",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Landing Page Prompt Specialist performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_PROMPT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.prompting"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_PROMPT"
+      ]
+    },
+    {
+      "bot_id": "IMAGE_PROMPT_SPECIALIST",
+      "display_name": "Image Prompt Specialist",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Image Prompt Specialist performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_PROMPT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.prompting"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_PROMPT"
+      ]
+    },
+    {
+      "bot_id": "VIDEO_PROMPT_SPECIALIST",
+      "display_name": "Video Prompt Specialist",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Video Prompt Specialist performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_PROMPT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.prompting"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_PROMPT"
+      ]
+    },
+    {
+      "bot_id": "UGC_PROMPT_SPECIALIST",
+      "display_name": "Ugc Prompt Specialist",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Ugc Prompt Specialist performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_PROMPT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.prompting"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_PROMPT"
+      ]
+    },
+    {
+      "bot_id": "CREATIVE_EXECUTION_ROUTER",
+      "display_name": "Creative Execution Router",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Creative Execution Router performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.route"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "IMAGE_PRODUCTION",
+      "display_name": "Image Production",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Image Production performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.route"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "VIDEO_PRODUCTION",
+      "display_name": "Video Production",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Video Production performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.route"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "REMOTION_PRODUCTION",
+      "display_name": "Remotion Production",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Remotion Production performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.route"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "VOICE_TTS_PRODUCTION",
+      "display_name": "Voice Tts Production",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Voice Tts Production performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.route"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "VARIANT_GENERATION",
+      "display_name": "Variant Generation",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Variant Generation performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_PROMPT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.route"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_PROMPT"
+      ]
+    },
+    {
+      "bot_id": "BRAND_QA",
+      "display_name": "Brand Qa",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Brand Qa performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_DIRECTOR",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.quality_check"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_DIRECTOR"
+      ]
+    },
+    {
+      "bot_id": "CREATIVE_QA",
+      "display_name": "Creative Qa",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Creative Qa performs its single registered creative_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "CREATIVE_DIRECTOR",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.quality_check"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "CREATIVE_DIRECTOR"
+      ]
+    },
+    {
+      "bot_id": "CREATIVE_APPROVAL",
+      "display_name": "Creative Approval",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Creative Approval performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.quality_check"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "CAMPAIGN_ATTACHMENT",
+      "display_name": "Campaign Attachment",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Campaign Attachment performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.persist_asset"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "ASSET_PERSISTENCE",
+      "display_name": "Asset Persistence",
+      "domain": "CREATIVE_LEAD",
+      "one_sentence_responsibility": "Asset Persistence performs its single registered creative_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [
+        "creative.persist_asset"
+      ],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "CREATIVE_EXECUTION_ROUTER",
+        "ASSET_PERSISTENCE"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI",
+        "LOCAL_DETERMINISTIC_MEDIA_WORKER"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "ACTIVE",
+      "runtime_health": "LIVE_CERTIFIED",
+      "last_certified": "2026-11-17",
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "NEXUS_HEALTH_AUDITOR",
+      "display_name": "Nexus Health Auditor",
+      "domain": "SYSTEMS_LEAD",
+      "one_sentence_responsibility": "Nexus Health Auditor performs its single registered systems_lead responsibility.",
+      "bot_class": "DETERMINISTIC_WORKER",
+      "model_required": false,
+      "model_profile": "NO_MODEL",
+      "model_fallback_profile": null,
+      "max_model_calls": 0,
+      "max_input_tokens": 0,
+      "max_output_tokens": 0,
+      "max_cost_usd": 0,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "SYSTEM_HEALTH_READ",
+        "NEXUS_GIT_GOVERNOR"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "NO_MODEL",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "NO_MODEL"
+      ]
+    },
+    {
+      "bot_id": "NOVA_COORDINATOR",
+      "display_name": "Nova Coordinator",
+      "domain": "NOVA",
+      "one_sentence_responsibility": "Nova Coordinator performs its single registered nova responsibility.",
+      "bot_class": "COORDINATOR",
+      "model_required": true,
+      "model_profile": "ROUTING_LIGHT",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "CAMPAIGN_SERVICE",
+        "SUPABASE_GOVERNED",
+        "NEXUS_MESSAGING",
+        "SYSTEM_HEALTH_READ"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "REGISTERED",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "ROUTING_LIGHT"
+      ]
+    },
+    {
+      "bot_id": "COMMERCE_MERCHANDISING",
+      "display_name": "Commerce Merchandising",
+      "domain": "COMMERCE_LEAD",
+      "one_sentence_responsibility": "Commerce Merchandising performs its single registered commerce_lead responsibility.",
+      "bot_class": "LIGHTWEIGHT_REASONING_WORKER",
+      "model_required": true,
+      "model_profile": "BUSINESS_PLANNING",
+      "model_fallback_profile": null,
+      "max_model_calls": 3,
+      "max_input_tokens": 12000,
+      "max_output_tokens": 3000,
+      "max_cost_usd": 0.25,
+      "max_runtime_seconds": 300,
+      "max_retries": 2,
+      "wake_condition": "Explicit governed task or registered workflow event",
+      "exit_condition": "Return bounded result/error; parent workflow retains lifecycle authority",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_skills": [],
+      "allowed_connectors": [
+        "COMMERCE_CATALOG"
+      ],
+      "allowed_execution_environments": [
+        "MAC_MINI"
+      ],
+      "preferred_execution_environments": [
+        "MAC_MINI"
+      ],
+      "fallback_execution_environments": [],
+      "forbidden_connectors": [
+        "RAW_CREDENTIAL_ACCESS",
+        "UNAPPROVED_PUBLISHING",
+        "LIVE_TRADING",
+        "ARBITRARY_R2"
+      ],
+      "forbidden_environments": [
+        "UNKNOWN_REMOTE",
+        "UNAPPROVED_PRODUCTION"
+      ],
+      "side_effects": "ANALYSIS_OR_DRAFT_ONLY",
+      "approval_required": false,
+      "latency_class": "BOUNDED",
+      "data_sensitivity": "TASK_SCOPED",
+      "status": "DEFINED_NOT_ACTIVE",
+      "runtime_health": "NOT_CERTIFIED",
+      "last_certified": null,
+      "allowed_model_profiles": [
+        "BUSINESS_PLANNING"
+      ]
+    }
+  ]
+}

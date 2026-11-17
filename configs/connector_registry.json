@@ -3,68 +3,1234 @@
   "generated_for": "full_engine_audit",
   "connectors": [
     {
-      "connector_id": "bureau_dispute_connector", "name": "Bureau Dispute Connector", "category": "bureau_dispute", "mode": "mock", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["create synthetic connector action", "generate draft metadata", "write local proof"], "blocked_actions": ["submit dispute", "contact bureau", "upload real client data"], "proof_path": "reports/runtime/dispute_simulation_lab_latest.json", "safety_notes": "Synthetic simulation only; no bureau contact.", "required_env_vars": [], "configured": true, "next_setup_step": "Design a separately approved vendor sandbox before any connector upgrade."
+      "connector_id": "bureau_dispute_connector",
+      "name": "Bureau Dispute Connector",
+      "category": "bureau_dispute",
+      "mode": "mock",
+      "status": "blocked",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "create synthetic connector action",
+        "generate draft metadata",
+        "write local proof"
+      ],
+      "blocked_actions": [
+        "submit dispute",
+        "contact bureau",
+        "upload real client data"
+      ],
+      "proof_path": "reports/runtime/dispute_simulation_lab_latest.json",
+      "safety_notes": "Synthetic simulation only; no bureau contact.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Design a separately approved vendor sandbox before any connector upgrade."
     },
     {
-      "connector_id": "creditor_dispute_connector", "name": "Creditor Review Connector", "category": "creditor_dispute", "mode": "mock", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["create synthetic connector action", "queue draft for Ray Review"], "blocked_actions": ["contact creditor", "send letter", "submit account data"], "proof_path": "reports/runtime/dispute_simulation_lab_latest.json", "safety_notes": "Mock lifecycle proof only.", "required_env_vars": [], "configured": true, "next_setup_step": "Keep manual until compliance and vendor sandbox design are approved."
+      "connector_id": "creditor_dispute_connector",
+      "name": "Creditor Review Connector",
+      "category": "creditor_dispute",
+      "mode": "mock",
+      "status": "blocked",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "create synthetic connector action",
+        "queue draft for Ray Review"
+      ],
+      "blocked_actions": [
+        "contact creditor",
+        "send letter",
+        "submit account data"
+      ],
+      "proof_path": "reports/runtime/dispute_simulation_lab_latest.json",
+      "safety_notes": "Mock lifecycle proof only.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Keep manual until compliance and vendor sandbox design are approved."
     },
     {
-      "connector_id": "collector_dispute_connector", "name": "Collector Debt Validation Connector", "category": "collector_dispute", "mode": "mock", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["generate validation draft metadata", "create internal task"], "blocked_actions": ["contact collector", "send validation request"], "proof_path": "reports/runtime/dispute_simulation_lab_latest.json", "safety_notes": "No collector contact.", "required_env_vars": [], "configured": true, "next_setup_step": "Require legal/compliance review and explicit Ray approval."
+      "connector_id": "collector_dispute_connector",
+      "name": "Collector Debt Validation Connector",
+      "category": "collector_dispute",
+      "mode": "mock",
+      "status": "blocked",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "generate validation draft metadata",
+        "create internal task"
+      ],
+      "blocked_actions": [
+        "contact collector",
+        "send validation request"
+      ],
+      "proof_path": "reports/runtime/dispute_simulation_lab_latest.json",
+      "safety_notes": "No collector contact.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Require legal/compliance review and explicit Ray approval."
     },
     {
-      "connector_id": "certified_mail_connector", "name": "Certified Mail / DocuPost Connector", "category": "certified_mail", "mode": "disabled", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["create mailing checklist", "estimate required proof fields"], "blocked_actions": ["mail letter", "buy postage", "call DocuPost API"], "proof_path": "reports/runtime/connector_test_harness_latest.json", "safety_notes": "No postage or letter sending.", "required_env_vars": ["DOCUPOST_SANDBOX_KEY"], "configured": false, "next_setup_step": "Evaluate sandbox terms and approval design; do not connect production."
+      "connector_id": "certified_mail_connector",
+      "name": "Certified Mail / DocuPost Connector",
+      "category": "certified_mail",
+      "mode": "disabled",
+      "status": "connector_missing",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "create mailing checklist",
+        "estimate required proof fields"
+      ],
+      "blocked_actions": [
+        "mail letter",
+        "buy postage",
+        "call DocuPost API"
+      ],
+      "proof_path": "reports/runtime/connector_test_harness_latest.json",
+      "safety_notes": "No postage or letter sending.",
+      "required_env_vars": [
+        "DOCUPOST_SANDBOX_KEY"
+      ],
+      "configured": false,
+      "next_setup_step": "Evaluate sandbox terms and approval design; do not connect production."
     },
     {
-      "connector_id": "client_message_connector", "name": "Client Message Connector", "category": "client_message", "mode": "disabled", "status": "blocked", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["generate message draft", "create admin review item"], "blocked_actions": ["send email", "send SMS", "contact client"], "proof_path": "reports/runtime/supabase_ready/client_messages_latest.json", "safety_notes": "Draft/read-only portal messages only.", "required_env_vars": [], "configured": false, "next_setup_step": "Approve consent, recipient, provider, and send workflow separately."
+      "connector_id": "client_message_connector",
+      "name": "Client Message Connector",
+      "category": "client_message",
+      "mode": "disabled",
+      "status": "blocked",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "generate message draft",
+        "create admin review item"
+      ],
+      "blocked_actions": [
+        "send email",
+        "send SMS",
+        "contact client"
+      ],
+      "proof_path": "reports/runtime/supabase_ready/client_messages_latest.json",
+      "safety_notes": "Draft/read-only portal messages only.",
+      "required_env_vars": [],
+      "configured": false,
+      "next_setup_step": "Approve consent, recipient, provider, and send workflow separately."
     },
     {
-      "connector_id": "document_upload_connector", "name": "Private Document Upload", "category": "document_upload", "mode": "disabled", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["generate document checklist", "show demo status"], "blocked_actions": ["upload real files", "store PII without tenant isolation"], "proof_path": "reports/runtime/supabase_ready/client_documents_latest.json", "safety_notes": "Frontend upload is intentionally disabled.", "required_env_vars": [], "configured": false, "next_setup_step": "Create private bucket, RLS, retention, consent, and malware-scan design."
+      "connector_id": "document_upload_connector",
+      "name": "Private Document Upload",
+      "category": "document_upload",
+      "mode": "disabled",
+      "status": "connector_missing",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "generate document checklist",
+        "show demo status"
+      ],
+      "blocked_actions": [
+        "upload real files",
+        "store PII without tenant isolation"
+      ],
+      "proof_path": "reports/runtime/supabase_ready/client_documents_latest.json",
+      "safety_notes": "Frontend upload is intentionally disabled.",
+      "required_env_vars": [],
+      "configured": false,
+      "next_setup_step": "Create private bucket, RLS, retention, consent, and malware-scan design."
     },
     {
-      "connector_id": "social_draft_engine", "name": "Social Draft Engine", "category": "social_draft", "mode": "internal", "status": "internal_active", "live_enabled": true, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["generate captions", "generate hooks", "generate hashtags", "create approval cards"], "blocked_actions": ["publish post", "contact followers"], "proof_path": "reports/runtime/social_connector_proof_latest.json", "safety_notes": "Real internal draft generation; never public posting.", "required_env_vars": [], "configured": true, "next_setup_step": "Review the five generated drafts in Ray Review."
+      "connector_id": "social_draft_engine",
+      "name": "Social Draft Engine",
+      "category": "social_draft",
+      "mode": "internal",
+      "status": "internal_active",
+      "live_enabled": true,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "generate captions",
+        "generate hooks",
+        "generate hashtags",
+        "create approval cards"
+      ],
+      "blocked_actions": [
+        "publish post",
+        "contact followers"
+      ],
+      "proof_path": "reports/runtime/social_connector_proof_latest.json",
+      "safety_notes": "Real internal draft generation; never public posting.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Review the five generated drafts in Ray Review."
     },
     {
-      "connector_id": "social_connector_health", "name": "Social Connector Health", "category": "social_health", "mode": "configured_read_only", "status": "connector_configured_publish_disabled", "live_enabled": false, "external_action_performed": false, "approval_required": false,
-      "allowed_actions": ["check local configuration presence", "report missing fields without values"], "blocked_actions": ["call publish API", "print token", "modify account"], "proof_path": "reports/runtime/social_connector_proof_latest.json", "safety_notes": "Account/token env presence detected locally; validity not network-tested.", "required_env_vars": ["META_PAGE_ACCESS_TOKEN", "META_PAGE_ID", "META_APP_ID", "META_APP_SECRET"], "configured": true, "next_setup_step": "Use a separately approved read-only/sandbox health check before sandbox posting."
+      "connector_id": "social_connector_health",
+      "name": "Social Connector Health",
+      "category": "social_health",
+      "mode": "configured_read_only",
+      "status": "connector_configured_publish_disabled",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": false,
+      "allowed_actions": [
+        "check local configuration presence",
+        "report missing fields without values"
+      ],
+      "blocked_actions": [
+        "call publish API",
+        "print token",
+        "modify account"
+      ],
+      "proof_path": "reports/runtime/social_connector_proof_latest.json",
+      "safety_notes": "Account/token env presence detected locally; validity not network-tested.",
+      "required_env_vars": [
+        "META_PAGE_ACCESS_TOKEN",
+        "META_PAGE_ID",
+        "META_APP_ID",
+        "META_APP_SECRET"
+      ],
+      "configured": true,
+      "next_setup_step": "Use a separately approved read-only/sandbox health check before sandbox posting."
     },
     {
-      "connector_id": "social_publish_gate", "name": "Social Publish Gate", "category": "social_publish", "mode": "approval_required", "status": "approval_gated", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["create dry-run gate proof", "create approval card"], "blocked_actions": ["public posting", "enable publish flag"], "proof_path": "reports/runtime/social_connector_proof_latest.json", "safety_notes": "Real public posting disabled.", "required_env_vars": ["META_PAGE_ACCESS_TOKEN", "META_PAGE_ID"], "configured": true, "next_setup_step": "Ray must approve exact test account, post, timing, and sandbox path."
+      "connector_id": "social_publish_gate",
+      "name": "Social Publish Gate",
+      "category": "social_publish",
+      "mode": "approval_required",
+      "status": "approval_gated",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "create dry-run gate proof",
+        "create approval card"
+      ],
+      "blocked_actions": [
+        "public posting",
+        "enable publish flag"
+      ],
+      "proof_path": "reports/runtime/social_connector_proof_latest.json",
+      "safety_notes": "Real public posting disabled.",
+      "required_env_vars": [
+        "META_PAGE_ACCESS_TOKEN",
+        "META_PAGE_ID"
+      ],
+      "configured": true,
+      "next_setup_step": "Ray must approve exact test account, post, timing, and sandbox path."
     },
     {
-      "connector_id": "youtube_research_connector", "name": "YouTube Research Connector", "category": "youtube_research", "mode": "internal_queue", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": false,
-      "allowed_actions": ["inspect approved local targets", "review imported metadata/transcripts", "approval-gated local yt-dlp metadata/subtitle availability probe"], "blocked_actions": ["download video", "download audio", "bypass restrictions", "broad scrape", "publish reused content"], "proof_path": "reports/runtime/youtube_review_proof_latest.json", "safety_notes": "Four approved channel targets exist. Local yt-dlp may probe metadata/subtitle availability only after Ray approval; no media download.", "required_env_vars": ["YOUTUBE_API_KEY"], "configured": false, "local_ytdlp_available": true, "local_ytdlp_path": "/usr/local/bin/yt-dlp", "local_ytdlp_version": "2026.03.03", "local_ytdlp_probe_approved": false, "next_setup_step": "Approve local yt-dlp metadata/subtitle probe for queued YouTube targets, configure an API connector, or manually import approved source text."
+      "connector_id": "youtube_research_connector",
+      "name": "YouTube Research Connector",
+      "category": "youtube_research",
+      "mode": "internal_queue",
+      "status": "connector_missing",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": false,
+      "allowed_actions": [
+        "inspect approved local targets",
+        "review imported metadata/transcripts",
+        "approval-gated local yt-dlp metadata/subtitle availability probe"
+      ],
+      "blocked_actions": [
+        "download video",
+        "download audio",
+        "bypass restrictions",
+        "broad scrape",
+        "publish reused content"
+      ],
+      "proof_path": "reports/runtime/youtube_review_proof_latest.json",
+      "safety_notes": "Four approved channel targets exist. Local yt-dlp may probe metadata/subtitle availability only after Ray approval; no media download.",
+      "required_env_vars": [
+        "YOUTUBE_API_KEY"
+      ],
+      "configured": false,
+      "local_ytdlp_available": true,
+      "local_ytdlp_path": "/usr/local/bin/yt-dlp",
+      "local_ytdlp_version": "2026.03.03",
+      "local_ytdlp_probe_approved": false,
+      "next_setup_step": "Approve local yt-dlp metadata/subtitle probe for queued YouTube targets, configure an API connector, or manually import approved source text."
     },
     {
-      "connector_id": "youtube_review_engine", "name": "YouTube Review Engine", "category": "youtube_review", "mode": "internal", "status": "queue_only_no_real_review", "live_enabled": true, "external_action_performed": false, "approval_required": false,
-      "allowed_actions": ["score imported metadata", "score local transcript text", "create opportunities"], "blocked_actions": ["claim placeholder metadata is real", "reuse copyrighted content", "download video/audio", "bypass platform restrictions"], "proof_path": "reports/runtime/youtube_review_proof_latest.json", "safety_notes": "Engine code exists. yt-dlp availability alone does not mean real review is active.", "required_env_vars": [], "configured": true, "next_setup_step": "Approve a bounded local probe or provide a real approved transcript/metadata record."
+      "connector_id": "youtube_review_engine",
+      "name": "YouTube Review Engine",
+      "category": "youtube_review",
+      "mode": "internal",
+      "status": "queue_only_no_real_review",
+      "live_enabled": true,
+      "external_action_performed": false,
+      "approval_required": false,
+      "allowed_actions": [
+        "score imported metadata",
+        "score local transcript text",
+        "create opportunities"
+      ],
+      "blocked_actions": [
+        "claim placeholder metadata is real",
+        "reuse copyrighted content",
+        "download video/audio",
+        "bypass platform restrictions"
+      ],
+      "proof_path": "reports/runtime/youtube_review_proof_latest.json",
+      "safety_notes": "Engine code exists. yt-dlp availability alone does not mean real review is active.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Approve a bounded local probe or provide a real approved transcript/metadata record."
     },
     {
-      "connector_id": "email_draft_connector", "name": "Email Draft Connector", "category": "email_draft", "mode": "internal", "status": "internal_active", "live_enabled": true, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["generate draft email", "create approval record"], "blocked_actions": ["send email", "select real recipient"], "proof_path": "reports/runtime/supabase_ready/email_drafts_latest.json", "safety_notes": "Draft generation only.", "required_env_vars": [], "configured": true, "next_setup_step": "Review copy; sending remains separately gated."
+      "connector_id": "email_draft_connector",
+      "name": "Email Draft Connector",
+      "category": "email_draft",
+      "mode": "internal",
+      "status": "internal_active",
+      "live_enabled": true,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "generate draft email",
+        "create approval record"
+      ],
+      "blocked_actions": [
+        "send email",
+        "select real recipient"
+      ],
+      "proof_path": "reports/runtime/supabase_ready/email_drafts_latest.json",
+      "safety_notes": "Draft generation only.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Review copy; sending remains separately gated."
     },
     {
-      "connector_id": "supabase_insert_connector", "name": "Supabase Insert Connector", "category": "supabase_insert", "mode": "approval_required", "status": "approval_gated", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["generate Supabase-ready JSON", "validate schema mapping"], "blocked_actions": ["automatic production insertion", "service-role exposure"], "proof_path": "reports/runtime/client_portal_backend_build_latest.json", "safety_notes": "Exports only; no insert during audit.", "required_env_vars": [], "configured": true, "next_setup_step": "Approve schema/RLS mapping and bounded insertion plan."
+      "connector_id": "supabase_insert_connector",
+      "name": "Supabase Insert Connector",
+      "category": "supabase_insert",
+      "mode": "approval_required",
+      "status": "approval_gated",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "generate Supabase-ready JSON",
+        "validate schema mapping"
+      ],
+      "blocked_actions": [
+        "automatic production insertion",
+        "service-role exposure"
+      ],
+      "proof_path": "reports/runtime/client_portal_backend_build_latest.json",
+      "safety_notes": "Exports only; no insert during audit.",
+      "required_env_vars": [],
+      "configured": true,
+      "next_setup_step": "Approve schema/RLS mapping and bounded insertion plan."
     },
     {
-      "connector_id": "payment_status_connector", "name": "Payment Status Connector", "category": "payment", "mode": "disabled", "status": "connector_missing", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["show payment-path missing status"], "blocked_actions": ["charge client", "create checkout", "spend money"], "proof_path": "reports/runtime/monetization_readiness_audit_latest.json", "safety_notes": "No payment collection path activated.", "required_env_vars": ["PAYMENT_PROVIDER_KEY"], "configured": false, "next_setup_step": "Select provider and approve offer/checkout terms before connection."
+      "connector_id": "payment_status_connector",
+      "name": "Payment Status Connector",
+      "category": "payment",
+      "mode": "disabled",
+      "status": "connector_missing",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "show payment-path missing status"
+      ],
+      "blocked_actions": [
+        "charge client",
+        "create checkout",
+        "spend money"
+      ],
+      "proof_path": "reports/runtime/monetization_readiness_audit_latest.json",
+      "safety_notes": "No payment collection path activated.",
+      "required_env_vars": [
+        "PAYMENT_PROVIDER_KEY"
+      ],
+      "configured": false,
+      "next_setup_step": "Select provider and approve offer/checkout terms before connection."
     },
     {
-      "connector_id": "trading_demo_connector", "name": "Oanda Practice Read Connector", "category": "trading_demo", "mode": "practice_read_only", "status": "practice_read_verified", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["read practice account metadata", "read historical practice candles", "run local historical replay"], "blocked_actions": ["place order", "connect live endpoint", "funded trading"], "proof_path": "reports/runtime/oanda_demo_readonly_check_latest.json", "safety_notes": "Practice environment and authenticated read access verified by HTTP 200. This does not authorize or enable practice/live order placement.", "required_env_vars": ["OANDA_API_TOKEN or OANDA_API_KEY", "OANDA_ACCOUNT_ID", "OANDA_ENVIRONMENT=practice"], "configured": true, "next_setup_step": "No setup required for bounded read-only market research; independently validate instrument, timeframe, data quality, and usage rights before each case-specific replay."
+      "connector_id": "trading_demo_connector",
+      "name": "Oanda Practice Read Connector",
+      "category": "trading_demo",
+      "mode": "practice_read_only",
+      "status": "practice_read_verified",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "read practice account metadata",
+        "read historical practice candles",
+        "run local historical replay"
+      ],
+      "blocked_actions": [
+        "place order",
+        "connect live endpoint",
+        "funded trading"
+      ],
+      "proof_path": "reports/runtime/oanda_demo_readonly_check_latest.json",
+      "safety_notes": "Practice environment and authenticated read access verified by HTTP 200. This does not authorize or enable practice/live order placement.",
+      "required_env_vars": [
+        "OANDA_API_TOKEN or OANDA_API_KEY",
+        "OANDA_ACCOUNT_ID",
+        "OANDA_ENVIRONMENT=practice"
+      ],
+      "configured": true,
+      "next_setup_step": "No setup required for bounded read-only market research; independently validate instrument, timeframe, data quality, and usage rights before each case-specific replay."
     },
     {
-      "connector_id": "webull_market_data_connector", "name": "Webull OpenAPI Market Data", "category": "market_data", "mode": "sandbox_read_only", "status": "credential_missing_entitlement_unverified", "live_enabled": false, "external_action_performed": false, "approval_required": true,
-      "allowed_actions": ["read sandbox snapshots", "read historical stock bars after authentication and subscription are verified"], "blocked_actions": ["place order", "modify/cancel order", "access funded trading"], "proof_path": "reports/trading/webull_sandbox_canary_latest.json", "safety_notes": "A prior sandbox canary reports HTTP 200 for account discovery and market data but carries no timestamp or historical-bar proof. Current canonical credential control plane has no Webull app key/secret configured; stock-history entitlement and company-use terms remain unverified.", "required_env_vars": ["NEXUS_WEBULL_OPENAPI_APP_KEY", "NEXUS_WEBULL_OPENAPI_APP_SECRET"], "configured": false, "next_setup_step": "Restore the approved Webull credential through the canonical Keychain/runtime control plane, then test only a bounded sandbox historical-bar read and verify market-data subscription and use terms."
+      "connector_id": "webull_market_data_connector",
+      "name": "Webull OpenAPI Market Data",
+      "category": "market_data",
+      "mode": "sandbox_read_only",
+      "status": "credential_missing_entitlement_unverified",
+      "live_enabled": false,
+      "external_action_performed": false,
+      "approval_required": true,
+      "allowed_actions": [
+        "read sandbox snapshots",
+        "read historical stock bars after authentication and subscription are verified"
+      ],
+      "blocked_actions": [
+        "place order",
+        "modify/cancel order",
+        "access funded trading"
+      ],
+      "proof_path": "reports/trading/webull_sandbox_canary_latest.json",
+      "safety_notes": "A prior sandbox canary reports HTTP 200 for account discovery and market data but carries no timestamp or historical-bar proof. Current canonical credential control plane has no Webull app key/secret configured; stock-history entitlement and company-use terms remain unverified.",
+      "required_env_vars": [
+        "NEXUS_WEBULL_OPENAPI_APP_KEY",
+        "NEXUS_WEBULL_OPENAPI_APP_SECRET"
+      ],
+      "configured": false,
+      "next_setup_step": "Restore the approved Webull credential through the canonical Keychain/runtime control plane, then test only a bounded sandbox historical-bar read and verify market-data subscription and use terms."
+    },
+    {
+      "connector_id": "SUPABASE_GOVERNED",
+      "name": "Supabase Governed",
+      "provider": "supabase",
+      "capability": "governed metadata/workflow persistence",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Nexus Data Governor",
+      "credential_id": "credential.supabase.admin.prod.v1",
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "ACTIVE_IF_GOVERNOR_PERMITS",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "CLOUDFLARE_R2",
+      "name": "Cloudflare R2",
+      "provider": "cloudflare",
+      "capability": "canonical Creative media storage",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "bounded R2 Data Governor",
+      "credential_id": "credential.cloudflare.r2.creative.prod.v1",
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "LIVE_CERTIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": "2026-11-17",
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "RESEARCH_R10",
+      "name": "Research R10",
+      "provider": "nexus",
+      "capability": "Research runtime/API",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Research task authority",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "ACTIVE",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": "2026-11-17",
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "RESEARCH_MCP",
+      "name": "Research Mcp",
+      "provider": "nexus",
+      "capability": "Research MCP capabilities",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "MCP authentication",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "ACTIVE",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": "2026-11-17",
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "CAMPAIGN_SERVICE",
+      "name": "Campaign Service",
+      "provider": "nexus",
+      "capability": "Campaign service/workflow",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Campaign Service auth",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "CREATIVE_EXECUTION_ROUTER",
+      "name": "Creative Execution Router",
+      "provider": "nexus",
+      "capability": "Creative environment selection",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Creative router",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "REGISTERED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "ASSET_PERSISTENCE",
+      "name": "Asset Persistence",
+      "provider": "nexus",
+      "capability": "Canonical asset persistence service",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "R2 + Data Governor",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "LIVE_CERTIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": "2026-11-17",
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "NEXUS_MESSAGING",
+      "name": "Nexus Messaging",
+      "provider": "nexus",
+      "capability": "Bounded message/notification transport",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "message policy",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "SYSTEM_HEALTH_READ",
+      "name": "System Health Read",
+      "provider": "nexus",
+      "capability": "Read-only Systems health",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "systems capability",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "AVAILABLE",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": "2026-11-17",
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_WEB_SEARCH",
+      "name": "Hermes Web Search",
+      "provider": "hermes",
+      "capability": "Hermes web search capability",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Hermes runtime scope",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_WEB_EXTRACT",
+      "name": "Hermes Web Extract",
+      "provider": "hermes",
+      "capability": "Hermes extraction capability",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Hermes runtime scope",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_BROWSER_COMPUTER",
+      "name": "Hermes Browser Computer",
+      "provider": "hermes",
+      "capability": "Hermes browser/computer capability",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Hermes runtime scope",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "GOCLEAR_APPLICATIONS",
+      "name": "Goclear Applications",
+      "provider": "nexus",
+      "capability": "GoClear application records",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "GoClear application service",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "GOCLEAR_DOCUMENTS",
+      "name": "Goclear Documents",
+      "provider": "nexus",
+      "capability": "GoClear client documents",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "GoClear document service",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "MARKETING_MEASUREMENT",
+      "name": "Marketing Measurement",
+      "provider": "nexus",
+      "capability": "Campaign performance data",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "approved measurement adapters",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "MARKET_DATA_READ",
+      "name": "Market Data Read",
+      "provider": "nexus",
+      "capability": "Market data reads",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "practice/provider credential scope",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "AVAILABLE_LIMITED",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "PAPER_TRADING",
+      "name": "Paper Trading",
+      "provider": "nexus",
+      "capability": "Paper/demo trading only",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "practice account authority",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "PRACTICE_ONLY",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "NEXUS_GIT_GOVERNOR",
+      "name": "Nexus Git Governor",
+      "provider": "nexus",
+      "capability": "Scoped repository operations",
+      "read_write_mode": "read_write",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "repository policy",
+      "credential_id": null,
+      "approval_required": false,
+      "cost_class": "GOVERNED_OR_UNVERIFIED",
+      "status": "AVAILABLE",
+      "health_source": "Existing connector/runtime certification; unverified remains unavailable",
+      "last_certified": "2026-11-17",
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_DELEGATE",
+      "name": "Hermes Delegate",
+      "provider": "hermes",
+      "capability": "bounded delegate",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_SKILLS",
+      "name": "Hermes Skills",
+      "provider": "hermes",
+      "capability": "native skills",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_SESSION_CONTEXT",
+      "name": "Hermes Session Context",
+      "provider": "hermes",
+      "capability": "session context",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_MESSAGING",
+      "name": "Hermes Messaging",
+      "provider": "hermes",
+      "capability": "messaging",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "HERMES_CRON",
+      "name": "Hermes Cron",
+      "provider": "hermes",
+      "capability": "cron",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "META_MARKETING",
+      "name": "Meta Marketing",
+      "provider": "meta",
+      "capability": "marketing account",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "META_INSIGHTS",
+      "name": "Meta Insights",
+      "provider": "meta",
+      "capability": "marketing insights",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "META_AD_LIBRARY_BROWSER",
+      "name": "Meta Ad Library Browser",
+      "provider": "meta",
+      "capability": "public ad library browsing",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "TIKTOK_BUSINESS",
+      "name": "Tiktok Business",
+      "provider": "tiktok",
+      "capability": "business account",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "TIKTOK_CREATIVE_CENTER_BROWSER",
+      "name": "Tiktok Creative Center Browser",
+      "provider": "tiktok",
+      "capability": "public creative center browsing",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "GOOGLE_ADS_TRANSPARENCY_BROWSER",
+      "name": "Google Ads Transparency Browser",
+      "provider": "google",
+      "capability": "public ads transparency browsing",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "YOUTUBE_DATA",
+      "name": "Youtube Data",
+      "provider": "google",
+      "capability": "YouTube data",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "OANDA_PRACTICE",
+      "name": "Oanda Practice",
+      "provider": "oanda",
+      "capability": "practice market data/execution",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "WEBULL_PAPER",
+      "name": "Webull Paper",
+      "provider": "webull",
+      "capability": "paper trading",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "TRADINGVIEW",
+      "name": "Tradingview",
+      "provider": "tradingview",
+      "capability": "charting",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "REMOTION",
+      "name": "Remotion",
+      "provider": "nexus",
+      "capability": "video rendering",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "N8N",
+      "name": "N8N",
+      "provider": "n8n",
+      "capability": "workflow infrastructure",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "GITHUB",
+      "name": "Github",
+      "provider": "github",
+      "capability": "source control",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "NETLIFY",
+      "name": "Netlify",
+      "provider": "netlify",
+      "capability": "frontend deployment",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "RESEND",
+      "name": "Resend",
+      "provider": "resend",
+      "capability": "email delivery",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Existing provider/connector authority required; not granted by registration",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification attached",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
+    },
+    {
+      "connector_id": "COMMERCE_CATALOG",
+      "name": "Commerce Catalog",
+      "provider": "nexus",
+      "capability": "Commerce catalog lookup",
+      "read_write_mode": "read_only",
+      "data_classes": [
+        "COMMERCE_DATA"
+      ],
+      "authority": "Commerce runtime authority not certified",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "UNVERIFIED",
+      "status": "NOT_VERIFIED",
+      "health_source": "No current runtime certification",
+      "last_certified": null,
+      "primary_environment": "MAC_MINI",
+      "supported_environments": [
+        "MAC_MINI"
+      ]
     }
   ]
 }
