@@ -101,3 +101,5 @@ selection checks live in `scripts/nexus_agent_platform/agent_control_plane.py`.
 This control plane does not add a workflow engine; n8n / Workflow Fabric remains
 a later implementation phase. A registration is not an activation or health
 certificate. Current unverified providers/environments remain unroutable.
+
+Runtime placement remains split: Nova/Hermes uses the Oracle runtime; Research orchestration and Alpha use the Mac Research runtime. The registry does not grant Nova Research-host execution or grant Alpha Oracle execution. Oracle service presence is recorded separately from protocol health.

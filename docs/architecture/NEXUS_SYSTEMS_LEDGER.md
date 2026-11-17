@@ -114,3 +114,4 @@ feed ledger is an event summarizer, not an architecture decision register.
 
 - **Status:** EXISTING ROUTER REUSED; registry-backed control-plane policy added.
 - Creative Intent and prompt-specialist identities are distinct from provider selection. Existing Creative Execution Router chooses location; Model Manager owns provider/model selection; Asset Persistence Bot remains deterministic and canonicalizes completed media to R2 with Supabase metadata. Unverified image/video/voice generators remain blocked rather than inferred active.
+- **Nova placement:** `ORACLE_NOVA_HERMES` is registered separately from Mac Research. The approved resolver verified Oracle SSH authority, active Nova service, and running Hermes runtime on 2026-11-17. Process health is observed; MCP/tool protocol health was not tested here, so routing still requires a live health observation.
