@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 
 DAILY_COMMANDS=[
+ ("feeder_morning_report",["python3","scripts/activation/build_feeder_morning_report.py"]),
  ("cli_audit",["python3","scripts/activation/audit_local_cli_capabilities.py","--json"]),
  ("tool_access",["python3","scripts/activation/validate_cli_tool_access.py","--json"]),
  ("checklist",["python3","scripts/activation/verify_100_step_activation_status.py","--json"]),
