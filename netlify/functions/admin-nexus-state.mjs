@@ -38,7 +38,10 @@ async function signPaths(c, paths) {
 export async function handler(event) {
   if (event.httpMethod !== 'GET') return json(405, { error: 'method_not_allowed' })
   const admin = await requireAdmin(event)
-  if (!admin.ok) return json(admin.statusCode, { error: admin.error })
+  if (!admin.ok) return json(admin.statusCode, {
+    error: admin.error,
+    ...(admin.projectRef ? { project_ref: admin.projectRef } : {}),
+  })
   const c = config()
   if (!c.url || !c.key) return json(503, { error: 'server_configuration_missing', truth: 'NOT_CONNECTED' })
   const response = await fetch(`${c.url}/rest/v1/nexus_admin_read_model?select=area,payload,generated_at`, { headers: privileged(c.key) }).catch(() => null)
