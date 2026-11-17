@@ -1231,6 +1231,48 @@
       "supported_environments": [
         "MAC_MINI"
       ]
+    },
+    {
+      "connector_id": "HERMES_RESEARCH_MCP",
+      "name": "Hermes Research Mcp",
+      "provider": "hermes",
+      "capability": "Authenticated Oracle Hermes connection to Research MCP; 9 tools discovered 2026-11-17",
+      "read_write_mode": "mixed_tool_level_governed",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Nexus MCP per-tool authorization; Hermes is transport/capability infrastructure, not governance authority",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "EXISTING_AUTHORIZED_ROUTE",
+      "status": "ACTIVE",
+      "health_source": "Approved Oracle resolver; authenticated Hermes MCP initialization and tools/list",
+      "last_certified": "2026-11-17",
+      "primary_environment": "ORACLE_NOVA_HERMES",
+      "supported_environments": [
+        "ORACLE_NOVA_HERMES"
+      ]
+    },
+    {
+      "connector_id": "HERMES_NEXUS_MCP",
+      "name": "Hermes Nexus Mcp",
+      "provider": "hermes",
+      "capability": "Authenticated Oracle Hermes connection to Nexus MCP; 154 tools discovered 2026-11-17",
+      "read_write_mode": "mixed_tool_level_governed",
+      "data_classes": [
+        "TASK_SCOPED"
+      ],
+      "authority": "Nexus MCP per-tool authorization; Hermes is transport/capability infrastructure, not governance authority",
+      "credential_id": null,
+      "approval_required": true,
+      "cost_class": "EXISTING_AUTHORIZED_ROUTE",
+      "status": "ACTIVE",
+      "health_source": "Approved Oracle resolver; authenticated Hermes MCP initialization and tools/list",
+      "last_certified": "2026-11-17",
+      "primary_environment": "ORACLE_NOVA_HERMES",
+      "supported_environments": [
+        "ORACLE_NOVA_HERMES"
+      ]
     }
   ]
 }

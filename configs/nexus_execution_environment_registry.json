@@ -453,9 +453,9 @@
       "temp_storage_policy": "Runtime temporary state only; Supabase/R2 remain canonical",
       "priority": "PRIMARY_FOR_NOVA_ONLY",
       "status": "ACTIVE",
-      "health": "SERVICE_ACTIVE_PROTOCOL_NOT_TESTED",
+      "health": "NOVA_SERVICE_ACTIVE_HERMES_RUNNING_MCP_INITIALIZED_TOOLS_DISCOVERED",
       "last_certified": "2026-11-17",
-      "notes": "Approved nexus_oracle_connection resolver passed; nova-telegram-oracle.service active, Hermes Podman runtime running. No protocol/tool discovery performed in this task."
+      "notes": "Approved resolver passed; Nova service active, Hermes runtime running; authenticated Research MCP init/discovery (9 tools) and Nexus MCP init/discovery (154 tools) passed 2026-11-17. No model completion test performed."
     }
   ],
   "capability_environment_matrix": {
