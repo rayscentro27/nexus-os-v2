@@ -89,3 +89,28 @@ feed ledger is an event summarizer, not an architecture decision register.
 - **Usage visibility:** Local registered-object and operation receipts provide
   bounded visibility. Account-wide Cloudflare usage and billing are not
   inferred.
+
+## AGENT_CAPABILITY_CONTROL_PLANE
+
+- **Status:** IMPLEMENTED / DENY-BY-DEFAULT REGISTRIES
+- **Canonical identities:** `configs/nexus_agent_control_plane.json` registers the Nova company coordinator and named domain leads, plus bounded specialist microbots. `configs/nexus_skill_registry.json` is the skill identity registry; `configs/connector_registry.json` remains the connector registry; `configs/nexus_model_profile_registry.json` contains profile aliases only; `configs/nexus_execution_environment_registry.json` records execution/storage/data-plane environments and conservative certification state.
+- **Enforcement:** `scripts/nexus_agent_platform/agent_control_plane.py` validates agent/bot skill, connector, model-profile, and environment permissions. It does not execute capabilities or expose credentials. Existing governed executors, credential control, Model Manager, Data Governor, and R2 Asset Persistence remain authorities.
+- **Rules:** bots request model profiles only; Model Manager selects provider/model; execution router selects an explicitly allowed healthy environment; a registered identity is not proof of runtime availability; Nova has no raw R2 credential authority; Mercury has no live-trading authority; Alpha has no publishing authority; `AI_WORKER_CANNOT_TERMINATE_WORKFLOW` remains standing.
+- **Runtime state:** Mac Research/API/MCP and bridge processes were observed on 2026-11-17. Host service presence is recorded separately from protocol certification. Contabo and Meta browser generation are not certified by this registry. R2 and Supabase preserve their already-authoritative storage/state roles.
+
+## EXECUTION_ENVIRONMENT_REGISTRY
+
+- **Status:** IMPLEMENTED; runtime claims are evidence-scoped.
+- **Registry:** `configs/nexus_execution_environment_registry.json` includes Mac mini, Contabo candidate, Meta browser candidates, Modal, RunPod, Remotion, Codex build, Cloudflare R2, and Supabase. R2 is canonical storage, not compute; Supabase is the canonical metadata/business/workflow plane, not compute.
+- **Routing rule:** only allowlisted environments with an active/live-certified status and healthy runtime evidence may be selected. Candidate, unavailable, or unverified environments cannot be routed as fallbacks unless a future certification updates their state.
+
+## SKILL_CONNECTOR_MODEL_ENVIRONMENT_SEPARATION
+
+- **Status:** IMPLEMENTED.
+- Skills describe bounded work; connectors describe external/system interfaces; model profiles describe task classes; environments describe where work can execute. These registries are separate and joined by agent/bot policy.
+- Actual provider/model selection stays in the existing Model Manager. Credentials stay behind Nexus credential authority. Hermes remains capability infrastructure and is not Nexus governance authority.
+
+## CREATIVE_EXECUTION_ROUTING
+
+- **Status:** EXISTING ROUTER REUSED; registry-backed control-plane policy added.
+- Creative Intent and prompt-specialist identities are distinct from provider selection. Existing Creative Execution Router chooses location; Model Manager owns provider/model selection; Asset Persistence Bot remains deterministic and canonicalizes completed media to R2 with Supabase metadata. Unverified image/video/voice generators remain blocked rather than inferred active.
