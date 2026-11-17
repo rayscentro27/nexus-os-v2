@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -27,7 +27,6 @@ export const UpgradeControlPage: React.FC = () => {
   } = useNexus();
 
   const upgradeCandidates: NexusUpgradeCandidate[] = [];
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [selectedCandId, setSelectedCandId] = useState<string>(
     upgradeCandidates[0]?.id || ''
   );
@@ -38,21 +37,12 @@ export const UpgradeControlPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const filteredCandidates = useMemo(() => {
-    return upgradeCandidates.filter(c => {
-      if (filterStatus !== 'ALL' && c.status !== filterStatus) return false;
-      return true;
-    });
-  }, [upgradeCandidates, filterStatus]);
+  const filteredCandidates = upgradeCandidates;
 
   const activeCand: NexusUpgradeCandidate | undefined =
     upgradeCandidates.find(c => c.id === selectedCandId) ||
     filteredCandidates[0] ||
     upgradeCandidates[0];
-
-  const humanReviewCount = upgradeCandidates.filter(c => c.status === 'HUMAN_REVIEW').length;
-  const certifiedCount = upgradeCandidates.filter(c => c.status === 'CERTIFIED').length;
-  const rejectedCount = upgradeCandidates.filter(c => c.status === 'REJECTED').length;
 
   const linkedApproval = activeCand?.linkedApprovalId
     ? approvals.find(a => a.id === activeCand.linkedApprovalId)
@@ -182,27 +172,7 @@ export const UpgradeControlPage: React.FC = () => {
               </h2>
             </div>
 
-            <div className="flex items-center gap-1 text-xs font-semibold">
-              {[
-                { id: 'ALL', label: `All (${upgradeCandidates.length})` },
-                { id: 'HUMAN_REVIEW', label: `Human Review (${humanReviewCount})` },
-                { id: 'CERTIFIED', label: `Certified (${certifiedCount})` },
-                { id: 'REJECTED', label: `Rejected (${rejectedCount})` },
-              ].map(btn => (
-                <button
-                  key={btn.id}
-                  type="button"
-                  onClick={() => setFilterStatus(btn.id)}
-                  className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                    filterStatus === btn.id
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {btn.label}
-                </button>
-              ))}
-            </div>
+            <span className="text-xs font-semibold text-slate-500">Status data not connected</span>
           </div>
 
           <div className="divide-y divide-slate-100">

@@ -30,7 +30,6 @@ export const DevelopmentLabsPage: React.FC = () => {
 
   const labExperiments: NexusLabExperiment[] = [];
   const [filterEnv, setFilterEnv] = useState<string>('ALL');
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedExpId, setSelectedExpId] = useState<string>(
     labExperiments[0]?.id || ''
@@ -45,7 +44,6 @@ export const DevelopmentLabsPage: React.FC = () => {
   const filteredExperiments = useMemo(() => {
     return labExperiments.filter(exp => {
       if (filterEnv !== 'ALL' && exp.environment !== filterEnv) return false;
-      if (filterStatus !== 'ALL' && exp.status !== filterStatus) return false;
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         return (
@@ -57,19 +55,12 @@ export const DevelopmentLabsPage: React.FC = () => {
       }
       return true;
     });
-  }, [labExperiments, filterEnv, filterStatus, searchTerm]);
+  }, [labExperiments, filterEnv, searchTerm]);
 
   const activeExp: NexusLabExperiment | undefined =
     labExperiments.find(e => e.id === selectedExpId) ||
     filteredExperiments[0] ||
     labExperiments[0];
-
-  const validatedCount = labExperiments.filter(e => e.status === 'VALIDATED').length;
-  const runningCount = labExperiments.filter(e => e.status === 'RUNNING').length;
-  const blockedCount = labExperiments.filter(e => e.status === 'BLOCKED').length;
-  const promotedCount = labExperiments.filter(
-    e => e.status === 'PROMOTED_TO_UPGRADE_CONTROL'
-  ).length;
 
   const linkedProject = activeExp?.linkedProjectId
     ? projects.find(p => p.id === activeExp.linkedProjectId)
@@ -231,16 +222,8 @@ export const DevelopmentLabsPage: React.FC = () => {
                 <option value="ISOLATED_SANDBOX">Isolated Sandbox</option>
                 <option value="ORACLE_EVAL">Oracle Eval</option>
               </select>
-              <select
-                value={filterStatus}
-                onChange={e => setFilterStatus(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium"
-              >
-                <option value="ALL">All ({labExperiments.length})</option>
-                <option value="VALIDATED">Validated ({validatedCount})</option>
-                <option value="RUNNING">Running ({runningCount})</option>
-                <option value="BLOCKED">Blocked ({blockedCount})</option>
-                <option value="PROMOTED_TO_UPGRADE_CONTROL">Promoted ({promotedCount})</option>
+              <select disabled value="NOT_CONNECTED" className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 text-xs font-medium cursor-not-allowed">
+                <option value="NOT_CONNECTED">Status data not connected</option>
               </select>
             </div>
           </div>
