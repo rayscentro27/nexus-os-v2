@@ -1109,3 +1109,230 @@
 .rr-promotion-package-preview code {
   color: #38bdf8;
 }
+
+/* Match the surrounding Nexus Admin light theme while keeping the current layout. */
+.research-room-workspace {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+.rr-sidebar {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.rr-sidebar-header h3,
+.rr-main-title-block h2,
+.rr-room-item-title,
+.rr-source-pill-title,
+.rr-web-title,
+.rr-compare-room-title,
+.rr-compare-card h5 {
+  color: #1e293b;
+}
+
+.rr-search-box,
+.rr-room-item,
+.rr-source-pill-card,
+.rr-web-results-box,
+.rr-web-result-card,
+.rr-compare-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.rr-search-box,
+.rr-room-item-meta,
+.rr-domain-tag,
+.rr-empty-sources-banner,
+.rr-threads-label,
+.rr-web-snippet,
+.rr-compare-stat,
+.rr-compare-findings,
+.rr-promotion-package-preview {
+  color: #64748b;
+}
+
+.rr-search-box input,
+.rr-chat-composer input,
+.rr-form-group input,
+.rr-form-group select,
+.rr-form-group textarea {
+  color: #1e293b;
+}
+
+.rr-sidebar select {
+  color: #334155;
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.rr-room-item.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.08);
+}
+
+.rr-status-pill.active {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.rr-status-pill.promoted {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-color: #e9d5ff;
+}
+
+.rr-status-pill.archived {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.rr-main-header,
+.rr-threads-bar {
+  border-color: #e2e8f0;
+}
+
+.rr-score-display,
+.rr-sources-section,
+.rr-composer-container {
+  background: #ffffff;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.rr-score-display strong,
+.rr-sources-title,
+.rr-source-index-num,
+.rr-mode-label {
+  color: #2563eb;
+}
+
+.rr-btn {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.rr-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.rr-btn-promote {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.rr-btn-promote:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.rr-source-pill-card:hover {
+  background: #f8fafc;
+  border-color: #93c5fd;
+}
+
+.rr-chat-msg.ray {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.rr-chat-msg.alpha,
+.rr-chat-msg.system {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.rr-chat-msg.system {
+  border-left: 3px solid #94a3b8;
+}
+
+.rr-chat-msg.ray .rr-chat-msg-header,
+.rr-chat-msg.alpha .rr-chat-msg-header,
+.rr-chat-msg.system .rr-chat-msg-header,
+.rr-chat-msg.nova .rr-chat-msg-header {
+  color: #475569;
+}
+
+.rr-chat-msg-content {
+  color: #1e293b;
+}
+
+.rr-mode-btn {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+.rr-mode-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.rr-mode-btn.active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.rr-mode-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rr-chat-composer input::placeholder {
+  color: #94a3b8;
+}
+
+.rr-modal-backdrop {
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.rr-modal {
+  background: #ffffff;
+  color: #334155;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
+}
+
+.rr-modal-header-row h3 {
+  color: #1e293b;
+}
+
+.rr-btn-icon-close {
+  color: #64748b;
+}
+
+.rr-btn-icon-close:hover {
+  color: #1e293b;
+}
+
+.rr-form-group label {
+  color: #475569;
+}
+
+.rr-form-group input,
+.rr-form-group select,
+.rr-form-group textarea,
+.rr-citation-excerpt-box {
+  background: #ffffff;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+.rr-citation-excerpt-box p,
+.rr-source-text-viewport {
+  color: #334155;
+}
+
+.rr-promotion-package-preview {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
