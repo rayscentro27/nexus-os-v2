@@ -82,6 +82,26 @@ def test_dispatch_persists_failure_as_dependency_without_invoking_worker(tmp_pat
     assert stored["status"] == "WAITING_DEPENDENCY"
 
 
+def test_dispatch_resolves_model_once_and_passes_authorized_route_to_handler(tmp_path):
+    store = WorkflowStateStore(DurableJobStore(tmp_path / "model-route.sqlite3"))
+    calls = []
+    packets = []
+    def resolver(**kwargs):
+        calls.append(kwargs)
+        return {"status": "AVAILABLE", "profile_id": kwargs["profile_id"]}
+    def handler(packet):
+        packets.append(packet)
+        return {"status": "COMPLETE", "result": "bounded-test"}
+    controller = WorkflowController(store, runtime_health={"ORACLE_NOVA_HERMES": "HEALTHY"},
+                                    handlers={"NOVA_COORDINATOR": handler}, model_resolver=resolver)
+    workflow = controller.create(objective="Prepare a draft GoClear campaign", owner="RAY", created_by="RAY")
+    result = controller.dispatch(workflow, "OBJECTIVE_INTAKE")
+    assert result["step_status"] == "COMPLETE"
+    assert len(calls) == 1
+    assert packets[0]["authorization"]["model_profile_status"] == "AVAILABLE"
+    assert packets[0]["authorization"]["environment_id"] == "ORACLE_NOVA_HERMES"
+
+
 def test_dependency_requires_verified_resolution_before_resume(tmp_path):
     store = WorkflowStateStore(DurableJobStore(tmp_path / "jobs.sqlite3"))
     controller = WorkflowController(store)
@@ -100,6 +120,16 @@ def test_context_packet_is_bounded_and_has_no_transcript_field():
     assert "transcript" not in packet
     assert packet.get("context_truncated") is True
     assert packet["workflow_id"] == workflow["workflow_id"]
+
+
+def test_ai_sensitive_values_are_redacted_before_context_creation():
+    from scripts.nexus_agent_platform.ai_sensitive_data import redact_ai_context
+    safe = redact_ai_context({"full_ssn": "123-45-6789", "ein": "12-3456789",
+                              "auth_cookie": "session-cookie", "note": "password=plain-secret"})
+    assert "123-45-6789" not in str(safe)
+    assert "12-3456789" not in str(safe)
+    assert "session-cookie" not in str(safe)
+    assert "plain-secret" not in str(safe)
 
 
 def test_cron_idle_makes_zero_model_calls():

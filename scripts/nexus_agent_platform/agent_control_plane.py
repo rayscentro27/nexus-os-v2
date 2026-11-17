@@ -195,7 +195,8 @@ def route_bot_environment(*, agent_id: str, bot_id: str, runtime_health: dict[st
             row["health"] = runtime_health[row["environment_id"]]
     choice = select_environment(allowed=bot.get("allowed_execution_environments", []),
         preferred=bot.get("preferred_execution_environments", []),
-        fallbacks=bot.get("fallback_execution_environments", []), registry=candidates)
+        fallbacks=bot.get("fallback_execution_environments", []), registry=candidates,
+        runtime_health=runtime_health)
     if choice.get("status") == "SELECTED":
         authorize(agent_id=agent_id, bot_id=bot_id, environment_id=choice["environment_id"], runtime_health=runtime_health)
     return choice

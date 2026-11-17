@@ -75,6 +75,8 @@ def context_packet(workflow: dict[str, Any], step: dict[str, Any], *, relevant_f
         "constraints": load_definition(workflow["workflow_type"]).get("governance", {}),
         "approval_state": workflow.get("approval_state"), "recent_handoff": copy.deepcopy(workflow.get("handoffs", [])[-1:]),
         "success_criteria": workflow.get("success_criteria", [])[:max_items]}
+    from scripts.nexus_agent_platform.ai_sensitive_data import redact_ai_context
+    packet = redact_ai_context(packet)
     if len(json.dumps(packet, separators=(",", ":"), default=str)) > max_chars:
         packet.update(relevant_facts=[], evidence=[], recent_handoff=[], context_truncated=True)
     return packet
@@ -267,7 +269,9 @@ class WorkflowController:
         profile = self.model_resolver(profile_id=step["model_profile"], agent_id=step["owner"], bot_id=step["bot_id"])
         if profile.get("status") not in {"AVAILABLE", "NO_MODEL"}:
             raise ac.AuthorizationDenied("CAPABILITY_UNAVAILABLE")
-        return {"environment_id": env, "model_profile_status": profile["status"], "authorization": "AUTHORIZED"}
+        return {"environment_id": env, "model_profile_status": profile["status"],
+            "authorization": "AUTHORIZED", "agent_id": step["owner"], "bot_id": step["bot_id"],
+            "skill_id": step["skill_id"], "model_profile": step["model_profile"]}
 
     def dispatch(self, workflow: dict[str, Any], step_id: str) -> dict[str, Any]:
         step = next((s for s in workflow["steps"] if s["step_id"] == step_id), None)
@@ -289,7 +293,9 @@ class WorkflowController:
             return self.record_result(workflow, step, {"status": "CAPABILITY_UNAVAILABLE",
                 "error_code": "WORKER_HANDLER_NOT_REGISTERED", "worker_invoked": False, "authorization": authorization})
         try:
-            result = handler(context_packet(workflow, step))
+            packet = context_packet(workflow, step)
+            packet["authorization"] = authorization
+            result = handler(packet)
         except Exception as exc:
             result = {"status": "RETRY", "error_code": type(exc).__name__, "partial_output": None}
         return self.record_result(workflow, step, result)

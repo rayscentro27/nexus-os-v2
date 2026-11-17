@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from scripts.nexus_agent_platform import workflow_runtime_health as health
-from scripts.nexus_agent_platform.agent_control_plane import AuthorizationDenied
+from scripts.nexus_agent_platform.agent_control_plane import AuthorizationDenied, route_bot_environment
 from scripts.nexus_agent_platform.durable_jobs import DurableJobStore
 from scripts.nexus_agent_platform.workflow_fabric import WorkflowController, WorkflowStateStore, new_workflow
 
@@ -44,3 +44,10 @@ def test_controller_rejects_stale_health_observation():
     assert controller.runtime_health == {}
     with pytest.raises(AuthorizationDenied, match="CAPABILITY_UNAVAILABLE"):
         controller.authorize_step(workflow, step)
+
+
+def test_environment_router_uses_fresh_runtime_health():
+    result = route_bot_environment(agent_id="NOVA", bot_id="NOVA_COORDINATOR",
+                                   runtime_health={"ORACLE_NOVA_HERMES": "HEALTHY"})
+    assert result == {"status": "SELECTED", "environment_id": "ORACLE_NOVA_HERMES",
+                      "selection_class": "PREFERRED"}

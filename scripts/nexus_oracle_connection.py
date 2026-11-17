@@ -129,6 +129,19 @@ SAFE_COMMANDS = {
     ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "skills", "list"),
     ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "--help"),
     ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "list"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "create", "--help"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "remove", "--help"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "run", "--help"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "list", "--help"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "-p", "nova_nexus", "cron", "list", "--all"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "-p", "nova_nexus", "cron", "runs", "--limit", "10"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "runs", "--help"),
+    # One bounded, no-tool, no-side-effect skill execution authorized for the
+    # R9F runtime canary. This exact query cannot be generalized by callers.
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes",
+     "-p", "nova_nexus", "chat", "-q",
+     "Use the installed humanizer skill to rewrite this sentence while keeping its meaning: 'This report lists three verified dates.' Return only the rewritten sentence. Do not call tools or access the network.",
+     "--oneshot", "-s", "humanizer", "--max-turns", "1", "--run-budget", "90", "--source", "tool", "-Q"),
 }
 R50_VERIFY_SCRIPT = f'''import hashlib,json
 from pathlib import Path
@@ -745,6 +758,75 @@ def execute_safe(connection: dict[str, Any], command: str,
                   text=True, timeout=18, check=False)
 
 
+HERMES_CRON_CANARY_SCRIPT = r'''import hashlib,json,re,subprocess,time
+cli=["/opt/hermes/.venv/bin/hermes","-p","nova_nexus","cron"]
+name="nexus-r9f-one-shot-canary-20261117"
+prompt="Return exactly HERMES_CRON_CANARY_OK. Do not call tools, access the network, or modify files."
+def run(args,timeout=120): return subprocess.run(args,capture_output=True,text=True,timeout=timeout,check=False)
+def named_ids():
+ listing=run([*cli,"list","--all"],30); lines=listing.stdout.splitlines(); found=[]
+ for index,line in enumerate(lines):
+  if "Name:" in line and name in line and index:
+   candidate=lines[index-1].strip().split()[0]
+   if re.fullmatch(r"[a-f0-9]{12,64}",candidate): found.append(candidate)
+ return found
+for old_id in named_ids(): run([*cli,"remove",old_id],30)
+created=run([*cli,"create","--name",name,"--deliver","local","--repeat","1","1h",prompt])
+if created.returncode:
+ print(json.dumps({"create":False,"execute":False,"receipt":False,"cleanup":True,"error":"CREATE_FAILED"})); raise SystemExit(0)
+job_id=""
+found=named_ids()
+if found: job_id=found[-1]
+if not job_id:
+ cleanup=all(run([*cli,"remove",old_id],30).returncode==0 for old_id in named_ids())
+ print(json.dumps({"create":True,"execute":False,"receipt":False,"cleanup":cleanup,"error":"CREATED_JOB_ID_UNRESOLVED"})); raise SystemExit(0)
+triggered=None; status="UNKNOWN"; history=""; removed=None
+try:
+ triggered=run([*cli,"run",job_id],120)
+ for _ in range(24):
+  recent=run([*cli,"runs",job_id,"--limit","5"],20)
+  history=recent.stdout
+  upper=history.upper()
+  if "HERMES_CRON_CANARY_OK" in history and any(x in upper for x in ("SUCCESS","COMPLETED","DONE")):
+   status="COMPLETED"; break
+  if "FAILED" in upper or "ERROR" in upper:
+   status="FAILED"; break
+  time.sleep(5)
+finally:
+ removed=run([*cli,"remove",job_id],30)
+done=bool(triggered is not None and triggered.returncode==0 and status=="COMPLETED")
+print(json.dumps({"create":True,"execute":done,"receipt":bool(history),"execution_status":status,
+ "cleanup":removed.returncode==0,"job_id":job_id if done else None,
+ "receipt_id":"hermes-cron-canary-"+hashlib.sha256((job_id+history).encode()).hexdigest()[:16] if history else None,
+ "error":None if done and removed.returncode==0 else "CRON_CANARY_INCOMPLETE"}))'''
+
+NOVA_GO_CLEAR_INTAKE_COMMAND = (
+    "podman exec nexus-hermes-0225 /opt/hermes/.venv/bin/hermes -p nova_nexus chat -q "
+    "'Prepare a bounded internal objective-intake summary for the existing GoClear Business Funding Launch. "
+    "Use only the supplied objective: prepare an evidence-grounded, draft-only campaign using available GoClear context; "
+    "do not publish, spend, contact customers, make funding guarantees, or claim unsupported demand. "
+    "Return concise JSON with objective, constraints, success_criteria, and next_step. Do not call tools.' "
+    "--oneshot --max-turns 1 --run-budget 90 --source tool -Q"
+)
+SAFE_COMMANDS.add(tuple(shlex.split(NOVA_GO_CLEAR_INTAKE_COMMAND)))
+
+
+def execute_hermes_cron_canary(connection: dict[str, Any],
+                               runner: Callable[..., Any] = subprocess.run) -> dict[str, Any]:
+    """Run exactly one local-delivery Hermes canary and always remove its schedule."""
+    verify_connection(connection, runner=runner)
+    command = [*_ssh_base(connection), shlex.join(
+        ["podman", "exec", HERMES_CONTAINER, "python3", "-c", HERMES_CRON_CANARY_SCRIPT])]
+    result = runner(command, capture_output=True, text=True, timeout=240, check=False)
+    if result.returncode:
+        raise AuthorityError("HERMES_CRON_CANARY_TRANSPORT_FAILED")
+    try:
+        value = json.loads(result.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError) as exc:
+        raise AuthorityError("HERMES_CRON_CANARY_RESULT_INVALID") from exc
+    return value
+
+
 def verify_r50_release(connection: dict[str, Any],
                         runner: Callable[..., Any] = subprocess.run) -> dict[str, Any]:
     """Verify the pinned immutable R50 release without reading unrelated paths."""
@@ -915,6 +997,10 @@ def main(argv: list[str] | None = None) -> int:
                          help="Read recent Nova mission denial codes without returning message content")
     actions.add_argument("--concurrency-inventory", action="store_true",
                          help="Read active Codex governor reservations and scoped limits without mutation")
+    actions.add_argument("--hermes-cron-canary", action="store_true",
+                         help="Create, run, receipt, and remove one fixed no-side-effect Hermes cron canary")
+    actions.add_argument("--nova-goclear-intake", action="store_true",
+                         help="Run the fixed bounded GoClear objective-intake request on Oracle Hermes")
     actions.add_argument("--release-expired-reservation", metavar="RESERVATION_ID",
                          help="Release one exact OPENAI_CODEX Nova reservation only after proving its TTL expired")
     actions.add_argument("--recovery", action="store_true",
@@ -1071,6 +1157,15 @@ def main(argv: list[str] | None = None) -> int:
             print("REQUEST_CONTENT_PRINTED=NO")
             print("CREDENTIAL_VALUES_PRINTED=NO")
             return 0
+        if args.hermes_cron_canary:
+            result = execute_hermes_cron_canary(record["current"])
+            print("HERMES_CRON_CANARY=" + json.dumps(result, separators=(",", ":")))
+            return 0 if all(result.get(key) is True for key in ("create", "execute", "receipt", "cleanup")) else 1
+        if args.nova_goclear_intake:
+            completed = execute_safe(record["current"], NOVA_GO_CLEAR_INTAKE_COMMAND)
+            print("NOVA_GOCLEAR_INTAKE=" + ("PASS" if completed.returncode == 0 else "FAIL"))
+            print("NOVA_GOCLEAR_INTAKE_RESULT=" + (completed.stdout or "")[-4000:])
+            return 0 if completed.returncode == 0 else 1
         if args.release_expired_reservation:
             if not re.fullmatch(r"reserve_[0-9a-f]{32}", args.release_expired_reservation):
                 raise AuthorityError("INVALID_RESERVATION_ID_FORMAT")
