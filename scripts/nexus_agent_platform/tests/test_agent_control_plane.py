@@ -89,3 +89,9 @@ def test_per_bot_model_call_and_resource_limits_are_enforced():
     reasoning=cp._identities()['agents']['ALPHA_DEEP_RESEARCH']
     with pytest.raises(cp.AuthorizationDenied, match='RESOURCE_BUDGET_EXCEEDED'):
         cp.enforce_bot_budget(bot=reasoning,model_calls=4,input_tokens=1,output_tokens=1,cost_usd=.01,elapsed_seconds=1)
+
+
+def test_alpha_deep_research_is_owned_by_alpha_not_research_lead():
+    assert cp.authorize(agent_id='ALPHA',bot_id='ALPHA_DEEP_RESEARCH',skill_id='research.deep_analysis',model_profile='RESEARCH_DEEP')['status']=='AUTHORIZED'
+    with pytest.raises(cp.AuthorizationDenied,match='BOT_NOT_REGISTERED_FOR_AGENT'):
+        cp.authorize(agent_id='RESEARCH_LEAD',bot_id='ALPHA_DEEP_RESEARCH')
