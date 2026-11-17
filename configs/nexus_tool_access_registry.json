@@ -538,6 +538,58 @@
         "live/funded orders",
         "live account use"
       ]
+    },
+    {
+      "tool_name": "meta_devtools_mcp",
+      "access_level": "external_official_developer",
+      "connected_nexus_engines": [
+        "distribution",
+        "credential_control_plane"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "devtools_app_list",
+        "devtools_app",
+        "devtools_app_review",
+        "devtools_app_use_cases",
+        "devtools_compliance",
+        "devtools_api_usage",
+        "devtools_api_changelog",
+        "devtools_discovery",
+        "devtools_webhook_list"
+      ],
+      "blocked_commands": [
+        "devtools_app_create",
+        "devtools_business_create"
+      ],
+      "approval_required_commands": [
+        "devtools_app_use_cases_manage",
+        "devtools_app_business_manage",
+        "devtools_webhook_manage",
+        "devtools_webhook_test"
+      ],
+      "endpoint": "https://mcp.facebook.com/devtools",
+      "routing_policy": {
+        "task_class": "meta_developer_task",
+        "preference_order": [
+          "meta_devtools_mcp",
+          "official_meta_oauth_consent_flow",
+          "manual_graph_api_explorer_instructions"
+        ],
+        "flow": [
+          "official Meta MCP available? -> YES: use MCP",
+          "owner consent needed? -> pause at the legitimate Meta OAuth screen for Ray",
+          "resume after consent",
+          "persist verified result through canonical Nexus registries/credential control plane"
+        ],
+        "never": [
+          "create a new Meta app without explicit owner instruction",
+          "bypass or self-grant owner consent",
+          "place access tokens in prompts, logs, reports, or git",
+          "treat MCP auth as a social publishing credential"
+        ],
+        "owner_consent_helper": "scripts/distribution/meta_holiday_owner_authorize.py"
+      }
     }
   ]
 }
