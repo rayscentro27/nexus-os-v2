@@ -1,0 +1,88 @@
+version: 1
+max_staged_file_bytes: 10485760
+max_commit_files: 80
+max_commit_subsystems: 1
+mass_delete_limit: 5
+blocked_commit_classes:
+  - RUNTIME
+  - DATABASE
+  - QUEUE
+  - LOG
+  - CERTIFICATION
+  - CACHE
+  - GENERATED
+  - RESEARCH_DATA
+  - SECRET_LOCAL
+  - ARCHIVE
+path_classes:
+  - name: SECRET_LOCAL
+    patterns: [".env", ".env.*", "**/.env", "**/.env.*", "**/.secrets/**", "**/secrets/**", "**/*.pem", "**/*.key"]
+  - name: DATABASE
+    patterns: ["**/*.db", "**/*.sqlite", "**/*.sqlite3", "**/*.sqlite-wal", "**/*.sqlite-shm"]
+  - name: QUEUE
+    patterns: ["**/queue/**", "**/queues/**", "data/**/queue*"]
+  - name: LOG
+    patterns: ["**/*.log", "**/logs/**", "reports/runtime/**"]
+  - name: RUNTIME
+    patterns: ["data/runtime/**", "**/runtime_state/**", "**/runtime-state/**"]
+  - name: RESEARCH_DATA
+    patterns: ["data/research/**", "data/research_rooms/**", "data/research_room_shadow/**", "artifacts/research/**"]
+  - name: ARCHIVE
+    patterns: ["archive/**", "**/*.tar", "**/*.tar.gz", "**/*.zip"]
+  - name: CERTIFICATION
+    patterns: ["reports/certification/**", "certification/**"]
+  - name: CACHE
+    patterns: ["**/__pycache__/**", "**/*.pyc", "**/.pytest_cache/**", "**/.mypy_cache/**", "**/.ruff_cache/**", "**/node_modules/**", "**/.next/**"]
+  - name: GENERATED
+    patterns: ["**/generated/**", "**/generated.*", "dist/**", "build/**", "**/*.min.js", "**/*.map"]
+  - name: SCHEMA_MIGRATION
+    patterns: ["supabase/migrations/**", "**/schema.sql"]
+  - name: TEST
+    patterns: ["**/test_*.py", "**/*_test.py", "**/*.test.*", "**/*.spec.*", "tests/**", "**/tests/**"]
+  - name: EXPERIMENTAL
+    patterns: ["**/*canary*", "**/*shadow*", "**/*experimental*", "**/*prototype*", "scripts/canaries/**"]
+  - name: REPORT
+    patterns: ["reports/**", "docs/**"]
+  - name: CONFIGURATION
+    patterns: ["configs/**", "config/**", "launchd/**", "netlify.toml", ".github/**", "**/*.yaml", "**/*.yml", "**/*.toml", "**/*.plist", "**/*.json"]
+  - name: CANONICAL_SOURCE
+    patterns: ["**/*.py", "**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.tsx", "**/*.jsx", "**/*.css", "**/*.html", "**/*.sh", "**/*.sql", "**/*.md"]
+subsystem_roots:
+  scripts/api: API
+  scripts/nexus_agent_platform/opportunities: OPPORTUNITIES
+  scripts/nexus_agent_platform/systems: SYSTEMS
+  scripts/nexus_agent_platform/trading: TRADING
+  scripts/nexus_agent_platform/creative: CREATIVE
+  scripts/nexus_agent_platform/marketing: MARKETING
+  scripts/nexus_agent_platform/commerce: COMMERCE
+  scripts/nexus_agent_platform/credentials: CREDENTIALS_PROVIDER_CONTROL
+  scripts/nexus_agent_platform/providers: CREDENTIALS_PROVIDER_CONTROL
+  scripts/nexus_agent_platform/research_room: RESEARCH_ROOM
+  scripts/nexus_agent_platform/research: RESEARCH
+  scripts/nexus_agent_platform/nova: NOVA
+  scripts/nova: NOVA
+  scripts/google_mcp_transport: GOOGLE_WORKSPACE
+  scripts/ops: OPERATIONS
+  scripts/trading: TRADING
+  scripts/creative: CREATIVE
+  scripts/marketing: MARKETING
+  scripts/commerce: COMMERCE
+  services/nexus_mcp: MCP
+  services: PLATFORM
+  supabase: SUPABASE_SCHEMA
+  src: ADMIN
+  admin-app: ADMIN
+  tests: TESTS
+  configs: CONFIGURATION
+  launchd: CONFIGURATION
+  docs: DOCUMENTATION
+  reports: RECOVERY_REPORTS
+  data: LOCAL_DATA
+  archive: ARCHIVE
+subsystem_overrides:
+  configs/nexus_repository_policy.yaml: REPOSITORY_GOVERNOR
+  scripts/ops/nexus_safe_git.py: REPOSITORY_GOVERNOR
+  .githooks/pre-commit: REPOSITORY_GOVERNOR
+  docs/agents/NEXUS_REPOSITORY_GOVERNOR_CONTRACT.md: REPOSITORY_GOVERNOR
+  docs/architecture/NEXUS_RUNTIME_PATH_SEPARATION_R1.md: REPOSITORY_GOVERNOR
+  tests/ops/test_nexus_safe_git.py: REPOSITORY_GOVERNOR
