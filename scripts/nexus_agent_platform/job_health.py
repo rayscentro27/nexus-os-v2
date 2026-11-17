@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 from nexus_agent_platform.durable_jobs import ROOT, default_store
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
 
 
 def _launchd_status(label: str) -> str:
@@ -27,7 +28,23 @@ def _launchd_status(label: str) -> str:
         return "UNKNOWN"
 
 def snapshot() -> dict:
-    health = default_store().health()
+    # Reuse the existing bounded health read to capture U-state incidents for
+    # MCP/workers. The launch wrapper separately watches the dispatcher child,
+    # which cannot reliably observe its own blocked state.
+    store = default_store()
+    try:
+        from nexus_agent_platform.stability_supervisor import monitor_uninterruptible_processes, route_recovery_event
+        incidents = monitor_uninterruptible_processes(root=ROOT)
+        routed = []
+        for incident in incidents:
+            try:
+                routed.append(route_recovery_event(incident["event"], artifact_ref=incident["artifact"]))
+            except Exception as exc:
+                routed.append({"event_id": incident["event"]["event_id"], "routing_error": type(exc).__name__})
+    except Exception as exc:
+        incidents = []
+        routed = [{"monitor_error": type(exc).__name__}]
+    health = store.health()
     counts = health.get("counts", {})
     try:
         from nexus_agent_platform.resource_spend_governor import default_store as governor_store
@@ -43,7 +60,7 @@ def snapshot() -> dict:
         "runtime_mode": "DURABLE_JOB_DISPATCHER",
         "old_continuous_kernel": "DISABLED",
         "scheduler": _launchd_status("com.nexus.scheduler"),
-        "dispatcher": _launchd_status("com.nexus.dispatcher"),
+        "dispatcher": _launchd_status("com.nexus.durable-dispatcher"),
         "ready": counts.get("READY", 0), "running": counts.get("RUNNING", 0),
         "blocked": counts.get("BLOCKED", 0), "failed_retryable": counts.get("FAILED_RETRYABLE", 0),
         "expired_leases": health.get("expired_leases", 0),
@@ -54,9 +71,12 @@ def snapshot() -> dict:
         "recent_failures": counts.get("FAILED_RETRYABLE", 0),
         "egress_incidents": int(egress.get("large_control_plane_response_count", 0)) + int(egress.get("http_522_count", 0)),
         "resource_spend_governor": governor,
+        "uninterruptible_io_incidents": [item["event"]["event_id"] for item in incidents],
+        "stability_supervisor_routes": routed,
     }
 
-def persist_snapshot(path: Path = ROOT / "data/runtime/durable_job_health_latest.json") -> dict:
+def persist_snapshot(path: Path | None = None) -> dict:
+    path=path or nexus_research_state_path("runtime", "durable_job_health_latest.json")
     value=snapshot(); path.parent.mkdir(parents=True,exist_ok=True)
     fd,tmp=tempfile.mkstemp(prefix="durable-job-health-",suffix=".tmp",dir=path.parent)
     try:

@@ -116,7 +116,13 @@ def _asset_base(brief: Dict[str, Any], asset_type: str, payload: Dict[str, Any],
 
 
 def build_copy_asset(brief: Dict[str, Any]) -> Dict[str, Any]:
-    payload = {"headline_options": ["Funding readiness starts before you apply.", "Build a clearer readiness path."], "body": "Organize your business profile, documents, and credit readiness before you apply. Use a structured review to see what is ready and what still needs attention.", "cta": brief["primary_cta"], "disclaimer": "Education and readiness only. No guaranteed funding or approval.", "claims_requiring_source": [], "internal_only": True}
+    # Copy must follow the approved campaign brief. The previous fixed funding
+    # language leaked into unrelated campaigns such as operational data
+    # readiness. Keep defaults generic and explicitly internal.
+    headline = str(brief.get("hook") or brief.get("message") or brief.get("campaign_objective") or "A clearer next step")[:180]
+    body = str(brief.get("message") or brief.get("problem") or brief.get("campaign_objective") or "Review the supplied project brief.")[:1200]
+    disclaimer = str(brief.get("disclaimer") or "Internal concept only. No customer outcome is promised.")[:500]
+    payload = {"headline_options": [headline], "body": body, "cta": brief["primary_cta"], "disclaimer": disclaimer, "claims_requiring_source": list(brief.get("claims_requiring_source") or []), "internal_only": True}
     if brief.get("revision_feedback"):
         payload["revision_applied"] = str(brief["revision_feedback"])[:1000]
     asset = _asset_base(brief, "LANDING_PAGE_COPY", payload)
@@ -126,7 +132,22 @@ def build_copy_asset(brief: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def build_storyboard_asset(brief: Dict[str, Any]) -> Dict[str, Any]:
-    scenes = [{"name": "HOOK", "seconds": 1.5, "text": "Funding readiness starts before you apply."}, {"name": "PROBLEM", "seconds": 1.5, "text": "Know what to prepare first."}, {"name": "READINESS", "seconds": 3.0, "text": "Profile  •  Documents  •  Credit readiness"}, {"name": "CTA", "seconds": 1.0, "text": brief["primary_cta"]}, {"name": "DISCLAIMER", "seconds": 1.0, "text": "Education and readiness only. No guaranteed funding or approval."}]
+    # Keep storyboard content tied to the active brief. Fixed funding copy was
+    # appearing in unrelated campaigns and could create misleading artifacts.
+    hook = str(brief.get("hook") or brief.get("message") or brief.get("campaign_objective") or "A clearer next step")[:180]
+    problem = str(brief.get("problem") or brief.get("campaign_objective") or "Review the supplied project brief.")[:240]
+    supporting = brief.get("storyboard_points") or brief.get("creative_requirements") or []
+    if isinstance(supporting, str):
+        supporting = [supporting]
+    supporting = [str(item)[:180] for item in supporting[:3]] or [problem]
+    disclaimer = str(brief.get("disclaimer") or "Internal concept only. No customer outcome is promised.")[:300]
+    scenes = [
+        {"name": "HOOK", "seconds": 1.5, "text": hook},
+        {"name": "PROBLEM", "seconds": 1.5, "text": problem},
+        {"name": "SUPPORTING_POINTS", "seconds": 3.0, "text": " • ".join(supporting)},
+        {"name": "CTA", "seconds": 1.0, "text": brief["primary_cta"]},
+        {"name": "DISCLAIMER", "seconds": 1.0, "text": disclaimer},
+    ]
     return _asset_base(brief, "VIDEO_STORYBOARD", {"template_id": REMOTION_TEMPLATE, "duration_seconds": 8, "fps": 30, "width": 1080, "height": 1080, "scenes": scenes, "audio": "silent", "internal_only": True})
 
 
@@ -141,6 +162,49 @@ def persist_creative_asset(asset: Dict[str, Any]) -> Dict[str, Any]:
     append_record("creative_assets", asset)
     emit_audit_event({"event": "creative_asset_created", "asset_id": asset["asset_id"], "creative_brief_id": asset["creative_brief_id"], "asset_type": asset["asset_type"], "external_action_performed": False})
     return {**asset, "persistence": "CREATED"}
+
+
+def create_internal_logo_asset(name: str, brief_text: str, *, asset_id: str | None = None) -> Dict[str, Any]:
+    """Create and persist a disposable vector concept through Creative Studio.
+
+    This produces an actual SVG artifact and governed Creative asset record;
+    it never publishes the asset or contacts a paid image provider.
+    """
+    from html import escape
+    label = " ".join(str(name or "").split())[:64]
+    if not label:
+        raise ValueError("CREATIVE_ASSET_NAME_REQUIRED")
+    brief = build_creative_brief_from_growth({"growth_id": asset_id or new_id("growth"),
+        "topic": label + " logo concept", "objective": str(brief_text or "").strip()[:500],
+        "target_audience": "Internal review", "target_offer": "Internal concept",
+        "primary_cta": "Review concept", "evidence_refs": [f"internal-task:{asset_id or label}"],
+        "status": "INTERNAL_DRAFT"})
+    brief["title"] = f"{label} disposable logo concept"
+    brief["objective"] = str(brief_text or "").strip()[:500] or f"Create a logo concept for {label}."
+    brief["asset_types"] = ["SVG_LOGO_CONCEPT"]
+    brief = persist_creative_brief(brief)
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
+        '<rect width="1024" height="1024" rx="144" fill="#101a3a"/>'
+        '<path d="M512 154 842 344v336L512 870 182 680V344z" fill="none" stroke="#53b8ff" stroke-width="28"/>'
+        '<path d="m386 510 86 86 176-188" fill="none" stroke="#fff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>'
+        f'<text x="512" y="744" text-anchor="middle" font-family="Arial,sans-serif" font-size="54" font-weight="700" fill="#fff">{escape(label)}</text>'
+        '</svg>')
+    fingerprint = _hash({"brief": brief["brief_fingerprint"], "svg": svg})
+    asset = _asset_base(brief, "SVG_LOGO_CONCEPT", {"name": label, "svg": svg,
+        "internal_only": True, "external_distribution": "blocked"}, generator="nexus.creative.deterministic_svg")
+    asset["input_fingerprint"] = fingerprint
+    asset = persist_creative_asset(asset)
+    artifact_dir = Path(os.environ.get("NEXUS_CREATIVE_ARTIFACT_DIR", Path(__file__).resolve().parents[3] / "data/runtime/creative_assets"))
+    filename = re.sub(r"[^A-Za-z0-9_-]+", "_", str(asset["asset_id"])) + ".svg"
+    artifact_path = artifact_dir / filename
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = artifact_path.with_suffix(".svg.tmp")
+    temp_path.write_text(svg, encoding="utf-8")
+    os.replace(temp_path, artifact_path)
+    receipt = persist_creative_receipt({"asset_id": asset["asset_id"], "artifact_ref": str(artifact_path),
+        "artifact_sha256": hashlib.sha256(svg.encode()).hexdigest(), "mime_type": "image/svg+xml",
+        "read_only": False, "external_action_performed": False})
+    return {"asset": asset, "artifact_path": str(artifact_path), "receipt": receipt}
 
 
 def persist_creative_receipt(receipt: Dict[str, Any]) -> Dict[str, Any]:

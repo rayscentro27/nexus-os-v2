@@ -38,6 +38,9 @@ _CACHE_MAX_BYTES = 1_000_000
 _CACHE_ALLOWED_PREFIXES = ("template:", "settings:", "provider:", "environment:", "capability:", "scheduler:")
 _REQUEST_LOCAL = threading.local()
 _CLEANUP_SCOPE: ContextVar[dict | None] = ContextVar("nexus_worker_cleanup_scope", default=None)
+_MCP_READ_SCOPE: ContextVar[dict | None] = ContextVar("nexus_mcp_read_scope", default=None)
+MCP_READ_MAX_REQUESTS = 16
+MCP_READ_MAX_RESPONSE_BYTES = 1_000_000
 WORKER_CLEANUP_MAX_REQUESTS = 3
 WORKER_CLEANUP_MAX_RESPONSE_BYTES = 32 * 1024
 WORKER_CLEANUP_ALLOWED_SELECT = {
@@ -81,6 +84,34 @@ class LargeControlPlaneQueryBlocked(RuntimeError):
 
 class JobEgressBudgetExceeded(RuntimeError):
     """One bounded worker exceeded its job-scoped Supabase budget."""
+
+
+@contextmanager
+def mcp_read_egress_scope(request_id: str):
+    """Apply a small per-read cap when the bridge only has its ephemeral PID identity.
+
+    Durable job IDs keep their cumulative job budget. Nested reads share one
+    scope so helper calls cannot reset the allowance within a single MCP read.
+    """
+    current = _MCP_READ_SCOPE.get()
+    if current is not None:
+        yield current
+        return
+    safe_id = str(request_id or "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,160}", safe_id):
+        raise ValueError("MCP_READ_REQUEST_ID_INVALID")
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
+    if job_id and not job_id.startswith("feeder-process-"):
+        yield None
+        return
+    scope = {"request_id": safe_id, "max_requests": MCP_READ_MAX_REQUESTS,
+             "max_response_bytes": MCP_READ_MAX_RESPONSE_BYTES,
+             "requests": 0, "response_bytes": 0}
+    token = _MCP_READ_SCOPE.set(scope)
+    try:
+        yield scope
+    finally:
+        _MCP_READ_SCOPE.reset(token)
 
 
 @contextmanager
@@ -167,6 +198,17 @@ def _update_job_egress(*, method: str, path: str, response_bytes: int = 0, retri
                        request_id: str | None = None, rows: int = 0, status: int = 0,
                        body: object | None = None) -> str | None:
     job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
+    mcp_scope = _MCP_READ_SCOPE.get()
+    if mcp_scope is not None and (not job_id or job_id.startswith("feeder-process-")):
+        if preflight:
+            mcp_scope["requests"] += 1
+            if mcp_scope["requests"] > mcp_scope["max_requests"]:
+                raise JobEgressBudgetExceeded("MCP_READ_REQUEST_LIMIT")
+        else:
+            mcp_scope["response_bytes"] += max(0, int(response_bytes))
+            if mcp_scope["response_bytes"] > mcp_scope["max_response_bytes"]:
+                raise JobEgressBudgetExceeded("MCP_READ_RESPONSE_LIMIT")
+        return
     if not job_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for ch in job_id): return None
     JOB_EGRESS_DIR.mkdir(parents=True, exist_ok=True)
     target = JOB_EGRESS_DIR / f"{job_id}.json"
@@ -316,6 +358,9 @@ def response_read_limit() -> int | None:
     cleanup = _CLEANUP_SCOPE.get()
     if cleanup is not None:
         return max(0, WORKER_CLEANUP_MAX_RESPONSE_BYTES - int(cleanup.get("response_bytes", 0)))
+    mcp_scope = _MCP_READ_SCOPE.get()
+    if mcp_scope is not None:
+        return max(0, int(mcp_scope["max_response_bytes"]) - int(mcp_scope["response_bytes"]))
     job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
     if not job_id:
         return None

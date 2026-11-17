@@ -6,11 +6,21 @@ import platform
 import time
 import uuid
 import inspect
+import logging
+from contextvars import ContextVar
 from functools import wraps
 from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .resource_spend_governor import GovernanceDenied, default_store
+
+_ACTIVE_PROVIDER_SCOPES: ContextVar[tuple[tuple[str, str], ...]] = ContextVar(
+    "nexus_active_provider_scopes", default=())
+
+
+def provider_scope_active(provider: str, service: str) -> bool:
+    """Tell nested adapters when their enclosing operation is already governed."""
+    return (str(provider).upper(), str(service)) in _ACTIVE_PROVIDER_SCOPES.get()
 
 
 def execute(provider: str, service: str, action_type: str, estimate: dict[str, Any],
@@ -55,6 +65,8 @@ def execute(provider: str, service: str, action_type: str, estimate: dict[str, A
         raise
     actual: dict[str, Any] = {}
     state, failure = "FAILED_RETRYABLE", ["PROVIDER_ACTION_INTERRUPTED"]
+    active = _ACTIVE_PROVIDER_SCOPES.get()
+    scope_token = _ACTIVE_PROVIDER_SCOPES.set(active + ((provider.upper(), service),))
     try:
         result = operation()
         actual = actual_usage(result) if actual_usage else {k: v for k, v in estimate.items() if k not in {"billable", "budget_period"}}
@@ -73,8 +85,9 @@ def execute(provider: str, service: str, action_type: str, estimate: dict[str, A
         failure = [type(exc).__name__]
         raise
     finally:
+        _ACTIVE_PROVIDER_SCOPES.reset(scope_token)
         end = datetime.now(timezone.utc)
-        store.record_footprint({"project_id": project_id or os.environ.get("NEXUS_PROJECT_ID", "NEXUS"), "job_id": job_id,
+        footprint = {"project_id": project_id or os.environ.get("NEXUS_PROJECT_ID", "NEXUS"), "job_id": job_id,
             "correlation_id": correlation_id, "department": os.environ.get("NEXUS_DEPARTMENT"),
             "job_type": job_type, "provider": provider, "service": service,
             "action_type": action_type, "host": platform.node(), "environment": "production-off" if os.environ.get("NEXUS_DURABLE_JOB_ID") else "ad-hoc",
@@ -90,7 +103,15 @@ def execute(provider: str, service: str, action_type: str, estimate: dict[str, A
             "social_actions": int(provider == "SOCIAL_MEDIA_EXTERNAL_ACTIONS" and state == "COMPLETED"),
             "browser_actions": int(provider == "BROWSER_EXTERNAL_SERVICES" and state == "COMPLETED"),
             "external_action_refs": [external_ref(result)] if state == "COMPLETED" and external_ref and external_ref(result) else [],
-            "failure_codes": failure, "retry_count": 0, "final_state": state})
+            "failure_codes": failure, "retry_count": 0, "final_state": state}
+        try:
+            store.record_footprint(footprint)
+        except Exception as footprint_error:
+            # A reconciled provider response remains valid even if its optional
+            # diagnostic footprint cannot be written. Never let post-action
+            # telemetry erase a successful return or mask the provider error.
+            logging.getLogger(__name__).warning("provider footprint write failed (%s)",
+                type(footprint_error).__name__)
 
 
 async def execute_async(provider: str, service: str, action_type: str, estimate: dict[str, Any],
@@ -283,8 +304,51 @@ def execute_telegram_delivery(chat_id: Any, operation: Callable[[], Any], *,
                              external_ref: Callable[[Any], str | None] | None = None) -> Any:
     category = authorize_telegram_action(chat_id, action=action, workflow_authorized=workflow_authorized)
     jid = job_id or os.environ.get("NEXUS_DURABLE_JOB_ID")
-    return execute("TELEGRAM", "bot_delivery", category,
-        {"requests": 1, "operations": 1, "billable": False}, operation,
-        job_id=jid, job_type=job_type,
-        correlation_id=os.environ.get("NEXUS_CORRELATION_ID") or jid,
-        external_ref=external_ref)
+    # Telegram delivery may be an ordinary Nova reply with no enclosing durable
+    # job. Keep the generic provider executor's accounting identity without
+    # pretending that this delivery belongs to a Research/Nexus job.
+    delivery_identity = jid or f"telegram-delivery-{uuid.uuid4().hex}"
+    correlation_id = os.environ.get("NEXUS_CORRELATION_ID") or jid or delivery_identity
+    original_department = os.environ.get("NEXUS_DEPARTMENT")
+    if not original_department:
+        os.environ["NEXUS_DEPARTMENT"] = "NOVA"
+    # Nova's owner/status/error replies use one narrow policy. The policy is
+    # provisioned only after recipient authorization has resolved to Ray's
+    # allowlisted chat; it never enables generic Telegram or client delivery.
+    nova_owner_reply_types = {
+        "NOVA_TELEGRAM_OWNER_TURN", "NOVA_TELEGRAM_STATUS_REPLY",
+        "NOVA_TELEGRAM_FAILURE_NOTICE", "NOVA_TELEGRAM_DELIVERY",
+    }
+    if category == "RAY_NOTIFICATION" and job_type in nova_owner_reply_types:
+        job_type = "NOVA_TELEGRAM_DELIVERY"
+        store = default_store()
+        soft = {
+            "rate": {"requests": 6, "operations": 6, "window_seconds": 60},
+            "usage": {"requests": 60, "operations": 60},
+            "money": {"per_day": 0, "per_job": 0, "per_month": 0},
+        }
+        hard = {
+            "rate": {"requests": 12, "operations": 12, "window_seconds": 60},
+            "usage": {"requests": 200, "operations": 200},
+            "money": {"per_day": 0, "per_job": 0, "per_month": 0},
+        }
+        for period in ("DAILY", "MONTHLY"):
+            store.ensure_policy("TELEGRAM", "bot_delivery", "NOVA_TELEGRAM_DELIVERY", period,
+                autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+                soft_limits=soft, hard_limits=hard, concurrency_limit=1,
+                resource_creation_limit=0, state="NORMAL", approval_required=False)
+    # A retry of the same durable Telegram notice is a new bounded delivery
+    # attempt, not a duplicate replay of the prior provider reservation.
+    attempt = os.environ.get("NEXUS_JOB_ATTEMPT_COUNT", "1")
+    try:
+        return execute("TELEGRAM", "bot_delivery", category,
+            {"requests": 1, "operations": 1, "billable": False}, operation,
+            job_id=delivery_identity, job_type=job_type,
+            correlation_id=correlation_id,
+            purpose=f"telegram-delivery-attempt-{attempt}:{job_type}:{category}",
+            external_ref=external_ref)
+    finally:
+        if original_department is None:
+            os.environ.pop("NEXUS_DEPARTMENT", None)
+        else:
+            os.environ["NEXUS_DEPARTMENT"] = original_department

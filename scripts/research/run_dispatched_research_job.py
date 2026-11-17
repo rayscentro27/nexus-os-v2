@@ -12,7 +12,31 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-JOBS = ROOT / "data/runtime/research_execution_jobs.jsonl"
+
+# Handle owner Research intake before importing scheduled-lane capabilities.
+# This path is a pure contract handoff and must not initialize providers,
+# queues, NotebookLM, or scheduled discovery.
+if (__name__ == "__main__" and os.environ.get("NEXUS_JOB_TYPE") == "RESEARCH_INTAKE"
+        and os.environ.get("NEXUS_JOB_SOURCE") == "NOVA_MCP_RESEARCH_ASSIGNMENT"):
+    try:
+        _intake = json.loads(os.environ.get("NEXUS_WORK_ITEM_JSON", "{}"))
+    except (TypeError, ValueError):
+        _intake = {}
+    print(json.dumps({
+        "status": "RESEARCH_CONTINUATION_REQUIRED",
+        "requested_intent": _intake.get("requested_intent") or "RESEARCH_MISSION",
+        "routed_intent": _intake.get("routed_intent") or "RESEARCH_MISSION",
+        "execution_path": "RESEARCH_INTAKE",
+        "objective_id": _intake.get("objective_id"),
+        "original_objective": _intake.get("original_objective") or _intake.get("title"),
+        "source_url": _intake.get("original_source_url") or _intake.get("source_url"),
+        "source_type": _intake.get("original_source_type") or _intake.get("source_type"),
+        "research_scope": _intake.get("research_scope") or _intake.get("question"),
+        "reason": "PARENT_WORKFLOW_SELECTS_NEXT_RESEARCH_ACTION",
+    }, separators=(",", ":")))
+    raise SystemExit(0)
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
+JOBS = nexus_research_state_path("runtime", "research_execution_jobs.jsonl")
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
@@ -21,7 +45,7 @@ from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark
 from nexus_agent_platform.research_work_queue import default_queue  # noqa: E402
 from nexus_agent_platform.demand_discovery import discover_from_governed_questions  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import review_assigned_research_output  # noqa: E402
-from nexus_agent_platform.research_ai_orchestrator import investigate, route, interpret, write_monitor_snapshot  # noqa: E402
+from nexus_agent_platform.research_ai_orchestrator import interpret, write_monitor_snapshot  # noqa: E402
 from nexus_agent_platform.research_continuation import evaluate_goal_result  # noqa: E402
 from nexus_agent_platform.research.last30days_adapter import run_demand_radar_sources  # noqa: E402
 from nexus_agent_platform.research_v2_bridge import build_research_package  # noqa: E402
@@ -90,11 +114,11 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
                     "TRIGGER": queued.get("TRIGGER"), "DEPARTMENT": queued.get("DEPARTMENT"), "BUSINESS_OR_NEXUS": queued.get("BUSINESS_OR_NEXUS"),
                     "PARENT_GOAL": queued.get("PARENT_GOAL"), "PROJECT": queued.get("PROJECT"), "QUESTION": queued.get("QUESTION"),
                     "EXPECTED_VALUE": queued.get("EXPECTED_VALUE"), "SOURCE_PLAN": queued.get("SOURCE_PLAN", [])}
-        return {"source_type": queued.get("source_type") or "WEB_PAGE",
-                "source_id": queued.get("source_id") or queued.get("work_id"),
-                "source_url": queued.get("source_url") or queued.get("url") or known[1] or "",
-                "title": queued.get("title") or queued.get("question") or known[2] or queued.get("source_id") or queued.get("work_id"),
-                "question": queued.get("question") or queued.get("title") or queued.get("source_id") or queued.get("work_id"),
+        return {"source_type": queued.get("original_source_type") or queued.get("source_type") or "WEB_PAGE",
+                "source_id": queued.get("source_id") or queued.get("original_source_url") or queued.get("work_id"),
+                "source_url": queued.get("original_source_url") or queued.get("source_url") or queued.get("url") or known[1] or "",
+                "title": queued.get("title") or queued.get("original_objective") or queued.get("question") or known[2] or queued.get("source_id") or queued.get("work_id"),
+                "question": queued.get("original_objective") or queued.get("question") or queued.get("title") or queued.get("source_id") or queued.get("work_id"),
                 "author": queued.get("requested_by", "Nexus Research"),
                 "category": lane_id, "selection_reason": queued.get("selection_reason") or "assigned_request",
                 "work_id": queued.get("work_id"), "work_class": queued.get("work_class"),
@@ -483,33 +507,25 @@ def main() -> int:
     for env_key, field in (("NEXUS_OBJECTIVE_ID", "objective_id"), ("NEXUS_PARENT_REQUEST_ID", "parent_request_id"), ("NEXUS_MARKETING_OBJECTIVE_ID", "marketing_objective_id")):
         if item.get(field):
             os.environ[env_key] = str(item[field])
-    # FIFO queue assignments are complete before dispatch. The worker must not
-    # ask an AI planner to choose a different project, source, or capability.
-    # Keep the legacy investigator available for non-FIFO compatibility calls,
-    # but make the production queue path a direct assignment execution.
-    fifo_assignment = os.environ.get("NEXUS_FIFO_QUEUE") == "1"
-    if fifo_assignment:
-        required_tool = item.get("required_tool") or item.get("required_capability") or item.get("source_type")
-        ai_plan_result = {"status": "FIFO_ASSIGNMENT", "plan_id": None, "model_calls": 0,
-                          "plan": {"required_tool": required_tool, "source_locked": True}}
-        ai_route_result = {"status": "FIFO_ASSIGNMENT", "required_capabilities": [required_tool] if required_tool else [],
-                           "selected_executor": {"executor_id": required_tool or "assigned_processor"},
-                           "why_selected": "durable_fifo_assignment"}
-    else:
-        # The legacy investigator is deliberately retained for compatibility
-        # callers outside the production FIFO path.
-        ai_plan_result = investigate(item)
-        ai_route_result = route(item, ai_plan_result.get("plan", {})) if ai_plan_result.get("status") == "PASS_REAL" else {"status": "FAILED_REAL", "why_selected": ai_plan_result.get("reason")}
-    item["ai_plan_id"] = ai_plan_result.get("plan_id")
-    item["required_capabilities"] = ai_route_result.get("required_capabilities", [])
-    item["selected_executor_id"] = (ai_route_result.get("selected_executor") or {}).get("executor_id")
-    item["ai_investigation_status"] = ai_plan_result.get("status")
-    write_monitor_snapshot(item=item, stage="AI_INVESTIGATION_PLAN", plan=ai_plan_result.get("plan"), route_result=ai_route_result)
-    event(execution_id, "AI_INVESTIGATION_PLAN", worker_id="research_operator_worker",
-          ai_plan_id=item.get("ai_plan_id"), ai_model=ai_plan_result.get("model"),
-          ai_model_calls=ai_plan_result.get("model_calls", 0), ai_status=ai_plan_result.get("status"),
+    # Queue assignments are complete before dispatch. The worker must not ask
+    # an AI planner to choose a different project, source, or capability.
+    # The queue/source selector already chose the work item and its known
+    # source family. Planning which executor to call is therefore a workflow
+    # transition, not a model judgment. Keep the legacy planner available to
+    # its explicit research module callers, but never use it on this production
+    # dispatched-worker path.
+    from nexus_agent_platform.research_ai_orchestrator import plan_assigned_work
+    workflow_plan, workflow_route = plan_assigned_work(item)
+    item["workflow_plan_id"] = workflow_plan.get("plan_id")
+    item["required_capabilities"] = workflow_route.get("required_capabilities", [])
+    item["selected_executor_id"] = (workflow_route.get("selected_executor") or {}).get("executor_id")
+    item["workflow_assignment_status"] = workflow_plan.get("status")
+    write_monitor_snapshot(item=item, stage="WORKFLOW_ASSIGNMENT", plan=workflow_plan.get("plan"), route_result=workflow_route)
+    event(execution_id, "WORKFLOW_ASSIGNMENT", worker_id="research_operator_worker",
+          workflow_plan_id=item.get("workflow_plan_id"), execution_class="DETERMINISTIC",
+          model_call_required=False, model_calls=0, assignment_status=workflow_plan.get("status"),
           required_capabilities=item.get("required_capabilities"), selected_executor_id=item.get("selected_executor_id"),
-          routing_status=ai_route_result.get("status"), routing_reason=ai_route_result.get("why_selected"))
+          routing_status=workflow_route.get("status"), routing_reason=workflow_route.get("why_selected"))
     # A missing model is a bounded orchestration degradation. Preserve the
     # established processor path so one provider outage does not erase the
     # underlying worker's evidence opportunity.
@@ -551,7 +567,7 @@ def main() -> int:
         # The normal worker must use the same unified source router as the
         # proven scheduled Research path. Alpha is intentionally not part of
         # base acquisition; it is reserved for mature packages/requested review.
-        result = run_selected_capability(item, ai_route_result, execution_id)
+        result = run_selected_capability(item, workflow_route, execution_id)
         if result is None:
             result = process_scheduled_item(item)
         signal.alarm(0)
@@ -590,10 +606,25 @@ def main() -> int:
             persistence.append_record("research_stage_receipts", receipt)
     except Exception as exc:
         event(execution_id, "RESEARCH_V2_RECEIPTS_DEGRADED", worker_id="research_operator_worker", error=str(exc)[:300])
-    ai_interpretation = interpret(item, ai_plan_result.get("plan", {}), result)
+    has_fresh_evidence = bool(result.get("raw_acquired") or result.get("summary_created")
+        or result.get("extraction_created") or result.get("ingestion_status") in {"INGESTED", "INGESTED_EXISTING", "DURABLE_MEMORY"})
+    if has_fresh_evidence:
+        ai_interpretation = interpret(item, workflow_plan.get("plan", {}), result)
+        from nexus_agent_platform.research_ai_orchestrator import apply_research_handoff_contract
+        ai_interpretation = apply_research_handoff_contract(item, ai_interpretation)
+    else:
+        ai_interpretation = {"status": "DETERMINISTIC_NO_NEW_EVIDENCE", "model_calls": 0,
+            "information_gain": "No new source evidence was produced in this run.",
+            "objective_progress": "Existing durable evidence retained.", "evidence_quality": "NOT_REEVALUATED",
+            "contradictions": [], "remaining_gaps": item.get("evidence_gaps", []),
+            "next_capability": str(item.get("return_to_department") or item.get("department_target") or "") or None,
+            "ready_for_alpha": bool(item.get("alpha_eligible")),
+            "action_statement": str(item.get("action_statement") or item.get("next_action") or "Continue the assigned Research workflow."),
+            "handoff_source": "WORKFLOW_CONTRACT"}
     item["ai_interpretation"] = ai_interpretation
-    write_monitor_snapshot(item=item, stage="AI_RESULT_INTERPRETATION", plan=ai_plan_result.get("plan"), route_result=ai_route_result, interpretation=ai_interpretation)
-    event(execution_id, "AI_RESULT_INTERPRETATION", worker_id="research_operator_worker",
+    interpretation_stage = "RESEARCH_EVIDENCE_SYNTHESIS" if has_fresh_evidence else "RESEARCH_NO_NEW_EVIDENCE"
+    write_monitor_snapshot(item=item, stage=interpretation_stage, plan=workflow_plan.get("plan"), route_result=workflow_route, interpretation=ai_interpretation)
+    event(execution_id, interpretation_stage, worker_id="research_operator_worker",
           ai_status=ai_interpretation.get("status"), ai_model=ai_interpretation.get("model"),
           ai_model_calls=ai_interpretation.get("model_calls", 0), information_gain=ai_interpretation.get("information_gain"),
           objective_progress=ai_interpretation.get("objective_progress"), remaining_gaps=ai_interpretation.get("remaining_gaps"),

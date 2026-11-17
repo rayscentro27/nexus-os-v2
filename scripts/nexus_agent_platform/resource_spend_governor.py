@@ -19,11 +19,13 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DB = ROOT / "data/runtime/resource_spend_governor.sqlite3"
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
+
+DEFAULT_DB = nexus_research_state_path("runtime", "resource_spend_governor.sqlite3")
 STATES = {"NORMAL", "ELEVATED", "THROTTLED", "HARD_STOP", "HUMAN_APPROVAL_REQUIRED", "DISABLED"}
 CERTIFICATION_STATES = {"NOT_TESTED", "MOCK_PASS", "LOCAL_REAL_PASS", "DATABASE_REAL_PASS", "EXTERNAL_REAL_PASS", "END_TO_END_REAL_PASS", "FAILED", "BLOCKED"}
 PROVIDERS = (
-    "SUPABASE", "ORACLE", "MODAL", "OPENROUTER", "TELEGRAM", "FAL_AI", "KAGGLE",
+    "SUPABASE", "ORACLE", "OLLAMA", "OPENAI_CODEX", "CHATGPT_PLAN", "MODAL", "OPENROUTER", "TELEGRAM", "FAL_AI", "KAGGLE",
     "HUGGING_FACE", "BROWSER_EXTERNAL_SERVICES", "EMAIL_PROVIDER", "SOCIAL_MEDIA_EXTERNAL_ACTIONS",
 )
 DIMENSIONS = ("requests", "operations", "bytes", "tokens", "gpu_seconds", "runtime_seconds", "storage_bytes", "emails", "browser_actions", "api_calls", "resource_creations", "cost")
@@ -109,6 +111,32 @@ class LocalGovernorStore:
         try: yield db
         finally: db.close()
 
+    def reset_due_daily_budget_hard_stops(self) -> int:
+        """Reset only prior-UTC-day hard stops opened by a budget incident."""
+        boundary=datetime.now(timezone.utc).replace(hour=0,minute=0,second=0,microsecond=0).isoformat()
+        changed=0
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows=db.execute("SELECT * FROM policies WHERE budget_period='DAILY' AND state='HARD_STOP'").fetchall()
+            for policy in rows:
+                try: limits=json.loads(policy["hard_limits"])
+                except (TypeError,ValueError): continue
+                cap=(limits.get("usage") or {}).get("bytes")
+                if not cap: continue
+                incidents=db.execute("SELECT threshold FROM incidents WHERE provider=? AND code='BUDGET_HARD_LIMIT' AND created_at=? AND created_at<?",
+                    (policy["provider"],policy["updated_at"],boundary)).fetchall()
+                matched=False
+                for incident in incidents:
+                    try: matched = json.loads(incident["threshold"] or "null")=={"bytes":cap}
+                    except (TypeError,ValueError): matched=False
+                    if matched: break
+                if matched:
+                    db.execute("UPDATE policies SET state='NORMAL',updated_at=? WHERE provider=? AND service=? AND job_type=? AND budget_period=?",
+                        (now(),policy["provider"],policy["service"],policy["job_type"],policy["budget_period"]))
+                    changed+=1
+            db.execute("COMMIT")
+        return changed
+
     def set_policy(self, provider: str, service: str = "*", job_type: str = "*", budget_period: str = "DAILY", *,
                    autonomous_usage_allowed: bool = False, autonomous_spend_allowed: bool = False,
                    soft_limits: dict | None = None, hard_limits: dict | None = None, concurrency_limit: int = 0,
@@ -123,6 +151,39 @@ class LocalGovernorStore:
               (provider,service,job_type,budget_period,int(autonomous_usage_allowed),int(autonomous_spend_allowed),
                json.dumps(soft_limits or DEFAULT_LIMITS,separators=(",",":")),json.dumps(hard_limits or DEFAULT_LIMITS,separators=(",",":")),
                concurrency_limit,resource_creation_limit,state,int(approval_required),now()))
+
+    def ensure_policy(self, provider: str, service: str, job_type: str, budget_period: str, *,
+                      autonomous_usage_allowed: bool, autonomous_spend_allowed: bool,
+                      soft_limits: dict, hard_limits: dict, concurrency_limit: int = 1,
+                      resource_creation_limit: int = 0, state: str = "NORMAL",
+                      approval_required: bool = False) -> bool:
+        """Create a scoped policy once without reopening an existing stop or edit."""
+        provider = provider.upper()
+        if state not in STATES: raise ValueError("INVALID_GOVERNOR_STATE")
+        with self.connect() as db:
+            cur = db.execute("""INSERT OR IGNORE INTO policies
+              (provider,service,job_type,budget_period,autonomous_usage_allowed,autonomous_spend_allowed,
+               soft_limits,hard_limits,concurrency_limit,resource_creation_limit,state,approval_required,updated_at)
+              VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""", (provider,service,job_type,budget_period,int(autonomous_usage_allowed),int(autonomous_spend_allowed),
+               json.dumps(soft_limits,separators=(",",":")),json.dumps(hard_limits,separators=(",",":")),
+               concurrency_limit,resource_creation_limit,state,int(approval_required),now()))
+            return cur.rowcount == 1
+
+    def resolve_policy(self, provider: str, service: str, job_type: str, budget_period: str = "DAILY") -> dict[str, Any] | None:
+        """Return the policy the reserve path would select, including its scope."""
+        provider = provider.upper()
+        with self.connect() as db:
+            row = db.execute("""SELECT * FROM policies WHERE provider=? AND service IN (?, '*')
+                AND job_type IN (?, '*') AND budget_period=?
+                ORDER BY (service='*'),(job_type='*') LIMIT 1""",
+                (provider, service, job_type, budget_period.upper())).fetchone()
+        if not row:
+            return None
+        value = dict(row)
+        value["autonomous_usage_allowed"] = bool(value["autonomous_usage_allowed"])
+        value["autonomous_spend_allowed"] = bool(value["autonomous_spend_allowed"])
+        value["wildcard_fallback_used"] = value["service"] == "*" or value["job_type"] == "*"
+        return value
 
     def reserve(self, provider: str, service: str, job_type: str, job_id: str, estimate: dict[str, float], *,
                 purpose: str = "execution", project_id: str | None = None) -> dict:
@@ -317,6 +378,117 @@ class SupabaseGovernorStore:
         from nexus_agent_platform.feeder_runtime import _request
         return _request(path,method,body,prefer)
 
+    def set_policy(self, provider: str, service: str, job_type: str, budget_period: str, *,
+                   autonomous_usage_allowed: bool, autonomous_spend_allowed: bool = False,
+                   soft_limits: dict | None = None, hard_limits: dict | None = None,
+                   concurrency_limit: int = 1, resource_creation_limit: int = 0,
+                   state: str = "NORMAL", approval_required: bool = True) -> dict:
+        """Upsert one narrowly scoped governed provider policy."""
+        if state not in STATES or budget_period not in {"DAILY","MONTHLY"}:
+            raise ValueError("INVALID_GOVERNOR_POLICY")
+        body={"provider":provider.upper(),"service":service,"job_type":job_type,
+              "budget_period":budget_period,"autonomous_usage_allowed":bool(autonomous_usage_allowed),
+              "autonomous_spend_allowed":bool(autonomous_spend_allowed),"soft_limits":soft_limits or DEFAULT_LIMITS,
+              "hard_limits":hard_limits or DEFAULT_LIMITS,"concurrency_limit":int(concurrency_limit),
+              "resource_creation_limit":int(resource_creation_limit),"state":state,
+              "approval_required":bool(approval_required),"updated_at":now()}
+        rows=self._request("nexus_resource_policies?on_conflict=provider,service,job_type,budget_period",
+            "POST",body,"resolution=merge-duplicates,return=representation")
+        if not rows: raise GovernanceDenied("BLOCKED","RESOURCE_POLICY_UPSERT_REJECTED")
+        return rows[0]
+
+    def ensure_policy(self, provider: str, service: str, job_type: str, budget_period: str, *,
+                      autonomous_usage_allowed: bool, autonomous_spend_allowed: bool,
+                      soft_limits: dict, hard_limits: dict, concurrency_limit: int = 1,
+                      resource_creation_limit: int = 0, state: str = "NORMAL",
+                      approval_required: bool = False) -> bool:
+        """Insert a scoped policy only if absent; never reopen an existing stop."""
+        if state not in STATES or budget_period not in {"DAILY", "MONTHLY"}:
+            raise ValueError("INVALID_GOVERNOR_POLICY")
+        body={"provider":provider.upper(),"service":service,"job_type":job_type,
+              "budget_period":budget_period,"autonomous_usage_allowed":bool(autonomous_usage_allowed),
+              "autonomous_spend_allowed":bool(autonomous_spend_allowed),"soft_limits":soft_limits,
+              "hard_limits":hard_limits,"concurrency_limit":int(concurrency_limit),
+              "resource_creation_limit":int(resource_creation_limit),"state":state,
+              "approval_required":bool(approval_required),"updated_at":now()}
+        rows=self._request("nexus_resource_policies?on_conflict=provider,service,job_type,budget_period",
+            "POST",body,"resolution=ignore-duplicates,return=representation")
+        return bool(rows)
+
+    def resolve_policy(self, provider: str, service: str, job_type: str, budget_period: str = "DAILY") -> dict[str, Any] | None:
+        """Resolve policy with the same precedence as nexus_reserve_resource_budget_v2.
+
+        The health RPC intentionally reports wildcard rows only. Query the four
+        possible scopes directly so operators can verify the row reserve will
+        actually select without changing the SQL governor contract.
+        """
+        base = (f"nexus_resource_policies?provider=eq.{provider.upper()}"
+                f"&budget_period=eq.{budget_period.upper()}"
+                "&select=provider,service,job_type,budget_period,state,autonomous_usage_allowed,"
+                "autonomous_spend_allowed,approval_required,soft_limits,hard_limits,concurrency_limit,"
+                "resource_creation_limit,updated_at&limit=1")
+        scopes = ((service, job_type), (service, "*"), ("*", job_type), ("*", "*"))
+        for selected_service, selected_job_type in scopes:
+            rows = self._request(base + f"&service=eq.{selected_service}&job_type=eq.{selected_job_type}") or []
+            if rows:
+                value = dict(rows[0])
+                value["wildcard_fallback_used"] = selected_service == "*" or selected_job_type == "*"
+                return value
+        return None
+
+    def correct_invalid_url_preflight(self, reservation_id: str, *, job_id: str) -> dict:
+        """Correct estimated usage for a GET rejected locally before any socket call."""
+        rows=self._request(f"nexus_resource_reservations?reservation_id=eq.{reservation_id}&job_id=eq.{job_id}&select=reservation_id,provider,service,estimate,actual,status")
+        if not rows: raise GovernanceDenied("BLOCKED","PREFLIGHT_RESERVATION_NOT_FOUND")
+        row=rows[0]
+        estimate=row.get("estimate") or {}; actual=row.get("actual") or {}
+        if (row.get("provider")!="PUBLIC_WEB" or str(row.get("service") or "")!=""
+                or row.get("status")!="RECONCILED" or actual.get("bytes")!=estimate.get("bytes")
+                or int(estimate.get("requests",0))!=1):
+            raise GovernanceDenied("BLOCKED","PREFLIGHT_RESERVATION_NOT_PROVABLY_LOCAL")
+        corrected={**actual,"bytes":0,"requests":0,"api_calls":0,"cost":0,
+                   "correction_reason":"invalid empty URL rejected before network request"}
+        updated=self._request(f"nexus_resource_reservations?reservation_id=eq.{reservation_id}&job_id=eq.{job_id}&status=eq.RECONCILED",
+            "PATCH",{"actual":corrected},"return=representation")
+        if not updated: raise GovernanceDenied("BLOCKED","PREFLIGHT_RESERVATION_CORRECTION_REJECTED")
+        return {"reservation_id":reservation_id,"job_id":job_id,"corrected_actual":corrected}
+
+    def correct_cumulative_worker_snapshots(self, job_id: str) -> dict:
+        """Turn known per-attempt cumulative worker snapshots into actual deltas."""
+        rows=self._request(f"nexus_resource_reservations?job_id=eq.{job_id}&provider=eq.SUPABASE&service=eq.durable_worker&select=reservation_id,estimate,actual,status,created_at&order=created_at.asc")
+        previous={"requests":0,"bytes":0}; corrected=[]
+        for row in rows:
+            actual=row.get("actual") or {}
+            if row.get("status")!="RECONCILED" or not isinstance(actual,dict):
+                raise GovernanceDenied("BLOCKED","WORKER_SNAPSHOT_REPAIR_STATE_INVALID")
+            current={key:int(actual.get(key,0) or 0) for key in previous}
+            if any(current[key]<previous[key] for key in previous):
+                raise GovernanceDenied("BLOCKED","WORKER_SNAPSHOT_SEQUENCE_NOT_MONOTONIC")
+            delta={key:current[key]-previous[key] for key in previous}
+            replacement={**actual,**delta,"cost":float(actual.get("cost",0) or 0),
+                         "correction_reason":"cumulative per-job egress snapshot converted to per-attempt usage"}
+            updated=self._request(f"nexus_resource_reservations?reservation_id=eq.{row['reservation_id']}&job_id=eq.{job_id}&status=eq.RECONCILED",
+                                  "PATCH",{"actual":replacement},"return=representation")
+            if not updated: raise GovernanceDenied("BLOCKED","WORKER_SNAPSHOT_REPAIR_REJECTED")
+            corrected.append({"reservation_id":row["reservation_id"],"delta":delta})
+            previous=current
+        return {"job_id":job_id,"corrected_count":len(corrected),"reservations":corrected,
+                "cumulative_actual":previous}
+
+    def reset_due_daily_budget_hard_stops(self) -> int:
+        """Recover only budget circuits whose matching UTC window has expired.
+
+        The database function checks the incident that opened the circuit and
+        leaves manual, health, and other hard stops untouched.
+        """
+        rows=self._request("rpc/nexus_reset_daily_budget_hard_stops","POST",{},"return=representation")
+        if isinstance(rows,list) and rows:
+            value=rows[0]
+            return int(value.get("nexus_reset_daily_budget_hard_stops",value.get("count",0)) if isinstance(value,dict) else value)
+        if isinstance(rows,dict):
+            return int(rows.get("nexus_reset_daily_budget_hard_stops",rows.get("count",0)))
+        return int(rows or 0)
+
     def reserve(self,provider,service,job_type,job_id,estimate,*,purpose="execution",project_id=None):
         period=str(estimate.get("budget_period","DAILY")).upper()
         envelope=dict(JOB_ENVELOPE)
@@ -375,4 +547,16 @@ class SupabaseGovernorStore:
 
     def summary(self):
         value=self._request("rpc/nexus_resource_governor_health","POST",{},"return=representation")
-        return value if isinstance(value,dict) else (value[0] if value else {"providers":[],"recent_incidents":[]})
+        result = value if isinstance(value,dict) else (value[0] if value else {"providers":[],"recent_incidents":[]})
+        # The health RPC is a provider overview over wildcard policy rows. Keep
+        # scoped Research authorization visible alongside it; otherwise a
+        # wildcard DISABLED default is easily mistaken for the effective policy.
+        resolver = getattr(self, "resolve_policy", None)
+        if resolver:
+            result["policy_resolutions"] = {
+                "research_notebooklm_daily": resolver("NOTEBOOKLM", "research_discovery", "NEXUS_RESEARCH_NOTEBOOKLM", "DAILY"),
+                "research_notebooklm_monthly": resolver("NOTEBOOKLM", "research_discovery", "NEXUS_RESEARCH_NOTEBOOKLM", "MONTHLY"),
+                "research_supabase_daily": resolver("SUPABASE", "durable_worker", "RESEARCH_GAP_VERIFY", "DAILY"),
+                "needle_model_daily": resolver("OPENAI_CODEX", "subscription_model", "NEEDLE_RESEARCH_READINESS_VERIFY", "DAILY"),
+            }
+        return result

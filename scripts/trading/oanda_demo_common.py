@@ -27,6 +27,17 @@ def environment() -> dict:
     values.update(load_runtime_env())
     token = values.get("OANDA_API_TOKEN") or values.get("OANDA_API_KEY") or values.get("OANDA_ACCESS_TOKEN") or ""
     account_id = values.get("OANDA_ACCOUNT_ID") or ""
+    if not account_id:
+        # V6 may discover the owner's existing Practice account from OANDA's
+        # authenticated /v3/accounts read. Keep that locator outside the repo
+        # and accept it only when the record is explicitly practice-scoped.
+        private_account_ref = Path.home() / ".config/nexus/oanda_practice_account.json"
+        try:
+            stored = json.loads(private_account_ref.read_text(encoding="utf-8"))
+            if stored.get("environment") == "practice":
+                account_id = str(stored.get("account_id") or "")
+        except (OSError, ValueError, TypeError):
+            pass
     configured = " ".join(values.get(key, "") for key in ("OANDA_API_HOST", "OANDA_API_URL", "OANDA_ENVIRONMENT")).lower()
     live_toggle = any(values.get(key, "").strip().lower() in {"1", "true", "yes", "enabled", "live"} for key in ("LIVE_TRADING", "TRADING_LIVE"))
     live_configured = LIVE_HOST in configured or "fxtrade" in configured or values.get("OANDA_ENVIRONMENT", "").lower() == "live" or live_toggle

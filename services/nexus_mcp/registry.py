@@ -19,6 +19,7 @@ CAPABILITY_MAP = {
     "nexus_get_research_state": "get_research_operational_state",
     "nexus_get_research_queue": "get_research_operational_state",
     "nexus_get_alpha_review": "get_alpha_review_latest",
+    "nexus_get_durable_jobs": "get_durable_jobs",
 }
 
 

@@ -40,7 +40,9 @@ def create_assignment(*, parent_objective_id: str, blocking_work_id: str,
                       defect_id: str, defect_summary: str,
                       affected_component: str, acceptance_criteria: list[str],
                       test_requirements: list[str], allowed_scope: list[str],
-                      prohibited_actions: list[str], risk_class: str = "LOW") -> dict[str, Any]:
+                      prohibited_actions: list[str], risk_class: str = "LOW",
+                      campaign_id: str | None = None, objective_version: str | None = None,
+                      worker_role: str = "CODING_AND_SYSTEM_REPAIR_ONLY") -> dict[str, Any]:
     required = (parent_objective_id, blocking_work_id, defect_id, defect_summary, affected_component)
     if any(len(str(value).strip()) < 3 for value in required):
         return {"status": "rejected", "error": "required_assignment_field_missing"}
@@ -53,6 +55,9 @@ def create_assignment(*, parent_objective_id: str, blocking_work_id: str,
         "schema_version": "nexus.nova-codex-assignment.v1",
         "assignment_id": f"nova_codex_{fingerprint}",
         "parent_objective_id": parent_objective_id,
+        "campaign_id": campaign_id,
+        "objective_version": objective_version,
+        "worker_role": worker_role,
         "blocking_work_id": blocking_work_id,
         "defect_id": defect_id,
         "defect_summary": defect_summary,
@@ -76,10 +81,17 @@ def create_assignment(*, parent_objective_id: str, blocking_work_id: str,
 
 
 def claim_assignment(*, worker_id: str = "codex") -> dict[str, Any]:
+    from nexus_agent_platform.durable_objective_control import ACTIVE_CAMPAIGN_PATH, load_active_campaign
+    active = load_active_campaign() if ACTIVE_CAMPAIGN_PATH.exists() else None
     payload = read_assignment()
     assignment = payload.get("nova_codex_assignment") or {}
     if assignment.get("status") != "QUEUED":
         return {"status": "not_claimable", "assignment": assignment}
+    if active and active.get("CAMPAIGN_STATUS") in {"ACTIVE", "IN_PROGRESS"}:
+        expected = (active.get("CAMPAIGN_ID"), active.get("OWNER_OBJECTIVE_ID"), active.get("OBJECTIVE_VERSION"), active.get("CURRENT_JOB_ID"))
+        actual = (assignment.get("campaign_id"), assignment.get("parent_objective_id"), assignment.get("objective_version"), assignment.get("blocking_work_id"))
+        if actual != expected or assignment.get("worker_role") != "CODING_AND_SYSTEM_REPAIR_ONLY":
+            return {"status": "blocked_stale_or_unbound_assignment", "assignment_id": assignment.get("assignment_id"), "ignore_stale_task": True}
     assignment.update({"status": "CLAIMED", "worker_id": worker_id, "claimed_at": _now(), "updated_at": _now()})
     payload["nova_codex_assignment"] = assignment
     _write(payload)
@@ -87,10 +99,23 @@ def claim_assignment(*, worker_id: str = "codex") -> dict[str, Any]:
 
 
 def execute_claimed_assignment() -> dict[str, Any]:
+    from nexus_agent_platform.durable_objective_control import ACTIVE_CAMPAIGN_PATH, authorize_coding_action
     payload = read_assignment()
     assignment = payload.get("nova_codex_assignment") or {}
     if assignment.get("status") != "CLAIMED":
         return {"status": "not_claimed", "assignment_id": assignment.get("assignment_id")}
+    if ACTIVE_CAMPAIGN_PATH.exists():
+        try:
+            authorize_coding_action(campaign_id=assignment.get("campaign_id"),
+                objective_id=assignment.get("parent_objective_id"),
+                job_id=assignment.get("blocking_work_id"),
+                objective_version=assignment.get("objective_version"),
+                worker_role=assignment.get("worker_role", ""),
+                action_summary=f"{assignment.get('defect_id', '')} {assignment.get('defect_summary', '')}",
+                path=ACTIVE_CAMPAIGN_PATH)
+        except Exception as exc:
+            return {"status": "blocked_by_durable_objective_guard", "assignment_id": assignment.get("assignment_id"),
+                    "error": str(exc)[:240], "provider_started": False}
     from nexus_product_evolution.adapters.builder_adapter import codex_execute
     from nexus_agent_platform.builders.runtime import BuildTaskSpec
     checkpoint = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -104,7 +129,12 @@ def execute_claimed_assignment() -> dict[str, Any]:
         security_constraints=assignment["prohibited_actions"], budget={"cost_ceiling": "ZERO_MODEL_COST", "model_tier": "ZERO_MODEL_COST"},
         timeout_seconds=180, approval_state="governed_nova_codex", retry_policy="bounded", max_retries=0,
         metadata={"assignment_id": assignment["assignment_id"], "starting_commit": checkpoint,
-                  "parent_objective_id": assignment["parent_objective_id"]}, previous_failure_delta={})
+                  "parent_objective_id": assignment["parent_objective_id"],
+                  "campaign_id": assignment.get("campaign_id"),
+                  "owner_objective_id": assignment.get("parent_objective_id"),
+                  "objective_version": assignment.get("objective_version"),
+                  "job_id": assignment.get("blocking_work_id"),
+                  "worker_role": assignment.get("worker_role")}, previous_failure_delta={})
     assignment.update({"status": "EXECUTING", "execution_started_at": _now(), "updated_at": _now()})
     payload["nova_codex_assignment"] = assignment
     _write(payload)

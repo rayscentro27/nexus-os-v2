@@ -13,9 +13,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
+from nexus_agent_platform.runtime.paths import nexus_data_path
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNS_PATH = ROOT / "data/governed/research_tool_layer_runs.jsonl"
+RUNS_PATH = nexus_data_path("governed", "research_tool_layer_runs.jsonl")
 PRIMARY_AUTONOMOUS_ENGINE = "HERMES_TOOL_LAYER"
 
 try:

@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import io
 import os
@@ -24,6 +25,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import ssl
+from pathlib import Path
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 
@@ -34,7 +36,8 @@ SSL_CTX.verify_mode = ssl.CERT_NONE
 
 TIMEOUT = 12
 MAX_RESULTS = 6
-RECEIPT_DIR = "reports/hermes/web_search"
+REPO_ROOT = Path(os.environ.get("NEXUS_REPO_ROOT", Path(__file__).resolve().parents[2])).expanduser()
+RECEIPT_DIR = str(REPO_ROOT / "reports/hermes/web_search")
 
 
 def governed_urlopen(request, timeout=TIMEOUT, context=None):
@@ -42,7 +45,10 @@ def governed_urlopen(request, timeout=TIMEOUT, context=None):
     from nexus_agent_platform.provider_enforcement import execute
     url = request.full_url if hasattr(request, "full_url") else str(request)
     host = (urlsplit(url).hostname or "").lower()
-    provider = {
+    configured_searx = _env("NEXUS_SEARXNG_WEB_SEARCH_BASE_URL") or _env("ALPHA_SEARXNG_URL")
+    searx_host = (urlsplit(configured_searx).hostname or "").lower() if configured_searx else ""
+    free_public = host in {"html.duckduckgo.com", "www.bing.com"} or bool(searx_host and host == searx_host)
+    provider = "PUBLIC_WEB" if free_public else {
         "api.search.brave.com": "BRAVE_SEARCH",
         "api.tavily.com": "TAVILY",
         "serpapi.com": "SERPAPI",
@@ -54,11 +60,15 @@ def governed_urlopen(request, timeout=TIMEOUT, context=None):
             buffered.headers = response.headers
             return buffered
     return execute(
-        provider, "hermes_web_search", "SEARCH_REQUEST",
-        {"requests": 1, "api_calls": 1, "billable": True, "cost": None},
+        provider, host, "SEARCH_REQUEST",
+        ({"requests": 1, "api_calls": 1, "bytes": 300_000, "billable": False, "cost": 0}
+         if free_public else {"requests": 1, "api_calls": 1, "billable": True, "cost": None}),
         fetch_buffered,
-        purpose=f"hermes_web_search:{host}",
-        actual_usage=lambda response: {"requests": 1, "bytes": response.getbuffer().nbytes, "cost": None},
+        purpose=(f"hermes_web_search:{host}:"
+                 f"{hashlib.sha256(url.encode('utf-8')).hexdigest()[:16]}:"
+                 f"{os.environ.get('NEXUS_RESEARCH_ROOM_CALL_ID', os.environ.get('NEXUS_JOB_ATTEMPT_COUNT', '1'))}"),
+        actual_usage=lambda response: {"requests": 1, "bytes": response.getbuffer().nbytes,
+            "cost": 0 if free_public else None},
     )
 
 
@@ -424,6 +434,27 @@ def web_search(query, max_results=MAX_RESULTS):
         result["provider"] = "brave"
     _save_receipt(query, "none", [], "all_providers_failed", result["notes"])
     return result
+
+
+def web_search_free(query, max_results=MAX_RESULTS):
+    """Search only existing zero-price providers; never touch metered APIs."""
+    providers = []
+    if _env("NEXUS_SEARXNG_WEB_SEARCH_BASE_URL") or _env("ALPHA_SEARXNG_URL"):
+        providers.append(("searxng", _search_searxng))
+    providers.extend((("duckduckgo_html", _search_duckduckgo_html),
+                      ("bing_html", _search_bing_html)))
+    attempts = []
+    for name, search in providers:
+        result = search(query, max_results)
+        attempts.append({"provider": result.get("provider", name), "status": result.get("status"),
+                         "notes": result.get("notes", [])})
+        if result.get("status") == "ok" and result.get("results"):
+            result["attempted_providers"] = attempts
+            return result
+    return {"status": "no_results" if all(row["status"] in {"no_results", "not_configured"} for row in attempts)
+            else "error", "provider": attempts[-1]["provider"] if attempts else "none",
+            "query": query, "results": [], "notes": [note for row in attempts for note in row["notes"]],
+            "attempted_providers": attempts}
 
 
 def url_review(url, topic=None):

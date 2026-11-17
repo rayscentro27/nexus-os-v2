@@ -263,15 +263,7 @@ def _extract_json(text: str) -> dict[str, Any] | None:
 
 
 def synthesize_with_openrouter(query: str, category: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
-    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    model = (
-        os.environ.get("ALPHA_OPENROUTER_MODEL")
-        or os.environ.get("OPENROUTER_MODEL")
-        or os.environ.get("HERMES_ALPHA_MODEL")
-        or "openai/gpt-4o-mini"
-    )
-    if not key:
-        return {"ok": False, "provider": "openrouter", "model": model, "error": "missing_credential", "analysis": deterministic_analysis(query, category, sources)}
+    model = "router_selected"
 
     source_summary = [
         {
@@ -300,32 +292,24 @@ def synthesize_with_openrouter(query: str, category: str, sources: list[dict[str
             "approval_requirement",
         ],
     }
-    payload = {
-        "model": model,
-        "messages": [
+    messages = [
             {
                 "role": "system",
                 "content": "You are Hermes Alpha, Ray's independent research brain. Use only the supplied source summaries. Do not invent facts, client data, or URLs. Return compact JSON only.",
             },
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)},
-        ],
-        "temperature": 0.2,
-        "max_tokens": 700,
-    }
-    headers = {
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://goclearonline.cc",
-        "X-Title": "Nexus Alpha Live Research",
-    }
-    ok, status, data, error, latency = http_json("POST", "https://openrouter.ai/api/v1/chat/completions", headers, payload, timeout=45)
-    text = ""
-    try:
-        text = data["choices"][0]["message"]["content"]
-    except Exception:
-        text = ""
+        ]
+    import asyncio
+    from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+    response = asyncio.run(LlmGatewayAdapter("nexus_alpha_live_research").completion(
+        model=model, messages=messages, temperature=0.2, max_tokens=700, timeout=45,
+        sensitivity="public_research", reasoning_class="LIGHT_REASONING", task_type="research"))
+    text = str(response.get("content") or "")
     analysis = _extract_json(text) or deterministic_analysis(query, category, sources)
-    return {"ok": ok and bool(text), "provider": "openrouter", "model": model, "status_code": status, "latency_ms": latency, "error": error, "analysis": analysis}
+    return {"ok": bool(text) and not response.get("error"), "provider": response.get("provider"),
+        "model": response.get("model") or model, "route_key": response.get("route_key"),
+        "latency_ms": (response.get("execution_metadata") or {}).get("latency_ms"),
+        "error": response.get("error_detail") or response.get("error"), "analysis": analysis}
 
 
 def deterministic_analysis(query: str, category: str, sources: list[dict[str, Any]]) -> dict[str, Any]:

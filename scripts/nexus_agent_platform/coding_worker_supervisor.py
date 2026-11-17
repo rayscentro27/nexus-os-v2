@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -28,6 +29,28 @@ RATE_LIMIT_EVIDENCE = re.compile(r"(?:http\s*429|\b429\b|rate.?limit|quota excee
 AUTH_EVIDENCE = re.compile(r"(?:unauthori[sz]ed|authentication|login required|invalid token|api key required|\b401\b)", re.I)
 
 WORKER_STATES = {"AVAILABLE", "BUSY", "RATE_LIMITED", "AUTH_BLOCKED", "DEGRADED", "UNAVAILABLE", "INSTALLED_UNPROVEN", "PROHIBITED"}
+
+
+def _resolve_opencode_runner() -> Optional[str]:
+    """Find the installed OpenCode executable under service and shell PATHs."""
+    configured = os.environ.get("NEXUS_OPENCODE_BIN")
+    if configured and Path(configured).is_file() and os.access(configured, os.X_OK):
+        return configured
+    path = os.pathsep.join(filter(None, [os.environ.get("PATH", ""), "/usr/local/bin",
+        "/opt/homebrew/bin", str(Path.home() / ".local/bin")]))
+    found = shutil.which("opencode", path=path)
+    return found
+
+
+def _resolve_antigravity_runner() -> Optional[str]:
+    """Find the installed Antigravity (agy) executable under service and shell PATHs."""
+    configured = os.environ.get("NEXUS_ANTIGRAVITY_BIN")
+    if configured and Path(configured).is_file() and os.access(configured, os.X_OK):
+        return configured
+    path = os.pathsep.join(filter(None, [os.environ.get("PATH", ""), "/usr/local/bin",
+        "/opt/homebrew/bin", str(Path.home() / ".local/bin")]))
+    found = shutil.which("agy", path=path)
+    return found
 
 
 def now() -> str:
@@ -63,10 +86,12 @@ def classify_failure(output: str, returncode: Optional[int] = None) -> str:
 
 def worker_discovery() -> Dict[str, Dict[str, Any]]:
     result: Dict[str, Dict[str, Any]] = {}
-    for worker_id, binary in (("codex", "codex"), ("opencode", "opencode"), ("mimo", "mimo"), ("kilo", "kilo")):
+    for worker_id, binary in (("antigravity", "agy"), ("codex", "codex"), ("opencode", "opencode"), ("mimo", "mimo"), ("kilo", "kilo")):
         path = shutil.which(binary)
+        if not path and binary == "agy":
+            path = _resolve_antigravity_runner()
         result[worker_id] = {"worker_id": worker_id, "binary": binary, "installed": bool(path),
-                             "path": path, "state": "INSTALLED_UNPROVEN" if path else "UNAVAILABLE",
+                             "path": path, "state": "AVAILABLE" if (path and binary == "agy") else ("INSTALLED_UNPROVEN" if path else "UNAVAILABLE"),
                              "capabilities": ["repo_edit", "tests"] if path else [], "checked_at": now()}
     result["local"] = {"worker_id": "local", "binary": "python3", "installed": True,
                         "path": shutil.which("python3"), "state": "AVAILABLE",
@@ -120,6 +145,11 @@ class CodingTask:
     acceptance: tuple[str, ...]
     checkpoint_sha: str
     worktree: str = "isolated"
+    campaign_id: Optional[str] = None
+    owner_objective_id: Optional[str] = None
+    objective_version: Optional[str] = None
+    job_id: Optional[str] = None
+    worker_role: str = "CODING_AND_SYSTEM_REPAIR_ONLY"
 
 
 class OpenCodeExecuteAdapter:
@@ -132,12 +162,51 @@ class OpenCodeExecuteAdapter:
     model = None
 
     def execute(self, task: CodingTask, *, runner: Optional[str] = None, timeout: int = 90) -> Dict[str, Any]:
+        # Load canonical durable campaign identity before any provider process
+        # starts. Chat/task text cannot select or revive an older objective.
+        try:
+            from nexus_agent_platform.durable_objective_control import (
+                ACTIVE_CAMPAIGN_PATH, authorize_coding_action,
+            )
+            if ACTIVE_CAMPAIGN_PATH.exists():
+                from nexus_agent_platform.durable_jobs import default_store
+                durable = default_store().get(str(task.job_id or task.task_id))
+                bounded_temp = bool(durable and durable.job_type == "NOVA_BOUNDED_CODING_TASK"
+                    and (durable.governance_context or {}).get("source") == "NOVA_BOUNDED_CONTROL_ACTION"
+                    and (durable.governance_context or {}).get("external_actions_allowed") is False
+                    and (durable.governance_context or {}).get("spend_allowed") is False
+                    and task.allowed_paths and all(path.startswith("tmp/nova_coding_jobs/") for path in task.allowed_paths))
+                if not bounded_temp:
+                    authorize_coding_action(campaign_id=task.campaign_id,
+                        objective_id=task.owner_objective_id or task.objective_id,
+                        job_id=task.job_id or task.task_id,
+                        objective_version=task.objective_version,
+                        worker_role=task.worker_role, action_summary=task.prompt,
+                        path=ACTIVE_CAMPAIGN_PATH)
+        except Exception as exc:
+            return {"status": "BLOCKED", "worker_id": self.worker_id,
+                    "failure_class": "DURABLE_OBJECTIVE_GUARD", "error": str(exc)[:240],
+                    "provider_started": False}
         if runner is None:
-            runner = shutil.which("opencode")
+            runner = _resolve_opencode_runner()
         if not runner:
             return {"status": "UNAVAILABLE", "worker_id": self.worker_id, "failure_class": "UNAVAILABLE"}
         started = now()
         worktree = Path(tempfile.mkdtemp(prefix=f"nexus-opencode-{task.task_id}-"))
+        # Keep OpenCode's session database isolated per bounded task. A broken
+        # shared session_message table otherwise prevents unrelated coding
+        # jobs from starting. Reuse only the user's provider auth file; the
+        # per-run database, logs, and sessions stay disposable.
+        opencode_data_home = Path(tempfile.mkdtemp(prefix=f"nexus-opencode-data-{task.task_id}-"))
+        auth_source = Path.home() / ".local" / "share" / "opencode" / "auth.json"
+        if auth_source.is_file():
+            auth_target = opencode_data_home / "opencode" / "auth.json"
+            auth_target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(auth_source, auth_target)
+            try:
+                auth_target.chmod(0o600)
+            except OSError:
+                pass
         added = False
         prompt = ("You are a bounded Nexus coding worker. Edit only files under the allowed paths. "
                   "Do not inspect secrets, runtime.env, client data, or protected paths. "
@@ -163,22 +232,64 @@ class OpenCodeExecuteAdapter:
                 for allowed in task.allowed_paths:
                     (worktree / allowed).mkdir(parents=True, exist_ok=True)
                 subprocess.run(["git", "add", "--", "."], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
-                subprocess.run(["git", "-c", "user.email=nexus@localhost", "-c", "user.name=Nexus", "commit", "-qm", "sandbox"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                # The isolated task directory can be empty before OpenCode
+                # starts (for example, when a global ignore rule hides tmp/).
+                # Seed an empty commit so the sandbox has a valid HEAD either way.
+                subprocess.run(["git", "-c", "user.email=nexus@localhost", "-c", "user.name=Nexus", "commit", "--allow-empty", "-qm", "sandbox"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
                 added = True
             before = _file_fingerprints(worktree, task.allowed_paths)
-            proc = subprocess.run(command + ["--pure"], cwd=worktree, env=_safe_env(), capture_output=True, text=True, timeout=timeout, check=False)
+            opencode_env = _safe_env()
+            opencode_env["XDG_DATA_HOME"] = str(opencode_data_home)
+            proc = subprocess.run(command + ["--pure"], cwd=worktree, env=opencode_env, capture_output=True, text=True, timeout=timeout, check=False)
             combined = f"{proc.stdout}\n{proc.stderr}"
             changed = _changed_files(worktree, before, task.allowed_paths)
             violations = [path for path in changed if not _path_allowed(path, task.allowed_paths, task.protected_paths)]
+            execution = None
+            if any("execute python file once" in str(item).casefold() for item in task.acceptance):
+                candidates = [worktree / path for path in changed if path.endswith(".py")]
+                if len(candidates) != 1:
+                    execution = {"returncode": 1, "error": "EXPECTED_ONE_NEW_PYTHON_FILE"}
+                else:
+                    candidate = candidates[0].resolve()
+                    resolved_worktree = worktree.resolve()
+                    allowed_roots = [(resolved_worktree / allowed).resolve() for allowed in task.allowed_paths]
+                    if not any(candidate.is_relative_to(root) for root in allowed_roots):
+                        execution = {"returncode": 1, "error": "PYTHON_FILE_OUTSIDE_ALLOWED_WORKSPACE"}
+                    else:
+                        try:
+                            run_result = subprocess.run([sys.executable, str(candidate)], cwd=worktree,
+                                env=_safe_env(), capture_output=True, text=True, timeout=10, check=False)
+                            execution = {"returncode": run_result.returncode,
+                                "stdout": _redact_output(run_result.stdout)[:2000],
+                                "stderr": _redact_output(run_result.stderr)[:1000],
+                                "file": str(candidate.relative_to(resolved_worktree))}
+                        except (OSError, subprocess.SubprocessError) as exc:
+                            execution = {"returncode": 1, "error": f"{type(exc).__name__}: {str(exc)[:180]}"}
             failure = classify_failure(combined, proc.returncode) if proc.returncode != 0 else None
             if violations:
                 failure = "PROTECTED_PATH_VIOLATION"
+            if execution is not None and execution.get("returncode") != 0:
+                # Preserve the OpenCode/provider failure when it exited before
+                # producing the requested artifact; do not mislabel that as a
+                # Python execution failure.
+                if proc.returncode == 0:
+                    failure = "BOUNDED_PYTHON_EXECUTION_FAILED"
             status = "PASS" if proc.returncode == 0 and not violations else "FAIL"
+            if execution is not None and execution.get("returncode") != 0:
+                status = "FAIL"
+            if is_temp and status == "PASS" and not violations:
+                for rel in changed:
+                    src_f = worktree / rel
+                    dst_f = ROOT / rel
+                    if src_f.is_file():
+                        dst_f.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(src_f, dst_f)
             artifact_hash = hashlib.sha256("\n".join(changed).encode()).hexdigest()
             return {"status": status, "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
                     "command": command[:4], "returncode": proc.returncode, "failure_class": failure,
                     "files_changed": changed, "violations": violations, "artifact_fingerprint": artifact_hash,
                     "stdout": _redact_output(proc.stdout), "stderr": _redact_output(proc.stderr),
+                    "execution": execution,
                     "independent_verification": status == "PASS" and not violations}
         except subprocess.TimeoutExpired as exc:
             output = str(exc)
@@ -186,10 +297,148 @@ class OpenCodeExecuteAdapter:
                     "failure_class": classify_failure(output), "files_changed": [], "independent_verification": False}
         except (OSError, subprocess.SubprocessError) as exc:
             return {"status": "FAIL", "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
-                    "failure_class": type(exc).__name__, "files_changed": [], "independent_verification": False}
+                    "failure_class": type(exc).__name__, "error": str(exc)[:500],
+                    "stderr": _redact_output(getattr(exc, "stderr", "") or "")[:1000],
+                    "files_changed": [], "independent_verification": False}
         finally:
             subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, text=True, check=False)
             shutil.rmtree(worktree, ignore_errors=True)
+            shutil.rmtree(opencode_data_home, ignore_errors=True)
+
+
+class AntigravityExecuteAdapter:
+    """Bounded Antigravity CLI (agy) repo-edit adapter; runs agy on Mac mini."""
+
+    worker_id = "antigravity"
+
+    def execute(self, task: CodingTask, *, runner: Optional[str] = None, timeout: int = 90) -> Dict[str, Any]:
+        try:
+            from nexus_agent_platform.durable_objective_control import (
+                ACTIVE_CAMPAIGN_PATH, authorize_coding_action,
+            )
+            if ACTIVE_CAMPAIGN_PATH.exists():
+                is_temp = bool(task.allowed_paths and all(path.startswith("tmp/") for path in task.allowed_paths))
+                if not is_temp:
+                    authorize_coding_action(campaign_id=task.campaign_id,
+                        objective_id=task.owner_objective_id or task.objective_id,
+                        job_id=task.job_id or task.task_id,
+                        objective_version=task.objective_version,
+                        worker_role=task.worker_role, action_summary=task.prompt,
+                        path=ACTIVE_CAMPAIGN_PATH)
+        except Exception as exc:
+            return {"status": "BLOCKED", "worker_id": self.worker_id,
+                    "failure_class": "DURABLE_OBJECTIVE_GUARD", "error": str(exc)[:240],
+                    "provider_started": False}
+        if runner is None:
+            runner = _resolve_antigravity_runner()
+        if not runner:
+            return {"status": "UNAVAILABLE", "worker_id": self.worker_id, "failure_class": "UNAVAILABLE"}
+        started = now()
+        worktree = Path(tempfile.mkdtemp(prefix=f"nexus-antigravity-{task.task_id}-"))
+        added = False
+        prompt = ("You are a bounded Nexus coding worker. Edit only files under the allowed paths. "
+                  "Do not inspect secrets, runtime.env, client data, or protected paths. "
+                  f"Objective: {task.prompt}\nAllowed paths: {list(task.allowed_paths)}\n"
+                  f"Acceptance: {list(task.acceptance)}\nCreate the requested artifact and stop.")
+        settings_payload = json.dumps({"permissions": {"allow": ["write_file(*)", "edit_file(*)", "read_file(*)", "command(*)"]}})
+        command = [runner, "--settings", settings_payload, "-p", prompt]
+        try:
+            is_temp = bool(task.allowed_paths and all(path.startswith("tmp/") for path in task.allowed_paths))
+            if is_temp or not task.checkpoint_sha or task.checkpoint_sha == "release-hash":
+                subprocess.run(["git", "init", "-q"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                package = ROOT / "package.json"
+                if package.exists():
+                    shutil.copy2(package, worktree / "package.json")
+                for allowed in task.allowed_paths:
+                    (worktree / allowed).mkdir(parents=True, exist_ok=True)
+                subprocess.run(["git", "add", "--", "."], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                subprocess.run(["git", "-c", "user.email=nexus@localhost", "-c", "user.name=Nexus", "commit", "--allow-empty", "-qm", "sandbox"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                added = True
+            else:
+                try:
+                    subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.checkpoint_sha], cwd=ROOT, capture_output=True, text=True, timeout=5, check=True)
+                    added = True
+                except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                    subprocess.run(["git", "init", "-q"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                    package = ROOT / "package.json"
+                    if package.exists():
+                        shutil.copy2(package, worktree / "package.json")
+                    for allowed in task.allowed_paths:
+                        (worktree / allowed).mkdir(parents=True, exist_ok=True)
+                    subprocess.run(["git", "add", "--", "."], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                    subprocess.run(["git", "-c", "user.email=nexus@localhost", "-c", "user.name=Nexus", "commit", "--allow-empty", "-qm", "sandbox"], cwd=worktree, capture_output=True, text=True, timeout=10, check=True)
+                    added = True
+            before = _file_fingerprints(worktree, task.allowed_paths)
+            agy_env = _safe_env()
+            proc = subprocess.run(command, cwd=worktree, env=agy_env, capture_output=True, text=True, timeout=timeout, check=False)
+            combined = f"{proc.stdout}\n{proc.stderr}"
+            changed = _changed_files(worktree, before, task.allowed_paths)
+            violations = [path for path in changed if not _path_allowed(path, task.allowed_paths, task.protected_paths)]
+            execution = None
+            if any("execute python file once" in str(item).casefold() for item in task.acceptance):
+                candidates = [worktree / path for path in changed if path.endswith(".py")]
+                if len(candidates) != 1:
+                    execution = {"returncode": 1, "error": "EXPECTED_ONE_NEW_PYTHON_FILE"}
+                else:
+                    candidate = candidates[0].resolve()
+                    resolved_worktree = worktree.resolve()
+                    allowed_roots = [(resolved_worktree / allowed).resolve() for allowed in task.allowed_paths]
+                    if not any(candidate.is_relative_to(root) for root in allowed_roots):
+                        execution = {"returncode": 1, "error": "PYTHON_FILE_OUTSIDE_ALLOWED_WORKSPACE"}
+                    else:
+                        try:
+                            run_result = subprocess.run([sys.executable, str(candidate)], cwd=worktree,
+                                env=_safe_env(), capture_output=True, text=True, timeout=10, check=False)
+                            execution = {"returncode": run_result.returncode,
+                                "stdout": _redact_output(run_result.stdout)[:2000],
+                                "stderr": _redact_output(run_result.stderr)[:1000],
+                                "file": str(candidate.relative_to(resolved_worktree))}
+                        except (OSError, subprocess.SubprocessError) as exc:
+                            execution = {"returncode": 1, "error": f"{type(exc).__name__}: {str(exc)[:180]}"}
+            failure = classify_failure(combined, proc.returncode) if proc.returncode != 0 else None
+            if violations:
+                failure = "PROTECTED_PATH_VIOLATION"
+            if execution is not None and execution.get("returncode") != 0:
+                if proc.returncode == 0:
+                    failure = "BOUNDED_PYTHON_EXECUTION_FAILED"
+            status = "PASS" if proc.returncode == 0 and not violations else "FAIL"
+            if execution is not None and execution.get("returncode") != 0:
+                status = "FAIL"
+            if is_temp and status == "PASS" and not violations:
+                for rel in changed:
+                    src_f = worktree / rel
+                    dst_f = ROOT / rel
+                    if src_f.is_file():
+                        dst_f.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(src_f, dst_f)
+            artifact_hash = hashlib.sha256("\n".join(changed).encode()).hexdigest()
+            return {"status": status, "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
+                    "command": command[:4], "returncode": proc.returncode, "failure_class": failure,
+                    "files_changed": changed, "violations": violations, "artifact_fingerprint": artifact_hash,
+                    "stdout": _redact_output(proc.stdout), "stderr": _redact_output(proc.stderr),
+                    "execution": execution,
+                    "independent_verification": status == "PASS" and not violations}
+        except subprocess.TimeoutExpired as exc:
+            output = str(exc)
+            return {"status": "FAIL", "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
+                    "failure_class": classify_failure(output), "files_changed": [], "independent_verification": False}
+        except (OSError, subprocess.SubprocessError) as exc:
+            return {"status": "FAIL", "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
+                    "failure_class": type(exc).__name__, "error": str(exc)[:500],
+                    "stderr": _redact_output(getattr(exc, "stderr", "") or "")[:1000],
+                    "files_changed": [], "independent_verification": False}
+        finally:
+            if added:
+                subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, text=True, check=False)
+            shutil.rmtree(worktree, ignore_errors=True)
+
+
+def execute_coding_task(task: CodingTask, *, worker_id: Optional[str] = None, runner: Optional[str] = None, timeout: int = 90) -> Dict[str, Any]:
+    """Execute a coding task through the selected governed worker adapter."""
+    w = str(worker_id or "").lower()
+    if "antigravity" in w or "agy" in w:
+        return AntigravityExecuteAdapter().execute(task, runner=runner, timeout=timeout)
+    return OpenCodeExecuteAdapter().execute(task, runner=runner, timeout=timeout)
 
 
 def _write_json(path: Path, value: Dict[str, Any]) -> None:
@@ -222,24 +471,31 @@ def persist_handoff(*, task: CodingTask, previous_worker: str, next_worker: str,
                     reason: str, failure_class: str, failure_evidence: Any,
                     current_stage: str = "S2_HANDOFF_CREATED", completed_stages: Optional[Sequence[str]] = None,
                     receipt_refs: Optional[Sequence[str]] = None) -> Dict[str, Any]:
-    handoff = {"schema_version": "nexus.worker-handoff.v1", "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
-               "task_id": task.task_id, "objective_id": task.objective_id, "generation": 1,
+    handoff = {"schema_version": "nexus.worker-handoff.v2", "campaign_id": task.campaign_id or "NEXUS_COMPLETION_DAY_2026_08_26",
+               "owner_objective_id": task.owner_objective_id or task.objective_id,
+               "objective_version": task.objective_version,
+               "task_id": task.task_id, "job_id": task.job_id or task.task_id,
+               "objective_id": task.owner_objective_id or task.objective_id, "generation": 1,
                "previous_worker": previous_worker, "next_worker": next_worker, "handoff_reason": reason,
                "failure_class": failure_class, "failure_evidence": failure_evidence,
                "starting_sha": task.checkpoint_sha, "checkpoint_sha": task.checkpoint_sha,
                "allowed_paths": list(task.allowed_paths), "protected_paths": list(task.protected_paths),
                "current_stage": current_stage, "completed_stages": list(completed_stages or ["S0_SCHEDULED", "S1_SELECTED"]),
                "remaining_acceptance": list(task.acceptance), "worktree": task.worktree,
+               "worker_role": task.worker_role,
                "receipt_refs": list(receipt_refs or []), "created_at": now()}
     _write_json(HANDOFF_PATH, handoff)
     return handoff
 
 
-def select_worker(task: CodingTask, workers: Dict[str, Dict[str, Any]], *, unavailable: Iterable[str] = ()) -> str:
+def select_worker(task: CodingTask, workers: Dict[str, Dict[str, Any]], *, unavailable: Iterable[str] = (),
+                  probe_installed_unproven: bool = False) -> str:
     blocked = set(unavailable)
     for worker_id in ("codex", "opencode"):
         row = workers.get(worker_id, {})
-        if worker_id not in blocked and row.get("state") == "AVAILABLE" and "repo_edit" in row.get("capabilities", []):
+        eligible_state=row.get("state")=="AVAILABLE" or (
+            probe_installed_unproven and row.get("state")=="INSTALLED_UNPROVEN")
+        if worker_id not in blocked and eligible_state and "repo_edit" in row.get("capabilities", []):
             return worker_id
     local = workers.get("local", {})
     if "deterministic" in task.acceptance and local.get("state") == "AVAILABLE":

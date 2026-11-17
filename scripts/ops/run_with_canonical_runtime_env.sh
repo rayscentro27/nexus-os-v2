@@ -11,7 +11,10 @@ set -a
 source "$RUNTIME_ENV"
 set +a
 
-export PYTHONPATH="/Users/raymonddavis/nexus-os-v2-canonical/scripts${PYTHONPATH:+:$PYTHONPATH}"
+NEXUS_CANONICAL_ROOT="/Users/raymonddavis/nexus-os-v2-canonical"
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$NEXUS_CANONICAL_ROOT/scripts"
+export NEXUS_REPO_ROOT="$NEXUS_CANONICAL_ROOT"
+export NEXUS_RESEARCH_STATE_ROOT="${NEXUS_RESEARCH_STATE_ROOT:-$NEXUS_CANONICAL_ROOT/data}"
 NEXUS_NODE_ROOT="/Users/raymonddavis/.nvm/versions/node"
 if [ -d "$NEXUS_NODE_ROOT" ]; then
   NEXUS_NODE_BINS=( "$NEXUS_NODE_ROOT"/v*/bin )
@@ -29,5 +32,19 @@ fi
 export NEXUS_AUTONOMY_STRIPE_DISABLED=1
 unset STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
   STRIPE_LIVE_WEBHOOK_SECRET VITE_STRIPE_PUBLISHABLE_KEY VITE_STRIPE_SECRET_KEY
+
+# Keep the existing launchd/dispatcher invocation as the sole cadence owner.
+# The bounded parent observer only captures the dispatcher child's U state; it
+# never restarts, signals, or repairs it. Other wrapped services are unchanged.
+NEXUS_IS_DURABLE_DISPATCHER=0
+for NEXUS_ARG in "$@"; do
+  if [[ "${NEXUS_ARG##*/}" == "dispatcher_once.py" ]]; then
+    NEXUS_IS_DURABLE_DISPATCHER=1
+  fi
+done
+if (( NEXUS_IS_DURABLE_DISPATCHER )); then
+  exec "$NEXUS_CANONICAL_ROOT/.venv-agent-platform/bin/python3" \
+    -m nexus_agent_platform.dispatcher_u_watch -- "$@"
+fi
 
 exec "$@"

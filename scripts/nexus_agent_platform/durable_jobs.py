@@ -610,6 +610,48 @@ class SupabaseJobStore:
     def complete(self, job_id: str, worker_id: str, result: Any, *, receipt_ref: str | None = None) -> str:
         digest=_canonical_hash(result); receipt=receipt_ref or "receipt_"+uuid.uuid4().hex
         current=self.get(job_id)
+    # Bounded dispatcher reads (2026-11-13). Full rows carry governance_context
+    # (Research parent state, evidence, questions), ~11-20 KB each, so a 176-row
+    # parent scan alone was 1.93 MB of the 2 MB per-run response budget. These
+    # project only the scalar fields the dispatcher decides on; full rows are
+    # fetched by exact job_id for the few jobs that need them.
+    PARENT_INDEX_COLUMNS = ("job_id,state,created_at,"
+        "objective_id:governance_context->research_parent_state->>objective_id,"
+        "ctx_objective_id:governance_context->>research_parent_objective_id,"
+        "continuation_sequence:governance_context->research_parent_state->>continuation_sequence,"
+        "parent_status:governance_context->research_parent_state->>status,"
+        "terminal_condition:governance_context->research_parent_state->>terminal_condition")
+    READY_INDEX_COLUMNS = ("job_id,department,job_type,priority,state,scheduled_at,attempt_count,max_attempts,"
+        "source:governance_context->>source,resource_class:governance_context->>resource_class")
+
+    def list_research_parent_index(self, limit: int = 500) -> list[dict[str, Any]]:
+        """Same row universe/order as list_research_parent_jobs, scalars only."""
+        return self._request(f"nexus_durable_jobs?department=eq.RESEARCH&job_type=eq.RESEARCH_INTAKE&select={self.PARENT_INDEX_COLUMNS}&order=created_at.desc&limit={max(1,min(1000,int(limit)))}")
+
+    def get_many(self, job_ids: list[str], *, chunk: int = 20) -> list[Job]:
+        jobs: list[Job] = []
+        ids = list(dict.fromkeys(job_ids))
+        for start in range(0, len(ids), max(1, chunk)):
+            part = ",".join(quote(job_id, safe="") for job_id in ids[start:start + chunk])
+            rows = self._request(f"nexus_durable_jobs?job_id=in.({part})&select={self.JOB_COLUMNS}&order=created_at.desc&limit={chunk}")
+            jobs.extend(self._job(row) for row in rows)
+        return jobs
+
+    def list_ready_index(self, limit: int = 50) -> list[Job]:
+        """Due READY/FAILED_RETRYABLE candidates with only the fields dispatch
+        filters on (source, resource_class); the claim RPC returns the full row."""
+        due_at = quote(_iso(), safe="")
+        rows=self._request(f"nexus_durable_jobs?state=in.(READY,FAILED_RETRYABLE)&scheduled_at=lte.{due_at}&select={self.READY_INDEX_COLUMNS}&order=priority.desc,scheduled_at.asc&limit={max(1,min(100,limit))}")
+        jobs=[]
+        for row in rows:
+            context={key: row.get(key) for key in ("source","resource_class") if row.get(key) is not None}
+            jobs.append(self._job({**row, "governance_context": context}))
+        return jobs
+
+    def count_ready(self, limit: int = 100) -> int:
+        due_at = quote(_iso(), safe="")
+        return len(self._request(f"nexus_durable_jobs?state=in.(READY,FAILED_RETRYABLE)&scheduled_at=lte.{due_at}&select=job_id&limit={max(1,min(100,limit))}"))
+
         if current and current.state=="COMPLETED" and current.receipt_ref: return current.receipt_ref
         rows=self._request(f"nexus_durable_jobs?job_id=eq.{job_id}&claimed_by=eq.{worker_id}&state=in.(CLAIMED,RUNNING)","PATCH",
             {"state":"COMPLETED","completed_at":_iso(),"lease_until":None,"receipt_ref":receipt,"result_hash":digest},"return=representation")
@@ -767,11 +809,14 @@ def dispatch_once(store: DurableJobStore, *, launch: bool = True, worker_id: str
         with store._connect() as db: active_jobs = [store._job(row) for row in db.execute("SELECT * FROM jobs WHERE state IN ('CLAIMED','RUNNING')").fetchall()]
     counts = {name: sum(name in classify(job) for job in active_jobs) for name in WORKER_LIMITS}
     started = 0
-    candidates = store.list_ready(50)
+    retried = 0
+    candidates = store.list_ready_index(50) if hasattr(store, "list_ready_index") else store.list_ready(50)
+    scanned = len(candidates)
     if allowed_job_ids is not None:
         candidates = [job for job in candidates if job.job_id in allowed_job_ids]
     if allowed_job_sources is not None:
         candidates = [job for job in candidates if str((job.governance_context or {}).get("source") or "") in allowed_job_sources]
+    claimable = len(candidates)
     for candidate in candidates:
         cats = classify(candidate)
         if active >= WORKER_LIMITS["total"] or any(counts[key] >= WORKER_LIMITS[key] for key in cats): continue
@@ -790,8 +835,10 @@ def dispatch_once(store: DurableJobStore, *, launch: bool = True, worker_id: str
                 store.transition(job.job_id,"FAILED_RETRYABLE",worker_id=worker_id,error_code="WORKER_LAUNCH_FAILED",error_summary=str(exc))
                 continue
         active += 1; started += 1
+        retried += int(str(candidate.state).upper() == "FAILED_RETRYABLE")
         for key in cats: counts[key] += 1
-    return {"started":started,"active":active,"ready":len(store.list_ready(100))}
+    ready = store.count_ready(100) if hasattr(store, "count_ready") else len(store.list_ready(100))
+    return {"started":started,"active":active,"ready":ready,"scanned":scanned,"claimable":claimable,"retried":retried}
 
 
 def handler_route(job_type: str) -> str:
