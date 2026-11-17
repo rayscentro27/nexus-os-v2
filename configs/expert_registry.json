@@ -1,0 +1,16 @@
+{
+  "schema_version": "nexus.expert-registry.v1",
+  "experts": [
+    {"expert_id":"CLYDE_CREDIT","name":"Clyde","domain":"CREDIT","role":"specialized_domain_expert"},
+    {"expert_id":"GRANT_FUNDING","name":"Grant","domain":"FUNDING","role":"specialized_domain_expert"},
+    {"expert_id":"ATLAS_OPPORTUNITY","name":"Atlas","domain":"BUSINESS_OPPORTUNITY","role":"specialized_domain_expert"},
+    {"expert_id":"MERCURY_TRADING","name":"Mercury","domain":"TRADING","role":"specialized_domain_expert"},
+    {"expert_id":"FORGE_SYSTEMS","name":"Forge","domain":"SYSTEMS","role":"specialized_domain_expert"},
+    {"expert_id":"MIRA_MARKETING","name":"Mira","domain":"MARKETING","role":"specialized_domain_expert"},
+    {"expert_id":"LEDGER_FINANCE","name":"Ledger","domain":"FINANCE","role":"specialized_domain_expert"},
+    {"expert_id":"SCOUT_INTELLIGENCE","name":"Scout","domain":"SEO_CUSTOMER_INTELLIGENCE","role":"specialized_domain_expert"},
+    {"expert_id":"ALPHA","name":"Alpha","domain":"CROSS_DOMAIN","role":"challenger"},
+    {"expert_id":"NOVA","name":"Nova","domain":"EXECUTIVE_COMMUNICATION","role":"executive_communication"},
+    {"expert_id":"RESEARCH","name":"Research","domain":"RESEARCH","role":"company_sensing_collection"}
+  ]
+}
