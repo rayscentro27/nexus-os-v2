@@ -168,13 +168,16 @@ def test_research_step_execution_uses_bounded_child_job_not_control_root(monkeyp
     monkeypatch.setattr(durable_jobs, "default_store", lambda: store)
     first, budget = workflow_backend._ensure_step_execution_job("root-job", "wf-test", "DEEP_RESEARCH")
     second, _ = workflow_backend._ensure_step_execution_job("root-job", "wf-test", "DEEP_RESEARCH")
+    retry, _ = workflow_backend._ensure_step_execution_job("root-job", "wf-test", "DEEP_RESEARCH", 2)
     row = store.get(first)
     assert first == second
+    assert retry != first
+    assert store.get(retry).budget_envelope["max_requests"] == 20
     assert row.parent_job_id == "root-job"
     assert row.job_type == "RESEARCH_CASE_CONTINUATION"
     assert row.budget_envelope["max_requests"] == 20
     assert row.budget_envelope["max_estimated_cost"] == 0.0
-    assert budget["max_response_bytes"] == 500_000
+    assert budget["max_response_bytes"] == 2_000_000
 
 
 def test_ai_sensitive_values_are_redacted_before_context_creation():

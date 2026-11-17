@@ -21,6 +21,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -140,32 +141,42 @@ def _public_json(url: str, timeout: int = 12) -> Any:
 
 def web_search(query: str, limit: int) -> dict[str, Any]:
     params = urllib.parse.urlencode({"q": query})
+    # Keep SERP reads bounded, while allowing Bing's result list (often after
+    # the large page head) to fit in the response.
+    search_response_limit = 120_000
     body = _governed_public_get(f"https://html.duckduckgo.com/html/?{params}", timeout=12,
-                                limit=25_000, accept="text/html").decode("utf-8", errors="replace")
+                                limit=search_response_limit, accept="text/html").decode("utf-8", errors="replace")
     clean = lambda value: re.sub(r"<[^>]+>|\s+", " ", html.unescape(value)).strip()
     class SearchLinkParser(HTMLParser):
         def __init__(self, engine):
             super().__init__(convert_charrefs=True); self.engine=engine; self.rows=[]
             self.in_result=0; self.in_h2=False; self.anchor=None
+            self.snippet_row=None; self.snippet_close=None
         def handle_starttag(self, tag, attrs):
             attrs=dict(attrs)
             if tag=="li" and "b_algo" in str(attrs.get("class", "")).split(): self.in_result+=1
             if tag=="h2": self.in_h2=True
+            classes=str(attrs.get("class", "")).split()
+            if self.engine == "duckduckgo_html" and "result__snippet" in classes:
+                self.snippet_row = self.rows[-1] if self.rows else None
+                self.snippet_close = tag
+            if self.engine == "bing_html" and tag == "div" and "b_caption" in classes:
+                self.snippet_row = self.rows[-1] if self.rows else None
+                self.snippet_close = tag
             if tag=="a":
-                classes=str(attrs.get("class", "")).split()
                 href=str(attrs.get("href") or "")
-                host=(urllib.parse.urlsplit(href).hostname or "").lower()
-                provider_host=("duckduckgo.com" if self.engine=="duckduckgo_html" else "bing.com")
-                target=("result__a" in classes or (self.engine=="bing_html" and self.in_result>0 and self.in_h2)
-                        or bool(href) and (href.startswith(("https://","http://"))
-                            or self.engine=="bing_html" and (host==provider_host or host.endswith("."+provider_host))
-                            or href.startswith("/")))
+                target=(self.engine == "duckduckgo_html" and "result__a" in classes
+                        or self.engine == "bing_html" and self.in_result > 0 and self.in_h2)
                 if target and attrs.get("href"): self.anchor={"url":attrs["href"],"title":[]}
         def handle_data(self, data):
             if self.anchor is not None: self.anchor["title"].append(data)
+            elif self.snippet_row is not None: self.snippet_row["snippet_parts"].append(data)
         def handle_endtag(self, tag):
             if tag=="a" and self.anchor is not None:
-                self.rows.append({"url":self.anchor["url"],"title":"".join(self.anchor["title"])}); self.anchor=None
+                row={"url":self.anchor["url"],"title":"".join(self.anchor["title"]),"snippet_parts":[]}
+                self.rows.append(row); self.anchor=None
+            if self.snippet_close == tag:
+                self.snippet_row=None; self.snippet_close=None
             if tag=="h2": self.in_h2=False
             if tag=="li" and self.in_result: self.in_result-=1
     parser=SearchLinkParser("duckduckgo_html"); parser.feed(body)
@@ -176,17 +187,19 @@ def web_search(query: str, limit: int) -> dict[str, Any]:
         url=urllib.parse.parse_qs(urllib.parse.urlsplit(raw_url).query).get("uddg",[raw_url])[0]
         if not str(url).startswith(("https://","http://")): continue
         rows.append({"query":query,"rank_position":rank,"title":clean(link["title"])[:240],"url":url,
-                     "domain":urllib.parse.urlsplit(url).netloc,"snippet":"","published_at":None,"updated_at":None,
+                     "domain":urllib.parse.urlsplit(url).netloc,
+                     "snippet":clean(" ".join(link.get("snippet_parts") or []))[:500],"published_at":None,"updated_at":None,
                      "discovered_at":iso(),"result_type":"ORGANIC_RESULT","source_engine":"duckduckgo_html"})
     ddg_rejected=[]
     if rows:
         accepted, ddg_rejected = _screen_search_rows(rows, query)
         if accepted:
-            return {"results": accepted, "rejected_results": ddg_rejected, "provider": "duckduckgo_html"}
+            return {"status": "PASS", "results": accepted, "rejected_results": ddg_rejected,
+                    "provider": "duckduckgo_html"}
     # Credential-free fallback already used by the existing Hermes web-search
     # capability.  This remains raw SERP collection, not an AI selector.
     bing = _governed_public_get(f"https://www.bing.com/search?{params}", timeout=12,
-                                limit=25_000, accept="text/html").decode("utf-8", errors="replace")
+                                limit=search_response_limit, accept="text/html").decode("utf-8", errors="replace")
     rows = []
     def bing_target(value: str) -> str:
         value = html.unescape(value)
@@ -206,18 +219,47 @@ def web_search(query: str, limit: int) -> dict[str, Any]:
         url = bing_target(url)
         if not str(url).startswith(("https://","http://")): continue
         rows.append({"query": query, "rank_position": rank, "title": clean(title)[:240], "url": url,
-                     "domain": urllib.parse.urlsplit(url).netloc, "snippet": "", "published_at": None,
+                     "domain": urllib.parse.urlsplit(url).netloc,
+                     "snippet": clean(" ".join(link.get("snippet_parts") or []))[:500], "published_at": None,
                      "updated_at": None, "discovered_at": iso(), "result_type": "ORGANIC_RESULT", "source_engine": "bing_html"})
     accepted, rejected = _screen_search_rows(rows, query)
-    return {"results": accepted, "rejected_results":[*ddg_rejected,*rejected], "provider": "bing_html",
-            "status":"PASS" if accepted else "NO_RESULTS",
-            "notes":[] if accepted else [f"SEARCH_PARSE_DIAGNOSTIC:ddg_bytes={len(body.encode())};bing_bytes={len(bing.encode())};ddg_links={ddg_link_count};bing_links={len(bing_parser.rows)};screened_out={len(ddg_rejected)+len(rejected)}"]}
+    if accepted:
+        return {"results": accepted, "rejected_results": [*ddg_rejected, *rejected],
+                "provider": "bing_html", "status": "PASS"}
+
+    # Bing sometimes returns an interstitial or result markup outside the
+    # bounded HTML response. Its RSS representation is the same provider and
+    # provides structured results without relaxing relevance screening.
+    rss_url = "https://www.bing.com/search?" + urllib.parse.urlencode({"format": "rss", "q": query})
+    rss = _governed_public_get(rss_url, timeout=12, limit=120_000,
+        accept="application/rss+xml,application/xml,text/xml").decode("utf-8", errors="replace")
+    try:
+        root = ET.fromstring(rss)
+        rss_rows = []
+        for rank, item in enumerate(root.findall(".//item")[:limit], 1):
+            title = (item.findtext("title") or "").strip()
+            url = (item.findtext("link") or "").strip()
+            snippet = (item.findtext("description") or "").strip()
+            if not url.startswith(("https://", "http://")):
+                continue
+            rss_rows.append({"query": query, "rank_position": rank, "title": clean(title)[:240],
+                "url": url, "domain": urllib.parse.urlsplit(url).netloc, "snippet": clean(snippet)[:500],
+                "published_at": None, "updated_at": None, "discovered_at": iso(),
+                "result_type": "ORGANIC_RESULT", "source_engine": "bing_rss"})
+    except ET.ParseError:
+        rss_rows = []
+    rss_accepted, rss_rejected = _screen_search_rows(rss_rows, query)
+    notes = [] if rss_accepted else [f"SEARCH_PARSE_DIAGNOSTIC:ddg_bytes={len(body.encode())};bing_bytes={len(bing.encode())};ddg_links={ddg_link_count};bing_links={len(bing_parser.rows)};rss_items={len(rss_rows)};screened_out={len(ddg_rejected)+len(rejected)+len(rss_rejected)}"]
+    return {"results": rss_accepted, "rejected_results": [*ddg_rejected, *rejected, *rss_rejected],
+        "provider": "bing_rss", "status": "PASS" if rss_accepted else "NO_RESULTS", "notes": notes}
 
 
 def _screen_search_rows(rows: list[dict[str, Any]], query: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Keep search execution separate from useful source evidence."""
     site_domains = re.findall(r"\bsite:([a-z0-9.-]+)", query.lower())
-    stop = {"site", "the", "for", "and", "with", "what", "which", "from", "how", "where", "public", "current"}
+    stop = {"site", "the", "for", "and", "with", "what", "which", "from", "how", "where", "public", "current",
+            "official", "credible", "relevant", "source", "sources", "evidence", "information", "about", "based",
+            "guidance", "research", "search", "find", "check", "verify"}
     terms = {x for x in re.findall(r"[a-z0-9]+", query.lower()) if len(x) > 2 and x not in stop}
     accepted: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []

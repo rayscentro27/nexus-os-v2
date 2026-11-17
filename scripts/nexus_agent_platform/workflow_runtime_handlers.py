@@ -97,7 +97,8 @@ def alpha_deep_research(packet: dict[str, Any]) -> dict[str, Any]:
     from nexus_agent_platform.research_room.workflow_backend import deep_research
     result = deep_research(workflow_id=str(packet.get("workflow_id") or ""),
                            durable_job_id=str(packet.get("durable_job_id") or ""),
-                           objective=str(packet.get("objective") or ""))
+                           objective=str(packet.get("objective") or ""),
+                           attempt_number=int(packet.get("step_attempt") or 1))
     if result.get("status") in {"COMPLETE", "PARTIAL"}:
         result.update({"environment_id": proof["environment_id"],
             "model_profile": "RESEARCH_DEEP", "model_profile_status": proof["model_profile_status"],

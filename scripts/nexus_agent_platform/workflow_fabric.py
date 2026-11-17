@@ -70,6 +70,7 @@ def context_packet(workflow: dict[str, Any], step: dict[str, Any], *, relevant_f
     """Construct a bounded handoff packet; never accepts or includes raw transcripts."""
     packet = {"workflow_id": workflow["workflow_id"], "objective": workflow["objective"],
         "current_step": step["step_id"], "current_domain_agent": step["owner"],
+        "step_attempt": int(step.get("attempt_count", 0)) + 1,
         "durable_job_id": workflow.get("durable_job_id"),
         "research_room_id": workflow.get("research_room_id"),
         "relevant_facts": (relevant_facts or [])[:max_items], "evidence": (evidence or [])[:max_items],

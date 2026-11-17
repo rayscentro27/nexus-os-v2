@@ -152,6 +152,29 @@ def test_supabase_claim_by_id_never_falls_back_to_unscoped_claim(monkeypatch):
     assert generic_claim==[]
 
 
+def test_supabase_renew_extends_only_current_active_worker_lease(monkeypatch):
+    from nexus_agent_platform.durable_jobs import SupabaseJobStore
+    store = SupabaseJobStore()
+    captured = {}
+    def request(path, method="GET", body=None, prefer="return=minimal"):
+        captured.update(path=path, method=method, body=body)
+        return [{"job_id": "job-renew", "lease_until": body["lease_until"]}]
+    monkeypatch.setattr(store, "_request", request)
+    assert store.renew("job-renew", "rea-worker", lease_seconds=900) is True
+    assert captured["method"] == "PATCH"
+    assert "claimed_by=eq.rea-worker" in captured["path"]
+    assert "state=in.(CLAIMED,RUNNING)" in captured["path"]
+    assert "lease_until=gt." in captured["path"]
+    assert captured["body"]["lease_until"]
+
+
+def test_supabase_renew_returns_false_when_worker_lease_is_not_owned(monkeypatch):
+    from nexus_agent_platform.durable_jobs import SupabaseJobStore
+    store = SupabaseJobStore()
+    monkeypatch.setattr(store, "_request", lambda *args, **kwargs: [])
+    assert store.renew("job-renew", "another-worker", lease_seconds=900) is False
+
+
 def test_next_job_is_event_created_and_idempotent(tmp_path):
     store=store_at(tmp_path); parent=store.enqueue("FEEDER","BUSINESS_OPPORTUNITY_FEEDER")
     first=create_next_job(store,parent,department="RESEARCH",job_type="RESEARCH_GAP_VERIFY",payload_ref="artifact:gap",event_id="gap-opened")

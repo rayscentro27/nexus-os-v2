@@ -533,6 +533,19 @@ class SupabaseJobStore:
             {"governance_context":value},"return=representation")
         if not rows: raise JobError("JOB_CONTEXT_UPDATE_REJECTED")
 
+    def renew(self, job_id: str, worker_id: str, *, lease_seconds: int = 300) -> bool:
+        """Extend only a still-live lease held by this worker on an active job."""
+        now = utcnow()
+        lease_until = _iso(now + timedelta(seconds=max(15, int(lease_seconds))))
+        now_query = quote(_iso(now), safe="")
+        rows = self._request(
+            f"nexus_durable_jobs?job_id=eq.{quote(job_id, safe='')}"
+            f"&claimed_by=eq.{quote(worker_id, safe='')}"
+            f"&state=in.(CLAIMED,RUNNING)&lease_until=gt.{now_query}",
+            "PATCH", {"lease_until": lease_until},
+            "return=representation")
+        return bool(rows)
+
     def requeue_for_repair(self, job_id: str, *, reason: str) -> Job:
         """Atomically clear stale lease fields before retrying the same failed job."""
         current=self.get(job_id)
