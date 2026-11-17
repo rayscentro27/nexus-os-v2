@@ -34,9 +34,11 @@ feed ledger is an event summarizer, not an architecture decision register.
   authenticated asset-read route. The adapter fails closed if R2 or Supabase
   metadata access is not configured.
 - **Implementation state:** IMPLEMENTED.
-- **Configuration state:** PARTIAL. The non-secret account ID and bucket are
-  registered in the canonical Nexus runtime environment. Bucket-scoped S3
-  credentials are not configured.
+- **Configuration state:** The non-secret account ID and bucket are registered
+  in the canonical Nexus runtime environment. The bucket-scoped S3 credential
+  identity is registered in Nexus credential control and both secret
+  components are configured in macOS Keychain. Secret values are not stored
+  here.
 - **Bucket:** `nexus-creative-assets`, Standard storage, created and listed via
   Wrangler 4.149.0 on 2026-11-17; location `WNAM`. `wrangler r2 bucket info`
   reports Standard storage. `wrangler r2 bucket domain list` returned no custom
@@ -47,11 +49,30 @@ feed ledger is an event summarizer, not an architecture decision register.
   `certification/r2-bootstrap-test-a20a008ad5db4530a9705c94e020fbac.txt`; the
   object was deleted after verification. Bucket info subsequently reported
   zero objects and zero bytes.
-- **Live certification state:** NOT LIVE CERTIFIED. The `boto3` import is
-  available in `.venv-agent-platform`, but no bucket-scoped R2 S3 access key
-  is present. The adapter, Asset Persistence Bot, Supabase metadata writes,
-  and signed-read delivery have not been live-tested. No Supabase writes were
-  performed.
+- **Data Governor policy:** Exact-scope rows exist for
+  `CLOUDFLARE_R2 / creative_canonical_storage`. Certification is limited to 10
+  objects, 100 MiB aggregate uploads, 50 MiB per object, 50 Class A operations,
+  100 Class B operations, 20 certification-only deletes, 300 seconds, 3
+  retries, and a $0.10 estimated-cost ceiling. Normal Creative persistence
+  remains `HUMAN_APPROVAL_REQUIRED` until a production budget is authorized.
+  Bucket administration, public access, credential creation, and production
+  deletion are not permitted.
+- **Cost model:** Configured separately in
+  `configs/nexus_r2_storage_cost_policy.json`. The estimate uses gross Standard
+  rates ($0.015/GB-month, $4.50/million Class A, $0.36/million Class B, free
+  egress) and does not subtract unknown remaining free-tier allowances.
+  Estimate mode is `BOUNDED_ADVISORY`; source verified 2026-11-17.
+- **Live certification state:** PARTIAL. The governed boto3 path passed
+  authenticated object HEAD, image and video PUT/HEAD/GET, fetched-content hash
+  verification, signed-read URL generation, and repeat-ingestion deduplication
+  on 2026-11-17. The private test objects are retained under
+  `certification/r2-governor/r2cert-20261117-8bce6584477b/`; the current
+  adapter has no authorized certification-delete verifier, so it did not
+  attempt deletion. Full Asset Persistence Bot completion and Creative Studio
+  delivery remain uncertified because the canonical Creative metadata store is
+  not configured (`metadata_store_configured() = false`); no asset metadata
+  rows were written. Supabase contains only the exact R2 Governor policy rows
+  created/updated for certification and approval-gated production.
 - **Usage visibility:** Local registered-object and operation receipts provide
   bounded visibility. Account-wide Cloudflare usage and billing are not
   inferred.
