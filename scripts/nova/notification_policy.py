@@ -21,6 +21,14 @@ ROUTINE_KINDS = {
     "PRODUCTIVITY_AUDIT", "HEALTHY_AUDIT", "SCHEDULER_WAKE",
 }
 
+V6_MILESTONE_KINDS = {
+    "V6_STARTED", "RESEARCH_STARTED", "RESEARCH_COMPLETE", "TOP_3_BUSINESSES_SELECTED",
+    "BUSINESS_PLAN_1_COMPLETE", "BUSINESS_PLAN_2_COMPLETE", "BUSINESS_PLAN_3_COMPLETE",
+    "CAMPAIGN_1_COMPLETE", "CAMPAIGN_2_COMPLETE", "CAMPAIGN_3_COMPLETE", "VIDEO_COMPLETE",
+    "FOREX_RESEARCH_COMPLETE", "STRATEGY_1_BACKTEST_COMPLETE", "STRATEGY_2_BACKTEST_COMPLETE",
+    "PAPER_TRADING_STARTED", "NEEDLE_INSTALLED", "V6_COMPLETE", "RAY_ACTION_REQUIRED",
+}
+
 def event_type(event: dict[str, Any]) -> str:
     return str(event.get("event_type") or event.get("kind") or "UNKNOWN").upper()
 
@@ -30,6 +38,7 @@ def material_state(event: dict[str, Any]) -> dict[str, Any]:
         "event_type", "kind", "severity", "affected_system", "material_status",
         "status", "state", "blocker", "required_action", "project_id",
         "client_id", "goal", "department", "source", "failure_class",
+        "campaign_id", "summary", "why_it_matters", "next",
     )
     state = {key: event.get(key) for key in preferred if event.get(key) not in (None, "", [])}
     state["event_type"] = event_type(event)
@@ -47,11 +56,19 @@ def classify_event(event: dict[str, Any]) -> str:
     kind = event_type(event)
     if kind in {"SUPERVISOR_UNHEALTHY", "RESEARCH_NOT_REAL", "REQUIRED_PATH_FAILED",
                 "RAY_REQUIRED", "APPROVAL_REQUIRED", "SAFETY_EVENT", "RECOVERY",
-                "PRODUCTIVITY_STALL", "CRITICAL_FAILURE"}:
+                "PRODUCTIVITY_STALL", "CRITICAL_FAILURE", "RESOURCE_ALARM",
+                "RESEARCH_BLOCKED", "RESEARCH_FAILED", "RESEARCH_APPROVAL_REQUIRED"}:
+        return "CRITICAL"
+    if kind == "RAY_ACTION_REQUIRED":
         return "CRITICAL"
     if kind in {"TERMINAL_CERTIFICATION", "GOAL_ADVANCED", "GOAL_COMPLETED",
                 "BLOCKER_REPAIRED", "CAPABILITY_PROVEN", "DEPARTMENT_MILESTONE",
-                "SIGNIFICANT_RESEARCH", "BUSINESS_EVENT", "MATERIAL_COMPLETION"}:
+                "SIGNIFICANT_RESEARCH", "BUSINESS_EVENT", "MATERIAL_COMPLETION",
+                "SYSTEMS_RESULT", "ALPHA_RESULT", "ALPHA_ASSIGNED"}:
+        return "MATERIAL"
+    if kind == "RESEARCH_COMPLETED":
+        return "MATERIAL"
+    if kind in V6_MILESTONE_KINDS:
         return "MATERIAL"
     if kind in ROUTINE_KINDS:
         return "ROUTINE"
