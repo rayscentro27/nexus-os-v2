@@ -31,7 +31,7 @@
         "ROUTING_LIGHT"
       ],
       "allowed_execution_environments": [
-        "MAC_MINI"
+        "ORACLE_NOVA_HERMES"
       ],
       "forbidden_connectors": [
         "CREATIVE_PROVIDER",
@@ -45,7 +45,10 @@
         "UNKNOWN_REMOTE",
         "UNAPPROVED_PRODUCTION"
       ],
-      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative"
+      "authority": "LEAST_PRIVILEGE; all writes delegated to governed services; approvals remain authoritative",
+      "preferred_execution_environments": [
+        "ORACLE_NOVA_HERMES"
+      ]
     },
     {
       "agent_id": "RESEARCH_LEAD",
@@ -3703,10 +3706,10 @@
         "SYSTEM_HEALTH_READ"
       ],
       "allowed_execution_environments": [
-        "MAC_MINI"
+        "ORACLE_NOVA_HERMES"
       ],
       "preferred_execution_environments": [
-        "MAC_MINI"
+        "ORACLE_NOVA_HERMES"
       ],
       "fallback_execution_environments": [],
       "forbidden_connectors": [
