@@ -122,6 +122,13 @@ SAFE_COMMANDS = {
     ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "config", "--help"),
     ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "-p", "nova_nexus",
      "config", "get", "agent.max_turns"),
+    # Hermes native capability discovery only; never executes a skill or
+    # changes a schedule. These exact commands make the runtime's own
+    # supported interfaces inspectable through the approved CURRENT resolver.
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "skills", "--help"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "skills", "list"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "--help"),
+    ("podman", "exec", HERMES_CONTAINER, "/opt/hermes/.venv/bin/hermes", "cron", "list"),
 }
 R50_VERIFY_SCRIPT = f'''import hashlib,json
 from pathlib import Path
