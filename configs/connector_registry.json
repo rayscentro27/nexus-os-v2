@@ -1137,12 +1137,12 @@
         "TASK_SCOPED"
       ],
       "authority": "Existing provider/connector authority required; not granted by registration",
-      "credential_id": null,
+      "credential_id": "credential.n8n.nexus_control.prod.v1",
       "approval_required": true,
       "cost_class": "UNVERIFIED",
-      "status": "NOT_VERIFIED",
-      "health_source": "No current runtime certification attached",
-      "last_certified": null,
+      "status": "AVAILABLE_LIMITED",
+      "health_source": "Authenticated bounded GET /healthz and /api/v1/workflows?limit=100 via Nexus credential authority; read-only adapter",
+      "last_certified": "2026-11-17",
       "primary_environment": "MAC_MINI",
       "supported_environments": [
         "MAC_MINI"

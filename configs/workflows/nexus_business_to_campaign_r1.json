@@ -1,0 +1,284 @@
+{
+  "schema_version": "nexus.workflow_definition.v1",
+  "workflow_type": "NEXUS_BUSINESS_TO_CAMPAIGN_R1",
+  "title": "Nexus Business to Campaign",
+  "owner": "NOVA",
+  "priority": "NORMAL",
+  "execution_mode": "CONTROLLER_OWNED_CONTINUATION",
+  "ai_worker_can_terminate_workflow": false,
+  "steps": [
+    {
+      "step_id": "OBJECTIVE_INTAKE",
+      "owner": "NOVA",
+      "bot_id": "NOVA_COORDINATOR",
+      "skill_id": "nova.workflow_coordination",
+      "model_profile": "ROUTING_LIGHT",
+      "connector_ids": [],
+      "environment_id": "ORACLE_NOVA_HERMES",
+      "data_class": "BUSINESS_STATE",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [],
+      "max_retries": 2
+    },
+    {
+      "step_id": "RESEARCH_PLAN",
+      "owner": "RESEARCH_LEAD",
+      "bot_id": "RESEARCH_PLANNER",
+      "skill_id": "research.plan",
+      "model_profile": "ROUTING_LIGHT",
+      "connector_ids": [],
+      "environment_id": "MAC_MINI",
+      "data_class": "RESEARCH_DATA",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [
+        "OBJECTIVE_INTAKE"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "DEEP_RESEARCH",
+      "owner": "ALPHA",
+      "bot_id": "ALPHA_DEEP_RESEARCH",
+      "skill_id": "research.deep_analysis",
+      "model_profile": "RESEARCH_DEEP",
+      "connector_ids": [
+        "RESEARCH_MCP"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "RESEARCH_EVIDENCE",
+      "side_effect": "EXTERNAL_READ",
+      "depends_on": [
+        "RESEARCH_PLAN"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "FACT_CHECK",
+      "owner": "RESEARCH_LEAD",
+      "bot_id": "FACT_CHECKER",
+      "skill_id": "research.fact_check",
+      "model_profile": "FACT_CHECK",
+      "connector_ids": [
+        "RESEARCH_MCP"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "RESEARCH_EVIDENCE",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [
+        "DEEP_RESEARCH"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "RESEARCH_SYNTHESIS",
+      "owner": "RESEARCH_LEAD",
+      "bot_id": "RESEARCH_SYNTHESIZER",
+      "skill_id": "research.synthesis",
+      "model_profile": "SYNTHESIS",
+      "connector_ids": [],
+      "environment_id": "MAC_MINI",
+      "data_class": "RESEARCH_EVIDENCE",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [
+        "FACT_CHECK"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "BUSINESS_PLAN",
+      "owner": "CLYDE",
+      "bot_id": "GOCLEAR_ADVISOR",
+      "skill_id": "funding.path_analysis",
+      "model_profile": "FUNDING_REASONING",
+      "connector_ids": [],
+      "environment_id": "MAC_MINI",
+      "data_class": "CAMPAIGN_DATA",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [
+        "RESEARCH_SYNTHESIS"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "MARKETING_STRATEGY",
+      "owner": "MARKETING_LEAD",
+      "bot_id": "MARKETING_STRATEGY",
+      "skill_id": "marketing.strategy",
+      "model_profile": "MARKETING_STRATEGY",
+      "connector_ids": [
+        "CAMPAIGN_SERVICE"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "CAMPAIGN_DATA",
+      "side_effect": "DRAFT_WRITE",
+      "depends_on": [
+        "BUSINESS_PLAN"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "COMPETITIVE_CREATIVE_INTELLIGENCE",
+      "owner": "MARKETING_LEAD",
+      "bot_id": "COMPETITIVE_CREATIVE_INTELLIGENCE",
+      "skill_id": "marketing.audience_analysis",
+      "model_profile": "MARKETING_ANALYSIS",
+      "environment_id": "MAC_MINI",
+      "data_class": "PUBLIC_RESEARCH",
+      "side_effect": "EXTERNAL_READ",
+      "depends_on": [
+        "MARKETING_STRATEGY"
+      ],
+      "max_retries": 2,
+      "optional_connectors": [
+        "HERMES_WEB_SEARCH",
+        "META_AD_LIBRARY_BROWSER",
+        "TIKTOK_CREATIVE_CENTER_BROWSER",
+        "GOOGLE_ADS_TRANSPARENCY_BROWSER"
+      ],
+      "connector_ids": [],
+      "missing_connector_policy": "CREATE_DEPENDENCY_TASK_AND_CONTINUE_WITH_CERTIFIED_EVIDENCE"
+    },
+    {
+      "step_id": "CAMPAIGN_CREATION",
+      "owner": "MARKETING_LEAD",
+      "bot_id": "CAMPAIGN_CREATION",
+      "skill_id": "marketing.strategy",
+      "model_profile": "MARKETING_STRATEGY",
+      "connector_ids": [
+        "CAMPAIGN_SERVICE"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "CAMPAIGN_DATA",
+      "side_effect": "DRAFT_WRITE",
+      "depends_on": [
+        "MARKETING_STRATEGY"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "CREATIVE_BRIEF",
+      "owner": "CREATIVE_LEAD",
+      "bot_id": "CREATIVE_BRIEF",
+      "skill_id": "creative.intent",
+      "model_profile": "CREATIVE_DIRECTOR",
+      "connector_ids": [
+        "CAMPAIGN_SERVICE"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "CAMPAIGN_DATA",
+      "side_effect": "DRAFT_WRITE",
+      "depends_on": [
+        "CAMPAIGN_CREATION"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "CREATIVE_INTENT",
+      "owner": "CREATIVE_LEAD",
+      "bot_id": "CREATIVE_INTENT",
+      "skill_id": "creative.intent",
+      "model_profile": "CREATIVE_DIRECTOR",
+      "connector_ids": [],
+      "environment_id": "MAC_MINI",
+      "data_class": "CREATIVE_BRIEF",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [
+        "CREATIVE_BRIEF"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "CREATIVE_PRODUCTION",
+      "owner": "CREATIVE_LEAD",
+      "bot_id": "CREATIVE_EXECUTION_ROUTER",
+      "skill_id": "creative.route",
+      "model_profile": "NO_MODEL",
+      "connector_ids": [
+        "CREATIVE_EXECUTION_ROUTER"
+      ],
+      "environment_id": "LOCAL_DETERMINISTIC_MEDIA_WORKER",
+      "data_class": "CREATIVE_BRIEF",
+      "side_effect": "DRAFT_WRITE",
+      "depends_on": [
+        "CREATIVE_INTENT"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "ASSET_PERSISTENCE",
+      "owner": "CREATIVE_LEAD",
+      "bot_id": "ASSET_PERSISTENCE",
+      "skill_id": "creative.persist_asset",
+      "model_profile": "NO_MODEL",
+      "connector_ids": [
+        "ASSET_PERSISTENCE"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "CREATIVE_MEDIA",
+      "side_effect": "DURABLE_WRITE",
+      "depends_on": [
+        "CREATIVE_PRODUCTION"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "CAMPAIGN_REVIEW",
+      "owner": "MARKETING_LEAD",
+      "bot_id": "MARKETING_MEASUREMENT",
+      "skill_id": "marketing.measurement",
+      "model_profile": "NO_MODEL",
+      "connector_ids": [
+        "CAMPAIGN_SERVICE"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "CAMPAIGN_DATA",
+      "side_effect": "INTERNAL_READ",
+      "depends_on": [
+        "ASSET_PERSISTENCE"
+      ],
+      "max_retries": 2
+    },
+    {
+      "step_id": "READY_FOR_LAUNCH",
+      "owner": "MARKETING_LEAD",
+      "bot_id": "CAMPAIGN_OPERATIONS",
+      "skill_id": null,
+      "model_profile": "NO_MODEL",
+      "connector_ids": [
+        "CAMPAIGN_SERVICE"
+      ],
+      "environment_id": "MAC_MINI",
+      "data_class": "CAMPAIGN_DATA",
+      "side_effect": "PUBLISH",
+      "approval_required": true,
+      "depends_on": [
+        "CAMPAIGN_REVIEW"
+      ],
+      "max_retries": 0
+    }
+  ],
+  "governance": {
+    "publication_allowed": false,
+    "ad_spend_allowed": false,
+    "client_contact_allowed": false,
+    "production_deploy_allowed": false,
+    "live_trading_allowed": false,
+    "campaign_launch_requires_owner_approval": true
+  },
+  "continuation_policy": {
+    "order": [
+      "VALIDATE",
+      "RETRY_SAME_DETERMINISTIC",
+      "RETRY_SAME_WORKER",
+      "RETRY_MODEL_FALLBACK",
+      "RETRY_ALTERNATE_WORKER",
+      "RETRY_ALTERNATE_ENVIRONMENT",
+      "PRESERVE_PARTIAL",
+      "CONTINUE_INDEPENDENT_BRANCH",
+      "SCHEDULE_RETRY",
+      "ESCALATE"
+    ],
+    "max_backoff_seconds": 3600,
+    "ai_worker_can_terminate_workflow": false
+  }
+}

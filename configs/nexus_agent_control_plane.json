@@ -278,7 +278,8 @@
       ],
       "allowed_connectors": [
         "SYSTEM_HEALTH_READ",
-        "NEXUS_GIT_GOVERNOR"
+        "NEXUS_GIT_GOVERNOR",
+        "N8N"
       ],
       "allowed_model_profiles": [
         "NO_MODEL",
@@ -3698,7 +3699,9 @@
       "output_schema": {
         "type": "object"
       },
-      "allowed_skills": [],
+      "allowed_skills": [
+        "nova.workflow_coordination"
+      ],
       "allowed_connectors": [
         "CAMPAIGN_SERVICE",
         "SUPABASE_GOVERNED",

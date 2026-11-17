@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.workflow_cronbots.v1",
+  "default_deny": true,
+  "cronbots": [
+    {"cronbot_id":"UNFINISHED_WORK_CRON","schedule":"*/5 * * * *","query_limit":20,"model_calls_when_idle":0,"dispatch":"WorkflowController.resume_due"},
+    {"cronbot_id":"RESEARCH_CONTINUATION_CRON","schedule":"*/5 * * * *","query_limit":10,"model_calls_when_idle":0,"dispatch":"ResearchContinuationController.resume_due"},
+    {"cronbot_id":"CAMPAIGN_MONITOR_CRON","schedule":"*/15 * * * *","query_limit":20,"model_calls_when_idle":0,"dispatch":"CampaignWorkflowController.resume_due"},
+    {"cronbot_id":"NOVA_COMPLETION_CRON","schedule":"* * * * *","query_limit":20,"model_calls_when_idle":0,"dispatch":"CompletionNotificationOutbox.deliver_due"},
+    {"cronbot_id":"SYSTEM_HEALTH_CRON","schedule":"*/10 * * * *","query_limit":50,"model_calls_when_idle":0,"dispatch":"SystemsHealthController.read_only_pass"},
+    {"cronbot_id":"MARKETING_METRICS_CRON","schedule":"0 * * * *","query_limit":25,"model_calls_when_idle":0,"dispatch":"MarketingMetricsController.collect_certified_sources_only"}
+  ],
+  "activation_state": "REGISTERED_NOT_SCHEDULED",
+  "note": "Schedules are contracts only; no scheduler was enabled in this change. n8n calls require the governed adapter and workflow-specific approval."
+}
