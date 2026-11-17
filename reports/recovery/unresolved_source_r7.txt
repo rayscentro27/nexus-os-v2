@@ -1,0 +1,2 @@
+U8_UNKNOWN=0
+Credential and identity-related candidates were checked without printing secret values. OAuth origin scripts, Keychain provisioning helper, and password-update helper contain no obvious embedded credential literals; they are classified as scoped operational source and will be checkpointed separately. The Postiz account binding config has no obvious literal credential and is referenced by scripts/distribution/postiz_provider_adapter.py.
