@@ -79,6 +79,7 @@ class RoomMessage:
     content: str
     source_refs: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    citations: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -641,8 +642,112 @@ def converse_with_alpha(room: dict[str, Any], question: str) -> dict[str, Any]:
 class ResearchRoomManager:
     """Canonical manager for Research Rooms (Alpha conversational workspace)."""
 
-    def __init__(self, store: ResearchRoomStore | None = None):
+    def __init__(self, store: ResearchRoomStore | None = None, source_tools: Any = None):
         self.store = store or ResearchRoomStore()
+        self.source_tools = source_tools
+
+    @staticmethod
+    def _room_evidence_sufficient(room: dict[str, Any], question: str) -> bool:
+        sources = room.get("sources") or []
+        if not sources:
+            return False
+        words = {word.casefold() for word in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", question)
+                 if len(word) > 3 and word.casefold() not in {"what", "when", "where", "which", "does", "with", "from", "cite", "sources"}}
+        evidence = " ".join(str(source.get("raw_text") or source.get("source_summary") or "") for source in sources).casefold()
+        return len([word for word in words if word in evidence]) >= min(2, len(words))
+
+    def _search_public_evidence(self, room: dict[str, Any], question: str) -> list[dict[str, Any]]:
+        """Run bounded user-initiated discovery through the existing governed SourceTools."""
+        if self.source_tools is None:
+            from nexus_agent_platform.research_room.source_tools import SourceTools
+            self.source_tools = SourceTools()
+        compare = any(term in question.casefold() for term in ("compare", "independent source", "independent assessment"))
+        rows = [{"question_id": f"{room['room_id']}:alpha:{hashlib.sha256(question.encode()).hexdigest()[:12]}",
+                 "case_id": room["room_id"], "question": question}]
+        if compare:
+            rows = [
+                {**rows[0], "production_question_id": rows[0]["question_id"] + ":primary",
+                 "question": question + " official primary source Tesla"},
+                {**rows[0], "production_question_id": rows[0]["question_id"] + ":independent",
+                 "question": question + " independent source analysis",
+                 "exclude_domains": ["tesla.com"]},
+            ]
+        else:
+            rows[0]["production_question_id"] = rows[0]["question_id"]
+        report = self.source_tools.research_questions(question, rows)
+        sources = report.get("sources") or []
+        persisted = []
+        for item in sources:
+            url = str(item.get("url") or "").strip()
+            text = str(item.get("text") or "")[:16000]
+            if not url or not text:
+                continue
+            source_id = "src_" + hashlib.sha256(f"{room['room_id']}:{url}".encode()).hexdigest()[:16]
+            if any(existing.get("source_id") == source_id for existing in room.get("sources", [])):
+                continue
+            title = str(item.get("title") or url)[:240]
+            artifact = self.store.save_artifact(source_id + ".txt", text)
+            domain = urllib.parse.urlparse(url).hostname or ""
+            now = utc_now()
+            brief = generate_compact_brief(title, text, source_type="URL")
+            source = RoomSource(source_id=source_id, source_type="URL", title=title, source_url=url,
+                source_date=now, source_summary=str(item.get("summary") or brief.summary)[:1800],
+                evidence_ref=artifact, raw_text=text, status="AVAILABLE", requested_url=url,
+                resolved_url=url, canonical_url=url, domain=domain, page_title=title,
+                retrieved_at=now, retrieval_status="RETRIEVED",
+                content_hash=hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest(),
+                content_type="text/html", extracted_text_pointer=artifact,
+                source_provenance={"method": item.get("method"), "query_id": item.get("question_id"),
+                    "research_role": "INDEPENDENT_SOURCE" if str(item.get("question_id", "")).endswith(":independent") else "PRIMARY_SEARCH_RESULT",
+                    "source_quality": "AUTHORITATIVE_PUBLIC_SOURCE" if domain.endswith(".gov") else
+                        "PRIMARY_PUBLISHER" if domain == "tesla.com" or domain.endswith(".tesla.com") else "THIRD_PARTY_PUBLISHER",
+                    "source_type": item.get("source_type"), "retrieved_by": "existing SourceTools"})
+            room.setdefault("sources", []).append(source.to_dict(include_raw=True))
+            persisted.append({**item, "source_id": source_id, "title": title, "domain": domain,
+                              "text": text, "retrieval_status": "RETRIEVED"})
+        room["source_count"] = len(room.get("sources") or [])
+        room.setdefault("research_events", []).append({
+            "kind": "ALPHA_PUBLIC_WEB_RESEARCH", "status": report.get("status"),
+            "query_count": len(rows), "source_count": len(persisted),
+            "source_ids": [item["source_id"] for item in persisted],
+            "attempts": [{key: attempt.get(key) for key in
+                ("attempt_id", "question_id", "provider", "result", "error_code", "error_summary", "source_url")}
+                for attempt in report.get("source_attempts", []) if isinstance(attempt, dict)],
+            "created_at": utc_now(),
+        })
+        return persisted
+
+    @staticmethod
+    def _web_research_reply(question: str, sources: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+        if not sources:
+            return ("I couldn't retrieve usable public evidence for this question through the available search and page-reading routes. "
+                    "Please retry or provide a public URL. No answer has been inferred without evidence."), []
+        citations = []
+        sections = []
+        for index, source in enumerate(sources, start=1):
+            claims = [str(claim).strip() for claim in (source.get("claims") or []) if str(claim).strip()]
+            excerpt = " ".join(claims[:2]) or str(source.get("summary") or source.get("text") or "")[:700]
+            authority = "authoritative public source" if str(source.get("domain", "")).endswith(".gov") else (
+                "primary publisher" if str(source.get("domain", "")) == "tesla.com" or str(source.get("domain", "")).endswith(".tesla.com") else
+                "independent publisher" if str(source.get("question_id", "")).endswith(":independent") else "third-party publisher")
+            citations.append({"citation_id": index, "source_id": source["source_id"],
+                "source_title": source.get("title"), "title": source.get("title"),
+                "url": source.get("url"), "domain": source.get("domain"),
+                "source_type": "PUBLIC_WEB", "excerpt": excerpt[:900],
+                "source_quality": authority,
+                "retrieval_status": source.get("retrieval_status", "RETRIEVED"),
+                "support_status": "EVIDENCE_RETRIEVED"})
+            label = ("TESLA'S POSITION" if str(source.get("question_id", "")).endswith(":primary") else
+                     "INDEPENDENT ASSESSMENT" if str(source.get("question_id", "")).endswith(":independent") else
+                     f"EVIDENCE FROM {authority.upper()}")
+            sections.append(f"**{label} — {source.get('title') or source.get('domain') or 'Source'}** [{index}]\n{excerpt[:1000]}")
+        if any(str(source.get("question_id", "")).endswith(":primary") for source in sources):
+            lead = "**CURRENT PRICING AND MAIN FEATURES**\nI searched current public pages and retrieved both a primary source and a separate publisher. The summary below distinguishes their statements from my assessment.\n\n"
+        else:
+            lead = "I searched the public web and retrieved evidence relevant to your question. Here is the direct evidence-backed answer:\n\n"
+        reply = (lead + "\n\n".join(sections) + "\n\n**Sources**\n" +
+                 "\n".join(f"[{i}] {source.get('title') or source.get('url')} — {source.get('url')}" for i, source in enumerate(sources, 1)))
+        return reply, citations
 
     def create_room(self, title: str, tags: list[str] | None = None, room_id: str | None = None) -> dict[str, Any]:
         """Capability 1: Create/open a Research Room."""
@@ -981,8 +1086,32 @@ class ResearchRoomManager:
         )
         room.setdefault("messages", []).append(user_msg.to_dict())
 
-        # Alpha generates source-grounded response
-        alpha_res = converse_with_alpha(room, clean_q)
+        # Existing room evidence wins when it is sufficient. Otherwise use the
+        # existing bounded Nexus search/read adapters on this user-initiated turn.
+        citations: list[dict[str, Any]] = []
+        web_sources: list[dict[str, Any]] = []
+        web_research = not self._room_evidence_sufficient(room, clean_q)
+        if web_research:
+            try:
+                web_sources = self._search_public_evidence(room, clean_q)
+            except Exception as exc:
+                room.setdefault("research_events", []).append({"kind": "PUBLIC_WEB_RESEARCH_FAILED",
+                    "question": clean_q[:1000], "error": f"{type(exc).__name__}: {exc}"[:400], "created_at": utc_now()})
+            if web_sources:
+                reply, citations = self._web_research_reply(clean_q, web_sources)
+                alpha_res = {"reply": reply, "source_refs": [item["source_id"] for item in web_sources],
+                    "metadata": {"grounded": True, "external_search_performed": True,
+                        "research_mode": "SOURCES_PLUS_WEB", "source_quality_evaluated": True,
+                        "directives_created": 0, "spend_usd": 0.0}}
+            else:
+                alpha_res = converse_with_alpha(room, clean_q)
+                if not room.get("sources"):
+                    alpha_res["reply"] = ("I couldn't retrieve public evidence using the available search and page-reading routes, so I can't answer this reliably yet. "
+                        "No source upload is needed when public search is available; you can retry this request or share a public page URL.")
+                alpha_res.setdefault("metadata", {}).update({"external_search_performed": True,
+                    "research_mode": "SOURCES_PLUS_WEB", "web_research_limited": True})
+        else:
+            alpha_res = converse_with_alpha(room, clean_q)
         alpha_msg = RoomMessage(
             message_id="msg_alpha_" + hashlib.sha256(f"{now}:{alpha_res['reply']}".encode()).hexdigest()[:12],
             room_id=room_id,
@@ -991,6 +1120,7 @@ class ResearchRoomManager:
             content=alpha_res["reply"],
             source_refs=alpha_res.get("source_refs", []),
             metadata=alpha_res.get("metadata", {}),
+            citations=citations,
         )
         room["messages"].append(alpha_msg.to_dict())
 

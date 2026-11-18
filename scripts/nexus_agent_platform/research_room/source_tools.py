@@ -114,6 +114,13 @@ class SourceTools:
                     candidates = result.get("results") if isinstance(result, dict) else None
                     candidates = [row for row in (candidates or []) if isinstance(row, dict)
                                   and str(row.get("url") or "").startswith(("https://", "http://"))]
+                    excluded_domains = [str(value).lower().lstrip(".") for value in
+                        (question_row.get("exclude_domains") or []) if str(value).strip()]
+                    if excluded_domains:
+                        candidates = [row for row in candidates if not any(
+                            (urlparse(str(row.get("url") or "")).hostname or "").lower() == domain
+                            or (urlparse(str(row.get("url") or "")).hostname or "").lower().endswith("." + domain)
+                            for domain in excluded_domains)]
                     if not candidates:
                         status = str((result or {}).get("status") or "NO_RESULTS").upper()
                         attempt.update({"result": "SEARCH_SUCCEEDED_NO_RELEVANT_RESULT" if status not in {"ERROR", "UNAVAILABLE", "NOT_CONFIGURED"} else "SEARCH_FAILED",

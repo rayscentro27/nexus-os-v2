@@ -146,14 +146,50 @@ def test_exact_url_preserved_and_retrieval(room_manager, monkeypatch):
     assert len(src["content_hash"]) == 64  # SHA-256
 
 
-def test_alpha_blocks_on_missing_source(room_manager):
-    """Test 6: Alpha blocks when no sources are attached to the room."""
+def test_alpha_searches_and_persists_sources_from_a_blank_room(room_manager):
+    """Blank-room public questions use the existing search/read path and cite saved evidence."""
+    from nexus_agent_platform.research_room.source_tools import SourceTools
     room = room_manager.create_room("Empty Room")
-    ans = converse_with_alpha(room, "How could this help Nexus Marketing and Creative?")
+    assert room["sources"] == []
+    tools = SourceTools(
+        search_routes=[("FIXTURE_SEARCH", lambda query: {"status": "ok", "results": [
+            {"url": "https://www.sba.gov/funding-programs/loans/7a-loans", "title": "SBA 7(a) loans"}]})],
+        methods=[("FIXTURE_READ", lambda url, objective="": {
+            "url": url, "title": "SBA 7(a) loans", "text": "The maximum loan amount for most 7(a) loans is $5 million. " * 12,
+            "source_type": "WEB"})],
+    )
+    room_manager.source_tools = tools
+    result = room_manager.chat_with_alpha(room["room_id"], "What is the current SBA 7(a) maximum loan amount? Cite the official SBA source.")
+    stored = room_manager.get_room(room["room_id"])
+    alpha = result["alpha_message"]
+    assert "5 million" in alpha["content"]
+    assert "[1]" in alpha["content"]
+    assert len(stored["sources"]) == 1
+    assert stored["sources"][0]["domain"] == "www.sba.gov"
+    assert alpha["citations"][0]["source_id"] == stored["sources"][0]["source_id"]
 
-    assert ans["metadata"]["grounded"] is False
-    assert ans["metadata"]["missing_sources"] is True
-    assert "does not have any sources attached yet" in ans["reply"]
+
+def test_alpha_comparison_keeps_primary_and_independent_publishers_separate(room_manager):
+    from nexus_agent_platform.research_room.source_tools import SourceTools
+    room = room_manager.create_room("Tesla comparison")
+    def search(query):
+        rows = [
+            {"url": "https://www.tesla.com/fsd", "title": "Tesla FSD"},
+            {"url": "https://electrek.co/2026/01/01/tesla-fsd-review/", "title": "Independent FSD review"},
+        ]
+        return {"status": "ok", "results": rows}
+    text = "Tesla Full Self-Driving features include supervised driving functions. Pricing is offered as a subscription. " * 5
+    room_manager.source_tools = SourceTools(search_routes=[("FIXTURE_SEARCH", search)], methods=[
+        ("FIXTURE_READ", lambda url, objective="": {"url": url, "title": url, "text": text, "source_type": "WEB"})])
+    answer = room_manager.chat_with_alpha(room["room_id"],
+        "Research current Tesla Full Self-Driving pricing and features and compare with one independent source.")
+    saved = room_manager.get_room(room["room_id"])
+    assert len(saved["sources"]) == 2
+    assert "tesla.com" in saved["sources"][0]["source_url"]
+    assert "electrek.co" in saved["sources"][1]["source_url"]
+    assert "TESLA'S POSITION" in answer["alpha_message"]["content"]
+    assert "INDEPENDENT ASSESSMENT" in answer["alpha_message"]["content"]
+    assert len(answer["alpha_message"]["citations"]) == 2
 
 
 def test_alpha_blocks_on_unreachable_url(room_manager, monkeypatch):
