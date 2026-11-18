@@ -129,7 +129,7 @@ describe('Research Room browser API client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(7)
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
       'https://nexus-api.goclearonline.cc/api/research/rooms?query=Admira', 'https://nexus-api.goclearonline.cc/api/research/rooms/room_1', 'https://nexus-api.goclearonline.cc/api/research/rooms',
-      'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/sources', 'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/alpha',
+      'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/sources', 'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/ask',
       'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/score', 'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/promote',
     ])
     for (const [, init] of fetchMock.mock.calls) expect(init.headers.Authorization).toBe('Bearer admin-jwt')
