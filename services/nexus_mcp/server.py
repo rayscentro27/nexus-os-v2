@@ -292,7 +292,36 @@ def _add_room_source(room_id: str, source_type: str, content_or_url: str, title:
 def _ask_alpha_research_room(room_id: str, question: str) -> dict[str, Any]:
     from nexus_agent_platform.research_room.room_manager import ResearchRoomManager
     mgr = ResearchRoomManager()
-    res = mgr.chat_with_alpha(room_id=room_id, question=question)
+    room = mgr.get_room(room_id)
+    if not room:
+        raise LookupError(f"RESEARCH_ROOM_NOT_FOUND: {room_id}")
+    # Public reads inherit the existing room/workflow execution scope. The
+    # bounded MCP action identity remains the provider-governance job id.
+    fields = ("NEXUS_CORRELATION_ID", "NEXUS_DEPARTMENT", "NEXUS_JOB_TYPE",
+              "NEXUS_PROJECT_ID", "NEXUS_RESEARCH_ROOM_CALL_ID")
+    previous = {key: os.environ.get(key) for key in fields}
+    try:
+        metadata = room.get("metadata") if isinstance(room.get("metadata"), dict) else {}
+        workflow_id = str(room.get("workflow_id") or metadata.get("workflow_id") or "").strip()
+        invocation_job = str(os.environ.get("NEXUS_DURABLE_JOB_ID") or "")
+        if invocation_job.startswith("nexus-mcp-"):
+            os.environ["NEXUS_CORRELATION_ID"] = workflow_id or room_id
+            os.environ["NEXUS_DEPARTMENT"] = "RESEARCH"
+            os.environ["NEXUS_JOB_TYPE"] = "RESEARCH_ROOM_CHAT"
+        else:
+            os.environ.setdefault("NEXUS_CORRELATION_ID", workflow_id or room_id)
+            os.environ.setdefault("NEXUS_DEPARTMENT", "RESEARCH")
+            os.environ.setdefault("NEXUS_JOB_TYPE", "RESEARCH_ROOM_CHAT")
+        if workflow_id:
+            os.environ.setdefault("NEXUS_PROJECT_ID", workflow_id)
+        os.environ["NEXUS_RESEARCH_ROOM_CALL_ID"] = f"{room_id}:{os.environ.get('NEXUS_DURABLE_JOB_ID', 'unscoped')}"
+        res = mgr.chat_with_alpha(room_id=room_id, question=question)
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
     return {
         "tool_name": "nexus_ask_alpha_research_room",
         "status": "OK",
@@ -1785,7 +1814,7 @@ def _register() -> None:
             "room_id": room_id, "source_type": source_type, "content_or_url": content_or_url, "title": title,
         })
 
-    @mcp.tool(name="nexus_ask_alpha_research_room", description="GOVERNED bounded internal action: converse with Alpha inside a Research Room. Alpha answers questions grounded in the room's sources; UNKNOWN is a valid answer. Does not trigger deep research or directives.")
+    @mcp.tool(name="nexus_ask_alpha_research_room", description="GOVERNED bounded internal action: converse with Alpha inside a Research Room. Alpha checks room evidence and may use existing governed public search/read tools when evidence is insufficient. User-initiated only; does not trigger autonomous ingestion or directives.")
     def nexus_ask_alpha_research_room(room_id: str, question: str) -> dict[str, Any]:
         return _action_call("nexus_ask_alpha_research_room", _ask_alpha_research_room, {
             "room_id": room_id, "question": question,

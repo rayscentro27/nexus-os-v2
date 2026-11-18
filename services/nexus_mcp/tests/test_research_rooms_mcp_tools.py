@@ -94,3 +94,26 @@ def test_mcp_ask_alpha_and_promote():
     assert pkg["room_id"] == rid
     assert pkg["promoted_by"] == "RAY"
     assert pkg["promoted_project_id"].startswith("proj_research_")
+
+
+def test_alpha_web_context_inherits_room_workflow_identity(monkeypatch):
+    from nexus_agent_platform.research_room import room_manager
+    captured = {}
+    class Manager:
+        def get_room(self, room_id):
+            return {"room_id": room_id, "workflow_id": "wf_existing_research"}
+        def chat_with_alpha(self, *, room_id, question):
+            captured.update(job_id=__import__("os").environ.get("NEXUS_DURABLE_JOB_ID"),
+                correlation_id=__import__("os").environ.get("NEXUS_CORRELATION_ID"),
+                department=__import__("os").environ.get("NEXUS_DEPARTMENT"),
+                job_type=__import__("os").environ.get("NEXUS_JOB_TYPE"),
+                room_call=__import__("os").environ.get("NEXUS_RESEARCH_ROOM_CALL_ID"))
+            return {"user_message": {}, "alpha_message": {}}
+    monkeypatch.setattr(room_manager, "ResearchRoomManager", Manager)
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", "nexus-mcp-test-request")
+    for key in ("NEXUS_CORRELATION_ID", "NEXUS_DEPARTMENT", "NEXUS_JOB_TYPE", "NEXUS_PROJECT_ID"):
+        monkeypatch.delenv(key, raising=False)
+    _ask_alpha_research_room("room_existing", "Search for evidence")
+    assert captured == {"job_id": "nexus-mcp-test-request", "correlation_id": "wf_existing_research",
+        "department": "RESEARCH", "job_type": "RESEARCH_ROOM_CHAT",
+        "room_call": "room_existing:nexus-mcp-test-request"}
