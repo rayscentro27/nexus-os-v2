@@ -34,6 +34,28 @@ def test_cross_subsystem_commit_is_blocked():
     assert any("cross-subsystem" in error for error in errors)
 
 
+def test_verified_origin_main_merge_allows_upstream_cross_subsystem_paths():
+    paths = [f"src/components/page-{i}.jsx" for i in range(90)]
+    paths += ["scripts/nova/worker.py", "services/nexus_mcp/server.py"]
+    assert guard.validate_paths(paths, allow_upstream_merge=True) == []
+
+
+def test_upstream_merge_allowance_keeps_sensitive_path_blocks():
+    errors = guard.validate_paths(
+        ["data/runtime/state.json", "src/components/page.jsx"],
+        allow_upstream_merge=True,
+    )
+    assert any("RUNTIME" in error for error in errors)
+
+
+def test_upstream_merge_context_requires_exact_origin_main_and_clean_sync_branch():
+    check = guard.is_canonical_upstream_merge_context
+    assert check("sync/nexus", "remote-main", "remote-main", "base", False)
+    assert not check("nexus/dev", "remote-main", "remote-main", "base", False)
+    assert not check("sync/nexus", "other-branch", "remote-main", "base", False)
+    assert not check("sync/nexus", "remote-main", "remote-main", "base", True)
+
+
 def test_dotenv_template_is_configuration_but_local_env_is_secret():
     assert guard.classify(".env.example") == "CONFIGURATION"
     assert guard.classify(".env.local") == "SECRET_LOCAL"
@@ -49,3 +71,15 @@ def test_repository_governor_assets_share_one_commit_scope():
         "tests/ops/test_nexus_safe_git.py",
     ]
     assert {guard.subsystem(path) for path in paths} == {"REPOSITORY_GOVERNOR"}
+
+
+def test_governor_contract_requires_remote_sync_for_completed_scoped_work():
+    contract = (MODULE_PATH.parents[2] / "docs/agents/NEXUS_REPOSITORY_GOVERNOR_CONTRACT.md").read_text()
+    for required in (
+        "NEXUS_GIT_REMOTE_SYNC_POLICY_R1",
+        "REMOTE_SYNC_PENDING",
+        "REMOTE_SHA_VERIFIED",
+        "LOCAL_ONLY_INTENTIONAL",
+        "Only then begin the next accepted unit",
+    ):
+        assert required in contract

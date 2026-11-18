@@ -88,14 +88,39 @@ def checkpoint(target: str, paths: list[str]):
     return out
 
 
-def validate_paths(paths: list[str], deleted: list[str] | None = None, p=None):
+def is_canonical_upstream_merge_context(
+    branch: str, merge_head: str, origin_main: str, merge_base: str, unresolved: bool
+) -> bool:
+    """Recognize only a conflict-free integration-branch merge of fetched origin/main."""
+    return (
+        branch.startswith(("sync/", "integration/"))
+        and bool(merge_head)
+        and merge_head == origin_main
+        and bool(merge_base)
+        and not unresolved
+    )
+
+
+def canonical_upstream_merge_in_progress() -> bool:
+    merge_head = git("rev-parse", "--verify", "-q", "MERGE_HEAD", check=False).stdout.strip()
+    if not merge_head:
+        return False
+    branch = git("branch", "--show-current").stdout.strip()
+    origin_main = git("rev-parse", "--verify", "refs/remotes/origin/main", check=False).stdout.strip()
+    merge_base = git("merge-base", "HEAD", merge_head, check=False).stdout.strip()
+    unresolved = bool(git("ls-files", "-u").stdout.strip())
+    return is_canonical_upstream_merge_context(branch, merge_head, origin_main, merge_base, unresolved)
+
+
+def validate_paths(paths: list[str], deleted: list[str] | None = None, p=None,
+                   allow_upstream_merge: bool = False):
     p = p or policy()
     deleted = deleted or []
     errors = []
-    if len(paths) > p["max_commit_files"]:
+    if not allow_upstream_merge and len(paths) > p["max_commit_files"]:
         errors.append(f"staged file limit exceeded ({len(paths)} > {p['max_commit_files']})")
     subsystems = {subsystem(x, p) for x in paths}
-    if len(subsystems) > p["max_commit_subsystems"]:
+    if not allow_upstream_merge and len(subsystems) > p["max_commit_subsystems"]:
         errors.append("cross-subsystem commit blocked: " + ", ".join(sorted(subsystems)))
     for path in paths:
         kind = classify(path, p)
@@ -117,7 +142,7 @@ def precommit():
         return 0
     deleted = [p for p in paths if git("diff", "--cached", "--diff-filter=D", "--name-only", "--", p, check=False).stdout.strip()]
     p = policy()
-    errors = validate_paths(paths, deleted, p)
+    errors = validate_paths(paths, deleted, p, allow_upstream_merge=canonical_upstream_merge_in_progress())
     max_size = int(p["max_staged_file_bytes"])
     for path in paths:
         spec = f":{path}"
@@ -172,7 +197,7 @@ def main(argv=None):
             if not candidate.exists() and not tracked:
                 print(f"path does not exist and is not tracked: {path}", file=sys.stderr); return 2
         subsystems = {subsystem(x) for x in args.paths}
-        if len(subsystems) > policy()["max_commit_subsystems"]:
+        if len(subsystems) > policy()["max_commit_subsystems"] and not canonical_upstream_merge_in_progress():
             print("cross-subsystem staging blocked: " + ", ".join(sorted(subsystems)), file=sys.stderr); return 2
         checkpoint(",".join(subsystems), args.paths)
         git("add", "--", *args.paths)
@@ -180,7 +205,7 @@ def main(argv=None):
     if args.action == "commit":
         staged = staged_paths()
         if not staged: print("no staged paths", file=sys.stderr); return 2
-        errors = validate_paths(staged)
+        errors = validate_paths(staged, allow_upstream_merge=canonical_upstream_merge_in_progress())
         if errors: print("\n".join(errors), file=sys.stderr); return 2
         if args.owner_approved:
             if not sys.stdin.isatty(): print("owner approval requires an interactive terminal", file=sys.stderr); return 2
