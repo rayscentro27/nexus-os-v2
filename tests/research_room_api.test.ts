@@ -29,7 +29,7 @@ describe('authenticated Research Room API client', () => {
       'https://nexus-api.goclearonline.cc/api/research/rooms/room_1',
       'https://nexus-api.goclearonline.cc/api/research/rooms',
       'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/sources',
-      'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/alpha',
+      'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/ask',
       'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/score',
       'https://nexus-api.goclearonline.cc/api/research/rooms/room_1/promote',
     ])

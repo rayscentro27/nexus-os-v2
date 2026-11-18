@@ -25,6 +25,9 @@ export default function ResearchRoomWorkspace() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [chatInput, setChatInput] = useState('')
+  const [sessionMessages, setSessionMessages] = useState([])
+  const [sessionMessagesRoomId, setSessionMessagesRoomId] = useState(null)
+  const [askingRoomId, setAskingRoomId] = useState(null)
   const [showNewRoom, setShowNewRoom] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newSource, setNewSource] = useState('')
@@ -76,7 +79,10 @@ export default function ResearchRoomWorkspace() {
 
   useEffect(() => { refreshRooms() }, [statusFilter, searchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const messages = useMemo(() => roomMessages(selectedRoom), [selectedRoom])
+  const messages = useMemo(() => [
+    ...roomMessages(selectedRoom),
+    ...(sessionMessagesRoomId === selectedRoom?.room_id ? sessionMessages : []),
+  ], [selectedRoom, sessionMessages, sessionMessagesRoomId])
   const sources = roomSources(selectedRoom)
 
   async function runAction(action) {
@@ -99,6 +105,8 @@ export default function ResearchRoomWorkspace() {
         await addResearchRoomSourceLive(roomId, { source_type: 'URL', content_or_url: newSource.trim() })
       }
       setNewTitle(''); setNewSource(''); setShowNewRoom(false)
+      setSessionMessages([])
+      setSessionMessagesRoomId(roomId || null)
       await refreshRooms(roomId)
     })
   }
@@ -120,12 +128,52 @@ export default function ResearchRoomWorkspace() {
     event.preventDefault()
     if (!selectedRoom || !chatInput.trim() || busy) return
     const question = chatInput.trim()
+    const roomId = selectedRoom.room_id
     setChatInput('')
-    await runAction(async () => {
-      setResearchActivity('Checking room evidence; public search and page reading run automatically when needed…')
-      await askAlphaLive(selectedRoom.room_id, question)
-      await openRoom(selectedRoom.room_id)
-    }).finally(() => setResearchActivity(''))
+    setError('')
+    setNotice('')
+    setBusy(true)
+    setResearchActivity('Checking room evidence; public search and page reading run automatically when needed…')
+    setAskingRoomId(roomId)
+    setSessionMessagesRoomId(roomId)
+    setSessionMessages((current) => [...current, {
+      message_id: `session-user-${Date.now()}`,
+      author: 'RAY',
+      content: question,
+    }])
+    try {
+      const result = await askAlphaLive(roomId, question)
+      const response = result?.alpha_message || result?.response || result?.data || result?.result || result?.structuredContent || result
+      const answer = [
+        result?.alpha_message?.content,
+        result?.answer,
+        result?.alpha_answer,
+        response?.answer,
+        result?.structuredContent?.answer,
+        result?.message?.content,
+        response?.message?.content,
+        result?.content,
+      ].find((value) => typeof value === 'string' && value.trim())
+      if (!answer) throw new Error('Alpha did not return an answer.')
+      setSessionMessages((current) => [...current, {
+        ...(response && typeof response === 'object' && !Array.isArray(response) ? response : {}),
+        message_id: `session-alpha-${Date.now()}`,
+        author: 'ALPHA',
+        content: answer,
+        ...(Array.isArray(response?.citations) ? { citations: response.citations } : {}),
+        ...(Array.isArray(response?.source_refs) ? { source_refs: response.source_refs } : {}),
+      }])
+    } catch (err) {
+      setSessionMessages((current) => [...current, {
+        message_id: `session-error-${Date.now()}`,
+        author: 'SYSTEM',
+        content: err?.message || 'Alpha could not answer this request.',
+      }])
+    } finally {
+      setAskingRoomId(null)
+      setBusy(false)
+      setResearchActivity('')
+    }
   }
 
   async function handleScore() {
@@ -174,7 +222,7 @@ export default function ResearchRoomWorkspace() {
         <div className="rr-search-box"><Search size={13} /><input placeholder="Search rooms..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /></div>
         <select aria-label="Room status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">All rooms</option><option value="ACTIVE">Active</option><option value="PROMOTED">Promoted</option><option value="ARCHIVED">Archived</option></select>
         <div className="rr-room-list" data-testid="research-room-list">
-          {rooms.map((room) => <button type="button" key={room.room_id} className={`rr-room-item ${selectedRoom?.room_id === room.room_id ? 'active' : ''}`} onClick={() => openRoom(room.room_id)} data-testid={`room-item-${room.room_id}`}>
+          {rooms.map((room) => <button type="button" key={room.room_id} className={`rr-room-item ${selectedRoom?.room_id === room.room_id ? 'active' : ''}`} onClick={() => { if (selectedRoom?.room_id !== room.room_id) { setSessionMessages([]); setSessionMessagesRoomId(null) } openRoom(room.room_id) }} data-testid={`room-item-${room.room_id}`}>
             <div className="rr-room-item-top"><span className={`rr-status-pill ${(room.status || 'unknown').toLowerCase()}`}>{room.status || 'UNKNOWN'}</span><span className="rr-score-badge">{room.preliminary_score ?? '—'}</span></div>
             <div className="rr-room-item-title">{room.title || 'Untitled Research Room'}</div>
             <div className="rr-room-item-meta"><span>{roomSources(room).length} sources</span><span>·</span><span>{room.updated_at ? new Date(room.updated_at).toLocaleString() : 'Activity unknown'}</span></div>
@@ -196,9 +244,19 @@ export default function ResearchRoomWorkspace() {
 
         <section className="rr-threads-section" data-testid="persistent-threads-bar"><div className="rr-threads-bar"><span className="rr-threads-label">Conversation</span><span>Thread persistence coming next</span></div></section>
         <section className="rr-chat-workspace" data-testid="chat-workspace"><div className="rr-chat-messages" data-testid="chat-messages-container">
-          {messages.map((message, index) => <div key={message.message_id || `${message.timestamp || index}-${index}`} className={`rr-chat-msg ${message.author === 'RAY' ? 'ray' : message.author === 'ALPHA' ? 'alpha' : 'nova'}`} data-testid={`chat-message-${message.message_id || index}`}><div className="rr-chat-msg-header">{message.author === 'RAY' ? 'Ray' : message.author === 'ALPHA' ? 'Alpha (Research Agent)' : message.author || 'UNKNOWN'}</div><div className="rr-chat-msg-content">{message.author === 'ALPHA' ? renderCitations(message) : message.content}</div></div>)}
+          {messages.map((message, index) => {
+            const role = String(message.author || message.role || message.type || 'UNKNOWN').toUpperCase()
+            const isUser = role === 'RAY' || role === 'USER'
+            const isAlpha = role === 'ALPHA' || role === 'ASSISTANT'
+            const isSystem = role === 'SYSTEM'
+            const kind = isUser ? 'ray' : isAlpha ? 'alpha' : isSystem ? 'system' : 'nova'
+            const label = isUser ? 'Ray' : isAlpha ? 'Alpha (Research Agent)' : role
+            const content = message.content || message.answer || ''
+            return <div key={message.message_id || `${message.timestamp || index}-${index}`} className={`rr-chat-msg ${kind}`} data-testid={`chat-message-${message.message_id || index}`}><div className="rr-chat-msg-header">{label}</div><div className="rr-chat-msg-content">{isAlpha ? renderCitations({ ...message, content }) : content}</div></div>
+          })}
+          {askingRoomId === selectedRoom.room_id && <div className="rr-chat-msg system" role="status" data-testid="alpha-loading-message"><div className="rr-chat-msg-header">Alpha</div><div className="rr-chat-msg-content">Thinking…</div></div>}
           {messages.length === 0 && <div className="rr-empty-sources-banner">No conversation messages returned.</div>}
-        </div><div className="rr-composer-container"><div className="rr-mode-selector-bar" data-testid="research-mode-selector"><span className="rr-mode-label">Mode:</span><span className="rr-mode-btn active" data-testid="mode-btn-sources-plus-web"><BookOpen size={11} /> Sources + Web</span><span className="rr-mode-btn" data-testid="mode-btn-web-search"><Globe size={11} /> Public search available</span><button type="button" className="rr-mode-btn" disabled title="Deep Research is not enabled in conversational mode" data-testid="mode-btn-deep-research"><FileCheck size={11} /> Deep Research unavailable</button><span className="rr-mode-helper-text">Alpha searches and reads public sources when room evidence is insufficient. No background ingestion.</span></div><form onSubmit={handleAsk} className="rr-chat-composer"><input placeholder="Ask Alpha a research question…" value={chatInput} onChange={(event) => setChatInput(event.target.value)} disabled={busy} data-testid="chat-composer-input"/><button type="submit" disabled={!chatInput.trim() || busy} className="rr-composer-send-btn" data-testid="chat-composer-submit"><Send size={13} /> Send</button></form></div></section>
+        </div><div className="rr-composer-container"><div className="rr-mode-selector-bar" data-testid="research-mode-selector"><span className="rr-mode-label">Mode:</span><span className="rr-mode-btn active" data-testid="mode-btn-sources-plus-web"><BookOpen size={11} /> Sources + Web</span><span className="rr-mode-btn" data-testid="mode-btn-web-search"><Globe size={11} /> Public search available</span><button type="button" className="rr-mode-btn" disabled title="Deep Research is not enabled in conversational mode" data-testid="mode-btn-deep-research"><FileCheck size={11} /> Deep Research unavailable</button><span className="rr-mode-helper-text">Alpha searches and reads public sources when room evidence is insufficient. No background ingestion.</span></div><form onSubmit={handleAsk} className="rr-chat-composer" data-testid="chat-composer-form"><input placeholder="Ask Alpha about attached sources…" value={chatInput} onChange={(event) => setChatInput(event.target.value)} disabled={busy} data-testid="chat-composer-input"/><button type="submit" disabled={!chatInput.trim() || busy} className="rr-composer-send-btn" data-testid="chat-composer-submit"><Send size={13} /> Send</button></form></div></section>
       </main> : <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>{error || 'Select or create a Research Room to begin.'}</div>}
 
       {showNewRoom && <div className="rr-modal-backdrop" onClick={() => setShowNewRoom(false)}><div className="rr-modal" onClick={(event) => event.stopPropagation()} data-testid="new-room-modal"><div className="rr-modal-header-row"><h3>Create Research Room</h3><button type="button" className="rr-btn-icon-close" onClick={() => setShowNewRoom(false)}><X size={14} /></button></div><form onSubmit={handleCreateRoom}><div className="rr-form-group"><label>Room Title / Topic</label><input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} required data-testid="input-new-room-title" /></div><div className="rr-form-group"><label>Initial Source URL (Optional)</label><textarea rows={3} value={newSource} onChange={(event) => setNewSource(event.target.value)} placeholder="Paste a URL" data-testid="input-new-room-content" /></div><div className="rr-modal-actions"><button type="button" className="rr-btn" onClick={() => setShowNewRoom(false)}>Cancel</button><button type="submit" className="rr-btn rr-btn-primary" disabled={busy} data-testid="btn-submit-create-room">Create Room</button></div></form></div></div>}
