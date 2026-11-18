@@ -1,5 +1,53 @@
 {
   "version": 1,
-  "selection_status": "awaiting_callable_notebook_list_or_approved_export_metadata",
-  "notebooks": []
+  "selection_status": "authenticated_profile_notebook_ids_recovered",
+  "profile": "default",
+  "profile_path": "/Users/raymonddavis/.notebooklm/profiles/default",
+  "notebooks": [
+    {
+      "notebook_name": "NEXUS FEEDER — OPTIONS STRATEGIES",
+      "notebook_id": "6d07fc9e-a0bd-4c67-8215-d05b8321f264",
+      "research_lane": "options",
+      "source_count": 4,
+      "role": "owner",
+      "sync_enabled": true,
+      "approval_required_for_import": false
+    },
+    {
+      "notebook_name": "NEXUS FEEDER — FOREX & INDICATOR STRATEGIES",
+      "notebook_id": "31c78fea-bae5-4953-8ced-ef92ebdeef04",
+      "research_lane": "forex",
+      "source_count": 5,
+      "role": "owner",
+      "sync_enabled": true,
+      "approval_required_for_import": false
+    },
+    {
+      "notebook_name": "NEXUS FEEDER — BUSINESS CREATION & BANKABILITY",
+      "notebook_id": "e095222b-82fc-43f6-8349-030b051dc03f",
+      "research_lane": "business_creation",
+      "source_count": 4,
+      "role": "owner",
+      "sync_enabled": true,
+      "approval_required_for_import": false
+    },
+    {
+      "notebook_name": "NEXUS FEEDER — BUSINESS OPPORTUNITIES",
+      "notebook_id": "e0657f43-bf4e-4241-8336-7854739e942d",
+      "research_lane": "business_opportunities",
+      "source_count": 4,
+      "role": "owner",
+      "sync_enabled": true,
+      "approval_required_for_import": false
+    },
+    {
+      "notebook_name": "NEXUS FEEDER — BUSINESS FUNDING",
+      "notebook_id": "db71dcb4-e318-4d10-a13b-cc30faeb6cee",
+      "research_lane": "business_funding",
+      "source_count": 4,
+      "role": "owner",
+      "sync_enabled": true,
+      "approval_required_for_import": false
+    }
+  ]
 }

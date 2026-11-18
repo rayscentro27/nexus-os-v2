@@ -19,6 +19,10 @@ SOURCE_TYPES = {
     "FORUM_COMMUNITY", "NEWS", "ACADEMIC", "SEO_QUERY", "COMPETITOR",
     "FUNDING_SOURCE", "AFFILIATE_SOURCE", "BUSINESS_OPPORTUNITY_SOURCE",
     "TRADING_SOURCE", "BROKER_EVIDENCE", "MARKET_DATA_SOURCE",
+    # Canonical feeder contract names; legacy equivalents above remain valid.
+    "YOUTUBE_CHANNEL_UPDATE", "TRADINGVIEW_SCRIPT", "TRADINGVIEW_AUTHOR",
+    "GITHUB_REPOSITORY", "WEBSITE", "DOCUMENT", "BUSINESS_OPPORTUNITY",
+    "MANUAL_RAY_SOURCE",
 }
 LANES = {
     "AI_NEXUS", "SYSTEMS", "CREATIVE", "MARKETING", "SEO", "CREDIT", "FUNDING",
@@ -125,6 +129,105 @@ def set_source_state(source_id: str, state: str) -> dict[str, Any]:
     updated = {**current, "status": state, "enabled": state == "ACTIVE", "updated_at": _now()}
     persistence.append_record("alpha_source_registry", updated)
     return updated
+
+
+def add_designated_source(*, name: str, source_type: str, url: str, category: str = "GENERAL",
+                          priority: int = 50, monitor_mode: str = "NEW_CONTENT_ONLY",
+                          cadence: str = "WEEKLY", target_department: str = "RESEARCH",
+                          enabled: bool = True, notes: str = "", external_channel_id: str | None = None,
+                          baseline_video_id: str | None = None, baseline_published_at: str | None = None,
+                          triage_mode: str = "TRIAGE_ONLY") -> dict[str, Any]:
+    """Upsert a permanent designated monitor without scheduling backfill."""
+    if monitor_mode.upper() != "NEW_CONTENT_ONLY":
+        raise ValueError("historical_ingestion_requires_explicit_request")
+    canonical = _canonical_url(url)
+    if not canonical.startswith(("https://", "http://")):
+        raise ValueError("source_url_must_be_http")
+    kind = source_type.strip().lower()
+    if not kind:
+        raise ValueError("source_type_required")
+    existing = next((row for row in _latest() if
+                     (external_channel_id and row.get("external_channel_id") == external_channel_id) or
+                     row.get("canonical_url") == canonical or
+                     _canonical_url(str(row.get("source_url") or row.get("url") or "")) == canonical), None)
+    now = _now()
+    identity = "youtube:" + external_channel_id if external_channel_id else canonical
+    source_id = str(existing.get("source_id")) if existing else f"src_{hashlib.sha256(identity.encode()).hexdigest()[:24]}"
+    prior = existing or {}
+    baseline = prior.get("monitor_baseline") or {}
+    record = {
+        **prior, "source_id": source_id, "name": name.strip() or canonical,
+        "source_name": name.strip() or canonical, "source_type": kind.upper(),
+        "external_channel_id": external_channel_id or prior.get("external_channel_id"),
+        "url": canonical, "source_url": canonical, "canonical_url": canonical,
+        "category": category.strip().upper(), "monitor_mode": "NEW_CONTENT_ONLY",
+        "priority": int(priority), "cadence": cadence.upper(), "triage_mode": triage_mode.upper(),
+        "target_department": target_department.strip().upper(),
+        "target_departments": [target_department.strip().upper()], "enabled": bool(enabled),
+        "status": "ACTIVE" if enabled else "PAUSED", "created_at": prior.get("created_at") or now,
+        "last_checked_at": prior.get("last_checked_at"),
+        "last_item_seen": baseline_video_id or prior.get("last_item_seen"),
+        "last_success_at": prior.get("last_success_at") or prior.get("last_successful_scan"),
+        "last_error": prior.get("last_error"), "notes": notes or prior.get("notes", ""),
+        "processing_intent": "CONTINUOUS", "persistent": True,
+        "initial_backfill": {"status": "NOT_REQUESTED", "processed_ids": []},
+        "monitor_baseline": {
+            "status": "ESTABLISHED" if baseline_video_id or baseline.get("video_id") else "PENDING_INITIAL_SNAPSHOT",
+            "video_id": baseline_video_id or baseline.get("video_id"),
+            "published_at": baseline_published_at or baseline.get("published_at"),
+            "established_at": now if baseline_video_id else baseline.get("established_at")},
+        "baseline_video_id": baseline_video_id or prior.get("baseline_video_id") or baseline.get("video_id"),
+        "baseline_published_at": baseline_published_at or prior.get("baseline_published_at") or baseline.get("published_at"),
+        "last_seen_video_id": baseline_video_id or prior.get("last_seen_video_id"),
+        "last_item_seen_at": baseline_published_at or prior.get("last_item_seen_at"),
+        "updated_at": now,
+    }
+    persistence.append_record("alpha_source_registry", record)
+    return record
+
+
+def ingest_discovered_source(*, source_type: str, url: str, title: str, feeder_domain: str,
+                             discovered_by: str, external_id: str | None = None,
+                             question: str = "Classify source value, evidence gaps, case linkage, and the first safe next action.") -> dict[str, Any]:
+    """Durable feeder intake using the existing Alpha source registry.
+
+    Idempotency is by canonical URL/external ID. This records discovery and
+    triage work without auto-creating a Company Case or downloading media.
+    """
+    canonical = _canonical_url(url)
+    if not canonical.startswith(("https://", "http://")):
+        raise ValueError("source_url_must_be_http")
+    kind = str(source_type or "").upper()
+    if kind not in SOURCE_TYPES:
+        raise ValueError("unsupported_source_type")
+    key = "external:" + str(external_id) if external_id else "url:" + canonical
+    source_id = "feed_" + hashlib.sha256(key.encode()).hexdigest()[:24]
+    existing = next((row for row in _latest() if row.get("source_id") == source_id), None)
+    now = _now()
+    if existing:
+        record = {**existing, "last_seen": now, "last_discovery_by": discovered_by,
+                  "updated_at": now, "processing_status": existing.get("processing_status", "TRIAGE_PENDING"),
+                  "new_or_existing": "EXISTING"}
+    else:
+        lane_map = {"TRADING": "TRADING", "BUSINESS_OPPORTUNITIES": "BUSINESS_OPPORTUNITY",
+                    "SYSTEMS_TECHNOLOGY": "SYSTEMS", "MARKETING_CUSTOMER_NEEDS": "MARKETING",
+                    "FUNDING_GRANTS": "FUNDING", "CREATIVE_TOOLS": "CREATIVE"}
+        record = {"source_id": source_id, "source_type": kind, "source_url": canonical,
+            "canonical_url": canonical, "external_id": external_id, "title": title,
+            "discovered_at": now, "discovered_by": discovered_by, "feeder_domain": feeder_domain.upper(),
+            "last_seen": now, "content_hash_or_unique_identifier": key,
+            "new_or_existing": "NEW", "processing_status": "TRIAGE_PENDING",
+            "question": question, "lanes": [lane_map.get(feeder_domain.upper(), "GENERAL_BUSINESS")],
+            "priority": "P1_FEEDER_TRIAGE", "role": "FEEDER_INTAKE", "persistent": True,
+            "enabled": True, "status": "ACTIVE", "created_at": now, "updated_at": now,
+            "triage_contract": {"what_is_this": None, "why_might_it_matter": None,
+                "which_nexus_objective_does_it_touch": None, "which_department_does_it_serve": lane_map.get(feeder_domain.upper()),
+                "is_it_duplicative": None, "does_it_connect_to_existing_case": None,
+                "what_do_we_already_know": [], "what_is_unknown": [], "what_questions_should_be_asked": [question],
+                "what_additional_sources_are_needed": [],
+                "what_is_the_first_actionable_next_step": "Research triages this source against active objectives and feeder notebook evidence."}}
+    persistence.append_record("alpha_source_registry", record)
+    return record
 
 
 def update_source(source_id: str, *, priority: str | None = None, lanes: list[str] | None = None) -> dict[str, Any]:

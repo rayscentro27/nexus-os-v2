@@ -87,6 +87,9 @@ def apply_policy(package: dict[str, Any], judgment: dict[str, Any]) -> dict[str,
     next_owner = str(package.get("handoff_target") or package.get("department_target") or package.get("department") or "RESEARCH").upper()
     result = {
         "model_decision": model_decision, "decision": decision, "why": why,
+        "alpha_is_advisory": True, "terminates_owner_objective": False,
+        "workflow_continuation_required": True,
+        "continuation_policy": "RESEARCH_QUEUE_ON_RESEARCH_MORE_ELSE_PARENT_WORKFLOW",
         "evidence_for": evidence_for, "evidence_against": evidence_against, "unknowns": unknowns,
         "hard_blockers": blockers, "soft_risks": list(judgment.get("soft_risks") or judgment.get("deficiencies") or []),
         "testable_unknowns": testable, "test_profile": profile, "next_owner": next_owner,

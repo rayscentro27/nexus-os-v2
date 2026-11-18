@@ -36,8 +36,25 @@
       "gesture_style": "not fixed by this identity contract; Creative-owned per campaign",
       "voice_style": null,
       "brand_color_relationship": "uses existing GoClear navy/teal family where present in the source asset",
-      "allowed_variation": ["background", "pose", "activity", "camera", "lighting", "mood", "genre", "animation treatment", "story", "wardrobe when supported"],
-      "prohibited_identity_changes": ["random new face", "materially different facial features", "unversioned age/identity change", "unversioned voice identity change", "unapproved real-person likeness"],
+      "allowed_variation": [
+        "background",
+        "pose",
+        "activity",
+        "camera",
+        "lighting",
+        "mood",
+        "genre",
+        "animation treatment",
+        "story",
+        "wardrobe when supported"
+      ],
+      "prohibited_identity_changes": [
+        "random new face",
+        "materially different facial features",
+        "unversioned age/identity change",
+        "unversioned voice identity change",
+        "unapproved real-person likeness"
+      ],
       "created_at": "2026-09-22T00:00:00Z",
       "updated_at": "2026-09-22T00:00:00Z",
       "status": "INTERNAL_CANARY_NOT_PRODUCTION_APPROVED"
@@ -45,28 +62,74 @@
     "avatar.nexus.primary": {
       "avatar_id": "avatar.nexus.primary",
       "brand": "NEXUS_OS",
-      "version": "NOT_CONFIGURED",
-      "status": "RESERVED_NAMESPACE_NO_AVATAR_CONFIGURED",
-      "reference_images": [],
-      "prohibited_identity_changes": ["no avatar may be invented implicitly by a downstream generator"]
+      "version": "NOVA_REFERENCE_V1",
+      "status": "APPROVED_REFERENCE_ONLY",
+      "reference_images": [
+        "/Users/raymonddavis/nexus-os-v2-canonical/assets/nova/avatar/nova_reference.png"
+      ],
+      "prohibited_identity_changes": [
+        "substitute another face",
+        "materially change facial identity",
+        "unapproved real-person likeness"
+      ],
+      "avatar_name": "Nova",
+      "role": "approved Nova avatar reference",
+      "style": "photorealistic futuristic portrait",
+      "face_reference": "/Users/raymonddavis/nexus-os-v2-canonical/assets/nova/avatar/nova_reference.png",
+      "body_reference": "/Users/raymonddavis/nexus-os-v2-canonical/assets/nova/avatar/nova_reference.png",
+      "core_appearance": "Approved reference image; preserve this character identity.",
+      "facial_features": "See approved canonical reference image.",
+      "created_at": "2026-10-02T19:55:12.748907+00:00",
+      "updated_at": "2026-10-03T00:01:12.295879+00:00",
+      "approval_status": "approved",
+      "canonical_image_sha256": "a0e6a873726ea6831dcc2d8cdbbd603eeaad3324486f7e396c1bd33bb2ee825c",
+      "renderer_target": "MuseTalk",
+      "fallback_behavior": "voice_only",
+      "runtime": {
+        "status": "DEPLOYED_CANARY_WAITING_UPGRADE_CONTROL",
+        "capability": "nova_live_avatar",
+        "provider": "Modal",
+        "app": "nexus-creative-gpu-worker",
+        "function": "nova_live_avatar",
+        "worker_id": "modal-nova-live-avatar",
+        "control_plane_capability": "nova_live_avatar",
+        "reference_sha256": "a0e6a873726ea6831dcc2d8cdbbd603eeaad3324486f7e396c1bd33bb2ee825c",
+        "identity_cache_sha256": "e969fc2753a35869ef3259e477f1337bd35367c135c5170d1371cd75cd820f8b",
+        "production_voice": "UNCHANGED_NOT_CONFIGURED_FOR_RENDER",
+        "test_tts_provider": "macOS_say_TEST_ONLY"
+      }
     }
   },
   "brand_assets": {
     "NEXUS_OS": {
       "brand_id": "NEXUS_OS",
-      "canonical_assets": {"icon": "public/brand/app-icon.svg", "favicon": "public/brand/favicon.svg"},
-      "avatar_ids": ["avatar.nexus.primary"],
+      "canonical_assets": {
+        "icon": "public/brand/app-icon.svg",
+        "favicon": "public/brand/favicon.svg"
+      },
+      "avatar_ids": [
+        "avatar.nexus.primary"
+      ],
       "version": "CANONICAL_CURRENT",
       "status": "ACTIVE"
     },
     "GOCLEAR": {
       "brand_id": "GOCLEAR",
-      "canonical_assets": {"logo": "public/brand/GoClearLogo.svg", "wordmark": "public/brand/GoClearWordmark.svg", "mark": "public/brand/GoClearMark.svg"},
-      "avatar_ids": ["avatar.goclear.primary"],
+      "canonical_assets": {
+        "logo": "public/brand/GoClearLogo.svg",
+        "wordmark": "public/brand/GoClearWordmark.svg",
+        "mark": "public/brand/GoClearMark.svg"
+      },
+      "avatar_ids": [
+        "avatar.goclear.primary"
+      ],
       "version": "CANONICAL_CURRENT",
       "status": "ACTIVE"
     }
   },
   "random_brand_reinvention": "BLOCKED",
-  "labs_boundary": {"heavy_external_tools_installed": false, "labs_can_modify_production": false}
+  "labs_boundary": {
+    "heavy_external_tools_installed": false,
+    "labs_can_modify_production": false
+  }
 }

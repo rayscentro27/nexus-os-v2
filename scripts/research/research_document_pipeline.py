@@ -77,13 +77,16 @@ def extract(text: str, source_type: str) -> dict[str, Any]:
     return result
 
 
-def fetch(url: str, accept: str = "text/html") -> tuple[str, dict[str, Any]]:
+def fetch(url: str, accept: str = "text/html", *, max_bytes: int = 750_000) -> tuple[str, dict[str, Any]]:
     # Research retrieval is a provider call too. Enforce durable-job identity,
     # reservation, and footprint before opening a socket; unknown hosts deny.
     import os
     from urllib.parse import urlsplit
     from nexus_agent_platform.provider_enforcement import execute
-    host = (urlsplit(url).hostname or "").lower()
+    parsed_url=urlsplit(url)
+    host = (parsed_url.hostname or "").lower()
+    if parsed_url.scheme not in {"http","https"} or not host:
+        raise ValueError("RESEARCH_SOURCE_URL_INVALID")
     if host.endswith("github.com") or host == "api.github.com":
         provider = "GITHUB"
     elif host.endswith("youtube.com") or host.endswith("googleapis.com"):
@@ -102,15 +105,29 @@ def fetch(url: str, accept: str = "text/html") -> tuple[str, dict[str, Any]]:
         except Exception:
             context = ssl.create_default_context()
         with urllib.request.urlopen(req, timeout=25, context=context) as response:
-            body = response.read(2_000_000)
-            return body.decode("utf-8", "replace"), {"status": response.status, "content_type": response.headers.get("Content-Type", "")}
+            body = response.read(max(1, int(max_bytes)))
+            return body.decode("utf-8", "replace"), {"status": response.status, "content_type": response.headers.get("Content-Type", ""),
+                "raw_source_truncated": len(body) >= max(1, int(max_bytes)), "response_bytes": len(body)}
 
+    # A retry of a safe GET under the same durable job must receive a fresh
+    # reservation identity after a prior response was a 404/transport failure.
+    # Keep same-attempt duplicate reads deduplicated, while allowing the
+    # controller's explicit next attempt to re-fetch its repaired source.
+    attempt = os.environ.get("NEXUS_JOB_ATTEMPT_COUNT", "1")
+    url_fingerprint = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
     return execute(
         provider, host, "RESEARCH_READ",
-        {"requests": 1, "api_calls": 1, "bytes": 2_000_000, "billable": True, "cost": 0},
+        # Public, read-only HTML retrieval has zero incremental charge. Marking
+        # it billable caused the governor to reject this path even though its
+        # estimated and actual cash costs are both zero.
+        {"requests": 1, "api_calls": 1, "bytes": max(1, int(max_bytes)), "billable": False, "cost": 0},
         request, job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
         job_type=os.environ.get("NEXUS_JOB_TYPE"),
         correlation_id=os.environ.get("NEXUS_CORRELATION_ID"),
+        purpose=f"RESEARCH_READ:{host}:{url_fingerprint}:attempt:{attempt}",
+        actual_usage=lambda result: {"requests":1,"api_calls":1,
+                                     "bytes":int((result[1] or {}).get("response_bytes",len(result[0].encode("utf-8")))),
+                                     "cost":0},
     )
 
 
@@ -182,11 +199,46 @@ def github_deep(repo: str) -> dict[str, Any]:
     return process_document("github", repo.replace("/", "__"), f"https://github.com/{repo}", meta.get("full_name", repo), raw, author=meta.get("owner", {}).get("login", ""), published_at=meta.get("created_at"), extra={"repo_tree_summary": {"file_count": len(tree), "default_branch": branch, "description": meta.get("description")}, "important_files_selected": [x["path"] for x in files], "file_hashes": {x["path"]: x.get("sha") for x in files}, "repo_commit_sha": meta.get("pushed_at")})
 
 
-def web_page(url: str, source_id: str) -> dict[str, Any]:
-    raw, headers = fetch(url)
+def web_page(url: str, source_id: str, *, max_bytes: int = 750_000) -> dict[str, Any]:
+    # A failed canonical persistence retry must reuse the source bytes already
+    # acquired by Research. Re-fetching would consume provider budget and can
+    # hit the same idempotency guard without improving the evidence.
+    source_dir = ROOT_ARTIFACTS / "web"
+    safe_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", source_id)[:120]
+    state_path = source_dir / f"{safe_id}.state.json"
+    document_path = source_dir / f"{safe_id}.document.json"
+    raw_path = source_dir / f"{safe_id}.raw.txt"
+    cached = None
+    try:
+        prior = json.loads(state_path.read_text(encoding="utf-8"))
+        document = json.loads(document_path.read_text(encoding="utf-8"))
+        retrieved = datetime.fromisoformat(str(document.get("retrieved_at", "")).replace("Z", "+00:00"))
+        if retrieved.tzinfo is None:
+            retrieved = retrieved.replace(tzinfo=timezone.utc)
+        fresh = datetime.now(timezone.utc) - retrieved <= timedelta(hours=24)
+        if (fresh and prior.get("processing_status") == "FULLY_PROCESSED"
+                and document.get("source_url") == url and raw_path.is_file()):
+            cached = raw_path.read_text(encoding="utf-8", errors="replace")
+    except (OSError, ValueError, TypeError):
+        cached = None
+    if cached is None:
+        raw, headers = fetch(url, max_bytes=max_bytes)
+        provider = "urllib"
+        content_type = headers.get("content_type")
+    else:
+        raw = cached
+        provider = "NEXUS_RESEARCH_CACHE"
+        content_type = "cached-source-artifact"
     title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.I | re.S)
     title = clean(title_match.group(1)) if title_match else urllib.parse.urlparse(url).netloc
-    return process_document("web", source_id, url, title, raw, extra={"provider": "urllib", "provider_content_type": headers.get("content_type"), "raw_source_truncated": False, "chunking_applied": len(raw) > 12000})
+    processed = process_document("web", source_id, url, title, raw, extra={"provider": provider, "provider_content_type": content_type, "cached_source_reused": cached is not None, "raw_source_truncated": bool(headers.get("raw_source_truncated", False)), "chunking_applied": len(raw) > 12000})
+    if processed.get("duplicate_status") == "DUPLICATE_UNCHANGED":
+        try:
+            prior_document = json.loads(document_path.read_text(encoding="utf-8"))
+            return {**prior_document, **processed, "cached_source_reused": cached is not None}
+        except (OSError, ValueError, TypeError):
+            pass
+    return processed
 
 
 def main() -> int:

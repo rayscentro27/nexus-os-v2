@@ -39,10 +39,12 @@ def _allow_mock_modal(monkeypatch, tmp_path):
     monkeypatch.setenv("NEXUS_GOVERNOR_DB",str(path))
     monkeypatch.setenv("NEXUS_MODAL_ESTIMATED_COST_PER_JOB","0.01")
     monkeypatch.setenv("NEXUS_JOB_BUDGET",'{"max_estimated_cost":1,"max_runtime_seconds":1000}')
-    LocalGovernorStore(path).set_policy("MODAL","remote_worker","evidence_ingestion","DAILY",
-        autonomous_usage_allowed=True,autonomous_spend_allowed=True,
-        hard_limits={"rate":{},"usage":{"requests":10,"operations":10,"runtime_seconds":1000},
-                     "money":{"per_job":1,"per_day":10,"per_month":100}})
+    for period in ("DAILY", "MONTHLY"):
+        LocalGovernorStore(path).set_policy("MODAL","remote_worker","evidence_ingestion",period,
+            autonomous_usage_allowed=True,autonomous_spend_allowed=True,
+            hard_limits={"rate":{},"usage":{"requests":10,"operations":10,"runtime_seconds":1000},
+                         "money":{"per_job":1,"per_day":10,"per_month":30}})
+    monkeypatch.setattr("scripts.nexus_agent_platform.modal_usage_governor.read_confirmed_monthly_usage", lambda **_: 1.66)
 
 
 def test_modal_submit_uses_native_function_and_preserves_contract(monkeypatch, tmp_path):
@@ -112,6 +114,20 @@ def test_modal_submit_requires_matching_durable_job_identity(monkeypatch):
     from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
     with pytest.raises(GovernanceDenied, match="DURABLE_JOB_ID_REQUIRED_OR_MISMATCH"):
         provider.submit(_job())
+
+
+def test_modal_submit_requires_per_job_cost_estimate_before_provider_call(monkeypatch):
+    _allow_mock_modal(monkeypatch, __import__("pathlib").Path(__import__("tempfile").mkdtemp()))
+    job = _job()
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", job["job_id"])
+    monkeypatch.delenv("NEXUS_MODAL_ESTIMATED_COST_PER_JOB", raising=False)
+    from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
+    provider = ModalRemoteWorkerProvider(shared_secret="test-secret")
+    called = []
+    monkeypatch.setattr(provider, "_function", lambda name: type("F", (), {"remote": lambda *_: called.append(True)})())
+    with pytest.raises(GovernanceDenied):
+        provider.submit(job)
+    assert called == []
 
 
 def test_curl_transport_requires_endpoint(monkeypatch):

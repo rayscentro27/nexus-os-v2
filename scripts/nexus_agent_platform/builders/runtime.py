@@ -518,6 +518,11 @@ def _opencode_execute(task: BuildTaskSpec) -> Dict[str, Any]:
         protected_paths=tuple(task.protected_paths),
         acceptance=tuple(task.acceptance_criteria),
         checkpoint_sha=checkpoint,
+        campaign_id=(task.metadata or {}).get("campaign_id"),
+        owner_objective_id=(task.metadata or {}).get("owner_objective_id"),
+        objective_version=(task.metadata or {}).get("objective_version"),
+        job_id=(task.metadata or {}).get("job_id"),
+        worker_role=(task.metadata or {}).get("worker_role", "CODING_AND_SYSTEM_REPAIR_ONLY"),
     )
     result = OpenCodeExecuteAdapter().execute(bounded)
     if result.get("status") != "PASS":

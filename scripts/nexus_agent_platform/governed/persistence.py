@@ -29,6 +29,11 @@ EXTRA_COLLECTIONS = {"trading_champion_board", "trading_cost_models", "trading_o
 # NotebookLM-backed Research results are append-only governed evidence too.
 EXTRA_COLLECTIONS.add("research_notebooklm_findings")
 EXTRA_COLLECTIONS.add("company_workflow_observability")
+# Section 31B bounded live distribution: idempotency transactions + publish receipts.
+EXTRA_COLLECTIONS.add("distribution_transactions")
+EXTRA_COLLECTIONS.add("distribution_publish_receipts")
+# App-services provider calls (Postiz via n8n, LAB only): Nexus-owned receipts.
+EXTRA_COLLECTIONS.add("distribution_provider_receipts")
 
 
 def governed_data_dir() -> Path:

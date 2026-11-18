@@ -1,0 +1,39 @@
+{
+  "schema_version": "nexus.recovery-supervisor-policy.v1",
+  "activation": "deterministic exception event only",
+  "decisions_allowed": [
+    "RETRY_AUTHORIZED_ACTION",
+    "REROUTE_COMPATIBLE_WORKER",
+    "REQUEST_PRIMARY_ADVISOR",
+    "REQUEST_CODEX_SPECIALIST",
+    "USE_ALTERNATE_AUTHORIZED_TOOL",
+    "WAIT_FOR_RESOURCE",
+    "PAUSE_HEAVY_WORK",
+    "CREATE_SYSTEMS_RECOVERY_JOB",
+    "REQUEST_RAY_APPROVAL",
+    "ESCALATE_WITH_ACTIONABLE_DIAGNOSIS",
+    "VERIFY_RECOVERY",
+    "RESUME_BLOCKED_OBJECTIVE"
+  ],
+  "decisions_prohibited": [
+    "TERMINATE_OBJECTIVE",
+    "UNAPPROVED_SPEND",
+    "UNAPPROVED_PRODUCTION_DEPLOYMENT",
+    "UNBOUNDED_RETRY_LOOP",
+    "BYPASS_GOVERNANCE",
+    "DELETE_HISTORY",
+    "BYPASS_HOST_GATE",
+    "AUTOMATIC_RESTART"
+  ],
+  "invariants": {
+    "objective_owner_authorized_to_terminate": "RAY_ONLY",
+    "objective_id_must_be_preserved": true,
+    "retry_requires_idempotency_and_attempt_budget": true,
+    "recovery_action_requires_durable_evidence": true,
+    "uncertainty_must_be_preserved": true,
+    "objective_must_not_be_terminated": true,
+    "recovery_job_zero_incremental_cost": true,
+    "resume_requires_full_recovery_certification": true,
+    "recovery_actions_do_not_execute_repairs_automatically": true
+  }
+}

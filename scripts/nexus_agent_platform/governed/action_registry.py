@@ -165,6 +165,49 @@ ACTION_REGISTRY: Dict[str, Dict[str, Any]] = {
         "telemetry_process_id": "voice_engineering_repair",
         "enabled": True,
     },
+    # HIGH risk: never Nova-executable (no executor registered). Approvals are
+    # created only by the owner-run CLI `nexus distribution approve`, which binds
+    # them to an immutable request hash; the bounded publisher consumes them.
+    "distribution.facebook.bounded_publish": {
+        "action_id": "distribution.facebook.bounded_publish",
+        "name": "Bounded Facebook Page Publish (owner-approved)",
+        "description": "Publish exactly one owner-approved, hash-bound Facebook Page photo post for one venture/channel account.",
+        "risk_level": Risk.HIGH,
+        "approval_required": True,
+        "executor": None,
+        "executed_by": "scripts/distribution/facebook_live_publisher.py",
+        "input_schema": {
+            "type": "object",
+            "properties": {"request_id": {"type": "string"}, "request_hash": {"type": "string"},
+                           "idempotency_key": {"type": "string"}},
+            "required": ["request_id", "request_hash", "idempotency_key"],
+        },
+        "result_schema": {"type": "object", "properties": {"state": {"type": "string"}}},
+        "timeout_seconds": 300,
+        "idempotency_supported": True,
+        "telemetry_process_id": "distribution_facebook_bounded_publish",
+        "enabled": True,
+    },
+    "distribution.instagram.bounded_publish": {
+        "action_id": "distribution.instagram.bounded_publish",
+        "name": "Bounded Instagram Reel Publish (owner-approved)",
+        "description": "Publish exactly one owner-approved, hash-bound Instagram Reel for one venture/channel account.",
+        "risk_level": Risk.HIGH,
+        "approval_required": True,
+        "executor": None,
+        "executed_by": "scripts/distribution/instagram_live_publisher.py",
+        "input_schema": {
+            "type": "object",
+            "properties": {"request_id": {"type": "string"}, "request_hash": {"type": "string"},
+                           "idempotency_key": {"type": "string"}},
+            "required": ["request_id", "request_hash", "idempotency_key"],
+        },
+        "result_schema": {"type": "object", "properties": {"state": {"type": "string"}}},
+        "timeout_seconds": 900,
+        "idempotency_supported": True,
+        "telemetry_process_id": "distribution_instagram_bounded_publish",
+        "enabled": True,
+    },
 }
 
 # Documented, non-executable classes (for honest recommendation labelling).

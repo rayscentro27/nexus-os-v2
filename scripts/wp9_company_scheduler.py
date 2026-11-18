@@ -65,6 +65,7 @@ def load_config() -> dict[str, Any]:
 
 
 def load_runtime_env() -> dict[str, str]:
+    """Load only non-secret legacy runtime flags; secrets stay unavailable."""
     values: dict[str, str] = {}
     for path in (Path("/Users/raymonddavis/.config/nexus/runtime.env"), ROOT / ".env", ROOT / ".env.e2e.local"):
         try:
@@ -72,7 +73,9 @@ def load_runtime_env() -> dict[str, str]:
                 line = raw.strip()
                 if line and not line.startswith("#") and "=" in line:
                     key, value = line.split("=", 1)
-                    values[key.strip()] = value.strip().strip("\"'")
+                    key = key.strip()
+                    if key in {"NEXUS_PRIMARY_RUNTIME", "WP9_COMPANY_CYCLE_ENABLED", "WP9_AUTONOMOUS_EXECUTION"}:
+                        values[key] = value.strip().strip("\"'")
         except OSError:
             continue
     for key, value in values.items():
@@ -218,22 +221,34 @@ def send_email(subject: str, body: str, *, cycle: str, dry_run: bool = False) ->
     if dry_run or not key or not sender or not recipient:
         receipt.update({"status": "DRY_RUN" if dry_run else "BLOCKED_NOT_CONFIGURED", "delivery_id": None})
     else:
+        from scripts.nexus_agent_platform.provider_enforcement import authorize_email_action, execute
+        from scripts.nexus_agent_platform.resource_spend_governor import GovernanceDenied
+        approved = {x.strip().casefold() for x in os.environ.get("NEXUS_APPROVED_TEST_RECIPIENTS", "").split(",") if x.strip()}
         try:
-            # Canonical existing route: Supabase function authenticated with
-            # the provisioned synthetic operator session. Do not persist JWT.
-            base = (os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")).rstrip("/")
-            anon = os.environ.get("VITE_SUPABASE_ANON_KEY", "")
-            admin_email = os.environ.get("E2E_ADMIN_EMAIL", "")
-            admin_password = os.environ.get("E2E_ADMIN_PASSWORD", "")
-            login_payload = json.dumps({"email": admin_email, "password": admin_password}).encode()
-            login_request = urllib.request.Request(base + "/auth/v1/token?grant_type=password", data=login_payload, headers={"apikey": anon, "Content-Type": "application/json"})
-            with urllib.request.urlopen(login_request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as login_response:
-                session = json.loads(login_response.read().decode())
-            function_payload = json.dumps({"to": recipient, "template": "status_update", "subject": subject, "data": {"status": "CERTIFICATION", "message": body[:6000]}}).encode()
-            function_request = urllib.request.Request(base + "/functions/v1/send-client-email", data=function_payload, headers={"apikey": anon, "Authorization": "Bearer " + session["access_token"], "Content-Type": "application/json"})
-            with urllib.request.urlopen(function_request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as response:
-                result = json.loads(response.read().decode())
+            authorize_email_action("TEST_SEND", approved_test_recipient=recipient.casefold() in approved)
+            def send():
+                # Canonical route: authenticated Supabase email function. JWT stays transient.
+                base = (os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")).rstrip("/")
+                anon = os.environ.get("VITE_SUPABASE_ANON_KEY", "")
+                login_payload = json.dumps({"email": os.environ.get("E2E_ADMIN_EMAIL", ""), "password": os.environ.get("E2E_ADMIN_PASSWORD", "")}).encode()
+                login_request = urllib.request.Request(base + "/auth/v1/token?grant_type=password", data=login_payload, headers={"apikey": anon, "Content-Type": "application/json"})
+                with urllib.request.urlopen(login_request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as response:
+                    session = json.loads(response.read().decode())
+                payload = json.dumps({"to": recipient, "template": "status_update", "subject": subject, "data": {"status": "CERTIFICATION", "message": body[:6000]}}).encode()
+                request = urllib.request.Request(base + "/functions/v1/send-client-email", data=payload, headers={"apikey": anon, "Authorization": "Bearer " + session["access_token"], "Content-Type": "application/json"})
+                with urllib.request.urlopen(request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as response:
+                    return json.loads(response.read().decode())
+            try: cost = float(os.environ["NEXUS_RESEND_ESTIMATED_COST_PER_EMAIL"])
+            except (KeyError, ValueError): cost = None
+            estimate = {"requests": 2, "operations": 1, "emails": 1, "billable": True}
+            if cost is not None: estimate["cost"] = cost
+            result = execute("EMAIL_PROVIDER", "resend_email", "TEST_SEND", estimate, send,
+                job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
+                job_type="WP9_TEST_EMAIL", actual_usage=lambda _: {"requests":2,"operations":1,"emails":1,**({"cost":cost} if cost is not None else {})},
+                external_ref=lambda value: value.get("id"))
             receipt.update({"status": "PROVIDER_QUEUED", "delivery_id": result.get("id"), "route": "supabase.send-client-email", "delivery_claim": "REQUEST_ACCEPTED_PROVIDER_QUEUED"})
+        except GovernanceDenied as exc:
+            receipt.update({"status":"HUMAN_APPROVAL_REQUIRED","delivery_id":None,"error":exc.code})
         except (OSError, urllib.error.URLError, urllib.error.HTTPError) as exc:
             receipt.update({"status": "FAILED", "delivery_id": None, "error": type(exc).__name__, "route": "supabase.send-client-email"})
     write_json(path, receipt); return receipt

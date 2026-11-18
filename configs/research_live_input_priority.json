@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "priority_order": [
+    "RAY_REQUESTED",
+    "DEPARTMENT_REQUESTED",
+    "ACTIVE_CASE_FOLLOWUP",
+    "FRESH_MONITORED_SOURCE",
+    "HIGH_VALUE_PROACTIVE_DISCOVERY",
+    "VIRAL_TREND_DISCOVERY",
+    "HISTORICAL_BACKLOG_ONLY_WHEN_EXPLICITLY_REACTIVATED"
+  ],
+  "work_class_rank": {
+    "ASSIGNED": 4,
+    "MONITORED": 3,
+    "DEMAND_DISCOVERY": 4,
+    "GENERAL_DISCOVERY": 4
+  },
+  "priority_rank": {
+    "RAY_REQUESTED": 0,
+    "DEPARTMENT_REQUESTED": 1,
+    "ACTIVE_CASE_FOLLOWUP": 2,
+    "FRESH_MONITORED_SOURCE": 3,
+    "HIGH_VALUE_PROACTIVE_DISCOVERY": 4,
+    "VIRAL_TREND_DISCOVERY": 5,
+    "HISTORICAL_BACKLOG": 6
+  },
+  "historical_backlog_rank": 6,
+  "ray_or_department_rank": 0,
+  "department_request_rank": 1,
+  "active_goal_follow_up_rank": 2,
+  "fresh_monitored_source_rank": 3,
+  "proactive_discovery_rank": 4,
+  "viral_trend_discovery_rank": 5,
+  "historical_markers": ["HISTORICAL_BACKFILL", "CONTINUE_HISTORICAL_BACKFILL", "ARCHIVED_BACKLOG", "HISTORICAL_BACKLOG"]
+}

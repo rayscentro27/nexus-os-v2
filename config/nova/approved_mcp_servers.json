@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "servers": [
+    {"server_id":"nexus_mcp_remote","server_name":"Nexus MCP","approved":true,"authority_class":"NEXUS_INTERNAL_ACTION","cost_class":"ZERO_INCREMENTAL_COST","boundary":"Existing Nexus per-tool governance and durable executor receipts.","route_mode":"NEXUS_GOVERNED"},
+    {"server_id":"nova-action-canary","server_name":"nova-action-canary","approved":true,"authority_class":"APPROVED_EXTERNAL_MCP_ACTION","cost_class":"ZERO","boundary":"Disposable sandbox only; no production, external, credential, or network effects.","sandbox_only":true,"production_effect":false,"external_effect":false,"reversible":true,"route_mode":"HERMES_APPROVED_MCP"},
+    {"server_id":"you-com","server_name":"You.com","approved":true,"authority_class":"APPROVED_READ_ONLY_EXTERNAL_MCP","cost_class":"FREE_LIMITED","boundary":"Public discovery/read tools only.","route_mode":"HERMES_APPROVED_MCP"}
+  ]
+}

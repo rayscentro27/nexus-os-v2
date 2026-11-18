@@ -14,7 +14,6 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
 from nexus_agent_platform.governed import persistence
 from nexus_foundation.contracts import build_work_order, transition_work_order
 
@@ -26,6 +25,33 @@ SYSTEMS_PROACTIVE_MISSION = (
 SYSTEMS_OWNER = "SYSTEMS_AI_WORKER"
 SYSTEMS_PROVIDER = "openrouter"
 SYSTEMS_MODEL = "openai/gpt-4o-mini"
+
+
+def _run_systems_reasoning(prompt: str, session_id: str, *, timeout_seconds: int = 180,
+                           request_id: str | None = None):
+    """Route Systems judgment through the canonical governed model router."""
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    scripts = str(root / "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import model_router
+    payload = {"messages": [{"role": "user", "content": prompt}], "temperature": 0.1,
+               "max_tokens": 1600}
+    routed = model_router.execute_reasoning(agent_key="nexus_systems", task_type="systems_analysis",
+        sensitivity="public_research", reasoning_class="STRONG_REASONING", payload=payload,
+        operation=lambda _payload, _token: {}, max_tokens=1600,
+        purpose=f"systems-analysis:{request_id or session_id}")
+    result = routed["result"]
+    response = str((((result.get("choices") or [{}])[0]).get("message") or {}).get("content") or "")
+    if not response:
+        raise RuntimeError("SYSTEMS_MODEL_EMPTY_RESULT")
+    from types import SimpleNamespace
+    return SimpleNamespace(response=response, status="SUCCEEDED", error=None,
+        latency_ms=float(routed.get("latency_ms") or 0), provider=routed.get("provider"),
+        model=routed.get("model"), runtime_host="CANONICAL_MODEL_ROUTER", hermes_version=None,
+        execution_metadata=routed.get("execution_metadata"), route_key=routed.get("route_key"))
 
 
 def resume_company_case_directive(case_id: str, directive_id: str) -> dict[str, Any]:
@@ -263,7 +289,7 @@ def _systems_prompt(contract: dict[str, Any], *, assessment_only: bool) -> str:
     )
 
 
-def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False, model_runner=run_oracle_hermes) -> dict[str, Any]:
+def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False, model_runner=None) -> dict[str, Any]:
     """Claim and execute one Systems order through the real model transport."""
     handoffs = persistence.read_records("research_v2_handoffs")
     handoff = _latest(handoffs, "handoff_id", handoff_id)
@@ -301,12 +327,13 @@ def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False,
         return {"handoff": handoff, "work_order": order, "deduplicated": True}
     order = transition_work_order(order, "ASSIGNED", assignment_reason="Systems AI worker claim")
     persistence.append_record("work_orders", order)
-    order = transition_work_order(order, "IN_PROGRESS", worker_id=SYSTEMS_OWNER, execution_class="AI_REASONING_WORKER")
+    order = transition_work_order(order, "IN_PROGRESS", worker_id=SYSTEMS_OWNER, execution_class="STRONG_REASONING")
     persistence.append_record("work_orders", order)
     contract = systems_input_contract(handoff)
     source_refs = _source_refs(handoff, handoffs)
     worker_execution_id = persistence.new_id("systems_execution")
-    receipt = model_runner(_systems_prompt(contract, assessment_only=assessment_only), f"systems-{handoff_id[:80]}", timeout_seconds=180, request_id=f"systems:{handoff_id}")
+    runner = model_runner or _run_systems_reasoning
+    receipt = runner(_systems_prompt(contract, assessment_only=assessment_only), f"systems-{handoff_id[:80]}", timeout_seconds=180, request_id=f"systems:{handoff_id}")
     judgment = _json_object(receipt.response or "") or {
         "disposition": "BLOCKED_EXTERNAL",
         "unknowns": ["model returned no structured judgment"],
@@ -330,6 +357,10 @@ def claim_and_execute_systems(handoff_id: str, *, assessment_only: bool = False,
         "model_call_status": receipt.status,
         "model_calls": 1 if receipt.response else 0,
         "model_latency_ms": receipt.latency_ms,
+        "execution_class": "STRONG_REASONING",
+        "model_call_required": True,
+        "model_route_key": getattr(receipt, "route_key", None),
+        "execution_metadata": getattr(receipt, "execution_metadata", None),
         "runtime_host": receipt.runtime_host,
         "hermes_version": receipt.hermes_version,
         "source_refs": source_refs,
@@ -389,3 +420,28 @@ def systems_metrics(*, since: str | None = None) -> dict[str, Any]:
         "systems_project_transitions": len(analyses),
         "active_systems_candidates": sorted({str((row.get("input_contract") or {}).get("candidate_name") or "UNKNOWN") for row in analyses}),
     }
+
+
+# Operational-only Host Control dispatch. This is intentionally not wired into
+# Nova/Hermes message classification or the conversational capability router.
+SYSTEMS_ORACLE_HOST_CONTROL_CAPABILITIES = frozenset({
+    "systems.oracle.release.inspect",
+    "systems.oracle.release.stage",
+    "systems.oracle.nova.snapshot",
+    "systems.oracle.nova.snapshot_validate",
+    "systems.oracle.nova.poller_status",
+    "systems.oracle.nova.activate",
+    "systems.oracle.nova.verify",
+    "systems.oracle.nova.rollback",
+    "systems.oracle.receipt.read",
+    "systems.oracle.hermes.mcp_provider_status",
+})
+
+
+def invoke_oracle_host_control(capability: str, arguments: dict[str, Any] | None = None,
+                               correlation_id: str = "") -> dict[str, Any]:
+    """Invoke one registered Systems operation on the fixed Oracle Host Control."""
+    if capability not in SYSTEMS_ORACLE_HOST_CONTROL_CAPABILITIES:
+        raise ValueError("SYSTEMS_HOST_CONTROL_CAPABILITY_NOT_REGISTERED")
+    from nexus_agent_platform.systems_oracle_host_control_transport import invoke_systems_host_control
+    return invoke_systems_host_control(capability, arguments, correlation_id)

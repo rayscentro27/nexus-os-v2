@@ -1,0 +1,25 @@
+{
+  "schema_version": "nexus.research-golden-path.v1",
+  "name": "certify_research_golden_path",
+  "execution_enabled": false,
+  "requires_host_gate": true,
+  "requires_runtime_contract_pass": true,
+  "fixture_policy": "one disposable case through authenticated MCP intake; never Phase 5",
+  "stages": [
+    {"id": "HOST_HEALTH", "evidence": ["process states", "memory pressure", "load", "disk free", "bounded I/O sample"]},
+    {"id": "RUNTIME_CONTRACT", "evidence": ["release closure", "launchd env", "external state roots", "governor policy", "capacity"]},
+    {"id": "MCP_PROTOCOL", "evidence": ["authenticated initialize", "tools/list", "Research intake tool"]},
+    {"id": "RESEARCH_INTAKE", "evidence": ["nexus_assign_research receipt", "objective_id", "project_id", "job_id", "case_id"]},
+    {"id": "DISPATCH", "evidence": ["exact job claimed_by", "started_at", "attempt_count"]},
+    {"id": "WORKER", "evidence": ["durable completion receipt", "exact case lineage"]},
+    {"id": "PRIMARY_ADVISOR", "evidence": ["CHATGPT_PLAN attempt", "persisted reasoning", "zero incremental cost"]},
+    {"id": "FORMAL_ANSWERS", "evidence": ["all fixture questions answered", "same case id"]},
+    {"id": "FACT_CHECKER", "evidence": ["stage transition receipt"]},
+    {"id": "NEEDLE", "evidence": ["Needle result persisted"]},
+    {"id": "SYNTHESIS", "evidence": ["synthesis record persisted"]},
+    {"id": "MCP_READBACK", "evidence": ["status", "results", "open questions", "lineage"]},
+    {"id": "RELEASE_IMMUTABILITY", "evidence": ["bounded manifest validator pass"]},
+    {"id": "POST_RESOURCE_HEALTH", "evidence": ["no Nexus U-state process", "memory", "load", "disk"]}
+  ],
+  "forbidden": ["Phase 5 case", "Ollama", "paid provider", "duplicate Primary Advisor", "objective termination"]
+}

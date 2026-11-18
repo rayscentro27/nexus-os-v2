@@ -239,6 +239,19 @@ def _discover_registry() -> list[dict[str, Any]]:
         add("hermes_oracle", "Oracle Hermes runtime", "SERVICE", "SYSTEMS", "SERVICE_PROFILE",
             "CRITICAL", "DAILY", ["oracle_cloud"], cost=True, version=True,
             notes="Discovered from the configured read-only Oracle Hermes runtime health probe.")
+    ssh_config = Path.home() / ".ssh/config"
+    if (Path.home() / ".ssh/nexus_contabo").is_file() and ssh_config.is_file() \
+            and "Host nexus-contabo" in ssh_config.read_text(errors="ignore"):
+        add("contabo_app_services", "Contabo App Services host", "HOST", "SYSTEMS", "HOST_PROFILE",
+            "CRITICAL", "DAILY", [], cost=True,
+            notes="Dedicated Nexus App Services VPS (Postiz first, n8n later). Reached via SSH alias nexus-contabo.")
+        entries[-1].update({
+            "host": "nexus-contabo", "node_id": "contabo-app-services", "node_role": "APP_SERVICES",
+            "provider": "CONTABO", "server_type": "Cloud VPS 4", "region": "US-central (St. Louis)",
+            "public_ipv4": "212.56.43.33", "hostname": "nexus-app-services",
+            "capabilities": ["docker.execute", "app_services.host", "postiz.host.ready", "n8n.host.ready",
+                             "systems.inspect", "systems.health"],
+            "installed_services": [], "credential_reference": "credential.contabo.app_services.ssh.prod.v1"})
     if (ROOT / "netlify.toml").is_file() and (ROOT / "netlify").is_dir():
         add("netlify_deployment", "Netlify deployment configuration", "PROVIDER", "SYSTEMS", "PROVIDER_PROFILE", "WEEKLY", "WEEKLY",
             ["nexus_canonical_runtime"], version=True, notes="Deployment configuration is present in canonical checkout.")
@@ -515,6 +528,48 @@ def _probe(env: dict[str, Any]) -> dict[str, Any]:
         result["checks"].append(item)
         if abnormal:
             result["status"] = state or "FAIL"
+
+    if env_id == "contabo_app_services":
+        # Read-only SSH probe over the canonical alias; no secrets are read or printed.
+        script = ("set +e; echo HOST=$(hostname); "
+                  "echo DOCKER=$(systemctl is-active docker); "
+                  "echo COMPOSE=$(docker compose version --short 2>/dev/null); "
+                  "echo DISK_PCT=$(df --output=pcent / | tail -1 | tr -dc 0-9); "
+                  "echo MEM_AVAIL_PCT=$(awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}END{printf \"%d\", a*100/t}' /proc/meminfo); "
+                  "echo LOAD1=$(cut -d' ' -f1 /proc/loadavg); echo CPUS=$(nproc); "
+                  "echo TAILSCALE=$(tailscale status --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get(\"BackendState\"))' 2>/dev/null); "
+                  "echo TS_IP=$(tailscale ip -4 2>/dev/null | head -1); "
+                  "echo UFW=$(sudo -n ufw status 2>/dev/null | head -1 | awk '{print $2}'); "
+                  "echo FAIL2BAN=$(systemctl is-active fail2ban); "
+                  "echo SSHD_ROOT=$(sudo -n sshd -T 2>/dev/null | awk '/^permitrootlogin /{print $2}'); "
+                  "echo SSHD_PASSWORD=$(sudo -n sshd -T 2>/dev/null | awk '/^passwordauthentication /{print $2}'); "
+                  "echo APP_CONTAINERS=$(docker ps -a --format '{{.Image}}' 2>/dev/null | grep -c -i -E 'postiz|n8n')")
+        rc, out = _command(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "nexus-contabo", script], timeout=25)
+        facts = dict(line.split("=", 1) for line in out.splitlines() if "=" in line) if rc == 0 else {}
+        reachable = rc == 0 and facts.get("HOST") == "nexus-app-services"
+        check("CONTABO_SSH_REACHABLE", reachable, abnormal=not reachable, state="PASS" if reachable else "UNREACHABLE",
+              reason="Key-only SSH over nexus-contabo succeeded." if reachable else "SSH probe over nexus-contabo failed.")
+        if reachable:
+            result.update({k.lower(): v for k, v in facts.items() if k in ("DISK_PCT", "MEM_AVAIL_PCT", "LOAD1", "TS_IP", "COMPOSE")})
+            docker_ok = facts.get("DOCKER") == "active"
+            check("CONTABO_DOCKER_ACTIVE", facts.get("DOCKER"), abnormal=not docker_ok, state="PASS" if docker_ok else "DEGRADED")
+            disk = int(facts.get("DISK_PCT") or 0)
+            check("CONTABO_DISK_USED_PCT", disk, abnormal=disk >= 85, state="THRESHOLD_EXCEEDED" if disk >= 85 else "PASS")
+            mem = int(facts.get("MEM_AVAIL_PCT") or 0)
+            check("CONTABO_MEM_AVAILABLE_PCT", mem, abnormal=mem < 10, state="THRESHOLD_EXCEEDED" if mem < 10 else "PASS")
+            load, cpus = float(facts.get("LOAD1") or 0), int(facts.get("CPUS") or 1)
+            check("CONTABO_LOAD1", load, abnormal=load > cpus * 2, state="THRESHOLD_EXCEEDED" if load > cpus * 2 else "PASS")
+            ts_ok = facts.get("TAILSCALE") == "Running"
+            check("CONTABO_TAILSCALE", facts.get("TAILSCALE") or "NOT_MEASURED", abnormal=not ts_ok,
+                  state="PASS" if ts_ok else "BLOCKED_BY_AUTH" if facts.get("TAILSCALE") == "NeedsLogin" else "DEGRADED")
+            fw_ok = facts.get("UFW") == "active" and facts.get("FAIL2BAN") == "active"
+            check("CONTABO_HOST_PROTECTION", {"ufw": facts.get("UFW"), "fail2ban": facts.get("FAIL2BAN")},
+                  abnormal=not fw_ok, state="PASS" if fw_ok else "FAIL")
+            ssh_ok = facts.get("SSHD_ROOT") == "no" and facts.get("SSHD_PASSWORD") == "no"
+            check("CONTABO_SSH_HARDENING", {"permitrootlogin": facts.get("SSHD_ROOT"), "passwordauthentication": facts.get("SSHD_PASSWORD")},
+                  abnormal=not ssh_ok, state="PASS" if ssh_ok else "FAIL")
+            check("CONTABO_APP_CONTAINERS", int(facts.get("APP_CONTAINERS") or 0), reason="Postiz/n8n containers present (expected 0 until installed).")
+        return _close_observation(env, result)
 
     if env_id == "hermes_mac":
         rc, process_list = _command(["/bin/ps", "-axo", "command"], timeout=4)

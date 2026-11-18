@@ -1,0 +1,21 @@
+{
+  "TEST": "NEXUS_BLACK_BOX_AUTONOMY_CERTIFICATION_R1",
+  "recorded_at": "2026-11-16T00:5x UTC (before any repair)",
+  "submission": {"channel": "Telegram -> Nova (live r25, Oracle)", "submitted_by": "Ray", "sent_local": "2026-11-15 17:42 MST", "messages": 2},
+  "FIRST_TRUE_AUTONOMY_FAILURE": "NOVA_OBJECTIVE_INTAKE_ROUTING",
+  "OBJECTIVE_ACCEPTED": "NO",
+  "PROJECT_ID_RESOLUTION": "FAIL",
+  "PROJECT_ID_RESOLUTION_ATTEMPTED": "NO",
+  "observed": {
+    "nova_reply_both_messages": "Current commercial opportunities from the authoritative Business Opportunities register: Kalyvox..., Mobile DNA testing... (reported by Ray)",
+    "new_durable_jobs_after_baseline": 0,
+    "baseline_latest_job": "job_cb61f1a5eca046fe865bc17f215ca094 @ 2026-11-16T00:02:33Z",
+    "poll_window_utc": "00:44-~00:52, every 30s: 0 new jobs",
+    "nova_denial_inventory": "RECENT_DENIALS=[] (no governor denial or blocker state)"
+  },
+  "OPERATOR_ACTIONS": ["READ_FILE x7 (CLI, router, worker, mcp_status, oracle resolver)", "READ_STATE x6 (oracle --check, baseline, durable jobs, denial inventory, poll)", "REPORT_RESULT"],
+  "OPERATOR_MUTATIONS_DURING_TEST": 0,
+  "AUTONOMY_TEST_STATUS": "BLOCKED_AT_NOVA_INTAKE",
+  "AUTONOMY_SCORE": "0/27 (no stage reached past intake)",
+  "note": "Immutable evidence of the pre-repair result. Do not rewrite after repair."
+}

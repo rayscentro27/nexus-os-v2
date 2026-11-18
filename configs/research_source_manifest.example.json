@@ -1,0 +1,16 @@
+{
+  "sources": [
+    {
+      "name": "Example customer research feed",
+      "type": "rss_or_feed",
+      "url": "https://example.org/feed.xml",
+      "category": "CUSTOMER_NEEDS",
+      "priority": 50,
+      "monitor_mode": "NEW_CONTENT_ONLY",
+      "cadence": "WEEKLY",
+      "target_department": "RESEARCH",
+      "enabled": true,
+      "notes": "Replace this example with an approved public feed."
+    }
+  ]
+}

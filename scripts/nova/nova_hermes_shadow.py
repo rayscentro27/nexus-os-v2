@@ -103,6 +103,22 @@ def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, shutdown_mcp_serv
     return last_tools
 
 
+def _run_nova_model(agent, stage: str, *args, **kwargs):
+    """Run one Hermes model turn through the shared spend governor."""
+    from nexus_agent_platform.provider_enforcement import execute
+
+    job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+    return execute(
+        "OPENROUTER", "chat.completions", "NOVA_MODEL_TURN",
+        {"requests": 1, "tokens": 12000, "billable": True, "cost": None},
+        lambda: agent.run_conversation(*args, **kwargs),
+        job_id=job_id,
+        job_type=os.environ.get("NEXUS_JOB_TYPE"),
+        correlation_id=os.environ.get("NEXUS_CORRELATION_ID"),
+        purpose=f"nova:{_ACTIVE_HERMES_TURN.get()}:{stage}",
+    )
+
+
 def _reset_named_mcp_server(server_name: str) -> None:
     """Ask the Hermes MCP SDK to close one cached server connection."""
     from tools import mcp_tool
@@ -182,7 +198,7 @@ def _load_hermes():
 
 
 def _load_approved_provider_env() -> None:
-    """Reuse the existing Nova runtime.env without printing or persisting it."""
+    """Load only the model credential approved for this worker."""
     env_path = Path(os.getenv("NOVA_RUNTIME_ENV", str(Path.home() / ".config/nexus/runtime.env")))
     if not env_path.exists():
         return
@@ -192,7 +208,7 @@ def _load_approved_provider_env() -> None:
             continue
         key, value = line.split("=", 1)
         value = value.strip().strip("\"'")
-        if key.strip() and value and key.strip() not in os.environ:
+        if key.strip() == "OPENROUTER_API_KEY" and value and key.strip() not in os.environ:
             os.environ[key.strip()] = value
 
 
@@ -1122,7 +1138,7 @@ def run_shadow(
     # the separate resource index below.
     model_calls = []
     model_started = time.monotonic()
-    result = agent.run_conversation(prompt + turn_contract_guidance, conversation_history=conversation_history or None, task_id=turn_id)
+    result = _run_nova_model(agent, "initial", prompt + turn_contract_guidance, conversation_history=conversation_history or None, task_id=turn_id)
     model_calls.append(round((time.monotonic() - model_started) * 1000, 1))
     all_messages = list(result.get("messages", [])) if isinstance(result, dict) else []
     first_tool_names = [str(row.get("name") or row.get("tool_name")) for row in all_messages if row.get("role") == "tool"]
@@ -1208,7 +1224,7 @@ def run_shadow(
                 "what remains unknown; do not invent verification.\n"
             )
         follow_up_started = time.monotonic()
-        follow_up = agent.run_conversation(
+        follow_up = _run_nova_model(agent, "evidence-follow-up",
             "For the original user request: " + prompt[:2000] + "\n" + continuation,
             task_id=turn_id + "-evidence",
         )
@@ -1236,7 +1252,7 @@ def run_shadow(
                     "verified, or confirmed unless the returned evidence supports it.\n"
                 )
                 correction_started = time.monotonic()
-                final_correction = agent.run_conversation(
+                final_correction = _run_nova_model(agent, "claim-correction",
                     "For the original user request: " + prompt[:2000] + correction,
                     task_id=turn_id + "-provenance",
                 )
@@ -1258,7 +1274,7 @@ def run_shadow(
                 final_missing = [label for label, terms in required_synthesis_terms.items() if not any(term in final_lower for term in terms)]
                 if final_missing:
                     synthesis_started = time.monotonic()
-                    final_synthesis = agent.run_conversation(
+                    final_synthesis = _run_nova_model(agent, "final-synthesis",
                         "For the original user request: " + prompt[:2000] +
                         "\n[SYNTHESIS COMPLETION]\nThe final draft still omits: " + ", ".join(final_missing) +
                         ". Provide one clear working choice and fill every requested field using the returned Nexus and outside evidence. Mark weak or missing outside evidence explicitly and reduce confidence; do not claim verification that did not occur.",
@@ -1360,7 +1376,7 @@ def run_shadow(
                 + ", ".join(recovery.get("temporarily_suppressed_tools") or ["the repeated tool path"])
                 + ". Answer the original question now."
             )
-        presented = presentation_agent.run_conversation(
+        presented = _run_nova_model(presentation_agent, "presentation",
             presentation_prompt,
             conversation_history=conversation_history or None,
             task_id=turn_id + "-presentation",
@@ -1374,7 +1390,7 @@ def run_shadow(
             # without reopening resource selection or changing the answer.
             if not final_claim.get("valid", True):
                 correction_started = time.monotonic()
-                corrected = presentation_agent.run_conversation(
+                corrected = _run_nova_model(presentation_agent, "presentation-correction",
                     _final_presentation_prompt(
                         prompt,
                         str(result["final_response"]),
@@ -1406,7 +1422,7 @@ def run_shadow(
                             "whether Alpha strengthened it; do not list Alpha report fields. "
                             "Use no schema headings and do not offer generic next steps. Return only the answer."
                         )
-                        corrected_again = presentation_agent.run_conversation(
+                        corrected_again = _run_nova_model(presentation_agent, "presentation-correction-second",
                             _final_presentation_prompt(
                                 prompt,
                                 str(result["final_response"]),

@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0,str(ROOT/"scripts"/"ops"))
 from same_day_common import SUPABASE_READY,now,parse_env,read_json,write_json,write_report  # noqa:E402,F401
+from nexus_runtime_env import load_runtime_env  # noqa:E402
 
 TARGETS=ROOT/"configs"/"youtube_research_channels.json"
 SOURCE_TARGETS=ROOT/"configs"/"youtube_source_targets.json"
@@ -16,9 +17,7 @@ def approved_targets():
  return list({x["id"]:x for x in channels+videos}.values())
 
 def env_values():
- values={}
- for path in (ROOT/".env",ROOT/".env.local",ROOT/".env.nexus.recovered.local"):values.update(parse_env(path))
- return values
+ return load_runtime_env(allowed_keys={"YOUTUBE_API_KEY", "YOUTUBE_DATA_API_KEY", "GOOGLE_API_KEY", "GOOGLE_CLOUD_API_KEY"})
 
 def api_key_status():
  values=env_values();names=["YOUTUBE_API_KEY","YOUTUBE_DATA_API_KEY","GOOGLE_API_KEY","GOOGLE_CLOUD_API_KEY"]

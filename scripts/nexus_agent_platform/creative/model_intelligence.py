@@ -69,30 +69,46 @@ class BoundedCreativeModel:
         primary_provider = primary.get("provider")
         primary_model = route.get("primary_model")
         # Use the existing Nexus provider adapter selected by the router.
-        if primary_provider == "openrouter" and primary_model:
+        if primary_provider in {"openrouter", "openai-codex"} and primary_model:
             started = time.monotonic()
             try:
                 from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
-                response = asyncio.run(LlmGatewayAdapter("nexus_creative").completion(model=primary_model, messages=[{"role": "system", "content": "Return only the requested JSON."}, {"role": "user", "content": instruction + "\nCONTEXT:\n" + _compact(context, 10000)}], temperature=0.2, max_tokens=1024, timeout=min(float(os.getenv("NEXUS_CREATIVE_MODEL_TIMEOUT", "60")), 60.0)))
+                response = asyncio.run(LlmGatewayAdapter("nexus_creative").completion(model=primary_model, messages=[{"role": "system", "content": "Return only the requested JSON."}, {"role": "user", "content": instruction + "\nCONTEXT:\n" + _compact(context, 10000)}], temperature=0.2, max_tokens=1024, timeout=min(float(os.getenv("NEXUS_CREATIVE_MODEL_TIMEOUT", "60")), 60.0), sensitivity="internal_strategy", reasoning_class="STRONG_REASONING", task_type="creative"))
                 if response.get("content") and not response.get("error"):
                     result = _json_response(response["content"])
-                    result.update({"purpose": purpose, "model": response.get("model", primary_model), "provider": "openrouter", "execution_location": "existing Nexus provider adapter", "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1), "call_number": self.calls, "task_class": task_class, "route": route})
+                    result.update({"purpose": purpose, "model": response.get("model", primary_model), "provider": response.get("provider", primary_provider), "execution_location": "canonical Nexus model router", "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1), "call_number": self.calls, "task_class": task_class, "route": route})
                     return result
             except Exception:
                 pass
-        started = time.monotonic()
         fallback_model = fallback.get("model")
-        endpoint = os.getenv("NEXUS_CREATIVE_MODEL_ENDPOINT", "http://127.0.0.1:11435")
-        payload = json.dumps({"model": fallback_model, "prompt": prompt, "stream": False}).encode("utf-8")
-        req = urllib.request.Request(endpoint.rstrip("/") + "/api/generate", data=payload, headers={"Content-Type": "application/json"}, method="POST")
-        try:
-            with urllib.request.urlopen(req, timeout=int(os.getenv("NEXUS_CREATIVE_MODEL_TIMEOUT", "120"))) as response:
-                raw = json.loads(response.read().decode() or "{}")
-            result = _json_response(raw.get("response", ""))
-            result.update({"purpose": purpose, "model": fallback_model, "provider": "oracle_ollama_gemma", "execution_location": "existing Oracle Ollama service", "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1), "call_number": self.calls, "task_class": task_class, "route": route})
-            return result
-        except Exception as exc:
-            return {"purpose": purpose, "model": fallback_model, "provider": "oracle_ollama_gemma", "status": "BLOCKED", "error": type(exc).__name__, "call_number": self.calls, "task_class": task_class, "route": route}
+        fallback_provider = fallback.get("provider")
+        if fallback_model and fallback_provider == "openrouter":
+            started = time.monotonic()
+            try:
+                from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+                response = asyncio.run(LlmGatewayAdapter("nexus_creative").completion(
+                    model=fallback_model,
+                    messages=[{"role": "system", "content": "Return only the requested JSON."},
+                              {"role": "user", "content": instruction + "\nCONTEXT:\n" + _compact(context, 10000)}],
+                    temperature=0.2, max_tokens=1024,
+                    timeout=min(float(os.getenv("NEXUS_CREATIVE_MODEL_TIMEOUT", "60")), 60.0),
+                    sensitivity="internal_strategy", reasoning_class="STRONG_REASONING", task_type="creative"))
+                if response.get("content") and not response.get("error"):
+                    result = _json_response(response["content"])
+                    result.update({"purpose": purpose, "model": response.get("model", fallback_model),
+                        "provider": fallback_provider, "execution_location": "existing Nexus provider adapter",
+                        "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1),
+                        "call_number": self.calls, "task_class": task_class, "route": route,
+                        "fallback_used": True})
+                    return result
+                error = response.get("error_detail") or response.get("error") or "empty_model_response"
+            except Exception as exc:
+                error = type(exc).__name__
+        else:
+            error = "NO_PRODUCTION_ELIGIBLE_FALLBACK"
+        return {"purpose": purpose, "model": fallback_model, "provider": fallback_provider,
+            "status": "BLOCKED", "error": error, "call_number": self.calls,
+            "task_class": task_class, "route": route}
 
 
 def _persist(kind: str, payload: dict[str, Any], fingerprint: Any) -> dict[str, Any]:

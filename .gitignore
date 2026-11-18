@@ -54,3 +54,12 @@ data/governed/
 tools/voice/runtime/
 tools/voice/models/
 tools/voice/audio/
+# R7 recovery: local generated monitor state and deployment snapshots.
+# The monitor and notebook builder remain versioned; these outputs are regenerated.
+/scripts/github_remote/cloud_monitor/state/source_state.json
+/scripts/github_remote/cloud_monitor/output/changes.json
+/deploy/kaggle/rea_model_worker/kernel/nexus_rea_model_worker.ipynb
+
+# Local Nova MuseTalk runtime snapshots retained as evidence, not source inputs.
+/deploy/modal/nova_musetalk_python_runtime_snapshot.lock.txt
+/deploy/modal/nova_musetalk_runtime.lock.json

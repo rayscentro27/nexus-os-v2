@@ -19,7 +19,7 @@ function unquote(value) {
   return trimmed;
 }
 
-export function readEnvFile(file = CANONICAL_RUNTIME_ENV) {
+function readEnvFile(file = CANONICAL_RUNTIME_ENV) {
   if (!fs.existsSync(file)) return {};
   const out = {};
   for (const raw of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
@@ -39,8 +39,13 @@ export function applyAliases(values) {
   return merged;
 }
 
-export function loadRuntimeEnv({ override = false } = {}) {
-  const values = applyAliases(readEnvFile(CANONICAL_RUNTIME_ENV));
+const SENSITIVE_NAME = /(?:TOKEN|API[_-]?KEY|SECRET|PASSWORD|CREDENTIAL|PRIVATE[_-]?KEY|ACCESS[_-]?KEY)/i;
+
+export function loadRuntimeEnv({ override = false, allowedKeys = [] } = {}) {
+  const allow = new Set(allowedKeys);
+  const values = applyAliases(Object.fromEntries(
+    Object.entries(readEnvFile(CANONICAL_RUNTIME_ENV)).filter(([key]) => !SENSITIVE_NAME.test(key) || allow.has(key)),
+  ));
   for (const [key, value] of Object.entries(values)) {
     if (override || !process.env[key]) process.env[key] = value;
   }
@@ -48,6 +53,6 @@ export function loadRuntimeEnv({ override = false } = {}) {
 }
 
 export function presenceReport(required) {
-  const values = loadRuntimeEnv();
+  const values = loadRuntimeEnv({ allowedKeys: required });
   return required.map((variable) => ({ variable, configured: Boolean(values[variable] || process.env[variable]) }));
 }

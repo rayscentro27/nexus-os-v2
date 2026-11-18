@@ -11,7 +11,9 @@ function loadDecisions() { try { return JSON.parse(localStorage.getItem(STORAGE_
 
 function mapTaskRequestToCard(row) {
   const payload = row.payload || {};
-  const status = row.status === 'requested' || row.status === 'assigned' || row.status === 'in_progress' ? 'pending' : row.status === 'done' ? 'approved' : row.status;
+  const creativePrompt = payload.review_kind === 'creative_prompt_approval';
+  const status = creativePrompt && payload.ray_approval?.decision === 'REQUEST_CHANGES' ? 'held'
+    : row.status === 'requested' || row.status === 'assigned' || row.status === 'in_progress' ? 'pending' : row.status === 'done' ? 'approved' : row.status;
   return {
     id: row.id,
     title: row.title || payload.title || 'Untitled task',
@@ -20,6 +22,7 @@ function mapTaskRequestToCard(row) {
     status: status || 'pending',
     externalAction: false,
     recommendation: row.result_summary || payload.recommendation || 'Review and decide.',
+    promptDetails: creativePrompt ? payload : null,
     source: 'Supabase task_requests (' + String(row.id).slice(0, 8) + '...)',
     createdAt: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'unknown',
     nextActionCommand: '',
@@ -50,6 +53,8 @@ export default function RayReviewCenter() {
   const [recentReceipt, setRecentReceipt] = useState(null);
   const [viewedReceipt, setViewedReceipt] = useState(null);
   const [liveCards, setLiveCards] = useState([]);
+  const [companyCases, setCompanyCases] = useState([]);
+  const [companyCasesState, setCompanyCasesState] = useState('loading');
   const [dataSource, setDataSource] = useState({ source: 'loading', label: 'Loading...', error: null });
   const [persisting, setPersisting] = useState(null);
 
@@ -102,6 +107,51 @@ export default function RayReviewCenter() {
     return () => { cancelled = true; };
   }, []);
 
+  // Company Case state is projected from the authoritative governed case
+  // ledger. This panel is read-only: parent-case decisions remain governed by
+  // the existing Ray approval workflow.
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCompanyCases() {
+      if (!supabase || !isSupabaseConfigured) {
+        setCompanyCasesState('unavailable');
+        return;
+      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setCompanyCasesState('no_session');
+          return;
+        }
+        const { data, error } = await supabase
+          .from('research_proactive_memory')
+          .select('memory_id,memory_kind,recorded_at,payload')
+          .eq('memory_kind', 'RESEARCH_CASE')
+          .order('recorded_at', { ascending: false })
+          .limit(500);
+        if (cancelled) return;
+        if (error) {
+          setCompanyCasesState('error');
+          return;
+        }
+        const latest = new Map();
+        (data || []).forEach((row) => {
+          const item = row.payload || {};
+          const id = item.case_id;
+          if (id && !latest.has(id)) latest.set(id, { ...item, _recordedAt: row.recorded_at });
+        });
+        setCompanyCases(Array.from(latest.values()).filter((item) =>
+          !['COMPLETED', 'DENIED', 'CANCELLED', 'ABANDONED'].includes(String(item.status || '').toUpperCase())
+        ));
+        setCompanyCasesState('loaded');
+      } catch (_) {
+        if (!cancelled) setCompanyCasesState('error');
+      }
+    }
+    loadCompanyCases();
+    return () => { cancelled = true; };
+  }, []);
+
   const cards = useMemo(() => liveCards.filter((card) => {
     const cardStatus = decisions[card.id] ? decisions[card.id].status : card.status;
     return filter === 'all' || cardStatus === filter;
@@ -127,12 +177,22 @@ export default function RayReviewCenter() {
     if (card._liveSource === 'live_supabase' && supabase && isSupabaseConfigured) {
       setPersisting(card.id);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const supabaseStatus = status === 'approved' ? 'done' : status === 'rejected' ? 'rejected' : 'in_progress';
+          const creativeApproval = card.promptDetails ? {
+            ...card.promptDetails,
+            ray_approval: {
+              decision: status === 'approved' ? 'APPROVE_PROMPT' : status === 'rejected' ? 'REJECT_PROMPT' : 'REQUEST_CHANGES',
+              decision_by: 'RAY_REVIEW_AUTHENTICATED_ADMIN',
+              actor_user_id: session.user.id,
+              feedback: feedback || '',
+              decided_at: createdAt,
+            },
+          } : null;
           const { error: updateErr } = await supabase
             .from('task_requests')
-            .update({ status: supabaseStatus, updated_at: createdAt })
+            .update({ status: supabaseStatus, updated_at: createdAt, ...(creativeApproval ? { payload: creativeApproval, approved_by_ray: status === 'approved' ? 'RAY_REVIEW_AUTHENTICATED_ADMIN' : null } : {}) })
             .eq('id', card.id);
 
           if (!updateErr) {
@@ -207,6 +267,33 @@ export default function RayReviewCenter() {
         })}
       </div>
       {!cards.length && <div className="nxos-empty">No cards match this filter.</div>}
+      <section className="nxos-table-card" style={{ marginTop: 20 }}>
+        <h2>Company Cases</h2>
+        <p className="nxos-notice">Read-only projection from the governed Research Case ledger. Department completion does not close a company case.</p>
+        {companyCasesState === 'loading' && <p>Loading governed cases…</p>}
+        {companyCasesState !== 'loaded' && companyCasesState !== 'loading' && <p>Live company-case projection unavailable ({companyCasesState}).</p>}
+        {companyCases.map((item) => {
+          const openRequests = (item.department_requests || []).filter((request) =>
+            !['RESULT_RETURNED', 'COMPLETED', 'CLOSED', 'SUPERSEDED_DUPLICATE_REQUEST'].includes(String(request.status || 'OPEN').toUpperCase())
+          );
+          const criteria = item.completion_contract?.criteria || [];
+          const satisfied = (item.success_criteria_results || []).filter((row) => String(row.status).toUpperCase() === 'SATISFIED');
+          const remaining = item.remaining_criteria || [];
+          const evidence = (item.evidence || []).slice(-3).reverse();
+          const question = (item.open_questions || [])[0]?.question || (item.missing_information || [])[0] || 'None recorded';
+          return <article className="nxos-table-row" key={item.case_id} style={{ display: 'block', padding: 16 }}>
+            <strong>{item.title || item.objective || item.case_id}</strong>
+            <div style={{ marginTop: 6 }}>{item.case_id} · {item.case_type || item.objective_family} · {item.status || item.case_status} · owner {item.next_owner || item.owner_department || 'unassigned'}</div>
+            <div style={{ marginTop: 6 }}>Recommendation: {item.final_recommendation || 'In development'} · readiness {item.ray_decision_status || 'NOT_READY'} · criteria {satisfied.length} satisfied / {remaining.length || criteria.length} remaining</div>
+            <div style={{ marginTop: 6 }}>Departments: {Object.entries(item.department_states || {}).filter(([, value]) => !['NOT_REQUIRED', 'INACTIVE'].includes(String(value).toUpperCase())).map(([name]) => name).join(', ') || 'Research'}</div>
+            <div style={{ marginTop: 6 }}>Open requests: {openRequests.length} · latest evidence: {evidence.map((row) => row.summary || row.result || row.department).join(' | ') || 'None recorded'}</div>
+            <div style={{ marginTop: 6 }}>Highest-value open question: {question}</div>
+            <div style={{ marginTop: 6 }}>Next action: {item.next_action || item.next_research_action || 'No next action recorded'} · Ray action: {item.ray_required ? (item.ray_question || 'Review required') : 'Not required yet'}</div>
+            {item.ray_decision_packet && <details style={{ marginTop: 8 }}><summary>Decision packet</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(item.ray_decision_packet, null, 2)}</pre></details>}
+          </article>;
+        })}
+        {companyCasesState === 'loaded' && !companyCases.length && <p>No active company cases in the governed ledger.</p>}
+      </section>
       <ApprovalReceiptViewer receipt={viewedReceipt} onClose={function() { setViewedReceipt(null); }} />
     </div>
   );

@@ -1,0 +1,13 @@
+{
+  "id": "rayscentro/nexus-asr-bench-long3",
+  "title": "nexus-asr-bench-long3",
+  "code_file": "kaggle_asr_canary.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["rayscentro/nexus-asr-benchmark-long"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

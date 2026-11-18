@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 "$(git rev-parse --show-toplevel)/scripts/ops/nexus_safe_git.py" pre-commit

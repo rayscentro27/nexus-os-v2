@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>REA Fixture Catalog</title></head>
+<body>
+<h1 id="title">REA Fixture Catalog</h1>
+<p>Nexus-authored certification page. Loads the catalog over fetch.</p>
+<ul id="items"></ul>
+<button id="refresh" type="button">Refresh catalog</button>
+<script>
+async function load() {
+  const res = await fetch("/api/catalog.json", { headers: { accept: "application/json" } });
+  const items = await res.json();
+  document.getElementById("items").innerHTML = items.map(i => `<li data-sku="${i.sku}">${i.title} — $${i.price}</li>`).join("");
+}
+document.getElementById("refresh").addEventListener("click", load);
+load();
+</script>
+</body></html>

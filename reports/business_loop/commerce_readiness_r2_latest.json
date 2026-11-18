@@ -1,0 +1,283 @@
+{
+  "task": "NEXUS_COMMERCE_PRODUCT_TRUTH_AND_GO_LIVE_READINESS_R2",
+  "generated_at": "2026-11-16T00:06:38.751648+00:00",
+  "printify": {
+    "product_id": "6afa4814536c7c3c520f7865",
+    "shop_id": 29243395,
+    "product_name": "The 6:12 AM Ritual Mug - 15oz White Ceramic",
+    "variant": {
+      "id": 104692,
+      "title": "15oz",
+      "sku": "78156652247114705224",
+      "grams": 426
+    },
+    "blueprint_id": 478,
+    "provider_id": 99,
+    "provider": "Printify Choice",
+    "base_cost_usd": 6.13,
+    "us_shipping_first_item_usd": 7.09,
+    "us_shipping_additional_item_usd": 2.99,
+    "currency": "USD",
+    "production_time": {
+      "value": 10,
+      "unit": "day"
+    },
+    "regions_sample": [
+      "CA",
+      "REST_OF_THE_WORLD",
+      "US"
+    ],
+    "published": false,
+    "external_channel": null,
+    "orders": 0
+  },
+  "pricing": {
+    "base_cost": {
+      "value": 6.13,
+      "status": "VERIFIED (Printify draft product variant cost)"
+    },
+    "shipping": {
+      "value_usd": 7.09,
+      "additional_item_usd": 2.99,
+      "status": "VERIFIED (Printify catalog, US)"
+    },
+    "options": [
+      {
+        "RETAIL_PRICE": 24.0,
+        "BASE_COST": 6.13,
+        "PAYMENT_PROCESSING_ESTIMATE": 1.2,
+        "SHIPPING_TREATMENT": "customer pays $7.09 US shipping at cost (margin-neutral)",
+        "ESTIMATED_GROSS_PROFIT": 16.67,
+        "ESTIMATED_GROSS_MARGIN": 0.695,
+        "CUSTOMER_TOTAL_WITH_SHIPPING": 31.09
+      },
+      {
+        "RETAIL_PRICE": 26.0,
+        "BASE_COST": 6.13,
+        "PAYMENT_PROCESSING_ESTIMATE": 1.26,
+        "SHIPPING_TREATMENT": "customer pays $7.09 US shipping at cost (margin-neutral)",
+        "ESTIMATED_GROSS_PROFIT": 18.61,
+        "ESTIMATED_GROSS_MARGIN": 0.716,
+        "CUSTOMER_TOTAL_WITH_SHIPPING": 33.09
+      },
+      {
+        "RETAIL_PRICE": 29.0,
+        "BASE_COST": 6.13,
+        "PAYMENT_PROCESSING_ESTIMATE": 1.35,
+        "SHIPPING_TREATMENT": "customer pays $7.09 US shipping at cost (margin-neutral)",
+        "ESTIMATED_GROSS_PROFIT": 21.52,
+        "ESTIMATED_GROSS_MARGIN": 0.742,
+        "CUSTOMER_TOTAL_WITH_SHIPPING": 36.09
+      },
+      {
+        "RETAIL_PRICE": 32.0,
+        "BASE_COST": 6.13,
+        "PAYMENT_PROCESSING_ESTIMATE": 1.43,
+        "SHIPPING_TREATMENT": "customer pays $7.09 US shipping at cost (margin-neutral)",
+        "ESTIMATED_GROSS_PROFIT": 24.44,
+        "ESTIMATED_GROSS_MARGIN": 0.764,
+        "CUSTOMER_TOTAL_WITH_SHIPPING": 39.09
+      },
+      {
+        "RETAIL_PRICE": 35.0,
+        "BASE_COST": 6.13,
+        "PAYMENT_PROCESSING_ESTIMATE": 1.52,
+        "SHIPPING_TREATMENT": "customer pays $7.09 US shipping at cost (margin-neutral)",
+        "ESTIMATED_GROSS_PROFIT": 27.35,
+        "ESTIMATED_GROSS_MARGIN": 0.781,
+        "CUSTOMER_TOTAL_WITH_SHIPPING": 42.09
+      }
+    ],
+    "current_staged_price": 48.0,
+    "recommended_price": 24.0,
+    "PRICE_CHANGE_RECOMMENDED": "YES",
+    "gross_profit_at_recommended": 16.67,
+    "gross_margin_at_recommended": 0.695,
+    "why": "The item that ships is a standard 15 oz white printed ceramic mug (Printify base $6.13). The customer already pays $7.09 shipping, so $24 lands at about $31.09 delivered - an impulse-friendly holiday gift price that still clears ~69% gross margin. $29-$35 widen margin but push a plain printed mug past $36-$42 delivered, which reads as inflated for the product type and would weaken the interest test. Market price comparisons are an assumption, not measured.",
+    "fee_basis": "Stripe standard card estimate 2.9% + $0.30 on price + shipping (ESTIMATE)"
+  },
+  "truth": {
+    "page_validator": "PASS",
+    "page_banned_terms": [],
+    "page_uses_printify_mockup": true,
+    "page_concept_media_removed": true,
+    "hooks": {
+      "H1": "PASS",
+      "H2": "PASS"
+    },
+    "social_copy": {
+      "FACEBOOK": "PASS",
+      "INSTAGRAM": "PASS",
+      "TIKTOK": "PASS"
+    },
+    "cta_validated": true,
+    "PRODUCT_TRUTH_CHECK": "PASS"
+  },
+  "copy": {
+    "copy": {
+      "FACEBOOK": "The only fifteen minutes of the holidays that belong entirely to you.\n\nA 15 oz white ceramic mug for the quiet minutes before the holiday rush. Not yet for sale - register interest to hear when it opens.\nRegister interest: https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=facebook&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_fa",
+      "INSTAGRAM": "Zero snowflakes. Zero Santas. Just a quiet ceramic mug for slow winter mornings.\n\n15 oz white ceramic, printed with the 6:12 AM mark. Not yet for sale - register interest to hear when it opens.\nRegister interest: https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=instagram&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h2_in\n\n#QuietRitual #SlowMornings",
+      "TIKTOK": "The only fifteen minutes of the holidays that belong entirely to you. Not yet for sale - register interest to hear when it opens. https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/?utm_source=tiktok&utm_medium=social&utm_campaign=holiday_quiet_ritual_mug_r1&utm_content=h1_ti"
+    },
+    "checks": {
+      "FACEBOOK": {
+        "truth": "PASS",
+        "violations": [],
+        "cta_real": true,
+        "link_tracked": true,
+        "claims_for_sale": false
+      },
+      "INSTAGRAM": {
+        "truth": "PASS",
+        "violations": [],
+        "cta_real": true,
+        "link_tracked": true,
+        "claims_for_sale": false
+      },
+      "TIKTOK": {
+        "truth": "PASS",
+        "violations": [],
+        "cta_real": true,
+        "link_tracked": true,
+        "claims_for_sale": false
+      }
+    },
+    "CTA_VALIDATED": true,
+    "cta": "Register interest"
+  },
+  "product": {
+    "PRODUCT_ID": "prod_stoneware_mug_14oz",
+    "id_status": "HISTORICAL_IMMUTABLE_IDENTITY (name is not descriptive; see display metadata)",
+    "CANONICAL_PRODUCT_ID": "prod_stoneware_mug_14oz",
+    "display_name": "The 6:12 AM Ritual Mug - 15 oz White Ceramic",
+    "material": "white ceramic, glossy (VERIFIED: Printify spec)",
+    "capacity": "15 oz (VERIFIED: Printify variant)",
+    "printify": {
+      "product_id": "6afa4814536c7c3c520f7865",
+      "shop_id": 29243395,
+      "product_name": "The 6:12 AM Ritual Mug - 15oz White Ceramic",
+      "variant": {
+        "id": 104692,
+        "title": "15oz",
+        "sku": "78156652247114705224",
+        "grams": 426
+      },
+      "blueprint_id": 478,
+      "provider_id": 99,
+      "provider": "Printify Choice",
+      "base_cost_usd": 6.13,
+      "us_shipping_first_item_usd": 7.09,
+      "us_shipping_additional_item_usd": 2.99,
+      "currency": "USD",
+      "production_time": {
+        "value": 10,
+        "unit": "day"
+      },
+      "regions_sample": [
+        "CA",
+        "REST_OF_THE_WORLD",
+        "US"
+      ],
+      "published": false,
+      "external_channel": null,
+      "orders": 0
+    },
+    "supersedes_description": "stoneware concept (prod_stoneware_mug_14oz original description)",
+    "lineage": {
+      "events_and_leads_keyed_on": "prod_stoneware_mug_14oz",
+      "rls_policies_keyed_on": "prod_stoneware_mug_14oz",
+      "approvals_keyed_on_project": "proj_98ef515bccee4b58"
+    }
+  },
+  "offer": {
+    "BASE_COST": {
+      "value": 6.13,
+      "status": "VERIFIED (Printify draft variant cost)"
+    },
+    "CHECKOUT_STATUS": "BLOCKED_MISSING_REAL_TEST_KEY",
+    "FULFILLMENT_METHOD": {
+      "value": "Printify print-on-demand (provider 99)",
+      "status": "VERIFIED"
+    },
+    "GROSS_MARGIN_ESTIMATE": {
+      "value": 0.695,
+      "status": "ESTIMATE (card fee estimated)"
+    },
+    "INTEREST_FORM_STATUS": "LIVE (verified in production)",
+    "PRICE": {
+      "value": 24.0,
+      "status": "STAGED (recommended; not live)",
+      "previous_staged": 48.0
+    },
+    "PRINTIFY_BLUEPRINT": "478 / provider 99 / variant 104692 (15oz)",
+    "PRINTIFY_PRODUCT_ID": "6afa4814536c7c3c520f7865",
+    "PRODUCT_ID": "prod_stoneware_mug_14oz",
+    "PRODUCT_NAME": "The 6:12 AM Ritual Mug - 15 oz White Ceramic",
+    "PUBLICATION_STATUS": "WAITING_FOR_RAY_APPROVAL",
+    "SALES_STATUS": "NOT_FOR_SALE (interest capture only)",
+    "SHIPPING_ESTIMATE": {
+      "value": 7.09,
+      "status": "VERIFIED (Printify catalog, US first item)"
+    },
+    "STOREFRONT_URL": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/",
+    "updated_at": "2026-11-16T00:06:38.690485+00:00"
+  },
+  "publication_approval": {
+    "OLD_APPROVAL_STATUS": "SUPERSEDED",
+    "OLD_REQUEST_HASH_STILL_BINDS_OLD_CONTENT": true,
+    "NEW_APPROVAL_REQUIRED": "YES",
+    "PUBLICATION_APPROVAL_ID": "apr_req_07f8bcb65f9bea50",
+    "path": "dist/creative/bl_proj_98ef515bccee4b58_facebook_r2_truth_h1_approval_request.json",
+    "owner_commands": [
+      "./bin/nexus distribution approve apr_req_07f8bcb65f9bea50",
+      "./bin/nexus distribution publish apr_req_07f8bcb65f9bea50"
+    ]
+  },
+  "go_live": {
+    "approval_id": "apr_commerce_golive_68c7a8af476ba111",
+    "covers": {
+      "PRINTIFY_PRODUCT_ID": "6afa4814536c7c3c520f7865",
+      "PRODUCT_NAME": "The 6:12 AM Ritual Mug - 15oz White Ceramic",
+      "VARIANT": {
+        "id": 104692,
+        "title": "15oz",
+        "sku": "78156652247114705224",
+        "grams": 426
+      },
+      "VERIFIED_BASE_COST": {
+        "value": 6.13,
+        "status": "VERIFIED (Printify draft product variant cost)"
+      },
+      "SHIPPING": {
+        "value_usd": 7.09,
+        "additional_item_usd": 2.99,
+        "status": "VERIFIED (Printify catalog, US)"
+      },
+      "RECOMMENDED_PRICE": 24.0,
+      "ESTIMATED_MARGIN": {
+        "gross_profit": 16.67,
+        "gross_margin": 0.695,
+        "status": "ESTIMATE (fee estimated)"
+      },
+      "STOREFRONT_URL": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/",
+      "FULFILLMENT_METHOD": "Printify print-on-demand, provider Printify Choice (99), ~10 days handling, no inventory",
+      "PAYMENT_STATUS": "NOT_ACTIVE",
+      "TEST_CHECKOUT_STATUS": "BLOCKED_MISSING_REAL_TEST_KEY",
+      "LIVE_CHECKOUT_STATUS": "BLOCKED_PENDING_TEST_CERTIFICATION_AND_RAY_APPROVAL (live key exists as credential.stripe.payments.live.v1; unused)"
+    }
+  },
+  "stages": {
+    "INTEREST_CAMPAIGN_READY": "YES (pending publication approval)",
+    "LIVE_SALES_READY": "NO_PENDING_TEST_CHECKOUT_AND_APPROVAL"
+  },
+  "costs": {
+    "TOTAL_COST": 0.0,
+    "UNAUTHORIZED_COST": 0.0,
+    "printify_writes": [
+      "uploads/images",
+      "shops/products (create)"
+    ],
+    "orders": 0,
+    "stripe_calls": 0
+  }
+}

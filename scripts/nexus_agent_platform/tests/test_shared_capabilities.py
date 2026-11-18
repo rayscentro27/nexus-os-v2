@@ -106,6 +106,49 @@ class TestPermissions:
         assert err is not None
         assert "Unknown agent" in err
 
+
+def test_exact_durable_job_read_filters_by_id_and_correlates_existing_research_item(monkeypatch, tmp_path):
+    from nexus_agent_platform.capabilities import shared
+    from nexus_agent_platform import durable_jobs
+
+    queue_dir = tmp_path / "data/runtime"
+    queue_dir.mkdir(parents=True)
+    (queue_dir / "research_work_queue.json").write_text(json.dumps({"items": [{
+        "work_id": "work-exact", "status": "BLOCKED_EXTERNAL",
+        "last_result": {"requested_intent": "NOTEBOOKLM_OPERATION", "routed_intent": "NOTEBOOKLM_OPERATION",
+                         "execution_path": "NOTEBOOKLM_GOVERNED_ADAPTER",
+                         "task_fulfillment": {"routing_blocker": "NOTEBOOK_ID_REQUIRED"},
+                         "summary": "No notebook ID was bound"},
+    }]}))
+    monkeypatch.setattr(shared, "ROOT", tmp_path)
+    requests = []
+
+    class FakeStore(durable_jobs.SupabaseJobStore):
+        def _request(self, path, *args, **kwargs):
+            requests.append(path)
+            return [{"job_id": "job_exact123", "department": "RESEARCH", "job_type": "NOTEBOOKLM_RESEARCH",
+                     "state": "BLOCKED", "attempt_count": 1, "payload_ref": "work-exact",
+                     "last_error_code": "PROVIDER_UNAVAILABLE", "last_error_summary": "Provider unavailable",
+                     "claimed_by": "worker-1", "receipt_ref": None}]
+
+    monkeypatch.setattr(durable_jobs, "default_store", lambda: FakeStore())
+    result = shared._handle_durable_jobs({"job_id": "job_exact123", "limit": 1})
+    assert result["data"]["jobs"][0]["job_id"] == "job_exact123"
+    assert result["data"]["research_work_item"]["work_id"] == "work-exact"
+    assert result["data"]["research_work_item"]["requested_intent"] == "NOTEBOOKLM_OPERATION"
+    assert result["data"]["research_work_item"]["execution_path"] == "NOTEBOOKLM_GOVERNED_ADAPTER"
+    assert result["data"]["research_work_item"]["blocker"] == "NOTEBOOK_ID_REQUIRED"
+    assert result["data"]["research_work_item"]["result"] == "No notebook ID was bound"
+    assert "job_id=eq.job_exact123" in requests[0]
+    assert "limit=1" in requests[0]
+
+
+def test_exact_durable_job_read_rejects_invalid_id_without_query(monkeypatch):
+    from nexus_agent_platform.capabilities import shared
+    result = shared._handle_durable_jobs({"job_id": "not-an-id"})
+    assert result["status"] == "rejected"
+    assert result["error"] == "invalid_job_id"
+
     def test_hermes_can_invoke_its_capabilities(self):
         from nexus_agent_platform.capabilities.shared import _check_permission
         for cap in ["get_client_count", "get_system_status", "get_failure_report"]:

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "default": "LEGACY_LIVE",
+  "routes": {
+    "R24.current": "LEGACY_LIVE",
+    "R24.last_completed": "LEGACY_LIVE",
+    "NOTE_CREATE": "LEGACY_LIVE",
+    "NOTE_READ": "LEGACY_LIVE",
+    "NOTE_UPDATE": "LEGACY_LIVE",
+    "NOTE_DELETE": "LEGACY_LIVE",
+    "FILE_CREATE": "LEGACY_LIVE",
+    "FILE_READ": "LEGACY_LIVE",
+    "FILE_UPDATE": "LEGACY_LIVE",
+    "FILE_DELETE": "LEGACY_LIVE"
+  },
+  "note": "Wave 1 and Wave 2 switches default to LEGACY_LIVE. Per-route modes are read from NOVA_OPERATOR_ROUTING_MODE_FILE or /home/opc/.config/nova-operator-routing-mode.json."
+}

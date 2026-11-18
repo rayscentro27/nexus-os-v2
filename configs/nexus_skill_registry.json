@@ -1,0 +1,696 @@
+{
+  "schema_version": "nexus.skill_registry.v1",
+  "default_deny": true,
+  "skills": [
+    {
+      "skill_id": "research.plan",
+      "name": "Research planning",
+      "description": "Research planning",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "scripts/nexus_agent_platform/research_room/research_lead.py",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_DATA"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.source_discovery",
+      "name": "Discover and retrieve sources",
+      "description": "Discover and retrieve sources",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "ADAPTER_BACKED",
+      "implementation_reference": "Research R10 source tools",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "PUBLIC_RESEARCH"
+      ],
+      "side_effect_class": "EXTERNAL_READ",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.browser",
+      "name": "Bounded browser research",
+      "description": "Bounded browser research",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "ADAPTER_BACKED",
+      "implementation_reference": "Research MCP / approved browser adapter",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "PUBLIC_RESEARCH"
+      ],
+      "side_effect_class": "EXTERNAL_READ",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.youtube_intake",
+      "name": "YouTube source intake",
+      "description": "YouTube source intake",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "ADAPTER_BACKED",
+      "implementation_reference": "Research R10",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "PUBLIC_RESEARCH"
+      ],
+      "side_effect_class": "EXTERNAL_READ",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.document_intake",
+      "name": "Document intake",
+      "description": "Document intake",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Research R10",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_DOCUMENT"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.source_verification",
+      "name": "Verify source claims",
+      "description": "Verify source claims",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "scripts/nexus_agent_platform/research_room/fact_checker.py",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_EVIDENCE"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.deep_analysis",
+      "name": "Grounded evidence analysis",
+      "description": "Grounded evidence analysis",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Alpha governed route",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_EVIDENCE"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.fact_check",
+      "name": "Check evidence support",
+      "description": "Check evidence support",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "scripts/nexus_agent_platform/research_room/fact_checker.py",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_EVIDENCE"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.synthesis",
+      "name": "Synthesize evidence",
+      "description": "Synthesize evidence",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "scripts/nexus_agent_platform/research_room/synthesizer.py",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_EVIDENCE"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.handoff",
+      "name": "Prepare department handoff",
+      "description": "Prepare department handoff",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Research handoff path",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_EVIDENCE"
+      ],
+      "side_effect_class": "DURABLE_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.persistence",
+      "name": "Persist governed research state",
+      "description": "Persist governed research state",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "DETERMINISTIC_FUNCTION",
+      "implementation_reference": "Nexus Research persistence/Data Governor",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_KNOWLEDGE"
+      ],
+      "side_effect_class": "DURABLE_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "research.continuation",
+      "name": "Continue bounded research objective",
+      "description": "Continue bounded research objective",
+      "owner_domain": "RESEARCH",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Research R10",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "RESEARCH_DATA"
+      ],
+      "side_effect_class": "DURABLE_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "funding.readiness",
+      "name": "Assess funding readiness gaps",
+      "description": "Assess funding readiness gaps",
+      "owner_domain": "CLYDE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "GoClear funding workflow (implementation status unverified)",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CLIENT_FINANCIAL"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "funding.document_checklist",
+      "name": "Build document checklist",
+      "description": "Build document checklist",
+      "owner_domain": "CLYDE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "GoClear funding workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CLIENT_FINANCIAL"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "funding.gap_analysis",
+      "name": "Analyze funding readiness gaps",
+      "description": "Analyze funding readiness gaps",
+      "owner_domain": "CLYDE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "GoClear funding workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CLIENT_FINANCIAL"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "funding.path_analysis",
+      "name": "Compare funding paths",
+      "description": "Compare funding paths",
+      "owner_domain": "CLYDE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "GoClear funding workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CLIENT_FINANCIAL"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "marketing.audience_analysis",
+      "name": "Analyze audience evidence",
+      "description": "Analyze audience evidence",
+      "owner_domain": "MARKETING",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Marketing workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "MARKETING_RESEARCH"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "marketing.strategy",
+      "name": "Develop campaign strategy",
+      "description": "Develop campaign strategy",
+      "owner_domain": "MARKETING",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Marketing workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CAMPAIGN_DATA"
+      ],
+      "side_effect_class": "DURABLE_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "marketing.copy",
+      "name": "Draft campaign copy",
+      "description": "Draft campaign copy",
+      "owner_domain": "MARKETING",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Campaign Service",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CAMPAIGN_DATA"
+      ],
+      "side_effect_class": "DRAFT_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "marketing.measurement",
+      "name": "Collect and interpret campaign measurement",
+      "description": "Collect and interpret campaign measurement",
+      "owner_domain": "MARKETING",
+      "implementation_type": "DETERMINISTIC_FUNCTION",
+      "implementation_reference": "Nexus measurement connectors (status per connector)",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CAMPAIGN_METRICS"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "creative.intent",
+      "name": "Translate strategy to creative intent",
+      "description": "Translate strategy to creative intent",
+      "owner_domain": "CREATIVE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Creative workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CAMPAIGN_DATA"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "creative.prompting",
+      "name": "Create provider-neutral production prompt",
+      "description": "Create provider-neutral production prompt",
+      "owner_domain": "CREATIVE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Creative prompt specialists",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CREATIVE_BRIEF"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "creative.route",
+      "name": "Select approved execution environment",
+      "description": "Select approved execution environment",
+      "owner_domain": "CREATIVE",
+      "implementation_type": "DETERMINISTIC_FUNCTION",
+      "implementation_reference": "scripts/nexus_agent_platform/creative/execution_router.py",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CREATIVE_BRIEF"
+      ],
+      "side_effect_class": "INTERNAL_ROUTE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "creative.persist_asset",
+      "name": "Persist completed assets to canonical R2",
+      "description": "Persist completed assets to canonical R2",
+      "owner_domain": "CREATIVE",
+      "implementation_type": "DETERMINISTIC_FUNCTION",
+      "implementation_reference": "scripts/nexus_agent_platform/creative/asset_persistence.py",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CREATIVE_MEDIA"
+      ],
+      "side_effect_class": "DURABLE_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "creative.quality_check",
+      "name": "Check creative against brand/brief",
+      "description": "Check creative against brand/brief",
+      "owner_domain": "CREATIVE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Creative QA workflow",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "CREATIVE_MEDIA"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "systems.health",
+      "name": "Read service/environment health",
+      "description": "Read service/environment health",
+      "owner_domain": "SYSTEMS",
+      "implementation_type": "DETERMINISTIC_FUNCTION",
+      "implementation_reference": "Nexus Systems health paths",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "SYSTEM_METADATA"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "trading.paper_research",
+      "name": "Analyze strategies and paper workflows",
+      "description": "Analyze strategies and paper workflows",
+      "owner_domain": "MERCURY",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Trading research runtime",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "MARKET_DATA"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "commerce.merchandising",
+      "name": "Prepare commerce merchandising analysis",
+      "description": "Prepare commerce merchandising analysis",
+      "owner_domain": "COMMERCE",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Commerce engine not activated",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "COMMERCE_DATA"
+      ],
+      "side_effect_class": "READ_ONLY",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "nova.workflow_coordination",
+      "name": "Coordinate objectives, approvals and handoffs",
+      "description": "Coordinate objectives, approvals and handoffs",
+      "owner_domain": "NOVA",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Company Case Engine / Nova runtime",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "BUSINESS_STATE"
+      ],
+      "side_effect_class": "DURABLE_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    },
+    {
+      "skill_id": "nexus.code_build",
+      "name": "Build and validate Nexus code",
+      "description": "Build and validate Nexus code",
+      "owner_domain": "SYSTEMS",
+      "implementation_type": "NEXUS_NATIVE",
+      "implementation_reference": "Governed coding/build tools",
+      "input_schema": {
+        "type": "object"
+      },
+      "output_schema": {
+        "type": "object"
+      },
+      "allowed_data_classes": [
+        "SOURCE_CODE"
+      ],
+      "side_effect_class": "LOCAL_WRITE",
+      "approval_required": false,
+      "model_profile_allowed": true,
+      "runtime_requirements": [],
+      "status": "REGISTERED",
+      "last_certified": null
+    }
+  ]
+}

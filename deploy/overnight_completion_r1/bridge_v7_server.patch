@@ -1,0 +1,61 @@
+--- /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-directive-v6/services/nexus_mcp/server.py	2026-11-15 22:59:25.000000000 -0700
++++ /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-overnight-bridge-v7/services/nexus_mcp/server.py	2026-11-16 00:38:21.000000000 -0700
+@@ -122,7 +122,8 @@
+ def _create_department_directive(target_department: str, objective: str, task: str, required_output: list[str],
+                                  project_id: str = "", evidence_references: list[str] | None = None,
+                                  inputs: dict[str, Any] | None = None, restrictions: list[str] | None = None,
+-                                 success_criteria: list[str] | None = None, parent_request_id: str = "") -> dict[str, Any]:
++                                 success_criteria: list[str] | None = None, parent_request_id: str = "",
++                                 business_id: str = "") -> dict[str, Any]:
+     """Create ONE durable department directive (generic). Creates work; never executes it."""
+     from nexus_agent_platform import department_directive as directive_mod
+     from nexus_agent_platform.durable_jobs import default_store
+@@ -130,11 +131,11 @@
+         d = directive_mod.build_directive(target_department=target_department, objective=objective, task=task,
+                                           required_output=required_output, project_id=project_id, source_department="NOVA",
+                                           inputs=inputs, evidence_references=evidence_references, restrictions=restrictions,
+-                                          success_criteria=success_criteria)
++                                          success_criteria=success_criteria, business_id=business_id)
+     except ValueError as exc:
+         return {"status": "rejected", "error": str(exc)}
+     job, d = directive_mod.create_directive(default_store(), d, correlation_id=parent_request_id or None)
+-    return {"status": "queued", "directive_id": d["directive_id"], "project_id": d["project_id"],
++    return {"status": "queued", "directive_id": d["directive_id"], "project_id": d["project_id"], "business_id": d.get("business_id"),
+             "target_department": d["target_department"], "directive_status": d["status"], "job_state": job.state,
+             "execution": "durable dispatcher executes it; continuation to the next department is automatic",
+             "spend_allowed": False, "publication_allowed": False}
+@@ -155,8 +156,8 @@
+             cd = ((cj.governance_context or {}).get("directive") if cj else None) or {}
+             children.append({"directive_id": ev["child_directive_id"], "department": cd.get("target_department"), "status": cd.get("status"),
+                              "next_action": cd.get("next_action"), "last_event": (cd.get("events") or [{}])[-1]})
+-    data = {k: d.get(k) for k in ("directive_id", "project_id", "parent_directive_id", "source_department", "target_department", "objective",
+-                                  "status", "created_at", "completed_at", "next_department", "next_action", "approval_requirement")}
++    data = {k: d.get(k) for k in ("directive_id", "project_id", "business_id", "parent_directive_id", "source_department", "target_department", "objective",
++                                  "status", "created_at", "started_at", "completed_at", "next_department", "next_action", "approval_requirement")}
+     data.update({"job_state": job.state, "result": d.get("result"), "events": d.get("events"), "children": children})
+     return {"tool_name": "nexus_get_department_directive", "status": "OK", "data": data, "items": children,
+             "metadata": {"read_only": True, "canonical": True, "source": "nexus_durable_jobs.governance_context.directive", "freshness": "live"}, "error": None}
+@@ -1578,17 +1579,19 @@
+             {"relative_path": relative_path, "expected_sha256": expected_sha256,
+              "note_id": note_id, "file_id": file_id})
+ 
+-    @mcp.tool(name="nexus_create_department_directive", description="GOVERNED bounded internal action: create ONE durable Nexus department directive (target MARKETING or CREATIVE) when a completed Nexus result or project justifies a concrete next business action within policy. Provide objective, task, required_output, evidence_references (e.g. the Research job id) and restrictions. Creates durable work only; the Nexus dispatcher executes it and automatically continues to the next department (e.g. Marketing -> Creative). Never executes work, publishes, or spends; cost=zero; external_effect=no. Do not use for casual conversation.")
+-    def nexus_create_department_directive(target_department: Literal["MARKETING", "CREATIVE"], objective: str, task: str,
++    @mcp.tool(name="nexus_create_department_directive", description="GOVERNED bounded internal action: create ONE durable Nexus department directive (target MARKETING, CREATIVE, or REA) when a completed Nexus result or project justifies a concrete next business action within policy. Provide objective, task, required_output, evidence_references (e.g. the Research job id) and restrictions. Creates durable work only; the Nexus dispatcher executes it and automatically continues to the next department (e.g. Marketing -> Creative). Never executes work, publishes, or spends; cost=zero; external_effect=no. For REA, inputs must include target and authorization_ref (owner-authorized clean-room analysis); REA runs on the Contabo harness. Pass business_id (venture id) when known. Do not use for casual conversation.")
++    def nexus_create_department_directive(target_department: Literal["MARKETING", "CREATIVE", "REA"], objective: str, task: str,
+                                           required_output: list[str], project_id: str = "", evidence_references: list[str] | None = None,
+                                           inputs: dict[str, Any] | None = None, restrictions: list[str] | None = None,
+-                                          success_criteria: list[str] | None = None, parent_request_id: str = "") -> dict[str, Any]:
++                                          success_criteria: list[str] | None = None, parent_request_id: str = "",
++                                          business_id: str = "") -> dict[str, Any]:
+         return _action_call("nexus_create_department_directive", _create_department_directive, {
++            "business_id": business_id,
+             "target_department": target_department, "objective": objective, "task": task, "required_output": required_output,
+             "project_id": project_id, "evidence_references": evidence_references, "inputs": inputs, "restrictions": restrictions,
+             "success_criteria": success_criteria, "parent_request_id": parent_request_id})
+ 
+-    @mcp.tool(name="nexus_get_directive_events", description="VOLATILE read for Nova's proactive notifier: recent department-directive rows with their lifecycle events (DIRECTIVE_CREATED, WORK_STARTED, WORK_COMPLETED, WORK_FAILED, APPROVAL_REQUIRED, PROJECT_BLOCKED, PROJECT_CONTINUED). Read-only.")
++    @mcp.tool(name="nexus_get_directive_events", description="VOLATILE read for Nova's proactive notifier: recent department-directive rows with their lifecycle events (DIRECTIVE_CREATED, WORK_STARTED, WORK_COMPLETED, WORK_FAILED, APPROVAL_REQUIRED, PROJECT_BLOCKED, PROJECT_CONTINUED, CREATIVE_CREATED, CAMPAIGN_CREATED, COMMERCE_OFFER_CREATED, REA_WORK_STARTED, REA_WORK_COMPLETED, REA_WORK_FAILED). Read-only.")
+     def nexus_get_directive_events(since: str = "", limit: int = 20) -> dict[str, Any]:
+         authorize_read("nexus_get_directive_events")
+         return _get_directive_events(since, limit)

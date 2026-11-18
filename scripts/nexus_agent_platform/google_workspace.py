@@ -1,14 +1,31 @@
 """Governed Google Workspace desktop OAuth and read-only certification."""
 from __future__ import annotations
 import argparse, json, os, sys
+import importlib.util
 from pathlib import Path
 from typing import Any
+
+# Executing this file directly puts its package directory first on sys.path.
+# That directory contains platform.py, which can shadow Python's stdlib
+# platform module while third-party OAuth packages import it. Keep the
+# explicit scripts/ entry (for nexus_agent_platform imports), but remove only
+# this script's own directory from the import search path.
+_SCRIPT_PACKAGE_DIR = Path(__file__).resolve().parent
+for _path_entry in tuple(sys.path):
+    try:
+        if Path(_path_entry or os.getcwd()).resolve() == _SCRIPT_PACKAGE_DIR:
+            sys.path.remove(_path_entry)
+    except (OSError, RuntimeError):
+        continue
+
 from nexus_agent_platform.credential_control_plane import keychain_status, registry_entry, store_keychain, _keychain_value
 
 ROOT = Path(__file__).resolve().parents[2]
 CREDENTIAL_ID = "credential.google.workspace.prod.v1"
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/drive.file"]
-SCOPE_NAMES = ["gmail.readonly", "calendar.events", "drive.file"]
+GMAIL_WRITE_SCOPE = "https://www.googleapis.com/auth/gmail.modify"
+SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", GMAIL_WRITE_SCOPE,
+          "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/drive.file"]
+SCOPE_NAMES = ["gmail.readonly", "gmail.modify", "calendar.events", "drive.file"]
 MUTATIONS_PERFORMED = False
 
 def validate_scopes(scopes: list[str]) -> bool: return set(scopes) == set(SCOPES) and len(scopes) == len(SCOPES)
@@ -25,7 +42,39 @@ def _configured() -> dict[str, str]:
 
 def build_google_credentials(credentials_cls: Any, *, client_id: str, client_secret: str, refresh_token: str) -> Any:
     """Construct refresh-only credentials; access tokens remain memory-only."""
-    return credentials_cls(token=None, refresh_token=refresh_token, token_uri="https://oauth2.googleapis.com/token", client_id=client_id, client_secret=client_secret, scopes=SCOPES)
+    # SCOPES is used by a future explicit consent flow. Do not pass it while
+    # refreshing an existing token: that would request newly added scopes from
+    # a refresh token that has not been reauthorized.
+    return credentials_cls(token=None, refresh_token=refresh_token, token_uri="https://oauth2.googleapis.com/token", client_id=client_id, client_secret=client_secret)
+
+def _reauth_import_diagnostics() -> dict[str, Any]:
+    """Describe the active interpreter/import resolution without credential data."""
+    package_path = None
+    flow_path = None
+    package_error = None
+    flow_error = None
+    try:
+        package_spec = importlib.util.find_spec("google_auth_oauthlib")
+        if package_spec:
+            package_path = package_spec.origin or next(iter(package_spec.submodule_search_locations or ()), None)
+    except Exception as exc:
+        package_error = {"type": type(exc).__name__, "message": str(exc)[:300]}
+    try:
+        flow_spec = importlib.util.find_spec("google_auth_oauthlib.flow")
+        if flow_spec:
+            flow_path = flow_spec.origin
+    except Exception as exc:
+        flow_error = {"type": type(exc).__name__, "message": str(exc)[:300]}
+    return {
+        "python": sys.executable,
+        "sys_path": list(sys.path),
+        "package_resolved": package_path is not None,
+        "package_path": package_path,
+        "flow_resolved": flow_path is not None,
+        "flow_path": flow_path,
+        "package_resolution_error": package_error,
+        "flow_resolution_error": flow_error,
+    }
 
 def authorize(client_secrets_file: str, *, replace: bool = False, open_browser: bool = True) -> dict[str, Any]:
     client = validate_client_secrets(client_secrets_file)
@@ -42,6 +91,93 @@ def authorize(client_secrets_file: str, *, replace: bool = False, open_browser: 
         stored[component] = store_keychain(CREDENTIAL_ID, component, value, replace=replace)
     return {"status":"GOOGLE_AUTHORIZED","credential_id":CREDENTIAL_ID,"stored":stored,"scopes":SCOPE_NAMES,"secret_values_exposed":False}
 
+def reauthorize_existing(*, scopes: list[str] | None = None, open_browser: bool = False, with_youtube: bool = False) -> dict[str, Any]:
+    """Renew the existing shared Google grant without replacing its OAuth client.
+
+    The installed-app callback is loopback-only. Existing client credentials
+    remain in the OS keychain; only the refresh token is updated after the
+    owner completes Google's consent screen.
+    """
+    if with_youtube:
+        raise RuntimeError(
+            "GOOGLE_SCOPE_CONFLICT: Google prohibits combining Google Drive/Workspace scopes "
+            "with YouTube upload scopes in a single OAuth grant. "
+            "Use the dedicated YouTube authorization command: "
+            "PYTHONPATH=scripts .venv-agent-platform/bin/python scripts/nexus_agent_platform/youtube_upload.py authorize"
+        )
+    existing = _configured()
+    if existing.get("client_id") != "CONFIGURED" or existing.get("client_secret") != "CONFIGURED":
+        raise RuntimeError("google_oauth_client_not_configured")
+    diagnostics = _reauth_import_diagnostics()
+    try:
+        from google_auth_oauthlib.flow import InstalledAppFlow
+    except Exception as exc:
+        message = str(exc)[:400]
+        return {
+            "status": "GOOGLE_OAUTH_IMPORT_FAILED",
+            "import_error_type": type(exc).__name__,
+            "import_error_message": message,
+            "import_error_module": getattr(exc, "name", None),
+            "runtime_diagnostics": diagnostics,
+            "secret_values_exposed": False,
+        }
+    client = {
+        "client_id": _keychain_value(CREDENTIAL_ID, "client_id"),
+        "client_secret": _keychain_value(CREDENTIAL_ID, "client_secret"),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "redirect_uris": ["http://localhost"],
+    }
+    if not client["client_id"] or not client["client_secret"]:
+        raise RuntimeError("google_oauth_client_not_configured")
+    target_scopes = scopes if scopes is not None else SCOPES
+    target_names = [s.rsplit("/", 1)[-1] for s in target_scopes] if scopes is not None else SCOPE_NAMES
+    flow = InstalledAppFlow.from_client_config({"installed": client}, target_scopes)
+    print(json.dumps({
+        "event": "GOOGLE_REAUTH_FLOW_START",
+        "runtime_diagnostics": diagnostics,
+        "flow": "InstalledAppFlow.run_local_server",
+        "browser_requested": bool(open_browser),
+        "scopes": target_names,
+        "secret_values_exposed": False,
+    }, sort_keys=True), file=sys.stderr, flush=True)
+    credentials = flow.run_local_server(
+        host="127.0.0.1", port=0, access_type="offline", prompt="consent",
+        open_browser=open_browser,
+    )
+    if not credentials.refresh_token:
+        raise RuntimeError("google_refresh_token_not_returned")
+    stored = store_keychain(CREDENTIAL_ID, "refresh_token", credentials.refresh_token, replace=True)
+    return {"status":"GOOGLE_AUTHORIZED","credential_id":CREDENTIAL_ID,
+            "stored":{"refresh_token":stored},"scopes":target_names,
+            "secret_values_exposed":False,"oauth_client_replaced":False}
+
+def generate_authorization_url(*, scopes: list[str] | None = None, redirect_uri: str = "http://127.0.0.1") -> dict[str, Any]:
+    """Generate the OAuth consent URL for Ray using the existing Desktop OAuth client."""
+    import urllib.parse
+    target_scopes = scopes or COMBINED_SCOPES
+    cid = os.environ.get("NEXUS_GOOGLE_WORKSPACE_CLIENT_ID") or _keychain_value(CREDENTIAL_ID, "client_id")
+    if not cid:
+        return {"status": "CLIENT_NOT_CONFIGURED", "authorization_url": None, "secret_values_exposed": False}
+    params = {
+        "client_id": cid,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": " ".join(target_scopes),
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+    }
+    return {
+        "status": "AUTHORIZATION_URL_CREATED",
+        "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params),
+        "client_id_reference": "NEXUS_GOOGLE_WORKSPACE_CLIENT_ID",
+        "scopes": [s.rsplit("/", 1)[-1] for s in target_scopes],
+        "access_type": "offline",
+        "prompt": "consent",
+        "secret_values_exposed": False,
+    }
+
 def certify_read_only() -> dict[str, Any]:
     state = _configured(); result = {"credential_id":CREDENTIAL_ID,"status":"GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED" if state["refresh_token"] != "CONFIGURED" else "GOOGLE_TOKEN_REFRESH_FAILED","oauth_client":"CONFIGURED" if state["client_id"] == state["client_secret"] == "CONFIGURED" else "NOT_FOUND","refresh_capability":state["refresh_token"],"granted_scopes":[],"calendar_read":"NOT_RUN","gmail_read":"NOT_RUN","drive_read":"NOT_RUN","mutations_performed":False,"secret_values_exposed":False,"oauth_publishing_mode":"TESTING_OR_EXTERNALLY_MANAGED"}
     if result["status"] != "GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED":
@@ -50,7 +186,30 @@ def certify_read_only() -> dict[str, Any]:
             from google.oauth2.credentials import Credentials
             from google.auth.transport.requests import Request
             creds=build_google_credentials(Credentials, client_id=_keychain_value(CREDENTIAL_ID,"client_id"), client_secret=_keychain_value(CREDENTIAL_ID,"client_secret"), refresh_token=_keychain_value(CREDENTIAL_ID,"refresh_token"))
-            creds.refresh(Request()); result["status"]="GOOGLE_WORKSPACE_READ_VERIFIED"; result["refresh_capability"]="CONFIGURED"; result["granted_scopes"]=SCOPE_NAMES
+            creds.refresh(Request())
+            # Do not report requested scopes as if they were granted. Read the
+            # actual scope set from Google's tokeninfo endpoint without logging
+            # or returning the access token.
+            import requests
+            scope_response = requests.get("https://oauth2.googleapis.com/tokeninfo",
+                params={"access_token": creds.token}, timeout=12)
+            scope_response.raise_for_status()
+            scope_text = str(scope_response.json().get("scope") or "")
+            result["granted_scopes"] = sorted({item.rsplit("/", 1)[-1] for item in scope_text.split()})
+            result["status"]="GOOGLE_WORKSPACE_READ_VERIFIED"; result["refresh_capability"]="CONFIGURED"
+            result["gmail_write_scope"] = "GRANTED" if GMAIL_WRITE_SCOPE in scope_text.split() else "MISSING"
+            result["gmail_write_scope_required"] = GMAIL_WRITE_SCOPE
+            result["youtube_upload_scope"] = "GRANTED" if YOUTUBE_UPLOAD_SCOPE in scope_text.split() else "MISSING"
+            result["youtube_upload_scope_required"] = YOUTUBE_UPLOAD_SCOPE
+            if result["youtube_upload_scope"] == "GRANTED":
+                try:
+                    yt = build("youtube", "v3", credentials=creds, cache_discovery=False)
+                    ch_resp = yt.channels().list(part="snippet,contentDetails,statistics", mine=True).execute()
+                    ch_items = ch_resp.get("items", [])
+                    result["authorized_channels"] = [{"channel_id": it.get("id"), "channel_name": (it.get("snippet") or {}).get("title"), "channel_handle": (it.get("snippet") or {}).get("customUrl")} for it in ch_items]
+                    result["authorized_channel_count"] = len(ch_items)
+                except Exception as yt_exc:
+                    result["youtube_channel_error"] = str(yt_exc)[:160]
             from googleapiclient.discovery import build
             # calendar.events is intentionally narrower than calendar.readonly;
             # read the primary calendar's event collection rather than the
@@ -71,8 +230,8 @@ def write_certification_report(result: dict[str, Any]) -> None:
     (out / "nexus_calendar_authorization_latest.md").write_text("# Google Workspace Read-Only Certification\n\n" + "\n".join(f"- {key}: {value}" for key, value in result.items() if key not in {"granted_scopes"}) + "\n- granted_scopes: " + (", ".join(result.get("granted_scopes", [])) or "none") + "\n", encoding="utf-8")
 
 def main() -> int:
-    p=argparse.ArgumentParser(); sub=p.add_subparsers(dest="command",required=True); a=sub.add_parser("authorize"); a.add_argument("--client-secrets-file",required=True); a.add_argument("--replace",action="store_true"); c=sub.add_parser("certify-read-only"); args=p.parse_args()
-    result=authorize(args.client_secrets_file,replace=args.replace) if args.command=="authorize" else certify_read_only();
+    p=argparse.ArgumentParser(); sub=p.add_subparsers(dest="command",required=True); a=sub.add_parser("authorize"); a.add_argument("--client-secrets-file",required=True); a.add_argument("--replace",action="store_true"); r=sub.add_parser("reauthorize-existing"); r.add_argument("--open-browser",action="store_true"); r.add_argument("--with-youtube",action="store_true"); u=sub.add_parser("auth-url"); u.add_argument("--redirect-uri",default="http://127.0.0.1"); c=sub.add_parser("certify-read-only"); args=p.parse_args()
+    result=authorize(args.client_secrets_file,replace=args.replace) if args.command=="authorize" else reauthorize_existing(open_browser=args.open_browser,with_youtube=getattr(args,"with_youtube",False)) if args.command=="reauthorize-existing" else generate_authorization_url(redirect_uri=getattr(args,"redirect_uri","http://127.0.0.1")) if args.command=="auth-url" else certify_read_only();
     if args.command == "certify-read-only": write_certification_report(result)
-    print(json.dumps(result,indent=2)); return 0 if result.get("status") in {"GOOGLE_AUTHORIZED","GOOGLE_WORKSPACE_READ_VERIFIED","GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED"} else 1
+    print(json.dumps(result,indent=2)); return 0 if result.get("status") in {"GOOGLE_AUTHORIZED","GOOGLE_WORKSPACE_READ_VERIFIED","GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED","AUTHORIZATION_URL_CREATED"} else 1
 if __name__=="__main__": raise SystemExit(main())

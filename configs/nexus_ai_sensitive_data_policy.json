@@ -1,0 +1,12 @@
+{
+  "policy_id": "NEXUS_AI_SENSITIVE_DATA_DENY_R1",
+  "status": "ACTIVE",
+  "applies_to": ["NOVA", "CLYDE", "MERCURY", "ALPHA", "RESEARCH", "MARKETING", "CREATIVE", "SYSTEMS", "ALL_MICROBOTS"],
+  "prohibited_ai_access": [
+    "FULL_SSN", "FULL_EIN", "BANK_ACCOUNT_NUMBER", "BANK_ROUTING_NUMBER",
+    "PASSWORD", "API_SECRET", "AUTH_COOKIE", "SESSION_TOKEN"
+  ],
+  "handling": "DETERMINISTIC_REDACTION_OR_TOKENIZATION_BEFORE_AI_CONTEXT",
+  "raw_values_to_ai": false,
+  "deterministic_secure_handling_required": true
+}

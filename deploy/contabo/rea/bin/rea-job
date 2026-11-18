@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Host entry point for the Nexus REA harness (Contabo). Nexus calls this over SSH.
+
+  rea-job submit < request.json     -> {rea_session_id, status}; launches the session once (idempotent)
+  rea-job status <rea_session_id>   -> session status
+  rea-job result <rea_session_id>   -> bounded structured result
+  rea-job health                    -> versions, provider status, resources, container limits
+  rea-job cleanup                   -> temp/workspace retention
+
+Never prints secrets. The container has no published ports; this wrapper is the only way in.
+"""
+import json
+import subprocess
+import sys
+
+CONTAINER = "nexus-rea"
+RUNNER = ["python3", "/rea/config/harness/rea_harness.py"]
+
+
+def _exec(args, stdin=None, timeout=120):
+    proc = subprocess.run(["docker", "exec", "-i", CONTAINER, *RUNNER, *args], input=stdin, capture_output=True,
+                          text=True, timeout=timeout)
+    line = (proc.stdout.strip().splitlines() or ["{}"])[-1]
+    try:
+        return json.loads(line)
+    except ValueError:
+        return {"ok": False, "error": {"code": "RUNNER_OUTPUT_INVALID", "retryable": True}}
+
+
+def _container_state():
+    proc = subprocess.run(["docker", "inspect", CONTAINER, "--format",
+                           "{{.State.Status}}|{{.HostConfig.Memory}}|{{.HostConfig.NanoCpus}}|{{.HostConfig.PidsLimit}}|{{.HostConfig.OomScoreAdj}}|{{json .NetworkSettings.Ports}}|{{.Config.Image}}"],
+                          capture_output=True, text=True, timeout=30)
+    if proc.returncode != 0:
+        return {"status": "MISSING"}
+    status, mem, cpus, pids, oom, ports, image = proc.stdout.strip().split("|")
+    return {"status": status, "image": image, "memory_limit_mb": int(mem) // 1048576, "cpus": int(cpus) / 1e9,
+            "pids_limit": int(pids), "oom_score_adj": int(oom), "published_ports": json.loads(ports or "{}") or {}}
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else "health"
+    container = _container_state()
+    if container.get("status") != "running":
+        print(json.dumps({"ok": False, "error": {"code": "REA_CONTAINER_NOT_RUNNING", "retryable": True}, "container": container}))
+        return 3
+    if cmd == "submit":
+        out = _exec(["submit"], stdin=sys.stdin.read())
+        data = out.get("data") or {}
+        if out.get("ok") and data.get("status") == "SUBMITTED":
+            subprocess.run(["docker", "exec", "-d", CONTAINER, *RUNNER, "run", data["rea_session_id"]], check=True, timeout=60)
+            data["launched"] = True
+    elif cmd in {"status", "result"} and len(argv) > 2:
+        out = _exec([cmd, argv[2]])
+    elif cmd == "health":
+        out = _exec(["health"], timeout=180)
+        if out.get("ok"):
+            out["data"]["container"] = container
+    elif cmd == "cleanup":
+        out = _exec(["cleanup"], timeout=600)
+    else:
+        out = {"ok": False, "error": {"code": "USAGE", "retryable": False}}
+    print(json.dumps(out, default=str))
+    return 0 if out.get("ok") else 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

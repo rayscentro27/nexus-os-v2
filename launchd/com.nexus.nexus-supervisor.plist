@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.nexus.nexus-supervisor</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3</string>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/operations/nexus_supervisor.py</string>
+		<string>--daemon</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PYTHONPATH</key>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/scripts</string>
+		<key>NEXUS_SUPERVISOR_INTERVAL</key>
+		<string>60</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>30</integer>
+	<key>StandardOutPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/nexus_supervisor_launchd.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/nexus_supervisor_launchd_error.log</string>
+</dict>
+</plist>

@@ -47,6 +47,8 @@ def test_keychain_store_status_read_round_trip_uses_same_record(monkeypatch):
         raise AssertionError(f"unexpected security operation: {args[1]}")
 
     monkeypatch.setattr(cp.subprocess, "run", fake_security)
+    monkeypatch.setattr(cp, "_security_keychain_value",
+                        lambda credential_id, component: records.get(cp._keychain_record(credential_id, component)))
     credential_id = "credential.google.workspace.prod.v1"
     component = "refresh_token"
 
@@ -56,6 +58,40 @@ def test_keychain_store_status_read_round_trip_uses_same_record(monkeypatch):
     assert cp._keychain_value(credential_id, component) == secret
     assert records.keys() == {("nexus/credential.google.workspace.prod.v1", "refresh_token")}
     assert secret not in json.dumps(stored)
+
+
+def test_keychain_reader_uses_security_framework_without_cli_secret_output(monkeypatch):
+    import ctypes
+    monkeypatch.setattr(cp.sys, "platform", "darwin")
+    secret = b"resolver-fixture"
+    payload = ctypes.create_string_buffer(secret)
+
+    class Function:
+        def __init__(self, call):
+            self.call = call
+            self.argtypes = None
+            self.restype = None
+        def __call__(self, *args):
+            return self.call(*args)
+
+    def find(_keychain, service_len, service, account_len, account, out_len, out_data, item_ref):
+        assert ctypes.string_at(service, service_len) == b"nexus/credential.google.gemini.prod.v1"
+        assert ctypes.string_at(account, account_len) == b"api_key"
+        assert item_ref is None
+        out_len._obj.value = len(secret)
+        out_data._obj.value = ctypes.addressof(payload)
+        return 0
+
+    class Framework:
+        SecKeychainFindGenericPassword = Function(find)
+        SecKeychainItemFreeContent = Function(lambda _allocator, _data: 0)
+
+    monkeypatch.setattr(cp.ctypes if hasattr(cp, "ctypes") else __import__("ctypes"), "CDLL",
+                        lambda _path: Framework())
+    monkeypatch.setattr(cp.subprocess, "run", lambda *_a, **_k: (_ for _ in ()).throw(
+        AssertionError("Keychain secret read must not shell out")))
+    value = cp._keychain_value("credential.google.gemini.prod.v1", "api_key")
+    assert value == secret.decode()
 
 def test_machine_profile_selects_healthy_alternative_runtime():
     profile = {"python":{"interpreters":[{"executable":"python3.14","version":"3.14.5","ssl_import":"BROKEN"},{"executable":"python3.11","version":"3.11.15","ssl_import":"HEALTHY"}]},"browser":{"playwright_package":True}}

@@ -20,6 +20,15 @@ class AlphaDecisionPolicyTest(unittest.TestCase):
     def test_missing_evidence_without_test_profile_does_not_get_fabricated_test(self):
         result = apply_policy({"query": "unresolved source"}, {"decision": "RESEARCH_MORE", "reasoning_summary": "source unavailable"})
         self.assertEqual(result["decision"], "RESEARCH_MORE")
+        self.assertTrue(result["alpha_is_advisory"])
+        self.assertFalse(result["terminates_owner_objective"])
+        self.assertTrue(result["workflow_continuation_required"])
+
+    def test_reject_remains_advisory_and_does_not_terminate_parent_workflow(self):
+        result = apply_policy({"query": "unsafe action"}, {"decision": "REJECT", "reasoning_summary": "unsafe paid action"})
+        self.assertEqual(result["decision"], "REJECT")
+        self.assertFalse(result["terminates_owner_objective"])
+        self.assertEqual(result["continuation_policy"], "RESEARCH_QUEUE_ON_RESEARCH_MORE_ELSE_PARENT_WORKFLOW")
 
     def test_department_candidate_profiles_preserve_safe_next_step(self):
         cases = {

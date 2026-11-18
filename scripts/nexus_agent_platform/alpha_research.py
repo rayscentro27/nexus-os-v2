@@ -18,12 +18,19 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
 from nexus_agent_platform.evidence_ingestion import DEFAULT_HANDOFF, DEFAULT_RECEIPTS, DEFAULT_RUNTIME as DEFAULT_EVIDENCE_RUNTIME, normalize_text
+from nexus_agent_platform.runtime.paths import nexus_data_path, nexus_reports_path
 
 SCHEMA_VERSION = "nexus.alpha-research-job.v1"
 PACK_SCHEMA_VERSION = "nexus.alpha-research-pack.v1"
 RECEIPT_SCHEMA_VERSION = "nexus.alpha-research-receipt.v1"
-DEFAULT_RUNTIME = Path(__file__).resolve().parents[2] / "data/runtime/alpha_research"
-DEFAULT_REPORTS = Path(__file__).resolve().parents[2] / "reports/runtime/alpha_research"
+def _default_runtime() -> Path:
+    """Resolve mutable Alpha artifacts outside the immutable package tree."""
+    return nexus_data_path("runtime", "alpha_research")
+
+
+def _default_reports() -> Path:
+    """Resolve Alpha reports through the configured canonical repository root."""
+    return nexus_reports_path("runtime", "alpha_research")
 
 RESEARCH_TYPES = {
     "MARKET_RESEARCH", "COMPETITOR_RESEARCH", "BUSINESS_OPPORTUNITY_RESEARCH",
@@ -341,15 +348,15 @@ def run_alpha_research(job: dict, evidence: Iterable[dict], *, claim_specs: Opti
         "remote_worker_usage": {"jobs": pack["cost_usage"].get("remote_cpu_jobs", 0)}, "research_pack_ref": f"alpha-pack:{job['research_job_id']}",
         "report_ref": f"alpha-report:{report_hash}", "opportunity_candidate_count": len(pack["opportunities"]), "error_classification": None if status in {"COMPLETE", "PARTIAL"} else status,
     }
-    root = runtime_root or DEFAULT_RUNTIME
-    reports = (root / "reports") if runtime_root else DEFAULT_REPORTS
+    root = runtime_root or _default_runtime()
+    reports = (root / "reports") if runtime_root else _default_reports()
     root.mkdir(parents=True, exist_ok=True); reports.mkdir(parents=True, exist_ok=True)
     (root / f"{job['research_job_id']}.json").write_text(json.dumps(pack, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (reports / f"{job['research_job_id']}.md").write_text(report, encoding="utf-8")
     (root / f"{job['research_job_id']}.receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     heartbeat = {"capability": "alpha_research", "status": "HEALTHY" if status in {"COMPLETE", "PARTIAL"} else "DEGRADED", "last_run": receipt["completed_at"], "last_success": receipt["completed_at"] if status in {"COMPLETE", "PARTIAL"} else None, "last_result": status, "research_job_id": job["research_job_id"], "receipt_id": receipt["receipt_id"], "source_count": len(source_rows), "evidence_count": len(evidence_by_id), "browser_evidence_used": bool(pack["cost_usage"].get("remote_cpu_jobs")), "freshness": pack["freshness"], "optional": True, "core_health_dependency": False, "consequential_action_performed": False, "updated_at": _now()}
     heartbeat_path = ((root / "nexus_alpha_research_heartbeat_latest.json") if runtime_root
-                      else Path(__file__).resolve().parents[2] / "reports/runtime/nexus_alpha_research_heartbeat_latest.json")
+                      else nexus_reports_path("runtime", "nexus_alpha_research_heartbeat_latest.json"))
     heartbeat_path.parent.mkdir(parents=True, exist_ok=True); heartbeat_path.write_text(json.dumps(heartbeat, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return {"job": job, "plan": pack["plan"], "pack": pack, "report": report, "receipt": receipt, "heartbeat": heartbeat}
 
@@ -396,7 +403,7 @@ def render_report(pack: dict) -> str:
 
 
 def status_from_runtime(path: Optional[Path] = None) -> dict:
-    path = path or (Path(__file__).resolve().parents[2] / "reports/runtime/nexus_alpha_research_heartbeat_latest.json")
+    path = path or nexus_reports_path("runtime", "nexus_alpha_research_heartbeat_latest.json")
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):

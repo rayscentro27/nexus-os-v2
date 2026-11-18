@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import time
 import uuid
 from datetime import datetime, timezone
@@ -20,7 +21,24 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
-TRACE_DIR = ROOT / "reports" / "runtime" / "agent_traces"
+TRACE_DIR = Path(os.getenv("NOVA_TRACE_DIR") or ROOT / "reports" / "runtime" / "agent_traces").expanduser()
+
+try:
+    from acceptance_telemetry import (
+        AcceptanceSessionWriter,
+        build_acceptance_record,
+        release_identity,
+        release_root_from_entrypoint,
+        validate_session_id,
+    )
+except ImportError:
+    from nova.acceptance_telemetry import (
+        AcceptanceSessionWriter,
+        build_acceptance_record,
+        release_identity,
+        release_root_from_entrypoint,
+        validate_session_id,
+    )
 
 
 def _hash(value: Any) -> str:
@@ -58,6 +76,21 @@ class NovaTrace:
     def __init__(self, *, update_id: Any, session_id: str = "", trace_id: str | None = None):
         self.update_id = str(update_id)
         self.session_id = session_id
+        self.acceptance_session_id = ""
+        configured_session = os.getenv("NOVA_ACCEPTANCE_SESSION_ID", "")
+        try:
+            self.acceptance_session_id = validate_session_id(configured_session) if configured_session else ""
+        except ValueError:
+            self.acceptance_session_id = ""
+        entrypoint = Path(sys.argv[0]).expanduser()
+        self.release_identity = release_identity(
+            release_root_from_entrypoint(entrypoint),
+            code_root=os.getenv("NOVA_CODE_ROOT", ""),
+            pid=os.getpid(),
+        )
+        self.acceptance_fields: dict[str, Any] = {}
+        self.acceptance_user_message = ""
+        self.acceptance_response = ""
         inherited_trace_id = os.getenv("NOVA_LANGFUSE_TRACE_ID")
         inherited_update_id = os.getenv("NOVA_LANGFUSE_UPDATE_ID")
         external_trace_id = trace_id or (
@@ -96,7 +129,13 @@ class NovaTrace:
             "parent": "nova.turn",
             "name": name,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "metadata": _safe_meta({"update_id": self.update_id, "session_id": self.session_id, **(metadata or {})}),
+            "metadata": _safe_meta({
+                "update_id": self.update_id,
+                "session_id": self.session_id,
+                **self.release_identity,
+                **({"acceptance_session_id": self.acceptance_session_id} if self.acceptance_session_id else {}),
+                **(metadata or {}),
+            }),
         }
         self.events.append(row)
         if self._adapter is not None:
@@ -105,6 +144,15 @@ class NovaTrace:
                     pass
             except Exception:
                 pass
+
+    def record_acceptance_turn(self, *, user_message: str, nova_response: str,
+                               fields: dict[str, Any] | None = None) -> None:
+        """Attach the final delivery and route evidence for this update."""
+        if not self.acceptance_session_id:
+            return
+        self.acceptance_user_message = str(user_message or "")[:4000]
+        self.acceptance_response = str(nova_response or "")[:8000]
+        self.acceptance_fields = dict(fields or {})
 
     def generation(self, name: str, *, model: str = "", input_text: str = "", output_text: str = "", metadata: dict[str, Any] | None = None) -> None:
         self.event(name, {"kind": "generation", "model": model, **(metadata or {})})
@@ -120,9 +168,30 @@ class NovaTrace:
         try:
             TRACE_DIR.mkdir(parents=True, exist_ok=True)
             path = TRACE_DIR / f"nova_{self.trace_id}.json"
-            path.write_text(json.dumps({"trace_id": self.trace_id, "events": self.events}, default=str) + "\n", encoding="utf-8")
+            path.write_text(json.dumps({
+                "trace_id": self.trace_id,
+                "acceptance_session_id": self.acceptance_session_id or None,
+                **self.release_identity,
+                "events": self.events,
+            }, default=str) + "\n", encoding="utf-8")
         except Exception:
             pass
+        if self.acceptance_session_id:
+            try:
+                evidence_root = Path(os.getenv("NOVA_ACCEPTANCE_EVIDENCE_DIR") or TRACE_DIR / "acceptance_sessions")
+                writer = AcceptanceSessionWriter(evidence_root)
+                record = build_acceptance_record(
+                    update_id=self.update_id,
+                    user_message=self.acceptance_user_message,
+                    nova_response=self.acceptance_response,
+                    session_id=self.acceptance_session_id,
+                    identity=self.release_identity,
+                    fields={**self.acceptance_fields, "trace_id": self.trace_id},
+                )
+                writer.append(record)
+            except Exception:
+                # Keep evidence failures separate from response/delivery behavior.
+                pass
         if self._adapter is not None:
             try:
                 self._adapter.flush()

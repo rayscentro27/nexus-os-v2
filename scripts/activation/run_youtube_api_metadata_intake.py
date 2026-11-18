@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse,json,ssl,urllib.parse,urllib.request
+import argparse,hashlib,json,ssl,urllib.parse,urllib.request
 from youtube_cache import get,put,status as cache_status
 from youtube_engine_common import ROOT,SUPABASE_READY,api_key_status,approved_targets,now,read_json,record,write_json,write_report
 import sys
@@ -9,8 +9,10 @@ from activation.governed_http import get_json as governed_get_json
 
 def api(path,params,key):
  q=urllib.parse.urlencode({**params,"key":key})
+ purpose_hash=hashlib.sha256(urllib.parse.urlencode(sorted(params.items())).encode()).hexdigest()[:20]
  return governed_get_json(f"https://www.googleapis.com/youtube/v3/{path}?{q}",
-  provider="GOOGLE", service="youtube_data_api", timeout=20, estimated_units=1)
+  provider="GOOGLE", service="youtube_data_api", timeout=20, estimated_units=1,
+  billable=False, cost=0, purpose=f"youtube_data_api:{path}:{purpose_hash}")
 def build():
  policy=read_json(ROOT/"configs/youtube_quota_policy.json",{});key=api_key_status();all_targets=approved_targets();channels=[x for x in all_targets if x.get("target_type")!="video"][:policy.get("max_channels_per_run",4)];videos=[x for x in all_targets if x.get("target_type")=="video"][:policy.get("max_new_videos_per_run",25)];targets=channels+videos;records=[];errors=[];units=0;cache_hits=0
  if key["present"]:

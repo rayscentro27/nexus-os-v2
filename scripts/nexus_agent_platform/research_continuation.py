@@ -14,9 +14,11 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-CHARTER_PATH = ROOT / "data/governed/research_charter.json"
-GENERATED_PATH = ROOT / "data/governed/research_generated_objectives.jsonl"
-FEEDBACK_PATH = ROOT / "data/governed/research_goal_progress.jsonl"
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
+
+CHARTER_PATH = nexus_research_state_path("governed", "research_charter.json")
+GENERATED_PATH = nexus_research_state_path("governed", "research_generated_objectives.jsonl")
+FEEDBACK_PATH = nexus_research_state_path("governed", "research_goal_progress.jsonl")
 
 CHARTER_ID = "research-charter-nexus-continuous-intelligence-v1"
 ACTIVE_GOAL_STATES = {"ACTIVE", "READY", "QUEUED"}

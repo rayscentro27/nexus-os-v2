@@ -16,6 +16,7 @@ LEGACY_ROOT = Path.home() / "nexuslive"
 LEGACY_ADAPTER = LEGACY_ROOT / "lib/notebooklm_ingest_adapter.py"
 LEGACY_BIN = LEGACY_ROOT / ".venv-notebooklm/bin/nlm"
 CANDIDATE_NAMES = ("notebooklm", "notebook-lm", "nblm", "nlm")
+PYTHON_NOTEBOOKLM_CLI = Path.home() / ".nexus/venvs/notebooklm-py/bin/notebooklm"
 
 
 def env_presence() -> dict:
@@ -28,6 +29,12 @@ def env_presence() -> dict:
 
 def find_cli() -> dict:
     candidates = []
+    # Prefer the authenticated Python CLI used by the production Research
+    # adapter.  A similarly named Node CLI may be on PATH, but it uses a
+    # separate auth store and does not support the adapter's JSON contract.
+    if PYTHON_NOTEBOOKLM_CLI.exists() and os.access(PYTHON_NOTEBOOKLM_CLI, os.X_OK):
+        candidates.append({"name": "notebooklm", "path": str(PYTHON_NOTEBOOKLM_CLI),
+                           "source": "nexus_authenticated_python_venv"})
     for name in CANDIDATE_NAMES:
         path = shutil.which(name)
         if path:
@@ -58,7 +65,7 @@ def list_via_cli() -> tuple[bool, list[dict], str | None]:
     access = classify(); selected = access["cli"].get("selected")
     if not selected:
         return False, [], "local_cli_missing"
-    command = [selected["path"], "notebook", "list", "--json"]
+    command = [selected["path"], "list", "--json"]
     try:
         proc = subprocess.run(command, capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.TimeoutExpired) as exc:
@@ -71,7 +78,11 @@ def list_via_cli() -> tuple[bool, list[dict], str | None]:
     except json.JSONDecodeError:
         return False, [], "invalid_json_response"
     rows = payload if isinstance(payload, list) else payload.get("notebooks", []) if isinstance(payload, dict) else []
-    safe = [{"notebook_name": str(row.get("title") or row.get("name") or "Untitled")[:200], "notebook_id": str(row.get("id") or "")[:160]} for row in rows if isinstance(row, dict)]
+    safe = [{"notebook_name": str(row.get("title") or row.get("name") or "Untitled")[:200],
+             "notebook_id": str(row.get("id") or "")[:160],
+             "created_at": row.get("created_at"), "updated_at": row.get("modified_at") or row.get("updated_at"),
+             "last_viewed_at": row.get("last_viewed_at"), "role": row.get("role")}
+            for row in rows if isinstance(row, dict)]
     return True, safe, None
 
 

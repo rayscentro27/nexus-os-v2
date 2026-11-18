@@ -1,0 +1,28 @@
+CLASSIFICATION	PATH	EVIDENCE	ACTION
+U1_LEGITIMATE_NEW_SOURCE	deploy/huggingface-asr-worker/Dockerfile	Build definition is paired with the committed ASR worker app and requirements	Committed with Research worker packaging
+U1_LEGITIMATE_NEW_SOURCE	deploy/huggingface-asr-worker/README.md	Worker operator documentation	Committed with Research worker packaging
+U1_LEGITIMATE_NEW_SOURCE	deploy/huggingface-asr-worker/requirements.txt	Worker dependency manifest	Committed with Research worker packaging
+U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle-asr-worker/README.md	ASR canary operator docs	Committed with Research worker packaging
+U3_LEGITIMATE_CONFIG_SCHEMA	configs/research_source_manifest.example.json	Example config template; no secret values detected	Committed with Research worker packaging
+U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/OPENCODE_PROVIDER_EXAMPLE.md	REA worker provider setup example	Committed with REA worker contract
+U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/REA_MODEL_SYSTEM_PROMPT.md	REA worker prompt contract	Committed with REA worker contract
+U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/requirements.txt	REA worker dependency manifest	Committed with REA worker contract
+U5_GENERATED_DERIVED	deploy/kaggle/rea_model_worker/kernel/nexus_rea_model_worker.ipynb	Generated directly by build_notebook.py from cells and prompt; original retained	Exact-path ignored; regenerate when needed
+U7_RUNTIME_OR_DATA	deploy/modal/nova_musetalk_python_runtime_snapshot.lock.txt	Local runtime snapshot artifact with no source references	Retained locally and exact-path ignored
+U7_RUNTIME_OR_DATA	deploy/modal/nova_musetalk_runtime.lock.json	Local resolved runtime lock/snapshot with no source references	Retained locally and exact-path ignored
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.cloudflare-tunnel.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.durable-dispatcher.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.nexus-mcp-reverse-tunnel.daemon.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.nexus-mcp-reverse-tunnel.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.nexus-supervisor.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.research-api.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.systems-maintenance.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U3_LEGITIMATE_CONFIG_SCHEMA	launchd/com.nexus.v5-resource-resume.plist	LaunchAgent definition; parsed label/args/env key names; no inline secret pattern	Committed as local LaunchAgent configuration; not reloaded
+U1_LEGITIMATE_NEW_SOURCE	scripts/github_remote/cloud_monitor/README.md	Operator documentation for the sibling check_sources.py monitor	Committed with monitor docs
+U7_RUNTIME_OR_DATA	scripts/github_remote/cloud_monitor/output/changes.json	Written by scripts/github_remote/cloud_monitor/scripts/check_sources.py	Exact-path ignored; retained locally
+U7_RUNTIME_OR_DATA	scripts/github_remote/cloud_monitor/state/source_state.json	Written by scripts/github_remote/cloud_monitor/scripts/check_sources.py	Exact-path ignored; retained locally
+U1_LEGITIMATE_NEW_SOURCE	src/admin/businessIntelligenceWorkflows.css	Admin page stylesheet paired with committed BusinessIntelligenceWorkflows.jsx	Committed with Admin style assets
+U1_LEGITIMATE_NEW_SOURCE	src/admin/mercuryStrategyDevelopmentLab.css	Trading/strategy page stylesheet paired with committed page component	Committed with Admin style assets
+U1_LEGITIMATE_NEW_SOURCE	src/admin/pulseAdminWorkspace.css	Admin page stylesheet paired with PulseAdminWorkspace.jsx	Committed with Admin style assets
+U1_LEGITIMATE_NEW_SOURCE	src/components/feederIntake.css	Feeder intake stylesheet paired with component	Committed with Admin style assets
+U1_LEGITIMATE_NEW_SOURCE	src/components/researchRoomWorkspace.css	Research Room stylesheet paired with committed workspace component	Committed with Admin style assets

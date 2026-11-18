@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "nexus.kaggle-job.v1",
+  "title": "Nexus bounded external compute job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "objective", "workload_type", "input_artifacts", "expected_outputs", "resource_request", "timeout_seconds", "command_argv"],
+  "properties": {
+    "job_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"},
+    "objective": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "workload_type": {"enum": ["video_media_analysis", "ai_model_experiment", "batch_analysis", "research_enrichment", "creative_model_workload", "resource_heavy_other"]},
+    "input_artifacts": {"type": "array", "maxItems": 100, "items": {"type": "object", "additionalProperties": false, "required": ["path"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"}}}},
+    "expected_outputs": {"type": "array", "maxItems": 200, "items": {"type": "string"}},
+    "resource_request": {"type": "object", "additionalProperties": false, "properties": {"cpu_count": {"type": "integer", "minimum": 1, "maximum": 64}, "memory_gb": {"type": "number", "minimum": 1, "maximum": 512}, "gpu_required": {"type": "boolean"}, "gpu_count": {"type": "integer", "minimum": 0, "maximum": 8}}},
+    "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 21600},
+    "command_argv": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"type": "string", "maxLength": 4096}}
+  },
+  "policy": {
+    "credentials_allowed": false,
+    "durable_nexus_state_allowed": false,
+    "maximum_input_bytes": 1073741824,
+    "maximum_output_file_bytes": 104857600,
+    "maximum_total_output_bytes": 524288000,
+    "network_assumption": "disabled_by_policy; workload must not depend on outbound network unless separately reviewed"
+  },
+  "completion_status_values": ["SUCCEEDED", "FAILED", "TIMED_OUT"]
+}

@@ -9,12 +9,15 @@ export default function GoclearBetaProjectionPanel({ surface = 'admin' }) {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const { data, error } = await supabase.from('goclear_beta_journey_projection').select('*').order('last_activity_at', { ascending: false })
+      if (document.visibilityState === 'hidden') return
+      const { data, error } = await supabase.from('goclear_beta_journey_projection')
+        .select('projection_id,tester_display_name,current_stage,report_status,followup_status,feedback_status,completion_status,blocking_issue,ray_action_required,last_activity_at')
+        .order('last_activity_at', { ascending: false }).limit(100)
       if (cancelled) return
       if (error) { setState('UNAVAILABLE'); return }
       setRows(data || []); setState('LIVE')
     }
-    load(); const timer = window.setInterval(load, 30000)
+    load(); const timer = window.setInterval(load, 120000)
     return () => { cancelled = true; window.clearInterval(timer) }
   }, [])
   return <section data-testid="goclear-beta-projection" style={{ background: '#0d1a2c', border: '1px solid #213650', borderRadius: 14, padding: 16, marginTop: 16 }}>

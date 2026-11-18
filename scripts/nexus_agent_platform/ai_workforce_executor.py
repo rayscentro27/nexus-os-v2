@@ -62,7 +62,8 @@ async def _completion(agent_id: str, messages: list[dict[str, str]], max_tokens:
         pass
     return await LlmGatewayAdapter(agent_id=agent_id).completion(
         model=_model(), messages=messages, temperature=0.2, max_tokens=max_tokens,
-        timeout=30, request_timeout=30,
+        timeout=30, request_timeout=30, sensitivity="internal_strategy",
+        reasoning_class="STRONG_REASONING", task_type="reasoning",
     )
 
 

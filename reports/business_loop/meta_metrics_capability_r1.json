@@ -1,0 +1,25 @@
+{
+ "facebook": {
+  "field:shares": 200,
+  "field:reactions.summary(total_count)": "400:(#10) This endpoint requires the 'pages_read_user_content' permission or the 'Page Public ",
+  "field:comments.summary(total_count)": "400:(#10) This endpoint requires the 'pages_read_user_content' permission or the 'Page Public ",
+  "field:created_time,permalink_url": 200,
+  "metric:post_clicks": "OK:[{\"value\": 0}]",
+  "metric:post_impressions": "400:(#100) The value must be a valid insights metric",
+  "metric:post_impressions_unique": "200:empty",
+  "metric:post_media_view": "OK:[{\"value\": 1}]",
+  "metric:post_total_media_view_unique": "OK:[{\"value\": 1}]",
+  "metric:post_reactions_by_type_total": "OK:[{\"value\": {}}]",
+  "metric:post_clicks_by_type": "OK:[{\"value\": {}}]"
+ },
+ "instagram": {
+  "field:like_count": 200,
+  "field:comments_count": 200,
+  "field:media_product_type": 200,
+  "metric:reach": "400:(#10) Application does not have permission for this action",
+  "metric:views": "400:(#10) Application does not have permission for this action",
+  "metric:saved": "400:(#10) Application does not have permission for this action",
+  "metric:shares": "400:(#10) Application does not have permission for this action",
+  "metric:total_interactions": "400:(#10) Application does not have permission for this action"
+ }
+}

@@ -1,0 +1,286 @@
+SUBSYSTEM	CLASSIFICATION	PATH	SIZE_BYTES	OWNERSHIP_EVIDENCE
+API	U1_LEGITIMATE_NEW_SOURCE	scripts/api/research_api_origin.mjs	14498	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/activation/build_feeder_morning_report.py	3714	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/funnel/__init__.py	81	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/funnel/engine.py	32501	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_agent_platform/project_portfolio_memory.py	2189	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/opportunities/__init__.py	57	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/opportunities/engine.py	88921	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/opportunities/source_adapters/__init__.py	55	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/opportunities/source_adapters/openaffiliate.py	5674	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/__init__.py	83	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify.py	6933	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify_meta_mac_browser.py	19684	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify_section29.py	10804	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify_section30a.py	11049	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify_section30c.py	21839	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify_section30c_remote.py	11207	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/certify_section31.py	7781	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/dispatch_adapter.py	14151	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	scripts/venture/kernel.py	21512	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	src/admin/BusinessIntelligenceWorkflows.jsx	10236	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	src/components/FeederOpportunityIntakePanel.jsx	14222	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	src/lib/businessIntelligenceStore.ts	14790	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	src/lib/businessIntelligenceWorkflows.ts	10542	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U1_LEGITIMATE_NEW_SOURCE	src/lib/feederIntake.ts	8112	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	scripts/funnel/tests/test_engine.py	6213	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	scripts/opportunities/tests/test_engine.py	23717	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	tests/business_intelligence_workflows_v1.real.test.ts	24361	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	tests/business_intelligence_workflows_v1.test.ts	4076	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	tests/test_company_case_contracts.py	10170	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	tests/test_company_workflow_nonterminal.py	3701	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	tests/test_feeder_runtime.py	2848	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U2_LEGITIMATE_TEST	tests/test_project_portfolio_memory.py	1395	Test path or fixture naming; grouped with matching subsystem contracts.
+BUSINESS_GROWTH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/company_department_success_criteria.json	2621	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+CREATIVE	U1_LEGITIMATE_NEW_SOURCE	scripts/creative/build_section30d_campaign_manifest.py	23551	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREATIVE	U1_LEGITIMATE_NEW_SOURCE	scripts/creative/creative_director.py	23485	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREATIVE	U1_LEGITIMATE_NEW_SOURCE	scripts/creative/creative_engine.py	39615	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREATIVE	U1_LEGITIMATE_NEW_SOURCE	scripts/creative/creative_provider_router.py	5804	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREATIVE	U1_LEGITIMATE_NEW_SOURCE	scripts/creative/product_truth_validator.py	10315	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREATIVE	U1_LEGITIMATE_NEW_SOURCE	scripts/creative/run_creative_intelligence_benchmark.py	30169	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREATIVE	U2_LEGITIMATE_TEST	scripts/creative/tests/test_creative_director.py	11328	Test path or fixture naming; grouped with matching subsystem contracts.
+CREATIVE	U2_LEGITIMATE_TEST	scripts/creative/tests/test_creative_engine.py	6996	Test path or fixture naming; grouped with matching subsystem contracts.
+CREATIVE	U2_LEGITIMATE_TEST	scripts/creative/tests/test_creative_provider_router.py	2803	Test path or fixture naming; grouped with matching subsystem contracts.
+CREATIVE	U2_LEGITIMATE_TEST	scripts/creative/tests/test_product_truth_validator.py	1802	Test path or fixture naming; grouped with matching subsystem contracts.
+CREDENTIALS_PROVIDER_CONTROL	U1_LEGITIMATE_NEW_SOURCE	scripts/checks/provider_surface_guard.py	8218	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREDENTIALS_PROVIDER_CONTROL	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_oracle_connection.py	69545	Directly exercised by the required approved CURRENT Oracle resolver check; no secret value printed.
+CREDENTIALS_PROVIDER_CONTROL	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/provision_registered_gemini_keychain.py	3709	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+CREDENTIALS_PROVIDER_CONTROL	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_credential_health_refresh.py	5728	Test path or fixture naming; grouped with matching subsystem contracts.
+CREDENTIALS_PROVIDER_CONTROL	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_universal_credential_resolver.py	7731	Test path or fixture naming; grouped with matching subsystem contracts.
+CREDENTIALS_PROVIDER_CONTROL	U2_LEGITIMATE_TEST	tests/test_nexus_oracle_connection.py	6819	Test path or fixture naming; grouped with matching subsystem contracts.
+GOOGLE_WORKSPACE	U1_LEGITIMATE_NEW_SOURCE	src/admin/PulseAdminWorkspace.jsx	10043	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/campaign_deploy_router.py	29840	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/distribution_foundation.py	26549	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/execute_holiday_test_deployment.py	3385	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/instagram_live_publisher.py	30307	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/meta_holiday_owner_authorize.py	13043	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/postiz_provider_adapter.py	27717	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/run_holiday_distribution_mapping.py	7182	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/distribution/social_publishing_engine.py	58551	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/marketing/__init__.py	30	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/marketing/engine.py	48096	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/postiz_enable_tailnet_https.sh	1545	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/postiz_meta_oauth_origin.sh	4834	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/postiz_provider_app_setup.sh	2360	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/postiz_tiktok_oauth_origin.sh	6491	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_campaign_deploy_router.py	15578	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_distribution_foundation.py	14033	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_facebook_live_publisher.py	17762	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_holiday_meta_binding.py	6579	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_instagram_live_publisher.py	19194	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_meta_mcp_holiday_authorization.py	13284	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_postiz_provider_adapter.py	19148	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/distribution/tests/test_social_publishing_engine.py	35967	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/marketing/tests/test_engine.py	9642	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	scripts/systems/tests/test_tick_postiz_health.py	9727	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U2_LEGITIMATE_TEST	tests/test_market_heartbeat_call_budget.py	5572	Test path or fixture naming; grouped with matching subsystem contracts.
+MARKETING_COMMERCE	U3_LEGITIMATE_CONFIG_SCHEMA	configs/postiz_account_bindings.json	4828	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+MCP	U1_LEGITIMATE_NEW_SOURCE	scripts/google_mcp_transport/server.py	2991	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MCP	U1_LEGITIMATE_NEW_SOURCE	services/nexus_mcp/creative_operator.py	6821	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MCP	U1_LEGITIMATE_NEW_SOURCE	services/nexus_mcp/funnel_operator.py	4511	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MCP	U1_LEGITIMATE_NEW_SOURCE	services/nexus_mcp/marketing_operator.py	8961	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+MCP	U2_LEGITIMATE_TEST	scripts/google_mcp_transport/tests/test_server.py	2014	Test path or fixture naming; grouped with matching subsystem contracts.
+MCP	U2_LEGITIMATE_TEST	services/nexus_mcp/tests/test_bridge_egress_scope_r1.py	8416	Test path or fixture naming; grouped with matching subsystem contracts.
+MCP	U2_LEGITIMATE_TEST	services/nexus_mcp/tests/test_github_remote_operator.py	1651	Test path or fixture naming; grouped with matching subsystem contracts.
+MCP	U2_LEGITIMATE_TEST	services/nexus_mcp/tests/test_systems_operator.py	4116	Test path or fixture naming; grouped with matching subsystem contracts.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	deploy/huggingface-asr-worker/app.py	6349	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/activation/governed_http.py	1676	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/certification/finalize_real_world_v2.py	33015	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/certification/resume_v5_controller.py	47221	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/certification/run_real_world_v2.py	10798	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/github_remote/__init__.py	81	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/github_remote/cloud_monitor/__init__.py	52	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/github_remote/cloud_monitor/scripts/__init__.py	56	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/github_remote/cloud_monitor/scripts/check_sources.py	4350	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/github_remote/github_remote.py	26152	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_agent_platform/v5_dependency_graph.py	6242	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/operations/department_handoff_continuation.py	146022	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/build_nexus_mcp_release.py	18068	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/build_r52_release.py	4766	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/nexus_mcp_reverse_tunnel.sh	457	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/nexus_mcp_transport_health.sh	1458	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/oracle_reverse_tunnel.sh	2951	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/state_v2_supabase_index_repair.py	4934	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/update_supabase_db_password.py	1339	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/run_browser_verification_r1.mjs	8063	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U1_LEGITIMATE_NEW_SOURCE	scripts/ui/browser_target_guard.py	673	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NEXUS_PLATFORM	U2_LEGITIMATE_TEST	deploy/huggingface-asr-worker/test_contract.py	400	Test path or fixture naming; grouped with matching subsystem contracts.
+NEXUS_PLATFORM	U2_LEGITIMATE_TEST	scripts/ops/test_build_nexus_mcp_release.py	6883	Test path or fixture naming; grouped with matching subsystem contracts.
+NEXUS_PLATFORM	U2_LEGITIMATE_TEST	scripts/ops/test_nexus_mcp_bridge_launcher.py	3358	Test path or fixture naming; grouped with matching subsystem contracts.
+NEXUS_PLATFORM	U3_LEGITIMATE_CONFIG_SCHEMA	config/nexus_recovery_event.schema.json	2245	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NEXUS_PLATFORM	U3_LEGITIMATE_CONFIG_SCHEMA	config/stability_recovery_dependencies.v1.json	1383	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NEXUS_PLATFORM	U3_LEGITIMATE_CONFIG_SCHEMA	configs/expert_registry.json	1246	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NEXUS_PLATFORM	U3_LEGITIMATE_CONFIG_SCHEMA	scripts/github_remote/cloud_monitor/.github/workflows/github-remote-monitor.yml	1018	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NEXUS_PLATFORM	U3_LEGITIMATE_CONFIG_SCHEMA	scripts/github_remote/cloud_monitor/sources.yaml	419	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NOVA_HERMES	U1_LEGITIMATE_NEW_SOURCE	deploy/modal/nova_chattts_modal.py	7341	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NOVA_HERMES	U1_LEGITIMATE_NEW_SOURCE	deploy/modal/nova_f5tts_modal.py	9272	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NOVA_HERMES	U1_LEGITIMATE_NEW_SOURCE	deploy/modal/nova_gpu_probe.py	1593	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NOVA_HERMES	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_agent_platform/nova_capability_certification.py	25475	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NOVA_HERMES	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/validate_nova_release.py	21560	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+NOVA_HERMES	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_hermes_search_receipt_runtime_root.py	683	Test path or fixture naming; grouped with matching subsystem contracts.
+NOVA_HERMES	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_nova_capability_certification.py	1813	Test path or fixture naming; grouped with matching subsystem contracts.
+NOVA_HERMES	U2_LEGITIMATE_TEST	scripts/nova/lifecycle_fixture_worker.py	874	Test path or fixture naming; grouped with matching subsystem contracts.
+NOVA_HERMES	U3_LEGITIMATE_CONFIG_SCHEMA	config/nova/approved_mcp_servers.json	922	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NOVA_HERMES	U3_LEGITIMATE_CONFIG_SCHEMA	config/nova/operator_routing_mode.json	595	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+NOVA_HERMES	U4_EXPERIMENTAL_CANARY_SHADOW	scripts/nova/run_f5_candidate_a_confirmation.py	9312	Explicit canary/candidate marker; preserved separately from production source.
+OPERATIONS	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_agent_platform/dispatcher_u_watch.py	1785	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+OPERATIONS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_dispatcher_bounded_scan.py	7542	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_dispatcher_egress_context.py	740	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_stability_supervisor.py	11378	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U2_LEGITIMATE_TEST	tests/test_full_kernel_wake_mock.py	25118	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U2_LEGITIMATE_TEST	tests/test_live_codex_failure_diagnostics.py	2290	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U2_LEGITIMATE_TEST	tests/test_live_queue_completed_with_limitations.py	2553	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U2_LEGITIMATE_TEST	tests/test_proactive_memory_compact.py	2797	Test path or fixture naming; grouped with matching subsystem contracts.
+OPERATIONS	U3_LEGITIMATE_CONFIG_SCHEMA	config/recovery_supervisor.v1.json	1265	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/build_notebook.py	2746	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c1_config.py	3910	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c2_audit.py	2611	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c3_deps.py	2509	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c4_model.py	7832	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c5_api.py	2913	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c6_tunnel.py	2576	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c7_tests.py	6849	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c8_rea_sim.py	8647	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/cells/c9_contract.py	3947	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/kernel/kernel-metadata.json	416	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/model_catalog.json	6743	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/model_selector.py	5599	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/nexus_rea_model_worker_flat.py	79991	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle/rea_model_worker/rea_model_proxy.py	23454	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+REA	U2_LEGITIMATE_TEST	deploy/kaggle/rea_model_worker/tests/test_c4_select_and_load.py	2873	Test path or fixture naming; grouped with matching subsystem contracts.
+REA	U2_LEGITIMATE_TEST	deploy/kaggle/rea_model_worker/tests/test_model_selector.py	2778	Test path or fixture naming; grouped with matching subsystem contracts.
+REA	U2_LEGITIMATE_TEST	deploy/kaggle/rea_model_worker/tests/test_rea_model_proxy.py	13051	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_agent_platform/youtube_upload.py	10207	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/build_research_release.py	6896	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/certify_research_read_only_equivalence.py	3861	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/ops/validate_research_runtime_contract.py	14565	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/certify_indexed_lookup_micro.py	8297	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/faster_whisper_worker.py	2756	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/migrate_research_backlog_to_fifo.py	4882	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/r10_tier_routing/tier_routing.py	22456	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/research_sources.py	7366	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/research_status.py	34995	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/run_content_trend_monetization_v1.py	5846	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/run_market_intelligence_heartbeat.py	22713	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/run_monetization_intelligence_v1.py	10736	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/run_proactive_ai_interpretation_v1.py	22123	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/run_proactive_research_v1.py	4678	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/run_tradingview_research_cycle.py	8223	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	scripts/research/youtube_notebooklm_reconciliation.py	25090	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	services/nexus_mcp/research_provider_descriptions.py	1866	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	services/nexus_mcp/research_tool_exposure.py	2042	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U1_LEGITIMATE_NEW_SOURCE	src/admin/NotebookLMResearchAutomationSettings.jsx	4369	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_business_opportunity_research_v2.py	10603	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_mcp_research_intake_case_open.py	3191	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_needle_research_workflow.py	11137	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_research_assignment_intent.py	6462	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_research_notebooklm_governor.py	25843	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_youtube_oauth_scope_separation.py	4794	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/ops/tests/test_research_runtime_contract.py	3728	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/r10_evidence_acquisition/test_evidence_acquisition.py	1611	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/r10_evidence_acquisition/test_evidence_gate.py	3423	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/r10_tier_routing/test_provider_certification.py	6834	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/r10_tier_routing/test_tier_routing.py	4844	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_active_execution_capacity.py	6291	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_business_opportunity_adaptive_runner.py	5186	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_case_control_indexed_lookup.py	4023	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_needle_research_readiness.py	14056	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_notebook_completion_contracts.py	21139	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_r10_agentic_research_contract.py	2845	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/research/tests/test_research_notebook_ownership.py	5094	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	scripts/systems/tests/test_tick_nova_research_notifications.py	4245	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	services/nexus_mcp/tests/test_research_execution_trace_external_path.py	848	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	services/nexus_mcp/tests/test_research_intake_egress_scope.py	4004	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/research_api_origin.test.mjs	5810	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_feeder_transcript_decoupling.py	2601	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_live_research_codex_schema.py	788	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_live_research_mcp_receipt_view.py	2333	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_live_research_queue_finalization.py	6886	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_notebook_source_expansion.py	7006	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_research_case_control_read.py	1234	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_research_sources_trace.py	1369	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U2_LEGITIMATE_TEST	tests/test_transcript_artifacts.py	1640	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	config/r52_research_worker_release_manifest.v1.json	1350	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	config/research/research_tool_registry.json	5334	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	config/research_golden_path.v1.json	1791	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/business_opportunity.json	3755	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/competitor_market.json	2913	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/creative_tool_model.json	2977	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/customer_need_complaint.json	3059	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/funding_grant.json	2774	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/marketing_campaign_intelligence.json	3090	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/nexus_system_upgrade.json	2997	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/technology_capability.json	3208	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research/notebook_playbooks/trading_strategy.json	4552	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/research_evidence_contracts.json	2858	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	configs/systems/research_sync_eligibility.schema.json	2660	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH	U3_LEGITIMATE_CONFIG_SCHEMA	scripts/research/sql/research_state_v2_indexes.sql	877	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+RESEARCH_ROOM	U1_LEGITIMATE_NEW_SOURCE	netlify/functions/research-rooms.mjs	9284	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH_ROOM	U1_LEGITIMATE_NEW_SOURCE	src/components/ResearchRoomWorkspace.jsx	20792	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH_ROOM	U1_LEGITIMATE_NEW_SOURCE	src/lib/researchRoomApi.ts	2476	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH_ROOM	U1_LEGITIMATE_NEW_SOURCE	src/lib/researchRoomStore.ts	1526	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+RESEARCH_ROOM	U2_LEGITIMATE_TEST	services/nexus_mcp/tests/test_research_rooms_mcp_tools.py	3067	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH_ROOM	U2_LEGITIMATE_TEST	tests/nexus_research_room_perplexity_r1.test.ts	1842	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH_ROOM	U2_LEGITIMATE_TEST	tests/research_room_api.test.ts	2552	Test path or fixture naming; grouped with matching subsystem contracts.
+RESEARCH_ROOM	U2_LEGITIMATE_TEST	tests/research_room_http_bridge.test.ts	8648	Test path or fixture naming; grouped with matching subsystem contracts.
+SUPABASE_SCHEMA	U3_LEGITIMATE_CONFIG_SCHEMA	supabase/migrations/20261010180000_v5_durable_claim_by_id.sql	2022	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SUPABASE_SCHEMA	U3_LEGITIMATE_CONFIG_SCHEMA	supabase/migrations/20261010190000_resource_scoped_daily_circuit_reset.sql	1225	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SUPABASE_SCHEMA	U3_LEGITIMATE_CONFIG_SCHEMA	supabase/migrations/20261010230000_resource_window_waiter_recovery.sql	2579	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SUPABASE_SCHEMA	U3_LEGITIMATE_CONFIG_SCHEMA	supabase/migrations/20261022120000_fix_resource_governor_jsonb_threshold.sql	8524	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SUPABASE_SCHEMA	U3_LEGITIMATE_CONFIG_SCHEMA	supabase/migrations/20261022130000_research_state_v2_indexes.sql	692	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SUPABASE_SCHEMA	U3_LEGITIMATE_CONFIG_SCHEMA	supabase/migrations/20261025150000_nexus_governor_reservation_ordering_fix.sql	8777	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	deploy/kaggle-asr-worker/kernel-metadata.json	359	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/nexus_agent_platform/resource_dependency_controller.py	2111	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/resource_directory/__init__.py	92	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/resource_directory/certify.py	6928	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/resource_directory/execution_truth.py	8014	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/resource_directory/router.py	16405	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/change_target_resolver.py	15673	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/kaggle_artifact_packager.py	3495	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/kaggle_bootstrap.py	2212	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/kaggle_healthcheck.py	1462	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/kaggle_job_runner.py	5171	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/maintenance_tick.py	81031	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/managed_work.py	46192	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/nexus_oracle_host_control.py	42483	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/phase1_runtime.py	9968	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/secret_guard.py	1472	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U1_LEGITIMATE_NEW_SOURCE	scripts/systems/workflow_integrity.py	10845	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_maintenance_action_surface.py	10682	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_managed_work.py	7742	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_mutable_drift_validation.py	4075	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_nexus_oracle_host_control.py	18232	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_oracle_bridge_transport.py	3418	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_phase2_controls.py	8059	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_production_executor_continuation.py	18872	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_rea_scope_guard.py	3104	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_s1_install_diagnostics.py	2686	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_s1_production_approvals.py	5546	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_tick_bounded_checks.py	4918	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	scripts/systems/tests/test_tick_durable_dispatch.py	3352	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	tests/test_pulse_runtime.py	4611	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	tests/test_supabase_egress_guard.py	6034	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U2_LEGITIMATE_TEST	tests/test_systems_maintenance_policy.py	8472	Test path or fixture naming; grouped with matching subsystem contracts.
+SYSTEMS	U3_LEGITIMATE_CONFIG_SCHEMA	config/systems/nexus_oracle_host_control_capabilities.json	1661	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SYSTEMS	U3_LEGITIMATE_CONFIG_SCHEMA	configs/systems/kaggle_job_contract.json	1964	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SYSTEMS	U3_LEGITIMATE_CONFIG_SCHEMA	configs/systems/managed_work_contract.schema.json	1960	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.
+SYSTEMS	U4_EXPERIMENTAL_CANARY_SHADOW	deploy/kaggle-asr-worker/kaggle_asr_canary.py	5599	Explicit canary/candidate marker; preserved separately from production source.
+TESTS	U2_LEGITIMATE_TEST	scripts/github_remote/tests/test_github_remote.py	6669	Test path or fixture naming; grouped with matching subsystem contracts.
+TESTS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_ai_usage_ledger.py	7508	Test path or fixture naming; grouped with matching subsystem contracts.
+TESTS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_durable_objective_control.py	18526	Test path or fixture naming; grouped with matching subsystem contracts.
+TESTS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_model_router_workflow_first.py	6475	Test path or fixture naming; grouped with matching subsystem contracts.
+TESTS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_v5_owner_execution_path.py	13683	Test path or fixture naming; grouped with matching subsystem contracts.
+TESTS	U2_LEGITIMATE_TEST	scripts/nexus_agent_platform/tests/test_workflow_execution.py	5005	Test path or fixture naming; grouped with matching subsystem contracts.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/benchmark_mercury_pynecore.py	4224	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/mercury_options_strategy_lab.py	10803	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/mercury_strategy_development_lab.py	30139	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/mercury_strategy_synthesis.py	33912	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/options_data_adapter.py	7348	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/v2_forex_backtest.py	3842	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	scripts/trading/v2_options_payoff_harness.py	1963	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	src/admin/MercuryStrategyDevelopmentLabPanel.jsx	7783	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U1_LEGITIMATE_NEW_SOURCE	src/lib/optionsStrategyLab.ts	7526	Implementation source under a Nexus subsystem; grouped with related service/config/test contract paths.
+TRADING	U2_LEGITIMATE_TEST	tests/options_strategy_lab.test.ts	2967	Test path or fixture naming; grouped with matching subsystem contracts.
+TRADING	U2_LEGITIMATE_TEST	tests/test_options_data_adapter.py	2769	Test path or fixture naming; grouped with matching subsystem contracts.
+TRADING	U2_LEGITIMATE_TEST	tests/test_trading_experiment_engine.py	1450	Test path or fixture naming; grouped with matching subsystem contracts.
+TRADING	U3_LEGITIMATE_CONFIG_SCHEMA	config/mercury_strategy_development_lab.json	394	Configuration/schema path; scanned for obvious literal secret patterns, none found; grouped with consumer subsystem.

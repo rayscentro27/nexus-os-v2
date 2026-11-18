@@ -1,0 +1,39 @@
+{
+  "schema_version": "nexus.company-department-success-criteria.v1",
+  "principle": "A report, worker exit, single failed attempt, or rejected candidate is not department-goal completion.",
+  "departments": {
+    "RESEARCH": {
+      "success_criteria": ["durable source-backed finding or qualified handoff exists", "provenance and uncertainty are persisted", "open questions have a next query or reasoned disposition"],
+      "candidate_rejection_keeps_goal_active": true
+    },
+    "OPPORTUNITIES": {
+      "success_criteria": ["customer problem and demand evidence are recorded", "business model alternatives and economics are assessed", "minimum viable test and measurable success criteria are defined", "candidate advances with evidence or is rejected while discovery goal remains active"],
+      "candidate_rejection_keeps_goal_active": true
+    },
+    "TRADING": {
+      "success_criteria": ["source-derived and Nexus-designed rules are separately attributed", "testable candidates complete bounded backtest and robustness evaluation", "paper progression is separately authorized and evidenced"],
+      "live_trading_authorized": false,
+      "candidate_rejection_keeps_goal_active": true
+    },
+    "MARKETING": {
+      "success_criteria": ["target audience, positioning, offer and channel hypothesis are recorded", "funnel/content requirements and measurement plan exist", "appropriate Creative handoff is owned or a next action is persisted"],
+      "external_publication_requires_approval": true
+    },
+    "CREATIVE": {
+      "success_criteria": ["usable asset exists", "critique and required revisions are recorded", "provider failure or rejected variant has an alternate route or next revision"],
+      "external_publication_requires_approval": true
+    },
+    "LABS": {
+      "success_criteria": ["bounded experiment includes hypothesis and success criteria", "result and lesson are persisted", "failed experiment has a next experiment or evidence-based disproval"],
+      "production_promotion_requires_upgrade_control": true
+    },
+    "UPGRADE_CONTROL": {
+      "success_criteria": ["promotion decision cites verification evidence", "rejection records reason, required repair and next validation", "approved promotion is routed to Systems for controlled application"],
+      "production_promotion_requires_approval": true
+    },
+    "SYSTEMS": {
+      "success_criteria": ["incident is diagnosed", "safe repair or fallback is applied", "restored capability is verified", "remaining human-only action is exact and has a resume stage"],
+      "production_changes_require_existing_gates": true
+    }
+  }
+}

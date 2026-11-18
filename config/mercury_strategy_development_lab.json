@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "live_trading_enabled": false,
+  "autonomous_material_loop_limit": 2,
+  "practice_limits": {
+    "max_practice_candidates_per_cycle": 3,
+    "max_parameter_variants": 1,
+    "max_timeframes_per_cycle": 2,
+    "max_markets_per_cycle": 1,
+    "max_total_practice_runs": 4,
+    "max_runtime_seconds": 1200,
+    "max_compute_cost_usd": 0,
+    "in_sample_fraction": 0.7
+  }
+}

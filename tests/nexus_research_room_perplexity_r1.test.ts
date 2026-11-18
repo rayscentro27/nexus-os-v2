@@ -23,8 +23,10 @@ describe('Research Room live UI safeguards', () => {
     expect(component).not.toContain('Cited evidence excerpt')
     expect(component).not.toContain('fake_project')
     expect(component).not.toContain('compareResearchRooms(')
-    expect(component).toContain('Web Search is not connected')
-    expect(component).toContain('Deep Research is not connected')
+    expect(component).toContain('Sources + Web')
+    expect(component).toContain('Public search available')
+    expect(component).not.toContain('Web Search unavailable')
+    expect(component).toContain('Deep Research is not enabled in conversational mode')
     expect(component).toContain('Thread persistence coming next')
   })
 

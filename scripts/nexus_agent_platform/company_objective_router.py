@@ -61,6 +61,21 @@ def route_company_objective(text: str, *, conversation_message_id: str | int | N
     root_objective = build_root_objective(text, conversation_message_id=conversation_message_id)
     intent = classify_intent(clean)
     base = resolve(clean)
+    if intent in {"STATE_QUERY", "LIST_JOBS"}:
+        return {
+            "schema_version": "nexus.company-objective-plan.v1",
+            "objective": clean,
+            "root_objective": None,
+            "intent_class": intent,
+            "canonical_route": {"department": "OPERATIONS", "basis": "READ_ONLY_STATE_QUERY"},
+            "steps": [{"order": 1, "owner": "OPERATIONS", "specialist": "NOVA",
+                       "action": "read_current_state", "authority": "internal_read_only"}],
+            "handoff_order": ["OPERATIONS"],
+            "routing_basis": {"work_required": False, "read_only": True},
+            "approval_boundaries": [],
+            "continuation": "Read-only query; no company objective or department work was created.",
+            "outcome_integrity": "Current state must come from the live read capability.",
+        }
     lower = clean.lower()
     requested: list[tuple[str, str, str, str]] = []
     rules = (

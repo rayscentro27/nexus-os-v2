@@ -50,10 +50,16 @@ def test_need_projection_deduplicates_by_audience_and_problem(tmp_path, monkeypa
 
 
 def test_worker_caps_are_bounded_and_classified():
-    assert concurrency_limits() == {"total": 3, "youtube": 1, "web": 1, "discovery": 1}
+    assert concurrency_limits() == {"total": 2, "youtube": 1, "web": 1, "discovery": 1}
     assert worker_bucket({"source_type": "YOUTUBE_VIDEO", "work_class": "ASSIGNED"}) == "youtube"
     assert worker_bucket({"source_type": "DEMAND_QUERY", "work_class": "DEMAND_DISCOVERY"}) == "discovery"
     assert worker_bucket({"source_type": "WEB_PAGE", "work_class": "ASSIGNED"}) == "web"
+
+
+def test_total_worker_environment_cannot_exceed_owner_ceiling(monkeypatch):
+    import nexus_agent_platform.research_work_queue as module
+    monkeypatch.setenv("NEXUS_RESEARCH_MAX_TOTAL_CONCURRENCY", "9")
+    assert module.concurrency_limits()["total"] == 2
 
 
 def test_claim_skips_full_worker_bucket(tmp_path):
@@ -110,6 +116,46 @@ def test_one_time_completion_is_not_requeued(tmp_path):
     queue.settle(item["work_id"], "COMPLETE", result={"processed": True})
     assert queue.claim_next(worker_id="worker") is None
     assert queue.summary()["by_status"]["COMPLETE"] == 1
+
+
+def test_exhausted_retry_is_not_reclaimed_until_explicit_reroute(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="exhausted", work_class="ASSIGNED", source_type="YOUTUBE_VIDEO",
+                  status="FAILED_RETRYABLE", attempt_count=79, max_attempts=3,
+                  retry_exhausted=False, selected_provider="notebooklm-default")
+    assert queue.claim_next(worker_id="worker") is None
+    assert queue.select_objective() is None
+    rerouted = queue.reroute_recoverable("exhausted", provider="notebooklm-approved-fallback",
+        route_id="approved-alt", reason="primary route exhausted; bounded alternate available")
+    assert rerouted and rerouted["status"] == "WAITING"
+    assert rerouted["attempt_count"] == 0
+    assert len(rerouted["route_history"]) == 1
+    claimed = queue.claim_next(worker_id="alternate")
+    assert claimed and claimed["work_id"] == "exhausted"
+    assert claimed["selected_provider"] == "notebooklm-approved-fallback"
+
+
+def test_explicit_permanence_blocks_provider_reroute(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="gone", work_class="ASSIGNED", status="FAILED_RETRYABLE",
+                  attempt_count=3, max_attempts=3, last_result={"error": "HTTP Error 404: source deleted"})
+    assert queue.reroute_recoverable("gone", provider="alternate", reason="try another") is None
+
+
+def test_duplicate_source_enqueue_does_not_reset_claim_or_completion(tmp_path):
+    queue = ResearchWorkQueue(tmp_path / "queue.json")
+    queue.enqueue(work_id="youtube:video", work_class="ASSIGNED", source_type="YOUTUBE_VIDEO",
+        source_id="video", source_url="https://youtube.com/watch?v=video")
+    claimed = queue.claim_next(worker_id="research")
+    assert claimed
+    duplicate = queue.enqueue(work_id="youtube:video", work_class="ASSIGNED", status="QUEUED",
+        source_type="YOUTUBE_VIDEO", source_id="video", source_url="https://youtube.com/watch?v=video")
+    assert duplicate["status"] == "IN_PROGRESS"
+    queue.settle("youtube:video", "COMPLETE", result={"done": True})
+    duplicate = queue.enqueue(work_id="youtube:video", work_class="ASSIGNED", status="QUEUED",
+        source_type="YOUTUBE_VIDEO", source_id="video", source_url="https://youtube.com/watch?v=video")
+    assert duplicate["status"] == "COMPLETE"
+    assert len(queue.load()["items"]) == 1
 
 
 def test_demand_discovery_requires_aggregated_evidence(tmp_path, monkeypatch):

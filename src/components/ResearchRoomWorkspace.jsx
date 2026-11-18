@@ -21,6 +21,7 @@ export default function ResearchRoomWorkspace() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [researchActivity, setResearchActivity] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [chatInput, setChatInput] = useState('')
@@ -132,6 +133,7 @@ export default function ResearchRoomWorkspace() {
     setError('')
     setNotice('')
     setBusy(true)
+    setResearchActivity('Checking room evidence; public search and page reading run automatically when needed…')
     setAskingRoomId(roomId)
     setSessionMessagesRoomId(roomId)
     setSessionMessages((current) => [...current, {
@@ -170,6 +172,7 @@ export default function ResearchRoomWorkspace() {
     } finally {
       setAskingRoomId(null)
       setBusy(false)
+      setResearchActivity('')
     }
   }
 
@@ -234,7 +237,7 @@ export default function ResearchRoomWorkspace() {
           <div className="rr-actions-bar"><button type="button" className="rr-btn" onClick={handleScore} disabled={busy} data-testid="btn-score-room"><RefreshCw size={13} /> Score</button><button type="button" className="rr-btn" disabled title="Live room comparison is not exposed by the Research API" data-testid="btn-compare-rooms"><GitCompare size={13} /> Compare unavailable</button><button type="button" className="rr-btn rr-btn-promote" onClick={() => setShowPromote(true)} disabled={busy} data-testid="btn-promote-room"><ArrowUpRight size={13} /> Promote to Nova</button></div>
         </div>
 
-        {error && <div role="alert" className="rr-error-banner">{error}</div>}{notice && <div role="status">{notice}</div>}
+        {error && <div role="alert" className="rr-error-banner">{error}</div>}{notice && <div role="status">{notice}</div>}{researchActivity && <div role="status" className="rr-research-activity" data-testid="research-activity-status">{researchActivity}</div>}
         <section className="rr-sources-section" data-testid="research-sources-panel"><div className="rr-sources-header"><div className="rr-sources-title"><BookOpen size={14} /><span>SOURCES ({sources.length})</span></div><button type="button" className="rr-btn-add-source-compact" onClick={() => setShowAddSource(true)} disabled={busy}><Plus size={12} /> Add Source</button></div>
           <div className="rr-source-cards-scroll">{sources.map((source, index) => <button type="button" key={source.source_id} className="rr-source-pill-card" onClick={() => setSourceDetail(source)} data-testid={`source-card-${source.source_id}`}><div className="rr-source-pill-icon">{source.source_type === 'URL' ? <Globe size={13} /> : source.source_type === 'YOUTUBE' ? <Video size={13} /> : <FileText size={13} />}</div><div className="rr-source-pill-content"><div className="rr-source-pill-title"><span className="rr-source-index-num">[{index + 1}]</span> {source.domain || source.page_title || source.title || 'Source title unavailable'}</div><div className="rr-source-pill-meta"><span className="rr-retrieval-status">{source.retrieval_status || 'UNKNOWN'}</span>{source.domain && <span className="rr-domain-tag">{source.domain}</span>}</div></div></button>)}{sources.length === 0 && <div className="rr-empty-sources-banner">No sources returned for this room.</div>}</div>
         </section>
@@ -253,7 +256,7 @@ export default function ResearchRoomWorkspace() {
           })}
           {askingRoomId === selectedRoom.room_id && <div className="rr-chat-msg system" role="status" data-testid="alpha-loading-message"><div className="rr-chat-msg-header">Alpha</div><div className="rr-chat-msg-content">Thinking…</div></div>}
           {messages.length === 0 && <div className="rr-empty-sources-banner">No conversation messages returned.</div>}
-        </div><div className="rr-composer-container"><div className="rr-mode-selector-bar" data-testid="research-mode-selector"><span className="rr-mode-label">Mode:</span><button type="button" className="rr-mode-btn active" data-testid="mode-btn-sources-only"><BookOpen size={11} /> Sources Only</button><button type="button" className="rr-mode-btn" disabled title="Web Search is not connected" data-testid="mode-btn-web-search"><Globe size={11} /> Web Search unavailable</button><button type="button" className="rr-mode-btn" disabled title="Deep Research is not connected" data-testid="mode-btn-deep-research"><FileCheck size={11} /> Deep Research unavailable</button><span className="rr-mode-helper-text">Alpha answers through the live Sources Only endpoint.</span></div><form onSubmit={handleAsk} className="rr-chat-composer" data-testid="chat-composer-form"><input placeholder="Ask Alpha about attached sources…" value={chatInput} onChange={(event) => setChatInput(event.target.value)} disabled={busy} data-testid="chat-composer-input"/><button type="submit" disabled={!chatInput.trim() || busy} className="rr-composer-send-btn" data-testid="chat-composer-submit"><Send size={13} /> Send</button></form></div></section>
+        </div><div className="rr-composer-container"><div className="rr-mode-selector-bar" data-testid="research-mode-selector"><span className="rr-mode-label">Mode:</span><span className="rr-mode-btn active" data-testid="mode-btn-sources-plus-web"><BookOpen size={11} /> Sources + Web</span><span className="rr-mode-btn" data-testid="mode-btn-web-search"><Globe size={11} /> Public search available</span><button type="button" className="rr-mode-btn" disabled title="Deep Research is not enabled in conversational mode" data-testid="mode-btn-deep-research"><FileCheck size={11} /> Deep Research unavailable</button><span className="rr-mode-helper-text">Alpha searches and reads public sources when room evidence is insufficient. No background ingestion.</span></div><form onSubmit={handleAsk} className="rr-chat-composer" data-testid="chat-composer-form"><input placeholder="Ask Alpha about attached sources…" value={chatInput} onChange={(event) => setChatInput(event.target.value)} disabled={busy} data-testid="chat-composer-input"/><button type="submit" disabled={!chatInput.trim() || busy} className="rr-composer-send-btn" data-testid="chat-composer-submit"><Send size={13} /> Send</button></form></div></section>
       </main> : <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>{error || 'Select or create a Research Room to begin.'}</div>}
 
       {showNewRoom && <div className="rr-modal-backdrop" onClick={() => setShowNewRoom(false)}><div className="rr-modal" onClick={(event) => event.stopPropagation()} data-testid="new-room-modal"><div className="rr-modal-header-row"><h3>Create Research Room</h3><button type="button" className="rr-btn-icon-close" onClick={() => setShowNewRoom(false)}><X size={14} /></button></div><form onSubmit={handleCreateRoom}><div className="rr-form-group"><label>Room Title / Topic</label><input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} required data-testid="input-new-room-title" /></div><div className="rr-form-group"><label>Initial Source URL (Optional)</label><textarea rows={3} value={newSource} onChange={(event) => setNewSource(event.target.value)} placeholder="Paste a URL" data-testid="input-new-room-content" /></div><div className="rr-modal-actions"><button type="button" className="rr-btn" onClick={() => setShowNewRoom(false)}>Cancel</button><button type="submit" className="rr-btn rr-btn-primary" disabled={busy} data-testid="btn-submit-create-room">Create Room</button></div></form></div></div>}

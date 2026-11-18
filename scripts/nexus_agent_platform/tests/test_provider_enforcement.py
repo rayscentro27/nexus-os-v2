@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import json
+
 import pytest
 
 from nexus_agent_platform.provider_enforcement import (
@@ -26,7 +29,7 @@ def test_unknown_paid_provider_is_denied_before_action_and_footprinted(tmp_path,
     assert "HUMAN_APPROVAL_REQUIRED" in footprint[0]
 
 
-def test_provider_calls_require_durable_job_identity_before_governor_or_action(monkeypatch):
+def test_provider_calls_require_durable_job_identity_before_governor_or_action(tmp_path, monkeypatch):
     monkeypatch.delenv("NEXUS_DURABLE_JOB_ID", raising=False)
     called = []
     with pytest.raises(GovernanceDenied, match="DURABLE_JOB_ID_REQUIRED"):
@@ -34,10 +37,44 @@ def test_provider_calls_require_durable_job_identity_before_governor_or_action(m
                 lambda: called.append("called"))
     assert called == []
     monkeypatch.setenv("NEXUS_TELEGRAM_RAY_CHAT_IDS", "42")
-    with pytest.raises(GovernanceDenied, match="DURABLE_JOB_ID_REQUIRED"):
-        from nexus_agent_platform.provider_enforcement import execute_telegram_delivery
-        execute_telegram_delivery(42, lambda: called.append("telegram"), job_id="")
-    assert called == []
+    db_path = tmp_path / "governor.sqlite3"
+    monkeypatch.setenv("NEXUS_GOVERNOR_DB", str(db_path))
+    monkeypatch.delenv("NEXUS_CORRELATION_ID", raising=False)
+    monkeypatch.delenv("NEXUS_DEPARTMENT", raising=False)
+    monkeypatch.setenv("NEXUS_JOB_TYPE", "NOVA_TELEGRAM_DELIVERY")
+    LocalGovernorStore(db_path).set_policy("TELEGRAM", "bot_delivery", "NOVA_TELEGRAM_DELIVERY", "DAILY",
+        autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+        soft_limits={"rate": {}, "usage": {}, "money": {}},
+        hard_limits={"rate": {"requests": 10, "operations": 10, "window_seconds": 60},
+                     "usage": {"requests": 100, "operations": 100},
+                     "money": {"per_day": 0, "per_job": 0, "per_month": 0}},
+        concurrency_limit=1, resource_creation_limit=0, state="NORMAL", approval_required=False)
+    result = execute_telegram_delivery(42, lambda: called.append("telegram") or {"ok": True},
+                                       job_id="", job_type="NOVA_TELEGRAM_DELIVERY")
+    assert result == {"ok": True}
+    assert called == ["telegram"]
+
+
+def test_successful_reconciled_provider_result_survives_footprint_write_failure(monkeypatch):
+    from nexus_agent_platform import provider_enforcement
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", "footprint-failure-job")
+    monkeypatch.setenv("NEXUS_CORRELATION_ID", "footprint-failure-correlation")
+    monkeypatch.setenv("NEXUS_DEPARTMENT", "TEST")
+    class Store:
+        reconciled = False
+        def reserve(self, *args, **kwargs): return {"reservation_id": "r1"}
+        def reconcile(self, reservation_id, actual): self.reconciled = actual.get("cost") == 0.001
+        def release(self, reservation_id): return True
+        def record_footprint(self, footprint): raise TypeError("telemetry encoding failure")
+    store = Store()
+    monkeypatch.setattr(provider_enforcement, "default_store", lambda: store)
+    response = {"text": "usable advisor response"}
+    result = execute("OPENROUTER", "research_room_advisor", "MODEL_INFERENCE",
+        {"requests": 1, "cost": 0.001, "billable": True}, lambda: response,
+        job_id="footprint-failure-job", correlation_id="footprint-failure-correlation",
+        actual_usage=lambda _value: {"cost": 0.001})
+    assert result == response
+    assert store.reconciled is True
 
 
 def test_governed_public_read_denies_before_network_without_job_context(monkeypatch):
@@ -71,6 +108,42 @@ def test_standalone_governed_http_requires_job_correlation_and_department_before
         get_json("https://www.googleapis.com/youtube/v3/search", provider="GOOGLE", service="youtube_data_api")
 
 
+def test_governed_youtube_quota_read_is_zero_dollar_and_has_distinct_purpose(monkeypatch):
+    from activation import governed_http
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", "youtube-test-job")
+    monkeypatch.setenv("NEXUS_CORRELATION_ID", "youtube-test-correlation")
+    monkeypatch.setenv("NEXUS_DEPARTMENT", "RESEARCH")
+    captured = {}
+    monkeypatch.setattr("nexus_agent_platform.provider_enforcement.execute", lambda *args, **kwargs: captured.update(
+        estimate=args[3], purpose=kwargs.get("purpose")) or args[4]())
+    tls = {}
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self, _limit): return b'{"items": []}'
+    def fake_urlopen(_request, **kwargs):
+        context = kwargs["context"]
+        tls.update(verify_mode=context.verify_mode, check_hostname=context.check_hostname,
+                   ca_count=context.cert_store_stats().get("x509_ca", 0))
+        return Response()
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    result = governed_http.get_json(
+        "https://www.googleapis.com/youtube/v3/videos?id=fixture", provider="GOOGLE",
+        service="youtube_data_api", billable=False, cost=0,
+        purpose="youtube:videos:fixture")
+    assert result == {"items": []}
+    assert captured["estimate"]["api_calls"] == 1
+    assert captured["estimate"]["billable"] is False
+    assert captured["estimate"]["cost"] == 0
+    assert captured["purpose"] == "youtube:videos:fixture"
+    import ssl
+    assert tls["verify_mode"] == ssl.CERT_REQUIRED
+    assert tls["check_hostname"] is True
+    assert tls["ca_count"] > 0
+
+
+
+
 def test_proactive_discovery_public_reads_require_durable_governance(monkeypatch):
     from nexus_agent_platform import proactive_discovery
     monkeypatch.delenv("NEXUS_DURABLE_JOB_ID", raising=False)
@@ -79,6 +152,23 @@ def test_proactive_discovery_public_reads_require_durable_governance(monkeypatch
     monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: (_ for _ in ()).throw(AssertionError("network reached")))
     with pytest.raises(GovernanceDenied):
         proactive_discovery._public_json("https://suggestqueries.google.com/complete/search?q=test")
+
+
+def test_research_room_public_discovery_attempts_have_distinct_governance_scope(monkeypatch):
+    from nexus_agent_platform import proactive_discovery
+    from nexus_agent_platform import provider_enforcement
+    purposes = []
+    monkeypatch.setenv("NEXUS_DURABLE_JOB_ID", "job-room-fixture")
+    monkeypatch.setenv("NEXUS_CORRELATION_ID", "objective-room-fixture")
+    monkeypatch.setenv("NEXUS_DEPARTMENT", "RESEARCH")
+    monkeypatch.setenv("NEXUS_RESEARCH_ROOM_CALL_ID", "case-fixture:discovery-turn:1")
+    monkeypatch.setattr(provider_enforcement, "execute", lambda *args, **kwargs:
+        purposes.append(kwargs["purpose"]) or b"{}")
+    proactive_discovery._governed_public_get("https://html.duckduckgo.com/html/?q=fixture")
+    monkeypatch.setenv("NEXUS_RESEARCH_ROOM_CALL_ID", "case-fixture:discovery-turn:2")
+    proactive_discovery._governed_public_get("https://html.duckduckgo.com/html/?q=fixture")
+    assert len(purposes) == 2
+    assert purposes[0] != purposes[1]
 
 
 def test_hermes_search_adapter_denies_without_durable_job_before_network(monkeypatch):
@@ -228,6 +318,55 @@ def test_telegram_recipient_classification_and_governor_deny(tmp_path, monkeypat
     with pytest.raises(GovernanceDenied):
         execute_telegram_delivery(42,lambda:sent.append("duplicate"),job_id="telegram-test-job",job_type="TELEGRAM_TEST")
     assert sent==["sent"]
+
+
+def test_telegram_delivery_job_id_is_optional_and_preserved_when_supplied(tmp_path, monkeypatch):
+    import sqlite3
+
+    db_path = tmp_path / "telegram-governor.sqlite3"
+    monkeypatch.setenv("NEXUS_GOVERNOR_DB", str(db_path))
+    monkeypatch.setenv("NEXUS_TELEGRAM_RAY_CHAT_IDS", "42")
+    monkeypatch.delenv("NEXUS_DURABLE_JOB_ID", raising=False)
+    monkeypatch.delenv("NEXUS_CORRELATION_ID", raising=False)
+    monkeypatch.delenv("NEXUS_DEPARTMENT", raising=False)
+    monkeypatch.setenv("NEXUS_JOB_TYPE", "NOVA_TELEGRAM_DELIVERY")
+    LocalGovernorStore(db_path).set_policy("TELEGRAM", "bot_delivery", "NOVA_TELEGRAM_DELIVERY", "DAILY",
+        autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+        soft_limits={"rate": {}, "usage": {}, "money": {}},
+        hard_limits={"rate": {"requests": 10, "operations": 10, "window_seconds": 60},
+                     "usage": {"requests": 100, "operations": 100},
+                     "money": {"per_day": 0, "per_job": 0, "per_month": 0}},
+        concurrency_limit=1, resource_creation_limit=0, state="NORMAL", approval_required=False)
+
+    sent = []
+    first = execute_telegram_delivery(
+        42, lambda: sent.append(("ordinary", os.environ.get("NEXUS_DURABLE_JOB_ID"))) or {"ok": True},
+        job_type="NOVA_TELEGRAM_DELIVERY")
+    assert first == {"ok": True}
+
+    research_job_id = "research-job-existing-42"
+    second = execute_telegram_delivery(
+        42, lambda: sent.append(("research", os.environ.get("NEXUS_DURABLE_JOB_ID"))) or {"ok": True},
+        job_id=research_job_id, job_type="NOVA_TELEGRAM_DELIVERY")
+    assert second == {"ok": True}
+    assert sent == [("ordinary", None), ("research", None)]
+
+    with sqlite3.connect(db_path) as db:
+        footprints = db.execute("SELECT job_id,payload FROM footprints").fetchall()
+    footprints = [(job_id, json.loads(payload)) for job_id, payload in footprints]
+    footprints = [(job_id, payload) for job_id, payload in footprints if payload.get("provider") == "TELEGRAM"]
+    ids = {row[0] for row in footprints}
+    assert research_job_id in ids
+    assert len(ids) == 2
+    assert any(value.startswith("telegram-delivery-") for value in ids if value != research_job_id)
+
+
+def test_telegram_invalid_destination_still_denied_without_provider_call(monkeypatch):
+    monkeypatch.delenv("NEXUS_TELEGRAM_RAY_CHAT_IDS", raising=False)
+    called = []
+    with pytest.raises(GovernanceDenied, match="TELEGRAM_RECIPIENT_NOT_AUTHORIZED"):
+        execute_telegram_delivery(-1001, lambda: called.append("sent"), job_type="NOVA_TELEGRAM_DELIVERY")
+    assert called == []
 
 
 def test_temporal_delivery_activities_deny_without_authority_before_network(tmp_path,monkeypatch):

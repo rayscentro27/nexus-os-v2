@@ -7,7 +7,7 @@
     "watched_folder",
     "unavailable"
   ],
-  "selected_access_mode": "legacy_adapter",
+  "selected_access_mode": "local_cli",
   "consumer_browser_automation_allowed": false,
   "unofficial_cookie_automation_allowed": false,
   "legacy_adapter": "/Users/raymonddavis/nexuslive/lib/notebooklm_ingest_adapter.py",

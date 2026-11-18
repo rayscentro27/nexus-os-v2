@@ -64,25 +64,19 @@ def _json(text: str) -> dict[str, Any] | None:
 
 
 def _call(system: str, payload: dict[str, Any]) -> tuple[dict[str, Any] | None, dict[str, Any]]:
-    from alpha.alpha_live_research import http_json, load_runtime_env
-    load_runtime_env()
-    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    model = _model()
-    meta = {"provider": "openrouter", "model": model, "model_calls": 0}
-    if not key:
-        return None, {**meta, "error": "missing_credential"}
-    ok, status, data, error, latency = http_json(
-        "POST", "https://openrouter.ai/api/v1/chat/completions",
-        {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Marketing AI"},
-        {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(payload, ensure_ascii=True)}], "temperature": 0.1, "max_tokens": 1400},
-        timeout=60,
-    )
-    text = ""
-    try:
-        text = str(data["choices"][0]["message"]["content"] or "")
-    except Exception:
-        pass
-    return _json(text), {**meta, "model_calls": 1 if ok else 0, "http_status": status, "latency_ms": latency, "error": error}
+    from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+    import asyncio
+    response = asyncio.run(LlmGatewayAdapter("nexus_marketing").completion(
+        model=_model(), messages=[{"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=True)}],
+        temperature=0.1, max_tokens=1400, timeout=60, sensitivity="public_research",
+        reasoning_class="STRONG_REASONING", task_type="marketing"))
+    text = str(response.get("content") or "")
+    meta = {"provider": response.get("provider"), "model": response.get("model") or _model(),
+        "model_calls": 0 if response.get("error") else 1,
+        "latency_ms": (response.get("execution_metadata") or {}).get("latency_ms"),
+        "route_key": response.get("route_key")}
+    return (_json(text), {**meta, "error": response.get("error_detail") or response.get("error")}) if response.get("error") or not _json(text) else (_json(text), meta)
 
 
 def _persist(kind: str, payload: dict[str, Any]) -> str:
