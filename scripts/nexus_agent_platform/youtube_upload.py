@@ -28,8 +28,10 @@ YOUTUBE_CREDENTIAL_ID = "credential.google.youtube.upload.prod.v1"
 # YouTube-ONLY scopes. Strictly NO Workspace, Drive, Gmail, or Calendar scopes.
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly"
-YOUTUBE_SCOPES = [YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READONLY_SCOPE]
-YOUTUBE_SCOPE_NAMES = ["youtube.upload", "youtube.readonly"]
+YOUTUBE_ANALYTICS_SCOPE = "https://www.googleapis.com/auth/yt-analytics.readonly"
+# upload (approval-gated uploads only) + read + read-only analytics; captions need youtube.force-ssl and are NOT requested
+YOUTUBE_SCOPES = [YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READONLY_SCOPE, YOUTUBE_ANALYTICS_SCOPE]
+YOUTUBE_SCOPE_NAMES = ["youtube.upload", "youtube.readonly", "yt-analytics.readonly"]
 
 PROHIBITED_SCOPE_KEYWORDS = ("drive", "gmail", "calendar", "mail.google.com")
 
@@ -187,9 +189,15 @@ def validate_youtube_token(refresh_token: Optional[str] = None) -> dict[str, Any
             timeout=12,
         )
         resp.raise_for_status()
-        scope_str = str(resp.json().get("scope") or "")
+        info = resp.json()
+        scope_str = str(info.get("scope") or "")
         granted = sorted({item.rsplit("/", 1)[-1] for item in scope_str.split()})
         has_upload = YOUTUBE_UPLOAD_SCOPE in scope_str.split()
+        has_read = YOUTUBE_READONLY_SCOPE in scope_str.split()
+        has_analytics = YOUTUBE_ANALYTICS_SCOPE in scope_str.split()
+        client_match = str(info.get("aud") or info.get("azp") or "") == client["client_id"]
+        from nexus_agent_platform.google_scopes import YOUTUBE_SCOPE_NAMES as _YT_NAMES
+        separated = all(g in _YT_NAMES or g in ("openid", "userinfo.email", "userinfo.profile") for g in granted)
 
         # Channel identity lookup
         from googleapiclient.discovery import build
@@ -210,14 +218,44 @@ def validate_youtube_token(refresh_token: Optional[str] = None) -> dict[str, Any
             for it in items
         ]
 
+        # read-only channel check: the uploads playlist (no upload, no edit)
+        video_read = "NOT_RUN"
+        if items:
+            try:
+                uploads = ((items[0].get("contentDetails") or {}).get("relatedPlaylists") or {}).get("uploads")
+                if uploads:
+                    yt.playlistItems().list(part="contentDetails", playlistId=uploads, maxResults=1).execute()
+                video_read = "PASS"
+            except Exception as v_exc:
+                video_read = f"FAILED:{type(v_exc).__name__}:HTTP_{getattr(getattr(v_exc, 'resp', None), 'status', None)}"
+        analytics_read = "SCOPE_NOT_GRANTED"
+        if has_analytics and items:
+            try:
+                import datetime as _dt
+                end = _dt.date.today(); start = end - _dt.timedelta(days=7)
+                ya = build("youtubeAnalytics", "v2", credentials=creds, cache_discovery=False)
+                ya.reports().query(ids="channel==MINE", startDate=start.isoformat(), endDate=end.isoformat(), metrics="views").execute()
+                analytics_read = "PASS"
+            except Exception as a_exc:
+                status = getattr(getattr(a_exc, "resp", None), "status", None)
+                analytics_read = "API_DISABLED" if status == 403 and "has not been used" in str(getattr(a_exc, "content", b""))[:2000] else f"FAILED:HTTP_{status}"
+        ok = has_upload and has_read and client_match and separated and bool(channels)
         return {
-            "status": "AVAILABLE" if has_upload else "INSUFFICIENT_SCOPE",
+            "status": "AVAILABLE" if ok else ("INSUFFICIENT_SCOPE" if not (has_upload and has_read) else ("OAUTH_CLIENT_MISMATCH" if not client_match else ("SCOPE_SEPARATION_VIOLATION" if not separated else "NO_CHANNEL"))),
             "credential_id": YOUTUBE_CREDENTIAL_ID,
             "granted_scopes": granted,
             "youtube_upload_scope": "GRANTED" if has_upload else "MISSING",
+            "youtube_readonly_scope": "GRANTED" if has_read else "MISSING",
+            "youtube_analytics_scope": "GRANTED" if has_analytics else "MISSING",
+            "oauth_client_match": client_match,
+            "scope_separation_ok": separated,
             "channel_count": len(channels),
             "channels": channels,
             "channel_selection_required": len(channels) > 1,
+            "video_read": video_read,
+            "analytics_read": analytics_read,
+            "captions": "NOT_REQUESTED (captions.list needs youtube.force-ssl, a manage scope; transcripts come from the Core transcript chain)",
+            "mutations_performed": False,
             "secret_values_exposed": False,
         }
     except Exception as exc:
