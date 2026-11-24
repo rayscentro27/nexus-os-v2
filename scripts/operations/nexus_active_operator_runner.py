@@ -37,7 +37,13 @@ from business_active_operator import discover_business_attention, write_business
 from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_criterion_verification, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
 from nexus_agent_platform.execution_harness import capability_readiness, classify_execution_failure, worker_environment_preflight  # noqa: E402
 from nexus_agent_platform.unified_capability_control import select_candidate  # noqa: E402
-from nexus_agent_platform.hermes_native_adapter import probe_authenticated_native_tool  # noqa: E402
+try:
+    from nexus_agent_platform.hermes_native_adapter import probe_authenticated_native_tool  # noqa: E402
+except ImportError:  # A missing optional native adapter must not stop other departments.
+    def probe_authenticated_native_tool(*, prompt: str, persist: bool = False) -> Dict[str, Any]:
+        return {"status": "UNAVAILABLE", "reason": "HERMES_NATIVE_ADAPTER_NOT_INSTALLED",
+                "next_action": "CONTINUE_WITH_EXISTING_LOCAL_AND_SUPABASE_READS",
+                "persisted": False, "external_side_effects": False}
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -70,6 +76,10 @@ MAX_RUNTIME_SECONDS = 600
 
 class ActiveOperatorTimeout(RuntimeError):
     """Raised only by the bounded live-cycle deadline."""
+
+
+def autonomous_trigger_blocked(trigger: str | None = None) -> bool:
+    return str(trigger if trigger is not None else os.environ.get("NEXUS_OPERATOR_TRIGGER", "")).strip().lower() in {"launchd", "cron", "autostart"}
 
 
 _CYCLE_CONTEXT: Dict[str, Any] = {}
@@ -491,7 +501,10 @@ elif action == 'modal.bounded_job':
     from nexus_agent_platform.alpha_evidence_bridge import request_research_evidence
     import uuid
     url = os.environ.get('NEXUS_MODAL_CANARY_URL', 'https://example.com/')
-    value = request_research_evidence(url=url, job_id='modal-r5-' + uuid.uuid4().hex[:16], tenant_context={'scope':'founder_admin','tenant_id':None}, limits={'timeout_seconds':10})
+    durable_job_id = os.environ.get('NEXUS_DURABLE_JOB_ID')
+    if not durable_job_id:
+        raise PermissionError('durable_job_identity_required_for_modal_action')
+    value = request_research_evidence(url=url, job_id=durable_job_id, tenant_context={'scope':'founder_admin','tenant_id':None}, limits={'timeout_seconds':10})
     value['remote_result'] = value.get('remote_result') or {}
     value['status'] = value.get('remote_result', {}).get('status', value.get('status'))
 else:
@@ -1294,6 +1307,21 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             return {"operator_run_id": run_id, "status": "SKIPPED_OVERLAP", "started_at": started, "completed_at": utc_now()}
         _record_progress("LOCK_ACQUIRED")
         _record_progress("STATE_LOADING")
+        handoff_continuation = {"status": "SKIPPED", "reason": "dry_run"}
+        handoff_intake = {"status": "SKIPPED", "reason": "dry_run"}
+        department_recovery = {"status": "SKIPPED", "reason": "dry_run"}
+        if not dry_run:
+            # Consume at most one already-owned handoff during this existing
+            # operator cycle. This uses the canonical handoff table and
+            # task_requests intake; it introduces no scheduler or queue.
+            try:
+                from department_handoff_continuation import process_next_handoff, reconcile_active_handoffs, recover_empty_department_goals
+                handoff_intake = reconcile_active_handoffs(limit=100, only_unowned=True)
+                department_recovery = recover_empty_department_goals()
+                handoff_continuation = process_next_handoff()
+            except Exception as exc:
+                handoff_continuation = {"status": "FAILED", "error": type(exc).__name__,
+                                        "external_side_effects": False}
         registry = load_json(REGISTRY_PATH, [])
         scheduler_health = load_json(SCHEDULER_HEALTH_PATH, {})
         terminal_closures = apply_terminal_closures()
@@ -1561,6 +1589,9 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             "business_work_orders_created": business_created,
             "internal_work_orders_queued": internal_work_orders,
             "campaign_handoff_dispatch": campaign_dispatch,
+            "department_handoff_continuation": handoff_continuation,
+            "department_handoff_intake": handoff_intake,
+            "department_empty_queue_recovery": department_recovery,
             "business_duplicates_suppressed": business_duplicates,
             "safe_action_results": safe_action_results,
             "business_brief_path": str(business_brief_path.relative_to(ROOT)),
@@ -1696,6 +1727,12 @@ def main() -> int:
     args = parser.parse_args()
     if not args.once and not args.dry_run:
         parser.error("--once or --dry-run is required")
+    # The legacy operator used to create continuation requests on its own
+    # cadence. Launchd is not an approved workflow trigger: only the durable
+    # scheduler/dispatcher may initiate autonomous work.
+    if autonomous_trigger_blocked():
+        print(json.dumps({"status": "SKIPPED", "reason": "AUTONOMOUS_OPERATOR_TRIGGER_DISABLED"}))
+        return 0
     dry_run = args.dry_run or args.mode == "dry-run"
     result = run_once(dry_run=dry_run, mode="dry-run" if dry_run else (args.mode or "live"))
     print(json.dumps(result, indent=2, sort_keys=True))

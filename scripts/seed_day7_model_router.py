@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Nexus OS v2 — Day 7 idempotent seed for the policy-gated Model Router.
+"""Nexus OS v2 — idempotent seed for the policy-gated Model Router.
 
-Upserts model_routes (by route_key). NO external calls are enabled. Public/candidate routes
-are active=false until explicitly enabled + approved. Sensitive routes never allow public cloud.
+Upserts model_routes (by route_key). Public/free OpenRouter candidates stay inactive. The
+existing authenticated Codex subscription route is enabled under the OPENAI_CODEX governor;
+it has zero incremental spend and bounded usage. Sensitive routes never allow public cloud.
 
     # macOS SSL: SSL_CERT_FILE="$(python3 -m certifi)" python3 scripts/seed_day7_model_router.py
 """
@@ -29,6 +30,16 @@ ROUTES = [
     {"route_key": "manual_codex", "task_type": "implementation", "route_type": "manual",
      "provider_key": "codex_manual", "external_call_allowed": False, "requires_approval": True,
      "cost_tier": "manual_subscription", "active": True, "priority": 36, "notes": "Manual Codex route."},
+    {"route_key": "openai_codex_subscription_reasoning", "task_type": "reasoning", "route_type": "existing_budget",
+     "provider_key": "openai-codex", "model_key": "gpt-5.6-terra", "sensitive_data_allowed": True,
+     "external_call_allowed": True, "requires_approval": False, "cost_tier": "existing_subscription",
+     "active": True, "priority": 1,
+     "metadata": {"reasoning_classes": ["LIGHT_REASONING", "STRONG_REASONING"],
+                  "allowed_sensitivities": ["public_research", "internal_strategy", "unknown_sensitive"],
+                  "production_verified": True, "tool_calling": True, "structured_output": True,
+                  "transport": "existing Oracle Hermes Codex subscription", "estimated_cost": 0,
+                  "incremental_cash_required": False, "timeout_seconds": 120},
+     "notes": "Existing authenticated Codex subscription, routed through the canonical model router and bounded OPENAI_CODEX governor."},
     {"route_key": "ollama_local_private", "task_type": "reasoning", "route_type": "local_private",
      "provider_key": "ollama", "sensitive_data_allowed": True, "external_call_allowed": False,
      "requires_approval": False, "cost_tier": "free", "active": False, "status": "candidate", "priority": 20,
@@ -57,7 +68,7 @@ def main() -> int:
              prefer="resolution=merge-duplicates,return=minimal")
         print(f"  - route {r['route_key']}: upserted ({r['route_type']}, active={r['active']})")
     event("system", "day7_model_router_seeded", "success", "Day 7 model router seeded",
-          "8 routes upserted; external calls OFF; public cloud candidate-only.")
+          "Existing-budget Codex subscription enabled under bounded governor; public/free OpenRouter candidates remain inactive.")
     print("Day 7 model router seed complete (no external calls enabled).")
     return 0
 

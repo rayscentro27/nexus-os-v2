@@ -1089,6 +1089,80 @@ DEFAULT_CAPABILITY_SPECS: List[Dict[str, Any]] = [
     },
 ]
 
+# Typed Nova release controller operations. Activation and rollback are marked
+# high-risk and remain approval-gated inside the controller even when a
+# capability is selected through an operator surface.
+_NOVA_RELEASE_ADAPTER = "nova.release_lifecycle_operator"
+_NOVA_RELEASE_ARGUMENTS = {
+    "nova.release.status": ({"deployment_id": {"type": "string", "pattern": r"(?:deploy_[a-f0-9]{32}|stage_[a-f0-9]{32})"}}, []),
+    "nova.release.stage": ({"candidate_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "bundle_id": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}}, ["candidate_release", "bundle_id"]),
+    "nova.release.validate": ({"candidate_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "expected_manifest_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}}, ["candidate_release"]),
+    "nova.release.activate": ({"deployment_id": {"type": "string", "pattern": r"deploy_[a-f0-9]{32}"}, "candidate_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "candidate_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}, "current_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "dropin_name": {"type": "string", "pattern": r"[a-z0-9][a-z0-9-]{0,80}\.conf"}, "approval_id": {"type": "string", "pattern": r"appr_[A-Za-z0-9_-]{8,80}"}}, ["deployment_id", "candidate_release", "candidate_hash", "current_release", "dropin_name"]),
+    "nova.release.verify": ({"expected_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "expected_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}}, ["expected_release"]),
+    "nova.release.rollback": ({"deployment_id": {"type": "string", "pattern": r"deploy_[a-f0-9]{32}"}, "target_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "target_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}, "current_release": {"type": "string", "pattern": r"nova-operator-v1-[0-9]{8}-r[0-9]+-[a-z0-9-]{3,64}"}, "source_deployment_id": {"type": "string", "pattern": r"deploy_[a-f0-9]{32}"}, "approval_id": {"type": "string", "pattern": r"appr_[A-Za-z0-9_-]{8,80}"}}, ["deployment_id", "target_release", "target_hash", "current_release", "source_deployment_id"]),
+}
+_NOVA_RELEASE_CALLABLES = {
+    "nova.release.status": "nova_release_status",
+    "nova.release.stage": "nova_release_stage",
+    "nova.release.validate": "nova_release_validate",
+    "nova.release.activate": "nova_release_activate",
+    "nova.release.verify": "nova_release_verify",
+    "nova.release.rollback": "nova_release_rollback",
+}
+for _capability_id, (_properties, _required) in _NOVA_RELEASE_ARGUMENTS.items():
+    _side_effecting = _capability_id in {"nova.release.stage", "nova.release.activate", "nova.release.rollback"}
+    _high_risk = _capability_id in {"nova.release.activate", "nova.release.rollback"}
+    DEFAULT_CAPABILITY_SPECS.append({
+        "capability_id": _capability_id,
+        "name": _capability_id.replace(".", " ").title(),
+        "description": "Typed Nova-only immutable release lifecycle operation; no arbitrary command or path input.",
+        "module": _NOVA_RELEASE_ADAPTER,
+        "callable": _NOVA_RELEASE_CALLABLES[_capability_id],
+        "input_schema": {"type": "object", "properties": _properties, "required": _required,
+                         "additionalProperties": False},
+        "output_schema": {"type": "object"},
+        "execution_type": "DETERMINISTIC", "cost_class": "ZERO_MODEL_COST",
+        "side_effecting": _side_effecting,
+        "risk_class": "HIGH" if _high_risk else ("MODERATE" if _side_effecting else "LOW"),
+        "tenant_scoped": False, "tenant_scope": "SYSTEM", "pii_classification": "NONE",
+        # The typed release controller applies conditional approval only when
+        # provenance/tests are absent or fail; an unconditional tool-level gate
+        # would prevent attested internal releases from reaching that check.
+        "approval_required": False, "timeout": 600 if _side_effecting else 60,
+        "retry_policy": "none", "enabled": True, "test_status": "canary",
+        "owner": "Nova Operations", "source": "scripts/nova/release_lifecycle_operator.py",
+    })
+
+# Oracle lifecycle operations are a separate certification-only transport.
+# No service or filesystem selector is accepted by these contracts.
+_NOVA_CERT_ARGUMENTS = {
+    "nova.lifecycle.cert.status": ({}, [], "nova_cert_status"),
+    "nova.lifecycle.cert.stage": ({"candidate_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}}, ["candidate_release"], "nova_cert_stage"),
+    "nova.lifecycle.cert.validate": ({"candidate_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}, "expected_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}}, ["candidate_release"], "nova_cert_validate"),
+    "nova.lifecycle.cert.activate": ({"deployment_id": {"type": "string", "pattern": r"deploy_[a-f0-9]{32}"}, "candidate_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}, "candidate_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}, "current_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}, "approval_id": {"type": "string", "pattern": r"cert_appr_[a-f0-9]{32}"}}, ["deployment_id", "candidate_release", "candidate_hash", "current_release"], "nova_cert_activate"),
+    "nova.lifecycle.cert.verify": ({"expected_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}, "expected_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}}, ["expected_release"], "nova_cert_verify"),
+    "nova.lifecycle.cert.rollback": ({"deployment_id": {"type": "string", "pattern": r"deploy_[a-f0-9]{32}"}, "target_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}, "target_hash": {"type": "string", "pattern": r"[a-f0-9]{64}"}, "current_release": {"type": "string", "enum": ["cert-release-a", "cert-release-b", "cert-release-bad", "cert-release-tampered"]}, "source_deployment_id": {"type": "string", "pattern": r"deploy_[a-f0-9]{32}"}, "approval_id": {"type": "string", "pattern": r"cert_appr_[a-f0-9]{32}"}}, ["deployment_id", "target_release", "target_hash", "current_release", "source_deployment_id"], "nova_cert_rollback"),
+    "nova.lifecycle.cert.receipt": ({"deployment_id": {"type": "string", "pattern": r"(?:deploy_[a-f0-9]{32}|stage_[a-f0-9]{32})"}}, ["deployment_id"], "nova_cert_receipt"),
+}
+for _capability_id, (_properties, _required, _callable) in _NOVA_CERT_ARGUMENTS.items():
+    _side_effecting = _capability_id in {"nova.lifecycle.cert.stage", "nova.lifecycle.cert.activate", "nova.lifecycle.cert.rollback"}
+    _high_risk = _capability_id in {"nova.lifecycle.cert.activate", "nova.lifecycle.cert.rollback"}
+    DEFAULT_CAPABILITY_SPECS.append({
+        "capability_id": _capability_id,
+        "name": _capability_id.replace(".", " ").title(),
+        "description": "Certification-only Nova lifecycle operation; service and roots are fixed by the adapter.",
+        "module": "nova.oracle_lifecycle_cert_transport", "callable": _callable,
+        "input_schema": {"type": "object", "properties": _properties, "required": _required,
+                         "additionalProperties": False},
+        "output_schema": {"type": "object"}, "execution_type": "DETERMINISTIC",
+        "cost_class": "ZERO_MODEL_COST", "side_effecting": _side_effecting,
+        "risk_class": "HIGH" if _high_risk else ("MODERATE" if _side_effecting else "LOW"),
+        "tenant_scoped": False, "tenant_scope": "SYSTEM", "pii_classification": "NONE",
+        "approval_required": _high_risk, "timeout": 900, "retry_policy": "none",
+        "enabled": True, "test_status": "canary", "owner": "Nova Operations",
+        "source": "scripts/nova/oracle_lifecycle_cert_transport.py",
+    })
+
 
 def build_default_registry() -> PythonCapabilityRegistry:
     registry = PythonCapabilityRegistry()

@@ -1,0 +1,55 @@
+--- /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261114-rea-harness-v4/scripts/nexus_agent_platform/durable_jobs.py	2026-11-14 16:40:28.000000000 -0700
++++ /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-directive-continuation-v2/scripts/nexus_agent_platform/durable_jobs.py	2026-11-15 22:48:02.000000000 -0700
+@@ -57,6 +57,8 @@
+ RESEARCH_ENGINE_TYPES = {"RESEARCH_DEEP_EXECUTION"}
+ # CONTABO_REA_HARNESS_ENVIRONMENT_R1: REA analysis owned by a durable job, executed by the Contabo REA harness.
+ REA_ENGINE_TYPES = {"REA_EXECUTION"}
++# NEXUS_AUTOMATIC_DIRECTIVE_AND_CONTINUATION_R1: generic department directive (schema in governance_context.directive).
++DEPARTMENT_DIRECTIVE_TYPES = {"DEPARTMENT_DIRECTIVE"}
+ NOVA_CONTROL_ACTION_TYPES = {"NOVA_CREATIVE_ASSET", "NOVA_BOUNDED_CODING_TASK"}
+ WORKER_LIMITS = {"total": 2, "research": 1, "browser": 1, "heavy": 1}
+ HEAVY_MARKERS = ("NOTEBOOKLM", "BROWSER", "FFMPEG", "VIDEO", "MEDIA", "LARGE_MODEL", "CREATIVE", "GPU", "CREDIT_REPORT_ANALYSIS")
+@@ -852,6 +854,7 @@
+             or job_type.startswith("NEXUS_DEPARTMENT_QUERY_V6_")): return "DEPARTMENT_QUERY"
+     if job_type.startswith("NEXUS_NOTEBOOKLM_DISCOVERY_V5_") or job_type == "NEXUS_NOTEBOOKLM_RUNTIME_CANARY": return "NOTEBOOKLM_DISCOVERY"
+     if job_type in MARKETING_CREATIVE_TYPES: return "MARKETING_CREATIVE"
++    if job_type in DEPARTMENT_DIRECTIVE_TYPES: return "DEPARTMENT_DIRECTIVE"
+     raise JobError("UNSUPPORTED_JOB_TYPE")
+ 
+ 
+--- /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261114-rea-harness-v4/scripts/nexus_agent_platform/job_worker_once.py	2026-11-14 17:03:47.000000000 -0700
++++ /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-directive-continuation-v2/scripts/nexus_agent_platform/job_worker_once.py	2026-11-15 22:48:02.000000000 -0700
+@@ -376,6 +376,20 @@
+             _footprint(job, store, started_wall, started_cpu, moved.state, outcome.get("reason"))
+             return {**outcome, "nexus_state": moved.state}
+         result = outcome
++    elif route == "DEPARTMENT_DIRECTIVE":
++        # NEXUS_AUTOMATIC_DIRECTIVE_AND_CONTINUATION_R1: execute one durable department directive;
++        # continuation (next directive) is created by the module, never by Nova or an operator.
++        from nexus_agent_platform import department_directive as directive_mod
++        outcome = directive_mod.execute(job, store)
++        status = outcome.get("status")
++        if status != "COMPLETED":
++            target = {"BLOCKED": "BLOCKED", "CANCELLED": "CANCELLED"}.get(status, "FAILED_RETRYABLE")
++            moved = store.transition(job_id, target, worker_id=worker_id, error_code=str(outcome.get("reason") or status)[:100],
++                                     error_summary=json.dumps({k: outcome.get(k) for k in ("reason", "directive_id", "directive_status", "result_summary")}, default=str)[:500])
++            _release_reservation(governor, reservation, job_id)
++            _footprint(job, store, started_wall, started_cpu, moved.state, outcome.get("reason"))
++            return {**outcome, "nexus_state": moved.state}
++        result = outcome
+     elif route == "INTERNAL_CANARY":
+         from nexus_agent_platform.internal_canary import execute_internal_canary
+         result = execute_internal_canary(job)
+@@ -1152,10 +1166,10 @@
+     # The full worker output stays in its receipt/artifact; exact status reads
+     # must not collapse a successful Systems check to STATE=COMPLETED.
+     if ((job.job_type == "NEXUS_DEPARTMENT_QUERY" and job.department.upper() == "SYSTEMS")
+-            or job.job_type in {"NOVA_CREATIVE_ASSET", "NOVA_BOUNDED_CODING_TASK", "REA_EXECUTION"}):
++            or job.job_type in {"NOVA_CREATIVE_ASSET", "NOVA_BOUNDED_CODING_TASK", "REA_EXECUTION", "DEPARTMENT_DIRECTIVE"}):
+         projection = _bounded_result_summary(result)
+         execution_context = dict(job.governance_context or {})
+-        if job.job_type == "REA_EXECUTION":
++        if job.job_type in {"REA_EXECUTION", "DEPARTMENT_DIRECTIVE"}:
+             # The REA handoff persisted rea_engine linkage/receipts during execution: merge onto the fresh row.
+             execution_context = dict((store.get(job_id) or job).governance_context or {})
+         execution_context["result_summary"] = projection

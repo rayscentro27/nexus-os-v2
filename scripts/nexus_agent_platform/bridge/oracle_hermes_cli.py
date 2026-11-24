@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import re
 import json
+import shlex
 import subprocess
 import time
 from dataclasses import dataclass
@@ -20,13 +21,54 @@ ORACLE_KEY = os.path.expanduser(os.getenv("NEXUS_ORACLE_SSH_KEY", "~/.ssh/oracle
 ORACLE_CONTAINER = "nexus-hermes-0206"
 ORACLE_HERMES = "/opt/hermes/.venv/bin/hermes"
 ORACLE_HOME = "/opt/data/profiles/nova_nexus"
-ORACLE_MODEL = "openai/gpt-4o-mini"
+NOVA_MODEL_PROVIDER = "openai-codex"
+NOVA_MODEL = "gpt-5.6-terra"
+# Interactive Research Room uses a smaller, faster model on the same already
+# authenticated Codex subscription. Keep Nova's own default route unchanged.
+RESEARCH_ROOM_MODEL = os.getenv("NEXUS_RESEARCH_ROOM_MODEL", "gpt-5.4-mini")
+RESEARCH_ROOM_MODELS = {"gpt-5.4-mini", "gpt-5.4", "gpt-5.5"}
+NOVA_MODEL_COST_CLASS = "EXISTING_BUDGET"
+NOVA_LOCAL_MODEL = "gemma3:4b"
+ORACLE_MODEL = NOVA_MODEL
 ORACLE_PROFILE = "nova_nexus"
-# Hermes -t is an explicit allowlist. Include the Nexus MCP server, the
-# configured You.com MCP server, and Hermes' native web tools so structured
-# Research turns can search/extract through the governed tool layer.
-ORACLE_TOOLSET = "nexus_mcp_remote,you-com,web"
+ORACLE_CONTAINER = "nexus-hermes-0206"
+NOVA_MODEL_MAX_TURNS = 4
+NOVA_MODEL_RUN_BUDGET_SECONDS = 60
+NOVA_MODEL_MAX_PROVIDER_INVOCATIONS = 3
+# Hermes -t is an explicit allowlist. MCP server IDs are sourced from Nova's
+# explicit approved-server registry and intersected with the enabled Hermes
+# profile. The native public web toolset remains separately approved.
+try:
+    from nova.approved_mcp_registry import oracle_toolset
+    ORACLE_TOOLSET = oracle_toolset()
+except Exception:
+    ORACLE_TOOLSET = "nexus_mcp_remote,you-com,web"
 SESSION_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,160}$")
+
+REMOTE_STATELESS_SCRIPT = r'''import json,os,subprocess,sys,tempfile
+prompt=sys.stdin.read()
+binary="/opt/hermes/.venv/bin/hermes"
+model=os.environ.get("NEXUS_RESEARCH_ROOM_MODEL","gpt-5.4-mini")
+if model not in {"gpt-5.4-mini","gpt-5.4","gpt-5.5"}: raise SystemExit("RESEARCH_ROOM_MODEL_NOT_ALLOWLISTED")
+usage_path=None
+try:
+    fd,usage_path=tempfile.mkstemp(prefix="nexus-research-room-usage-",suffix=".json",dir="/tmp")
+    os.close(fd)
+    env=os.environ.copy(); env.update({"HERMES_HOME":"/opt/data/profiles/nova_nexus","HERMES_PROFILE":"nova_nexus"})
+    command=[binary,"-z",prompt,"--safe-mode","--model",model,"--provider","openai-codex","--usage-file",usage_path]
+    try:
+        result=subprocess.run(command,capture_output=True,text=True,timeout=24,check=False,env=env)
+        usage={}
+        if os.path.exists(usage_path):
+            try:
+                with open(usage_path,encoding="utf-8") as stream: usage=json.load(stream)
+            except Exception: pass
+        print(json.dumps({"returncode":result.returncode,"text":result.stdout.strip(),"stderr":result.stderr[-1200:],"usage":usage}))
+    except subprocess.TimeoutExpired as exc:
+        print(json.dumps({"returncode":124,"text":"","stderr":"HERMES_ONESHOT_TIMEOUT","usage":{}}))
+finally:
+    if usage_path and os.path.exists(usage_path): os.unlink(usage_path)
+'''
 
 
 class OracleHermesUnavailable(RuntimeError):
@@ -42,7 +84,7 @@ class OracleHermesResult:
     runtime_host: str = "ORACLE"
     hermes_version: str = "0.20.6"
     profile: str = ORACLE_PROFILE
-    provider: str = "openrouter"
+    provider: str = NOVA_MODEL_PROVIDER
     model: str = ORACLE_MODEL
     toolset: str = ORACLE_TOOLSET
     recovery: str = "NONE"
@@ -50,55 +92,157 @@ class OracleHermesResult:
     # the correlation/session identity exposed by Nexus; this is the durable
     # SQLite-backed Hermes row created/resolved by --continue.
     hermes_session_id: str | None = None
+    usage: dict[str, Any] | None = None
 
 
-def _remote_command(toolset: str = ORACLE_TOOLSET) -> str:
+def _reasoning_limits(reasoning_class: str) -> dict[str, int]:
+    if reasoning_class == "LIGHT_REASONING":
+        return {"max_turns": 1, "run_budget_seconds": 25, "max_provider_invocations": 1, "estimated_tokens": 2000}
+    if reasoning_class == "STRONG_REASONING":
+        return {"max_turns": NOVA_MODEL_MAX_TURNS, "run_budget_seconds": NOVA_MODEL_RUN_BUDGET_SECONDS,
+            "max_provider_invocations": NOVA_MODEL_MAX_PROVIDER_INVOCATIONS, "estimated_tokens": 8000}
+    raise OracleHermesUnavailable("unsupported_codex_reasoning_class")
+
+
+def _container_command(toolset: str = ORACLE_TOOLSET, model: str = NOVA_MODEL,
+                       provider: str = NOVA_MODEL_PROVIDER, reasoning_class: str = "STRONG_REASONING",
+                       stateless: bool = False) -> str:
+    # Use only the existing authenticated Codex subscription for tool turns.
+    # Ollama Gemma 3 4B was verified locally but rejected Hermes tool schemas
+    # with HTTP 400, so it is not a sufficient tool-routing model. Never fall
+    # through to the metered OpenRouter default.
+    expected_stateless_model = RESEARCH_ROOM_MODEL
+    if stateless:
+        model = expected_stateless_model
+    if (provider, model) != (NOVA_MODEL_PROVIDER, NOVA_MODEL) and not (
+            stateless and provider == "openai-codex" and model in RESEARCH_ROOM_MODELS):
+        raise OracleHermesUnavailable("model_route_not_allowlisted")
+    limits = _reasoning_limits(reasoning_class)
+    if stateless:
+        # Research Room turns are self-contained and must not resume a named
+        # Hermes session: those names can resolve to an empty CLI session.
+        # Safe mode disables profile tools/MCP and emits machine-readable usage.
+        return (
+            "set -e; export NEXUS_RESEARCH_ROOM_MODEL=" + shlex.quote(RESEARCH_ROOM_MODEL) + "; "
+            "/opt/hermes/.venv/bin/hermes auth status openai-codex | grep -Fq 'logged in'; "
+            "exec python3 -c " + shlex.quote(REMOTE_STATELESS_SCRIPT)
+        )
+    return (
+        "set -e; /opt/hermes/.venv/bin/hermes auth status openai-codex | grep -Fq 'logged in'; "
+        "IFS= read -r session; prompt=$(cat); printf \"%s\" \"$prompt\" | exec env "
+        "NEXUS_MCP_CONVERSATION_ID=\"$session\" HERMES_HOME=/opt/data/profiles/nova_nexus "
+        "HERMES_PROFILE=nova_nexus /opt/hermes/.venv/bin/hermes chat -Q --query-file - "
+        f"-m {model} --provider {provider} -t {toolset} --max-turns {limits['max_turns']} "
+        f"--run-budget {limits['run_budget_seconds']} --continue \"$session\" "
+        "--create-if-missing --pass-session-id --no-restore-cwd"
+    )
+
+
+def _remote_command(toolset: str = ORACLE_TOOLSET, model: str = NOVA_MODEL,
+                    provider: str = NOVA_MODEL_PROVIDER, reasoning_class: str = "STRONG_REASONING",
+                    stateless: bool = False) -> str:
     # This is intentionally constant: only the session title and prompt travel
     # over stdin.  ``--resume`` only accepts an already-existing native ID;
     # interface sessions are durable names, so ``chat --continue
     # --create-if-missing`` is the native create-or-resume contract.
-    return (
-        "podman exec -i nexus-hermes-0206 sh -lc "
-        "'IFS= read -r session; prompt=$(cat); printf \"%s\" \"$prompt\" | exec env NEXUS_MCP_CONVERSATION_ID=\"$session\" HERMES_HOME=/opt/data/profiles/nova_nexus "
-        "HERMES_PROFILE=nova_nexus /opt/hermes/.venv/bin/hermes "
-        f"chat -Q --query-file - -m openai/gpt-4o-mini -t {toolset} "
-        "--continue \"$session\" --create-if-missing --pass-session-id --no-restore-cwd'"
-    )
+    return "podman exec -i " + ORACLE_CONTAINER + " sh -lc " + shlex.quote(_container_command(toolset, model, provider, reasoning_class, stateless))
+
+
+def _local_podman_command(toolset: str = ORACLE_TOOLSET, reasoning_class: str = "STRONG_REASONING",
+                          stateless: bool = False) -> list[str]:
+    return ["podman", "exec", "-i", ORACLE_CONTAINER, "sh", "-lc",
+            _container_command(toolset, reasoning_class=reasoning_class, stateless=stateless)]
+
+
+def _ensure_nova_subscription_model_policy() -> None:
+    """Govern bounded, zero-spend owner turns without a cumulative lifetime cap.
+
+    The governor's DAILY/MONTHLY usage accounting is cumulative across all
+    reservations; it does not reset by calendar window. Keep a rolling rate
+    guard here and rely on the governor's per-job envelope for each bounded
+    conversation turn. Paid/autonomous spend remains disabled.
+    """
+    from nexus_agent_platform.resource_spend_governor import default_store
+    store = default_store()
+    hard = {
+        "rate": {"requests": 36, "operations": 36, "window_seconds": 60},
+        "usage": {},
+        "money": {"per_job": 0, "per_day": 0, "per_month": 0},
+    }
+    soft = {
+        "rate": {"requests": 24, "operations": 24, "window_seconds": 60},
+        "usage": {},
+        "money": {"per_job": 0, "per_day": 0, "per_month": 0},
+    }
+    store.ensure_policy("OPENAI_CODEX", "subscription_model", "NOVA_TELEGRAM_OWNER_TURN", "DAILY",
+        autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+        soft_limits=soft, hard_limits=hard, concurrency_limit=1, state="NORMAL", approval_required=False)
+    store.ensure_policy("OPENAI_CODEX", "subscription_model", "NOVA_TELEGRAM_OWNER_TURN", "MONTHLY",
+        autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+        soft_limits=soft, hard_limits=hard, concurrency_limit=1, state="NORMAL", approval_required=False)
+
+
+def _ensure_department_subscription_model_policy() -> None:
+    """Add a bounded zero-spend envelope for other routed Nexus reasoning jobs."""
+    from nexus_agent_platform.resource_spend_governor import default_store
+    store = default_store()
+    hard = {"rate": {"requests": 12, "operations": 12, "window_seconds": 60},
+        "usage": {"requests": 120, "operations": 120, "tokens": 240_000,
+            "runtime_seconds": 3_600, "bytes": 20_000_000},
+        "money": {"per_job": 0, "per_day": 0, "per_month": 0}}
+    soft = {"rate": {"requests": 8, "operations": 8, "window_seconds": 60},
+        "usage": {"requests": 80, "operations": 80, "tokens": 160_000,
+            "runtime_seconds": 2_400, "bytes": 12_000_000},
+        "money": {"per_job": 0, "per_day": 0, "per_month": 0}}
+    for period in ("DAILY", "MONTHLY"):
+        store.ensure_policy("OPENAI_CODEX", "subscription_model", "*", period,
+            autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+            soft_limits=soft, hard_limits=hard, concurrency_limit=2, state="NORMAL",
+            approval_required=False)
+        # Needle and its one bounded same-notebook repair use this existing
+        # subscription route, but receive explicit job scopes so they do not
+        # rely on the provider-wide job wildcard.
+        for job_type in ("NEEDLE_RESEARCH_READINESS_VERIFY", "NEEDLE_RESEARCH_TARGETED_REPAIR"):
+            store.ensure_policy("OPENAI_CODEX", "subscription_model", job_type, period,
+                autonomous_usage_allowed=True, autonomous_spend_allowed=False,
+                soft_limits=soft, hard_limits=hard, concurrency_limit=1, state="NORMAL",
+                approval_required=False)
 
 
 def _executive_prompt(message: str) -> str:
     """Carry the bounded executive contract across the Oracle process boundary."""
     lowered = message.casefold()
+    semantic_plan = {}
+    capability_context = ""
+    try:
+        from nova.semantic_orchestration import resolve_owner_request
+        from nova.live_capability_registry import capability_context_for_request
+        semantic_plan = resolve_owner_request(message)
+        capability_context = capability_context_for_request(message)
+    except Exception as exc:
+        # Discovery failure is visible to Hermes as an unknown capability
+        # surface; it must never become an affirmative availability claim.
+        capability_context = json.dumps({"live_registry": "UNAVAILABLE", "error": type(exc).__name__})
     try:
         from nova.executive_intelligence import is_casual_conversation, is_executive_attention_request, is_monetization_decision, is_opinion_request, is_priority_request
     except ModuleNotFoundError:
         from executive_intelligence import is_casual_conversation, is_executive_attention_request, is_monetization_decision, is_opinion_request, is_priority_request
     opinion = is_opinion_request(lowered)
     current_research = bool("research" in lowered and re.search(r"\b(still|running|active|heartbeat|scheduler|processing|status|doing)\b", lowered))
-    explicit_delegation = bool(re.search(r"\bask\s+(systems?|systems engineering|research|alpha)\b", lowered))
-    assignment_request = bool(re.search(
-        r"\b(assign|queue|create)\s+(?:a\s+|an\s+|the\s+)?research\b"
-        r"|\bhave\s+research\b"
-        r"|\bresearch\s+(?:to\s+)?investigate\b",
-        lowered,
-    ))
     objective_id_request = bool(re.search(r"\bobjective_id\s*[=:]\s*[A-Za-z0-9_.:-]{3,160}", message, re.I))
     priority = is_priority_request(lowered)
     attention = is_executive_attention_request(lowered)
     monetization = is_monetization_decision(lowered)
-    strategic = assignment_request or objective_id_request or explicit_delegation or opinion or current_research or priority or attention or monetization or any(term in lowered for term in ("should", "recommend", "opportunity", "what next", "what should happen", "compare"))
-    if not strategic:
-        # Keep casual conversation lightweight while carrying Nova's identity.
-        if is_casual_conversation(lowered):
-            return (
-                "[NOVA LIGHT CONVERSATION]\n"
-                "You are Hermes Nova, Ray Davis's conversational partner and executive interface to Nexus. "
-                "Answer naturally and briefly in your own voice. You know Nexus is being built as an autonomous "
-                "operating-company system with Research/Alpha, specialized departments, GoClear, and durable work. "
-                "Do not turn a casual exchange into a report, use tools, or invent live facts.\n"
-                "USER REQUEST:\n" + message[:3000]
-            )
-        return message
+    casual = is_casual_conversation(lowered)
+    if casual and not capability_context and not objective_id_request:
+        return (
+            "[NOVA LIGHT CONVERSATION]\n"
+            "You are Hermes Nova, Ray Davis's conversational partner and executive interface to Nexus. "
+            "You know Nexus is an autonomous operating-company system with Research, Alpha, and specialist departments. "
+            "Answer naturally and briefly in your own voice. Do not turn casual conversation into a report, "
+            "use tools, or invent live facts. Preserve the current conversation context.\n"
+            "USER REQUEST:\n" + message[:3000]
+        )
     priority_rules = ""
     if priority:
         priority_context = _bounded_priority_context()
@@ -157,26 +301,31 @@ def _executive_prompt(message: str) -> str:
             "the generic nexus_get_work_items tool as a substitute. Distinguish ASSIGNED, MONITORED, "
             "DEMAND_DISCOVERY, and GENERAL_DISCOVERY counts and state unknowns plainly."
         )
-    delegation_rules = ""
-    if explicit_delegation:
-        specialist = "SYSTEM" if "system" in lowered else "RESEARCH" if "research" in lowered else "ALPHA"
-        delegation_rules = (
-            f" This is an EXPLICIT_DEPARTMENT_DELEGATION. You MUST call the Nexus MCP tool "
-            f"nexus_delegate_specialist with specialist={specialist}, conversation_id from the supplied ADMIN_CONVERSATION_ID, "
-            "and a concrete objective derived from the user's request "
-            "before answering. Do not substitute nexus_get_business_state, a historical report, or your own context. "
-            "Return the department result with its delegation receipt, freshness, status, and evidence references. "
-            "If the call fails, report the exact bounded failure and do not claim the department executed."
-        )
-    assignment_rules = ""
-    if assignment_request:
-        assignment_rules = (
-            " This is a SAFE_INTERNAL_RESEARCH_ASSIGNMENT. Call the Nexus MCP action "
-            "nexus_assign_research exactly once with the user's bounded objective and question. "
-            "Preserve the returned objective_id, work_id, queue_class, queue_status, and receipt. "
-            "Do not perform the research yourself, do not use historical evidence to satisfy the assignment, "
-            "and do not call Codex. This action is internal, non-publication, and non-spend."
-        )
+    orchestration_rules = (
+        " Treat each message as an owner goal expressed in ordinary language, not as a command syntax. "
+        "Resolve references such as 'that', 'the second one', or 'continue' from this Hermes conversation "
+        "and current durable Nexus state; ask one concise question only when the referent is genuinely ambiguous. "
+        "Plan internally: desired outcome, relevant existing objective, evidence, capabilities, dependencies, "
+        "sequence, approval boundary, and next action. Select tools from their live schemas and descriptions. "
+        "Use a Nexus department or Hermes executor for work; never present your own reasoning as a department result. "
+        "When a durable assignment action exists, use that governed action once and report its real receipt/ID. "
+        "A request to have, ask, assign, or delegate work to Research, Systems, or Alpha is an execution request, "
+        "even when it mentions a capability such as NotebookLM. Do not answer it with a capability description. "
+        "For multiple requested departments, submit each supported bounded assignment under the same parent "
+        "objective/correlation and report each actual job ID and returned state; preserve exact routing errors. "
+        "NotebookLM remains Research-owned and is never a direct Nova operation. "
+        "When no supported executor exists, state the specific capability gap and preserve the request. "
+        "For current state, Google, browser, or provider questions, make the relevant live read before answering. "
+        "For capability questions, use the attached fresh registry and distinguish discovered, configured, authenticated, "
+        "connected, and successfully tested. Do not imply that installation or configuration proves a working call. "
+        "For multi-capability work, coordinate only the steps supported by discovered executors and continue after "
+        "independent steps when one dependency is unavailable. On failure, explain what failed, what remains intact, "
+        "what happens next, and whether Ray needs to act. Approved non-Nexus MCP servers are a separate execution "
+        "class from Nexus internal executors: select them from the live server/tool registry and use their actual "
+        "schemas; do not reject an approved MCP action merely because no Nexus executor has the same tool. Before a "
+        "write, obey the candidate's evaluated policy and metadata. Report a write as complete only when the tool "
+        "result contains a receipt ID; echo the actual resource ID and receipt ID exactly."
+    )
     # Only durable objective identifiers create objective-scoped read context.
     # Natural-language assignment text often contains phrases such as
     # "objective: investigate"; treating that verb as an ID suppresses the
@@ -200,7 +349,11 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
-        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + delegation_rules + assignment_rules + objective_contract + "\n"
+        + orchestration_rules
+        + "\nSEMANTIC INTENT HYPOTHESIS (validate against the owner's full request):\n"
+        + json.dumps(semantic_plan, ensure_ascii=False, default=str)
+        + ("\n" + capability_context if capability_context else "")
+        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + objective_contract + "\n"
         "USER REQUEST:\n" + message[:7000]
     )
 
@@ -376,26 +529,34 @@ def _conversation_correction_prompt(message: str, response: str) -> str:
 
 def _run_oracle_hermes_unchecked(message: str, session_id: str, *, timeout_seconds: float = 180.0,
                       request_id: str | None = None, pre_context: str | None = None,
-                      structured_task: bool = False) -> OracleHermesResult:
+                      structured_task: bool = False, reasoning_class: str = "STRONG_REASONING",
+                      stateless_task: bool = False) -> OracleHermesResult:
     if not isinstance(message, str) or not message.strip():
         raise OracleHermesUnavailable("empty_message")
     if not SESSION_RE.fullmatch(session_id or ""):
         raise OracleHermesUnavailable("invalid_session_id")
     if timeout_seconds <= 0 or timeout_seconds > 300:
         raise OracleHermesUnavailable("invalid_timeout")
-    if not os.path.isfile(ORACLE_KEY) or not os.access(ORACLE_KEY, os.R_OK):
+    local_podman = os.getenv("NEXUS_HERMES_TRANSPORT", "").strip().lower() == "local_podman"
+    if not local_podman and (not os.path.isfile(ORACLE_KEY) or not os.access(ORACLE_KEY, os.R_OK)):
         return OracleHermesResult(None, "UNAVAILABLE", "ssh_key_missing", 0.0)
     started = time.monotonic()
     def invoke(prompt: str, toolset: str) -> tuple[subprocess.CompletedProcess[str], float]:
-        command = [
+        # Correction/recovery invocations are still part of this user turn;
+        # carry the same context authority snapshot into every model call.
+        contextual_prompt = prompt
+        if pre_context and pre_context not in contextual_prompt:
+            contextual_prompt += "\n\n" + pre_context[:26000]
+        command = (_local_podman_command(toolset, reasoning_class, stateless_task) if local_podman else [
             "/usr/bin/ssh", "-i", ORACLE_KEY, "-o", "BatchMode=yes",
             "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15",
             "-o", "ServerAliveCountMax=2", "-o", "StrictHostKeyChecking=accept-new",
-            f"{ORACLE_USER}@{ORACLE_HOST}", _remote_command(toolset),
-        ]
+            f"{ORACLE_USER}@{ORACLE_HOST}", _remote_command(toolset, reasoning_class=reasoning_class,
+                stateless=stateless_task),
+        ])
         started = time.monotonic()
         completed = subprocess.run(
-            command, input=f"{session_id}\n{prompt}", text=True, capture_output=True,
+            command, input=(contextual_prompt if stateless_task else f"{session_id}\n{contextual_prompt}"), text=True, capture_output=True,
             timeout=timeout_seconds, check=False,
         )
         return completed, round((time.monotonic() - started) * 1000, 1)
@@ -411,20 +572,54 @@ def _run_oracle_hermes_unchecked(message: str, session_id: str, *, timeout_secon
             )
         if pre_context:
             prompt += "\n\n" + pre_context[:26000]
+        if len(prompt) > 24_000:
+            return OracleHermesResult(None, "UNAVAILABLE", "local_model_input_limit", round((time.monotonic() - started) * 1000, 1))
         completed, elapsed = invoke(prompt, ORACLE_TOOLSET)
     except subprocess.TimeoutExpired:
         return OracleHermesResult(None, "UNAVAILABLE", "oracle_timeout", round((time.monotonic() - started) * 1000, 1))
     except OSError as exc:
         return OracleHermesResult(None, "UNAVAILABLE", type(exc).__name__, round((time.monotonic() - started) * 1000, 1))
     if completed.returncode != 0:
-        return OracleHermesResult(None, "UNAVAILABLE", f"ssh_exit_{completed.returncode}", elapsed)
+        # Preserve a bounded, secret-redacted stderr excerpt so adapters can
+        # distinguish remote CLI/provider errors from transport failures.
+        detail = re.sub(r"(?i)(authorization:\s*bearer\s+)[^\s]+", r"\1[REDACTED]",
+            (completed.stderr or "").strip())
+        detail = re.sub(r"(?i)(api[_ -]?key|token|password)(\s*[:=]\s*)[^\s,;]+",
+            r"\1\2[REDACTED]", detail)
+        detail = re.sub(r"\s+", " ", detail)[-360:]
+        stdout_errors = [line.strip() for line in (completed.stdout or "").splitlines()
+            if re.search(r"(?i)error|failed|exception|denied|unavailable|traceback|timeout|HTTP\s+4\d\d|HTTP\s+5\d\d", line)]
+        stdout_detail = re.sub(r"\s+", " ", " ".join(stdout_errors))[-240:]
+        error = f"ssh_exit_{completed.returncode}" + (f":{detail}" if detail else "")
+        if stdout_detail:
+            error += f"; output_error={stdout_detail}"
+        return OracleHermesResult(None, "UNAVAILABLE", error, elapsed)
     response = completed.stdout.strip()
+    usage: dict[str, Any] | None = None
+    if stateless_task:
+        try:
+            envelope = json.loads(response)
+        except ValueError:
+            return OracleHermesResult(None, "UNAVAILABLE", "invalid_hermes_oneshot_envelope", elapsed)
+        response = str(envelope.get("text") or "").strip()
+        raw_usage = envelope.get("usage") or {}
+        usage = {key: raw_usage[key] for key in ("input_tokens", "output_tokens", "total_tokens")
+                 if isinstance(raw_usage.get(key), (int, float))}
+        if int(envelope.get("returncode", 1) or 0) != 0:
+            error_detail = str(envelope.get("stderr") or envelope.get("returncode"))
+            error_detail = re.sub(r"(?i)(authorization:\s*bearer\s+)[^\s]+", r"\1[REDACTED]", error_detail)
+            error_detail = re.sub(r"(?i)(api[_ -]?key|token|password)(\s*[:=]\s*)[^\s,;]+", r"\1\2[REDACTED]", error_detail)
+            return OracleHermesResult(None, "UNAVAILABLE", "hermes_oneshot_failed:" + re.sub(r"\s+", " ", error_detail)[-360:], elapsed, usage=usage)
+        # Hermes 0.20.6 can exit successfully while writing an API error to
+        # stdout. Do not let a provider rejection become an apparent answer.
+        if re.search(r"(?i)(HTTP\s*4\d\d|model is not supported|provider error|API request failed|\"error\"\s*:)", response):
+            return OracleHermesResult(None, "UNAVAILABLE", "hermes_provider_rejected:" + response[:300], elapsed, usage=usage)
     if not response:
         return OracleHermesResult(None, "UNAVAILABLE", "empty_oracle_response", elapsed)
     native_session_match = re.search(r"session_id:\s*([A-Za-z0-9_.:-]+)", completed.stderr or "")
     native_session_id = native_session_match.group(1) if native_session_match else None
     if structured_task:
-        return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id)
+        return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id, usage=usage)
     halt = any(marker in response.lower() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts"))
     if halt:
         recovery_prompt = (
@@ -460,27 +655,77 @@ def _run_oracle_hermes_unchecked(message: str, session_id: str, *, timeout_secon
             corrected_text = corrected.stdout.strip()
             if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
                 return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="CONVERSATION_CORRECTION", hermes_session_id=native_session_id)
-    return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id)
+    return OracleHermesResult(response, "SUCCEEDED", None, elapsed, hermes_session_id=native_session_id, usage=usage)
 
 
 def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float = 180.0,
                       request_id: str | None = None, pre_context: str | None = None,
-                      structured_task: bool = False) -> OracleHermesResult:
+                      structured_task: bool = False, reasoning_class: str = "STRONG_REASONING",
+                      governor_purpose: str | None = None, stateless_task: bool = False) -> OracleHermesResult:
     """Governor boundary for every Oracle Hermes SSH invocation."""
     from nexus_agent_platform.provider_enforcement import execute
     from nexus_agent_platform.resource_spend_governor import GovernanceDenied
-    estimate = {"requests": 1, "operations": 1, "runtime_seconds": timeout_seconds, "billable": True}
-    try: estimate["cost"] = float(os.environ["NEXUS_ORACLE_ESTIMATED_COST_PER_JOB"])
-    except (KeyError, ValueError): pass
+    if not SESSION_RE.fullmatch(session_id or ""):
+        raise OracleHermesUnavailable("invalid_session_id")
+    if timeout_seconds <= 0 or timeout_seconds > 300:
+        raise OracleHermesUnavailable("invalid_timeout")
+    limits = _reasoning_limits(reasoning_class)
+    if not os.environ.get("NEXUS_DURABLE_JOB_ID"):
+        return OracleHermesResult(None, "UNAVAILABLE", "governor_durable_job_id_required", 0.0)
+    if not os.environ.get("NEXUS_CORRELATION_ID") or not os.environ.get("NEXUS_DEPARTMENT"):
+        return OracleHermesResult(None, "UNAVAILABLE", "governor_correlation_or_department_required", 0.0)
+    # Nova's existing Codex subscription transport is registered in the same
+    # canonical model router used by department reasoning. Keep Hermes as the
+    # specialized executor, while the router owns provider eligibility.
+    try:
+        import sys
+        from pathlib import Path
+        scripts_dir = str(Path(__file__).resolve().parents[3] / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import model_router
+        decision = model_router.select_reasoning_model(agent_key="nova", task_type="reasoning",
+            sensitivity="unknown_sensitive", reasoning_class=reasoning_class, allow_free_tier=False)
+        selected = decision.get("route") or {}
+        if (decision.get("decision") != "selected" or decision.get("provider") != NOVA_MODEL_PROVIDER
+                or decision.get("model") != NOVA_MODEL):
+            return OracleHermesResult(None, "UNAVAILABLE", "canonical_model_route_unavailable", 0.0)
+    except Exception as exc:
+        return OracleHermesResult(None, "UNAVAILABLE", "canonical_model_router_" + type(exc).__name__, 0.0)
+    local_podman = os.getenv("NEXUS_HERMES_TRANSPORT", "").strip().lower() == "local_podman"
+    existing_subscription_model = NOVA_MODEL_PROVIDER == "openai-codex"
+    # This route uses an already-authenticated subscription, not per-token API
+    # billing. Reserve a bounded allowance and account for usage, while leaving
+    # autonomous spend disabled (three invocations × four turns maximum).
+    estimate = {"requests": limits["max_turns"] * limits["max_provider_invocations"],
+        "operations": limits["max_turns"] * limits["max_provider_invocations"],
+        "runtime_seconds": limits["run_budget_seconds"] * limits["max_provider_invocations"],
+        "tokens": limits["estimated_tokens"], "cost": 0.0, "billable": False, "budget_period": "DAILY"}
+    if not existing_subscription_model:
+        # Preserve fail-closed accounting for the legacy metered SSH route.
+        estimate["billable"] = True
+        estimate.pop("cost", None)
+        estimate["provider"] = "ORACLE"
+        try: estimate["cost"] = float(os.environ["NEXUS_ORACLE_ESTIMATED_COST_PER_JOB"])
+        except (KeyError, ValueError): pass
     job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
     try:
-        return execute("ORACLE", "hermes_worker", "REMOTE_WORKER", estimate,
+        if existing_subscription_model:
+            _ensure_nova_subscription_model_policy()
+            _ensure_department_subscription_model_policy()
+        provider = "OPENAI_CODEX" if existing_subscription_model else "ORACLE"
+        service = "subscription_model" if existing_subscription_model else "hermes_worker"
+        job_type = os.environ.get("NEXUS_JOB_TYPE", "NOVA_TELEGRAM_OWNER_TURN") if existing_subscription_model else os.environ.get("NEXUS_JOB_TYPE", "ORACLE_HERMES")
+        return execute(provider, service, "SUBSCRIPTION_MODEL_INFERENCE" if existing_subscription_model else "REMOTE_WORKER", estimate,
             lambda: _run_oracle_hermes_unchecked(message, session_id, timeout_seconds=timeout_seconds,
-                request_id=request_id, pre_context=pre_context, structured_task=structured_task),
-            job_id=job_id, job_type=os.environ.get("NEXUS_JOB_TYPE", "ORACLE_HERMES"),
+                request_id=request_id, pre_context=pre_context, structured_task=structured_task,
+                reasoning_class=reasoning_class, stateless_task=stateless_task),
+            job_id=job_id, job_type=job_type,
             correlation_id=request_id or session_id,
-            actual_usage=lambda result: {"requests": 1, "operations": 1,
-                "runtime_seconds": max(0.0, float(result.elapsed_ms or 0) / 1000),
-                **({"cost": estimate["cost"]} if "cost" in estimate else {})})
+            purpose=governor_purpose,
+            actual_usage=lambda result: {"requests": estimate["requests"], "operations": estimate["operations"],
+                "runtime_seconds": max(0.0, float(result.latency_ms or 0) / 1000),
+                **({"tokens": (result.usage or {}).get("total_tokens", estimate["tokens"]), "cost": 0.0} if existing_subscription_model else
+                   ({"cost": estimate["cost"]} if "cost" in estimate else {}))})
     except GovernanceDenied as exc:
         return OracleHermesResult(None, "UNAVAILABLE", "governor_" + exc.code.lower(), 0.0)

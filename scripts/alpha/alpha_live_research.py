@@ -93,14 +93,27 @@ def http_json(
             return _http_json_unchecked(method, url, headers, payload, timeout)
 
         try:
+            # OANDA's dedicated fxPractice host is an explicitly simulated,
+            # zero-money environment: reads and practice orders there are
+            # non-billable. Whether a job may call it at all is still decided
+            # by a scoped governor policy (provider OANDA + job type). Live
+            # OANDA (api-fxtrade) and every other host keep the ordinary
+            # default-deny cost path. (Owner-approved for Trading Core R1.)
+            practice_host = host == "api-fxpractice.oanda.com"
+            estimate = {"requests": 1, "api_calls": 1,
+                        "tokens": int((payload or {}).get("max_tokens", 0) or 0),
+                        "billable": not practice_host,
+                        "cost": 0.0 if practice_host else None}
             return execute(
                 provider, service, "PROVIDER_HTTP_REQUEST",
-                {"requests": 1, "api_calls": 1, "tokens": int((payload or {}).get("max_tokens", 0) or 0),
-                 "billable": True, "cost": None},
+                estimate,
                 governed_request,
                 job_id=os.environ.get("NEXUS_DURABLE_JOB_ID"),
                 job_type=os.environ.get("NEXUS_JOB_TYPE"),
                 correlation_id=os.environ.get("NEXUS_CORRELATION_ID"),
+                # Separate bounded reads within one durable job while keeping
+                # retries of the same request idempotent.
+                purpose=f"{method.upper()}:{urlsplit(url).path}?{urlsplit(url).query}",
             )
         except Exception as exc:
             return False, None, {}, f"GOVERNOR_DENIED:{getattr(exc, 'code', type(exc).__name__)}", 0
@@ -250,15 +263,7 @@ def _extract_json(text: str) -> dict[str, Any] | None:
 
 
 def synthesize_with_openrouter(query: str, category: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
-    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    model = (
-        os.environ.get("ALPHA_OPENROUTER_MODEL")
-        or os.environ.get("OPENROUTER_MODEL")
-        or os.environ.get("HERMES_ALPHA_MODEL")
-        or "openai/gpt-4o-mini"
-    )
-    if not key:
-        return {"ok": False, "provider": "openrouter", "model": model, "error": "missing_credential", "analysis": deterministic_analysis(query, category, sources)}
+    model = "router_selected"
 
     source_summary = [
         {
@@ -287,32 +292,24 @@ def synthesize_with_openrouter(query: str, category: str, sources: list[dict[str
             "approval_requirement",
         ],
     }
-    payload = {
-        "model": model,
-        "messages": [
+    messages = [
             {
                 "role": "system",
                 "content": "You are Hermes Alpha, Ray's independent research brain. Use only the supplied source summaries. Do not invent facts, client data, or URLs. Return compact JSON only.",
             },
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)},
-        ],
-        "temperature": 0.2,
-        "max_tokens": 700,
-    }
-    headers = {
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://goclearonline.cc",
-        "X-Title": "Nexus Alpha Live Research",
-    }
-    ok, status, data, error, latency = http_json("POST", "https://openrouter.ai/api/v1/chat/completions", headers, payload, timeout=45)
-    text = ""
-    try:
-        text = data["choices"][0]["message"]["content"]
-    except Exception:
-        text = ""
+        ]
+    import asyncio
+    from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+    response = asyncio.run(LlmGatewayAdapter("nexus_alpha_live_research").completion(
+        model=model, messages=messages, temperature=0.2, max_tokens=700, timeout=45,
+        sensitivity="public_research", reasoning_class="LIGHT_REASONING", task_type="research"))
+    text = str(response.get("content") or "")
     analysis = _extract_json(text) or deterministic_analysis(query, category, sources)
-    return {"ok": ok and bool(text), "provider": "openrouter", "model": model, "status_code": status, "latency_ms": latency, "error": error, "analysis": analysis}
+    return {"ok": bool(text) and not response.get("error"), "provider": response.get("provider"),
+        "model": response.get("model") or model, "route_key": response.get("route_key"),
+        "latency_ms": (response.get("execution_metadata") or {}).get("latency_ms"),
+        "error": response.get("error_detail") or response.get("error"), "analysis": analysis}
 
 
 def deterministic_analysis(query: str, category: str, sources: list[dict[str, Any]]) -> dict[str, Any]:

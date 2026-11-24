@@ -1,0 +1,120 @@
+{
+  "schema_version": "nexus.postiz-account-bindings.v1",
+  "authority": "NEXUS",
+  "note": "Nexus owns venture/account truth. A Postiz integration is usable only when it is bound here to a Nexus channel_account_id AND its Postiz internalId equals the expected external id (verified read-only). Unbound integrations are quarantined. Postiz customers/groups are never used as venture truth.",
+  "postiz_organization": "nexus_social_lab",
+  "bindings": [
+    {
+      "channel_account_id": "acc_holiday_facebook_01",
+      "venture_id": "vnt_holiday_commerce_pilot_2026",
+      "platform": "FACEBOOK",
+      "postiz_provider": "facebook",
+      "expected_account_name": "Raytestpage",
+      "expected_external_id": "1722332634511930",
+      "postiz_integration_id": "cmwfgn48s0001o089sqv4kbjx",
+      "verified_internal_id_at": "2026-11-14T00:10:27.550246+00:00",
+      "native_adapter": "scripts/distribution/facebook_live_publisher.py",
+      "preferred_executor": "NATIVE",
+      "fallback_executor": "POSTIZ",
+      "certification_mode": "DUAL_CERTIFICATION"
+    },
+    {
+      "channel_account_id": "acc_holiday_instagram_01",
+      "venture_id": "vnt_holiday_commerce_pilot_2026",
+      "platform": "INSTAGRAM",
+      "postiz_provider": "instagram",
+      "expected_account_name": "Ray",
+      "expected_external_id": "17841480885973564",
+      "postiz_integration_id": "cmwfhk1yb0004o089kpnq37nh",
+      "verified_internal_id_at": "2026-11-14T00:10:27.550506+00:00",
+      "native_adapter": "scripts/distribution/instagram_live_publisher.py",
+      "preferred_executor": "NATIVE",
+      "fallback_executor": "POSTIZ",
+      "certification_mode": "DUAL_CERTIFICATION",
+      "expected_username": "the612amritual",
+      "linked_facebook_page_id": "1722332634511930"
+    },
+    {
+      "channel_account_id": "acc_holiday_tiktok_01",
+      "venture_id": "vnt_holiday_commerce_pilot_2026",
+      "platform": "TIKTOK",
+      "postiz_provider": "tiktok",
+      "expected_account_name": "nexus",
+      "expected_external_id": "0006Wf9a10zupCEyowue0GUFSW84Qt1Qt5u",
+      "postiz_integration_id": "cmwfmzrb00001pl7falp0fuxp",
+      "verified_internal_id_at": "2026-11-14T00:10:27.550521+00:00",
+      "native_adapter": null,
+      "preferred_executor": "POSTIZ",
+      "fallback_executor": "NONE",
+      "certification_mode": "POSTIZ_PRIMARY",
+      "expected_username": null,
+      "identity_status": "OWNER_VERIFIED",
+      "tiktok_open_id": "-0006Wf9a10zupCEyowue0GUFSW84Qt1Qt5u",
+      "sandbox_target_username": "nexusaiwealth",
+      "credential_environment": "SANDBOX",
+      "identity_evidence": "Owner-confirmed TikTok developer portal Sandbox target user nexusaiwealth (2026-11-13); open_id verified via TikTok user/info."
+    },
+    {
+      "channel_account_id": "acc_shared_nexus_youtube_01",
+      "venture_id": null,
+      "platform": "YOUTUBE",
+      "postiz_provider": "youtube",
+      "expected_account_name": "Nexus Operations Hub",
+      "expected_external_id": null,
+      "postiz_integration_id": null,
+      "verified_internal_id_at": null,
+      "native_adapter": null,
+      "preferred_executor": "POSTIZ",
+      "fallback_executor": "NONE",
+      "certification_mode": "POSTIZ_PRIMARY",
+      "owner_decision": "Registered YouTube account is the SHARED 'Nexus Operations Hub' channel; Ray confirms it is the channel to connect (no Holiday-only YouTube channel is registered).",
+      "venture_scope": [
+        "vnt_holiday_commerce_pilot_2026",
+        "vnt_krd_ability_2026",
+        "vnt_goclear_credit_2026"
+      ],
+      "account_scope": "SHARED"
+    },
+    {
+      "channel_account_id": "acc_krd_linkedin_01",
+      "venture_id": "vnt_krd_ability_2026",
+      "platform": "LINKEDIN",
+      "postiz_provider": "linkedin-page",
+      "expected_account_name": "KRD Ability Corporation",
+      "expected_external_id": null,
+      "postiz_integration_id": null,
+      "verified_internal_id_at": null,
+      "native_adapter": null,
+      "preferred_executor": "POSTIZ",
+      "fallback_executor": "NONE",
+      "certification_mode": "POSTIZ_PRIMARY"
+    }
+  ],
+  "forbidden_identities": [
+    {
+      "venture_id": "vnt_goclear_credit_2026",
+      "platform": "FACEBOOK",
+      "name_patterns": [
+        "clear credentials",
+        "goclear"
+      ],
+      "reason": "GoClear stays isolated; never connected to the Holiday/commerce Postiz organization",
+      "forbidden_external_ids": [
+        "131069194210954"
+      ]
+    },
+    {
+      "venture_id": "vnt_goclear_credit_2026",
+      "platform": "INSTAGRAM",
+      "name_patterns": [
+        "clear credentials",
+        "goclear",
+        "goclearonline"
+      ],
+      "reason": "GoClear stays isolated; never connected to the Holiday/commerce Postiz organization",
+      "forbidden_external_ids": [
+        "17841480265043148"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.nexus.durable-dispatcher</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/raymonddavis/.nexus/releases/nexus-research-runtime-alpha-primary-codex-20261026-r9/scripts/ops/run_with_canonical_runtime_env.sh</string>
+		<string>/Users/raymonddavis/nexus-os-v2-canonical/.venv-agent-platform/bin/python3</string>
+		<string>/Users/raymonddavis/.nexus/releases/nexus-research-runtime-alpha-primary-codex-20261026-r9/scripts/nexus_agent_platform/dispatcher_once.py</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/raymonddavis/.nexus/releases/nexus-research-runtime-alpha-primary-codex-20261026-r9</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PYTHONPATH</key>
+		<string>/Users/raymonddavis/.nexus/releases/nexus-research-runtime-alpha-primary-codex-20261026-r9/scripts:/Users/raymonddavis/.nexus/releases/nexus-research-runtime-alpha-primary-codex-20261026-r9</string>
+		<key>NEXUS_DISPATCH_ALLOWED_JOB_SOURCES</key>
+		<string>NOVA_MCP_DEPARTMENT_QUERY,NOVA_MCP_NOTEBOOKLM_CANARY,NOVA_MCP_RESEARCH_ASSIGNMENT,RESEARCH_ROOM_ADVISOR,RESEARCH_PARENT_CONTINUATION,NEXUS_SYSTEMS_COMPLETION_NOTICE,NOVA_MCP_ALPHA_ASSIGNMENT,NEXUS_ALPHA_COMPLETION_NOTICE,NOVA_ALPHA_ASSIGNMENT_NOTICE,NOVA_CROSS_DEPARTMENT_ALPHA_HANDOFF</string>
+		<key>NEXUS_DISPATCH_ALLOWED_JOB_IDS</key>
+		<string>job_41eac08db91447ae9bcfa4c47d165943</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StartInterval</key>
+	<integer>30</integer>
+	<key>ThrottleInterval</key>
+	<integer>15</integer>
+	<key>StandardOutPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/durable_dispatcher.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/durable_dispatcher_error.log</string>
+</dict>
+</plist>

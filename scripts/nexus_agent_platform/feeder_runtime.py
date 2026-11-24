@@ -107,25 +107,27 @@ def _request(path,method='GET',body=None,prefer='return=minimal'):
     _load_env();base=(os.getenv('SUPABASE_URL') or os.getenv('VITE_SUPABASE_URL') or '').rstrip('/');key=os.getenv('SUPABASE_SERVICE_ROLE_KEY')
     if not base or not key: raise RuntimeError('SUPABASE_NOT_CONFIGURED')
     try:
-        from nexus_agent_platform.supabase_egress_guard import record_request, safe_mode_enabled, preflight_request
+        from nexus_agent_platform.supabase_egress_guard import record_request, safe_mode_enabled, preflight_request, read_bounded_response, JobEgressBudgetExceeded
         retries=0 if safe_mode_enabled() else max(0,min(1,int(os.getenv('NEXUS_SUPABASE_MAX_RETRIES','1'))))
     except Exception:
-        from nexus_agent_platform.supabase_egress_guard import record_request, preflight_request
+        from nexus_agent_platform.supabase_egress_guard import record_request, preflight_request, read_bounded_response, JobEgressBudgetExceeded
         retries=0
     safe_write=(method.upper() in {'GET','HEAD','OPTIONS','PATCH'} or (method.upper()=='POST' and 'on_conflict=' in path))
     attempt=0
     while True:
-        preflight_request(method,path)
+        preflight_request(method,path,body)
         req=urllib.request.Request(base+'/rest/v1/'+path,data=None if body is None else json.dumps(body).encode(),method=method,headers={'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json','Prefer':prefer})
         try:
             try: import certifi;ctx=ssl.create_default_context(cafile=certifi.where())
             except ImportError:ctx=ssl.create_default_context()
             with urllib.request.urlopen(req,timeout=20,context=ctx) as r:
-                raw=r.read();result=json.loads(raw or b'[]')
+                raw=read_bounded_response(r,method,path);result=json.loads(raw or b'[]')
                 record_request(method,path,r.status,len(raw),rows=len(result) if isinstance(result,list) else 0,retries=attempt,trace=False)
                 return result
+        except JobEgressBudgetExceeded:
+            raise
         except urllib.error.HTTPError as e:
-            error_body=e.read()
+            error_body=read_bounded_response(e,method,path)
             record_request(method,path,e.code,len(error_body),retries=attempt,trace=False)
             if safe_write and attempt < retries and e.code in {408,429,500,502,503,504,522}:
                 attempt+=1;__import__('time').sleep(min(2**attempt,2));continue
@@ -223,7 +225,8 @@ def _analyze_unstructured_source(row,template):
         {'role':'user','content':str(template[0]['prompt_body'])+'\n\nSOURCE_PACKET_JSON:\n'+json.dumps(payload,ensure_ascii=False)[:50000]},
     ]
     result=asyncio.run(LlmGatewayAdapter('nexus_feeder_questionnaire').completion(
-        model=model,messages=messages,temperature=0.1,max_tokens=6000,timeout=60))
+        model=model,messages=messages,temperature=0.1,max_tokens=6000,timeout=60,
+        sensitivity="public_research",reasoning_class="STRONG_REASONING",task_type="research"))
     if result.get('error') or not result.get('content'):
         raise RuntimeError('FEEDER_ANALYSIS_PROVIDER_'+str(result.get('error') or 'EMPTY_RESPONSE'))
     content=str(result['content']).strip()

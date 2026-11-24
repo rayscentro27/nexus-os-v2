@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nexus.nexus-mcp-reverse-tunnel</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/ops/nexus_mcp_reverse_tunnel.sh</string></array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+  <key>EnvironmentVariables</key>
+  <dict><key>HOME</key><string>/Users/raymonddavis</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/nexus_mcp_reverse_tunnel.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/nexus_mcp_reverse_tunnel_error.log</string>
+</dict>
+</plist>

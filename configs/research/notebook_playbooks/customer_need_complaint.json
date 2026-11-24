@@ -1,0 +1,89 @@
+{
+  "playbook_id": "nexus.notebook.customer_need_complaint",
+  "case_type": "CUSTOMER_NEED_COMPLAINT",
+  "version": "1.0.0",
+  "objective_description": "Establish repeated customer needs and friction from direct evidence.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What exactly are customers asking for or complaining about, and what exact customer language is used?",
+    "How often does the issue recur and is it supported across independent sources?",
+    "Who experiences it and what time, financial, or emotional cost does it create?",
+    "What solutions have customers tried and why do those solutions fail?",
+    "What would an improved solution need to do; do customers already pay to solve it?",
+    "Could an existing product be referred/resold, or could Nexus offer service or education?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "YOUTUBE_COMMENTS",
+    "YOUTUBE",
+    "REVIEWS",
+    "TRUSTPILOT",
+    "FORUMS",
+    "PUBLIC_SOCIAL",
+    "MARKETPLACE_REVIEWS",
+    "APP_REVIEWS"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "frequency",
+        "recurring",
+        "how often",
+        "cross-source"
+      ],
+      "source_classes": [
+        "CUSTOMER_DISCUSSIONS",
+        "REVIEWS",
+        "COMMENTS"
+      ]
+    },
+    {
+      "match_any": [
+        "cost",
+        "pain",
+        "financial",
+        "time"
+      ],
+      "source_classes": [
+        "REVIEWS",
+        "CUSTOMER_DISCUSSIONS",
+        "OFFICIAL_PRICING"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "customer_problem": "",
+    "customer_segment": "",
+    "frequency": "",
+    "pain_cost": "",
+    "existing_solutions": [],
+    "failure_reasons": [],
+    "payment_evidence": [],
+    "next_action": ""
+  },
+  "handoff_destination": "ATLAS_OPPORTUNITY",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

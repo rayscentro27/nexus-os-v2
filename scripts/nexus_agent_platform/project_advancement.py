@@ -128,7 +128,7 @@ def consume_trading_test(handoff_id: str) -> dict[str, Any]:
         return {"handoff": handoff, "work_order": order, "deduplicated": True}
     order = transition_work_order(order, "ASSIGNED", assignment_reason="existing TRADING_ENGINE deterministic intake")
     persistence.append_record("work_orders", order)
-    order = transition_work_order(order, "IN_PROGRESS", worker_id="TRADING_ENGINE", execution_class="DETERMINISTIC_EXECUTOR")
+    order = transition_work_order(order, "IN_PROGRESS", worker_id="TRADING_ENGINE", execution_class="SPECIALIZED_EXECUTOR")
     persistence.append_record("work_orders", order)
     source_refs = list(handoff.get("source_refs") or [])
     if not source_refs:
@@ -163,7 +163,7 @@ def consume_trading_test(handoff_id: str) -> dict[str, Any]:
     if supported_rules and artifact_identity_ok and isinstance(artifact, dict) and artifact.get("live_trading") is False:
         results = list(artifact.get("results") or [])
         output = {
-            "status": "EXECUTED_PAPER_BACKTEST", "worker": "TRADING_ENGINE", "execution_class": "DETERMINISTIC_EXECUTOR",
+            "status": "EXECUTED_PAPER_BACKTEST", "worker": "TRADING_ENGINE", "execution_class": "SPECIALIZED_EXECUTOR",
             "strategy_spec": strategy_spec, "backtest_artifact": backtest_artifact, "results": results,
             "live_trading": False, "external_action_performed": False,
         }
@@ -185,7 +185,7 @@ def consume_trading_test(handoff_id: str) -> dict[str, Any]:
     output = output or {
         "status": "BLOCKED_DEPENDENCY",
         "worker": "TRADING_ENGINE",
-        "execution_class": "DETERMINISTIC_EXECUTOR",
+        "execution_class": "SPECIALIZED_EXECUTOR",
         "source_refs": source_refs,
         "ruleset_present": False,
         "missing_inputs": missing,

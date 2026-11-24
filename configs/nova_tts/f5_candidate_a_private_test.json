@@ -1,0 +1,40 @@
+{
+  "schema_version": "nexus.nova.private_test_tts.v1",
+  "provider": "F5_TTS",
+  "registration": "PRIVATE_TEST_PROVIDER",
+  "voice": "F5_CANDIDATE_A",
+  "usage_mode": "PRIVATE_NON_COMMERCIAL_TEST",
+  "commercial_production_approved": false,
+  "customer_facing_allowed": false,
+  "marketing_allowed": false,
+  "paid_product_allowed": false,
+  "production_routing_allowed": false,
+  "modal_app": "nexus-creative-gpu-worker",
+  "modal_gpu": "L4",
+  "modal_profile": "goclearonline",
+  "model": "SWivid/F5-TTS:F5TTS_v1_Base",
+  "model_revision": "84e5a410d9cead4de2f847e7c9369a6440bdfaca",
+  "code_revision": "283252563dbf91be625e0c27926acfaac449186c",
+  "vocoder": "charactr/vocos-mel-24khz",
+  "vocoder_revision": "0feb3fdd929bcd6649e0e7c5a688cf7dd012ef21",
+  "reference_audio": "assets/nova/voice-references/nova_primary_voice_reference.mp3",
+  "reference_audio_sha256": "313939b86cbe12201a4b24a381efca93e11c3d9124c7c6f3061797c0ac38a709",
+  "reference_working_audio": "artifacts/nova/f5tts/reference/nova_primary_voice_reference.wav",
+  "reference_working_audio_sha256": "67ecb6a3baff475054a5bbec644803735c10cdd96600cb054638c2881107d229",
+  "reference_transcript": "assets/nova/voice-references/nova_primary_voice_reference_transcript.txt",
+  "reference_transcript_sha256": "683a458da930defaf5eeccecf3fc69df3dceddc2539957c8e180a1fb0d07dcc0",
+  "inference": {
+    "speed": 1.0,
+    "sampling_parameters": "Pinned upstream F5TTS_v1_Base defaults; no explicit seed or other sampling overrides were present in Candidate A run.",
+    "output_format": "WAV PCM16 mono",
+    "sample_rate_hz": 24000
+  },
+  "selection_status": "LOCKED_PRIVATE_TEST_VOICE",
+  "confirmation_sample": {
+    "path": "artifacts/nova/f5tts-final/nova_f5tts_A_confirmed.wav",
+    "sha256": "bca62483b855fdb4bb410167ffb78d185cdcd70e3d86de524cc49157bcdf3ed1",
+    "sample_rate_hz": 24000,
+    "duration_seconds": 9.088,
+    "format": "WAV PCM16 mono"
+  }
+}

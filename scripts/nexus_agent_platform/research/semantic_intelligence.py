@@ -90,25 +90,25 @@ def _json_object(text: str) -> dict[str, Any] | None:
 
 
 def judge_coherence(signals: list[dict[str, Any]], query: str, *, model: str | None = None) -> dict[str, Any]:
-    """Use the existing OpenRouter transport for bounded semantic preparation."""
-    from alpha.alpha_live_research import http_json, load_runtime_env
-    load_runtime_env()
-    model = model or os.environ.get("SEMANTIC_JUDGE_MODEL") or "openai/gpt-4o-mini"
-    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    if not key:
-        return {"status": "BLOCKED", "model": model, "model_calls": 0, "error": "missing_credential"}
+    """Use the canonical router for bounded semantic evidence preparation."""
     compact = [{"signal_id": row.get("signal_id"), "source_type": _source_type(row), "title": row.get("source_title") or row.get("title"), "text": (row.get("excerpt") or row.get("summary") or "")[:900], "url": row.get("source_url") or row.get("url")} for row in signals[:20]]
     instruction = {"query": query, "signals": compact, "required": ["cluster_id", "audience", "problem", "desired_outcome", "included_signal_ids", "rejected_signal_ids", "rejection_reasons", "repeated_customer_language", "commercial_intent_signals", "coherence", "evidence_gaps"], "rule": "Cluster only if audience, concrete problem, and desired outcome align. Separate demand confidence from factual confidence."}
-    payload = {"model": model, "messages": [{"role": "system", "content": "You are a semantic Research evidence-preparation judge. Return one JSON object only. Do not make business decisions or invent customer quotes."}, {"role": "user", "content": json.dumps(instruction, ensure_ascii=False)}], "temperature": 0.1, "max_tokens": 900}
-    ok, status, data, error, latency = http_json("POST", "https://openrouter.ai/api/v1/chat/completions", {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Research Semantic Judge"}, payload, timeout=45)
-    try:
-        text = str(data["choices"][0]["message"]["content"] or "")
-    except (KeyError, IndexError, TypeError):
-        text = ""
+    model = model or os.environ.get("SEMANTIC_JUDGE_MODEL") or "router_selected"
+    from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+    import asyncio
+    response = asyncio.run(LlmGatewayAdapter("nexus_research_semantic").completion(
+        model=model, messages=[{"role": "system", "content": "You are a semantic Research evidence-preparation judge. Return one JSON object only. Do not make business decisions or invent customer quotes."}, {"role": "user", "content": json.dumps(instruction, ensure_ascii=False)}],
+        temperature=0.1, max_tokens=900, timeout=45, sensitivity="public_research",
+        reasoning_class="LIGHT_REASONING", task_type="research"))
+    text = str(response.get("content") or "")
     judgment = _json_object(text)
-    if not ok or not judgment:
-        return {"status": "FAILED", "model": model, "model_calls": 1 if ok else 0, "http_status": status, "error": error or "invalid_json", "latency_ms": latency}
-    return {"status": "COMPLETE", "model": model, "model_calls": 1, "latency_ms": latency, "judgment": judgment}
+    if response.get("error") or not judgment:
+        return {"status": "FAILED", "model": response.get("model") or model,
+            "provider": response.get("provider"), "model_calls": 0 if response.get("error") else 1,
+            "error": response.get("error_detail") or response.get("error") or "invalid_json"}
+    return {"status": "COMPLETE", "model": response.get("model") or model,
+        "provider": response.get("provider"), "model_calls": 1,
+        "latency_ms": (response.get("execution_metadata") or {}).get("latency_ms"), "judgment": judgment}
 
 
 def route_qualified_finding(finding: dict[str, Any]) -> dict[str, Any]:
@@ -137,7 +137,7 @@ def create_accept_execute_feedback(*, finding: dict[str, Any], alpha_receipt_id:
     result_id = persistence.new_id("dept_result")
     correlation = {"finding_id": finding.get("finding_id"), "need_id": finding.get("need_id"), "investigation_id": finding.get("investigation_id"), "alpha_receipt_id": alpha_receipt_id}
     persistence.append_record("research_v2_handoffs", {"schema_version": "nexus.department-handoff.v1", "handoff_id": handoff_id, **correlation, "target_department": department, "reason": task, "status": "ACCEPTED", "accepted_at": _now(), "external_action_allowed": False})
-    persistence.append_record("work_orders", {"work_order_id": work_item_id, **correlation, "work_type": "bounded_internal_department_task", "owner_specialist": department, "status": "COMPLETED", "execution_class": "INTERNAL_READ_ONLY", "task": task, "external_mutation": False, "created_at": _now(), "completed_at": _now(), "receipt_id": result_id})
+    persistence.append_record("work_orders", {"work_order_id": work_item_id, **correlation, "work_type": "bounded_internal_department_task", "owner_specialist": department, "status": "COMPLETED", "execution_class": "DETERMINISTIC", "task": task, "external_mutation": False, "created_at": _now(), "completed_at": _now(), "receipt_id": result_id})
     persistence.append_record("result_feedback", {"schema_version": "nexus.department-result-feedback.v1", "result_id": result_id, **correlation, "department": department, "work_item_id": work_item_id, "status": "COMPLETE", "result": f"Bounded internal review completed for {task}.", "research_review_state": "PENDING", "alpha_review_state": "PENDING", "external_mutation": False, "created_at": _now()})
     return {"handoff_id": handoff_id, "work_item_id": work_item_id, "result_id": result_id, "department": department, "status": "COMPLETE", "external_mutation": False, **correlation}
 

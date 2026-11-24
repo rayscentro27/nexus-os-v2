@@ -10,7 +10,7 @@
       "lane_id": "FUNDING_LENDER",
       "state": "ACTIVE_RESEARCH",
       "categories": ["business_funding", "business_credit"],
-      "refresh_policy": "new uploads plus bounded historical backfill"
+      "refresh_policy": "new uploads only; historical ingestion requires explicit reactivation"
     },
     {
       "source_id": "luuk_alleman_systems",
@@ -21,7 +21,7 @@
       "lane_id": "GITHUB_TECHNOLOGY",
       "state": "ACTIVE_RESEARCH",
       "categories": ["ai_engineering", "agentic_software", "systems_research"],
-      "refresh_policy": "new uploads plus bounded historical backfill"
+      "refresh_policy": "new uploads only; historical ingestion requires explicit reactivation"
     },
     {
       "source_id": "jt_hustlez_opportunity",
@@ -32,7 +32,7 @@
       "lane_id": "BUSINESS_MARKET",
       "state": "ACTIVE_RESEARCH",
       "categories": ["business_opportunity_discovery", "services", "entrepreneurship"],
-      "refresh_policy": "new uploads plus bounded historical backfill"
+      "refresh_policy": "new uploads only; historical ingestion requires explicit reactivation"
     },
     {
       "source_id": "tradingview_editors_picks",

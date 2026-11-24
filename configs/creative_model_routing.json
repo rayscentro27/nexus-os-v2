@@ -8,7 +8,7 @@
     "google/gemini-2.5-flash": {"provider": "openrouter", "tier": "TIER_2", "input_price_per_1m": 0.30, "output_price_per_1m": 2.50, "vision": true, "structured_output": true},
     "openai/gpt-4o-mini": {"provider": "openrouter", "tier": "TIER_2", "input_price_per_1m": 0.15, "output_price_per_1m": 0.60, "vision": true, "structured_output": true},
     "nex-agi/nex-n2.5-pro:free": {"provider": "openrouter", "tier": "TIER_1", "input_price_per_1m": 0.0, "output_price_per_1m": 0.0, "vision": true, "structured_output": true},
-    "oracle_ollama_gemma": {"provider": "oracle_ollama_gemma", "model": "gemma3:4b", "tier": "LOCAL_FALLBACK", "input_price_per_1m": 0.0, "output_price_per_1m": 0.0, "vision": false, "structured_output": false}
+    "oracle_ollama_gemma": {"provider": "oracle_ollama_gemma", "model": "gemma3:4b", "tier": "OFFLINE_EXPERIMENT_ONLY", "input_price_per_1m": 0.0, "output_price_per_1m": 0.0, "vision": false, "structured_output": false, "production_eligible": false}
   },
   "routes": {
     "creative.direction": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_VALIDATED", "reason": "Passed direction and longer-brief structured fixtures; premium route did not pass strict schema."},
@@ -24,6 +24,6 @@
     ,"creative.fast_story_ideation": {"primary_model": "google/gemini-2.5-flash", "fallback_model": "openai/gpt-4o-mini", "quality_tier": "TIER_2_BOUNDED", "reason": "Existing certified Creative direction lane reused for lightweight structured story ideation."}
     ,"creative.visual_reference_research": {"primary_model": null, "fallback_model": null, "quality_tier": "TIER_1_DETERMINISTIC", "reason": "Nexus-owned attributed principle catalog; no external MCP installed."}
   },
-  "fallback_policy": "primary -> configured task fallback -> oracle_ollama_gemma where task and schema permit -> BLOCKED",
+  "fallback_policy": "primary -> configured task fallback -> BLOCKED; Oracle Ollama Gemma is available only to explicitly selected OFFLINE_EXPERIMENT or LOCAL_CANARY tasks",
   "resource_governor": {"mode": "SHADOW", "autonomous_premium_escalation": false}
 }

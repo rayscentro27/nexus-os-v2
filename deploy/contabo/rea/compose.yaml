@@ -1,0 +1,38 @@
+# Nexus REA harness (CONTABO_REA_HARNESS_ENVIRONMENT_R1). No published ports: reached only via `docker exec`
+# from the host wrapper bin/rea-job (SSH-authenticated). Hard cgroup limits protect Postiz and n8n.
+name: nexus-rea
+services:
+  nexus-rea:
+    image: nexus-rea:r2
+    container_name: nexus-rea
+    restart: unless-stopped
+    init: false
+    mem_limit: 2560m
+    memswap_limit: 2560m
+    mem_reservation: 512m
+    cpus: 2.0
+    cpu_shares: 256          # lower weight than default (1024): Postiz/n8n win CPU contention
+    pids_limit: 768
+    oom_score_adj: 800       # kernel OOM prefers REA over Postiz/n8n
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    shm_size: 256m           # Chromium
+    tmpfs: ["/tmp:size=512m,mode=1777"]
+    environment:
+      REA_HARNESS_ROOT: /rea
+      JAVA_TOOL_OPTIONS: "-Xmx1200m -XX:+UseSerialGC"
+      NODE_OPTIONS: "--max-old-space-size=768"
+    volumes:
+      - ./config:/rea/config:ro
+      - ./fixtures:/rea/fixtures:ro
+      - ./state:/rea/state
+      - ./workspace:/rea/workspace
+      - ./jobs:/rea/jobs
+      - ./artifacts:/rea/artifacts
+      - ./repos:/rea/repos
+      - ./logs:/rea/logs
+      - ./temp:/rea/temp
+      - ./state/home:/home/rea
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}

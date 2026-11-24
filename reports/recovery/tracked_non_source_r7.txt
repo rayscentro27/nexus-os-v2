@@ -1,0 +1,230 @@
+PATH=data/runtime/active_operator_work_item_state.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/coding_worker_handoff.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/company_goal_portfolio.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/forex_scanner_state.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/nexus_capability_registry.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/nexus_department_registry.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/nexus_loop_certification_campaign.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/nexus_loop_registry_v2.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/nexus_skill_registry.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/nexus_worker_role_map.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/research_source_refresh_state.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=data/runtime/telegram_conversation_context.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=launchd/com.nexus.nexus-mcp-bridge.plist
+CLASS=C1_LOCAL_CONFIGURATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve; no reload/deploy. Review service/deployment behavior before activation.
+
+PATH=launchd/com.nexus.oracle-hermes-tunnel.plist
+CLASS=C1_LOCAL_CONFIGURATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve; no reload/deploy. Review service/deployment behavior before activation.
+
+PATH=netlify.toml
+CLASS=C1_LOCAL_CONFIGURATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve; no reload/deploy. Review service/deployment behavior before activation.
+
+PATH=reports/certification/nexus_active_operator_v1_latest.json
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/certification/nexus_active_operator_v1_latest.md
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/certification/nexus_loop_certification_registry_latest.json
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/manual_publish/notebooklm_access_audit_latest.md
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/manual_publish/notebooklm_notebook_list_latest.md
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/manual_publish/oanda_demo_readonly_check_latest.md
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/research/NEXUS_CONTINUOUS_INTELLIGENCE_SESSION_2026-09-18.md
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/research/two_hour/latest.json
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/research/two_hour/latest.md
+CLASS=C3_REPORT_CERTIFICATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve history/evidence; review rolling outputs separately before future rotation.
+
+PATH=reports/runtime/nexus_active_operator_heartbeat_latest.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=reports/runtime/nexus_active_operator_runner_latest.md
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=reports/runtime/nexus_credential_catalog_latest.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=reports/runtime/nexus_credential_catalog_latest.md
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=reports/runtime/nexus_daily_monitor_latest.json
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=reports/runtime/nexus_daily_monitor_latest.md
+CLASS=C2_RUNTIME_STATE
+SHOULD_BE_VERSIONED=NO
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Preserve current state; do not stage or restore during recovery.
+
+PATH=scripts/ops/com.nexus.research-two-hour-report.plist
+CLASS=C1_LOCAL_CONFIGURATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve; no reload/deploy. Review service/deployment behavior before activation.
+
+PATH=scripts/ops/com.nexus.telegram-alpha.plist
+CLASS=C1_LOCAL_CONFIGURATION
+SHOULD_BE_VERSIONED=YES
+SHOULD_BE_LOCAL_ONLY=NO
+SAFE_TO_REVERT=NO
+ACTION=Preserve; no reload/deploy. Review service/deployment behavior before activation.
+
+PATH=src/client-v2/approved/generated.scoped.css
+CLASS=C4_GENERATED_CSS_OR_BUILD_OUTPUT
+SHOULD_BE_VERSIONED=UNKNOWN
+SHOULD_BE_LOCAL_ONLY=YES
+SAFE_TO_REVERT=NO
+ACTION=Keep until the generating source and byte-for-byte regeneration are verified.

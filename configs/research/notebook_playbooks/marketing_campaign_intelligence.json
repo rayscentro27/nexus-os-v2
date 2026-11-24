@@ -1,0 +1,92 @@
+{
+  "playbook_id": "nexus.notebook.marketing_campaign_intelligence",
+  "case_type": "MARKETING_CAMPAIGN_INTELLIGENCE",
+  "version": "1.0.0",
+  "objective_description": "Develop a tested audience/content/campaign pattern for a bounded marketing experiment.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "Who is the audience and what problem are they trying to solve?",
+    "What content, hooks, topics, objections, offers, CTAs, and formats recur across observed campaigns?",
+    "Which platform and campaign evidence is current, and what comments show buying intent or unmet needs?",
+    "What landing pages, funnels, reviews, SEO signals, and existing campaign results corroborate the pattern?",
+    "What is the campaign hypothesis, creative brief input, low-cost test, and measurement plan?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "YOUTUBE",
+    "SOCIAL_CONTENT",
+    "COMMENTS",
+    "COMPETITOR_FUNNELS",
+    "LANDING_PAGES",
+    "ADS",
+    "REVIEWS",
+    "SEO_SEARCH_DEMAND",
+    "CAMPAIGN_RESULTS"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "audience",
+        "buying intent",
+        "objection",
+        "hook"
+      ],
+      "source_classes": [
+        "COMMENTS",
+        "SOCIAL_CONTENT",
+        "CUSTOMER_DISCUSSIONS"
+      ]
+    },
+    {
+      "match_any": [
+        "offer",
+        "cta",
+        "landing",
+        "funnel"
+      ],
+      "source_classes": [
+        "COMPETITOR_FUNNELS",
+        "LANDING_PAGES",
+        "ADS"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "audience": "",
+    "pain_points": [],
+    "hooks": [],
+    "messaging": [],
+    "offer_pattern": "",
+    "channel": "",
+    "content_format": "",
+    "cta": "",
+    "objections": [],
+    "campaign_hypothesis": "",
+    "test_plan": ""
+  },
+  "handoff_destination": "MARKETING",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

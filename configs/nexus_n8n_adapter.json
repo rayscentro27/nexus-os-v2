@@ -1,0 +1,19 @@
+{
+  "schema_version": "nexus.n8n_adapter.v1",
+  "base_url": "http://nexus-app-services.tailb1e262.ts.net:5678",
+  "credential_id": "credential.n8n.nexus_control.prod.v1",
+  "api_key_environment_name": "N8N_API_KEY",
+  "workflow_list_limit": 100,
+  "write_operations_enabled": false,
+  "webhook_allowlist": [],
+  "last_read_certification": {
+    "date": "2026-11-17",
+    "runtime": "Contabo",
+    "version": "2.45.6",
+    "health_http": 200,
+    "workflow_list_http": 200,
+    "workflow_count": 5,
+    "outbound_nexus_connectivity": "NOT_VERIFIED",
+    "persistence_backend": "NOT_VERIFIED"
+  }
+}

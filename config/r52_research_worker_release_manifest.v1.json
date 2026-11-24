@@ -1,0 +1,33 @@
+{
+  "release_id": "nexus-capability-actions-20261023-r52",
+  "release_type": "immutable_additive_overlay",
+  "base_release_id": "nexus-capability-actions-20261022-r51",
+  "purpose": "Bound Research worker egress, settle capacity waits, recover exact-job child exits, and capture bounded worker observability.",
+  "runtime_files": [
+    "scripts/nexus_agent_platform/durable_jobs.py",
+    "scripts/nexus_agent_platform/feeder_runtime.py",
+    "scripts/nexus_agent_platform/job_worker_once.py",
+    "scripts/nexus_agent_platform/job_worker_supervisor.py",
+    "scripts/nexus_agent_platform/supabase_egress_guard.py",
+    "scripts/nexus_agent_platform/worker_lifecycle.py",
+    "scripts/research/research_case_engine.py",
+    "scripts/research/research_state_v2.py",
+    "scripts/social/_supabase.py"
+  ],
+  "prohibited_contents": [
+    "legacy Research ledger",
+    "production State v2 records",
+    "credentials or runtime.env",
+    "r50 or r51 release directories",
+    "database migrations"
+  ],
+  "certification": {
+    "minimum_test_count": 15,
+    "required_suites": [
+      "scripts/nexus_agent_platform/tests/test_r52_research_worker_safety.py",
+      "scripts/nexus_agent_platform/tests/test_durable_jobs.py",
+      "scripts/research/tests/test_research_state_v2_persistence.py"
+    ],
+    "requires_offline_failure_reproduction": true
+  }
+}

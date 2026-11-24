@@ -125,6 +125,18 @@ def _safe_worker_environment() -> Dict[str, str]:
 
 def codex_execute(task: BuildTaskSpec) -> Dict[str, Any]:
     """Execute one fixed Codex invocation in an isolated worktree."""
+    try:
+        from nexus_agent_platform.durable_objective_control import ACTIVE_CAMPAIGN_PATH, authorize_coding_action
+        if ACTIVE_CAMPAIGN_PATH.exists():
+            metadata = task.metadata or {}
+            authorize_coding_action(campaign_id=metadata.get("campaign_id"),
+                objective_id=metadata.get("owner_objective_id"), job_id=metadata.get("job_id"),
+                objective_version=metadata.get("objective_version"),
+                worker_role=metadata.get("worker_role", ""),
+                action_summary=f"{task.title} {task.objective}", path=ACTIVE_CAMPAIGN_PATH)
+    except Exception as exc:
+        return {"status": "blocked", "worker_error": "DURABLE_OBJECTIVE_GUARD",
+                "error": str(exc)[:240], "files_changed": [], "provider_started": False}
     if shutil.which("codex") is None:
         return {"status": "worker_unavailable", "worker_error": "CODEX_NOT_INSTALLED", "files_changed": []}
     started = time.monotonic()

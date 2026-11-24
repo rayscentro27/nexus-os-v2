@@ -250,6 +250,19 @@ def _upsert_current(row: dict[str, Any]) -> dict[str, Any]:
     status, body = supabase.rest("POST", "research_proactive_memory?on_conflict=memory_id", body=[payload],
                                  prefer="return=representation,resolution=merge-duplicates")
     echoed = next((item for item in body if isinstance(item, dict) and item.get("memory_id") == memory_id), None) if isinstance(body, list) else None
+    if status in {200, 201, 204} and (not echoed or echoed.get("recorded_at") != row["recorded_at"]):
+        # Some PostgREST paths commit an upsert but omit the representation.
+        # Accept only an exact readback of this event marker and timestamp;
+        # otherwise retain the existing fail-closed pending-intent behavior.
+        try:
+            exact = _exact_current(memory_id)
+        except CurrentStateUnavailable:
+            exact = None
+        if (isinstance(exact, dict)
+                and str(exact.get("last_state_event_id") or "") == str(row.get("last_state_event_id") or "")
+                and str(exact.get("recorded_at") or "") == str(row.get("recorded_at") or "")):
+            return {"status": "PASS", "verified": True, "memory_id": memory_id,
+                    "namespace": "PRODUCTION", "readback_verified": True}
     if status not in {200, 201, 204} or not echoed or echoed.get("recorded_at") != row["recorded_at"]:
         raise StateWriteFailure(f"CURRENT_STATE_WRITE_FAILED:HTTP_{status}")
     return {"status": "PASS", "verified": True, "memory_id": memory_id, "namespace": "PRODUCTION"}
@@ -337,8 +350,11 @@ def lookup_lineage(kind: str, identifier: str, *, limit: int = 100) -> list[dict
 
 
 def list_current(*, kinds: tuple[str, ...] = (), limit: int = 100, include_payload: bool = True,
-                 max_bytes: int | None = None) -> list[dict[str, Any]]:
+                 max_bytes: int | None = None, fields: tuple[str, ...] | None = None) -> list[dict[str, Any]]:
     """Bounded indexed projection; optional case hydration remains capped at 100."""
+    if fields is not None:
+        if include_payload or not fields or any(field not in CURRENT_FIELDS for field in fields):
+            raise ValueError("INVALID_CURRENT_STATE_PROJECTION")
     cap = max(1, min(int(limit), MAX_QUERY_ROWS if include_payload else MAX_CONTROL_ROWS))
     byte_cap = max(64 * 1024, min(int(max_bytes or (1_500_000 if include_payload else 2_000_000)),
                                  1_500_000 if include_payload else 2_000_000))
@@ -363,7 +379,8 @@ def list_current(*, kinds: tuple[str, ...] = (), limit: int = 100, include_paylo
     offset = 0
     while offset < cap:
         page_size = min(4 if include_payload else 500, cap - offset)
-        query = {"select": "memory_id,memory_kind,recorded_at,payload" if include_payload else ",".join(CURRENT_FIELDS),
+        projection = "memory_id,memory_kind,recorded_at,payload" if include_payload else ",".join(fields or CURRENT_FIELDS)
+        query = {"select": projection,
                  "order": "recorded_at.desc", "limit": str(page_size), "offset": str(offset)}
         if kinds: query["memory_kind"] = "in.(" + ",".join(kinds) + ")"
         status, rows = supabase.rest("GET", "research_proactive_memory?" + urllib.parse.urlencode(query))
@@ -574,10 +591,23 @@ def _apply_pending(event_id: str, pending: dict[str, Any]) -> dict[str, Any]:
         receipt = json.loads(receipt_path.read_text())
         _pending_path(event_id).unlink(missing_ok=True)
         return receipt
-    # Reconciliation always retries current state first. Pending state is
-    # durable before either authoritative write, so crashes are replayable.
+    # Reconciliation always establishes current state before history. Some
+    # PostgREST deployments commit an idempotent upsert but omit the returned
+    # representation despite HTTP 200; verify the exact event marker before
+    # retrying, so we can safely finish the history/receipt half of that write.
     row["last_state_event_id"] = event_id
-    current_receipt = _upsert_current(row)
+    try:
+        existing = _exact_current(str(row.get("memory_id") or ""))
+    except CurrentStateUnavailable:
+        existing = None
+    if (isinstance(existing, dict)
+            and str(existing.get("last_state_event_id") or "") == event_id
+            and str(existing.get("recorded_at") or "") == str(row.get("recorded_at") or "")):
+        current_receipt = {"status": "PASS", "verified": True, "memory_id": row["memory_id"],
+            "namespace": "CERTIFICATION" if _certification() else "PRODUCTION",
+            "reconciled_committed_state": True}
+    else:
+        current_receipt = _upsert_current(row)
     event = pending["history_event"]
     archive_path = _append_event(event, pending.get("history_path"))
     receipt = {"event_id": event_id, "memory_id": row["memory_id"], "current_state": current_receipt,
@@ -589,6 +619,18 @@ def _apply_pending(event_id: str, pending: dict[str, Any]) -> dict[str, Any]:
 
 def persist_state(state: dict[str, Any], *, event_type: str | None = None) -> dict[str, Any]:
     """Persist a durable outbox intent, then current state, then history receipt."""
+    worker_job_id = os.environ.get("NEXUS_DURABLE_JOB_ID", "")
+    def worker_marker(stage: str, **details: Any) -> None:
+        if not worker_job_id:
+            return
+        try:
+            from nexus_agent_platform.worker_lifecycle import emit
+            emit(worker_job_id, stage, attempt=os.environ.get("NEXUS_JOB_ATTEMPT_COUNT"),
+                 worker_id=os.environ.get("NEXUS_WORKER_ID", ""), **details)
+        except Exception:
+            pass
+    worker_marker("STATE_V2_WRITE_START", memory_kind=state.get("memory_kind"),
+                  state_id=state.get("memory_id") or state.get("case_id"))
     try:
         row = _bounded_record(dict(state))
     except ValueError as exc:
@@ -658,6 +700,8 @@ def persist_state(state: dict[str, Any], *, event_type: str | None = None) -> di
             except OSError: pass
             raise
         fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+    worker_marker("STATE_V2_WRITE_COMPLETE", event_id=receipt.get("event_id"),
+                  memory_id=receipt.get("memory_id"), status=receipt.get("status"))
     return {**row, "state_v2_receipt": receipt, "supabase_sync": {"status": "PASS", "verified": True,
             "memory_id": row["memory_id"], "namespace": receipt["current_state"].get("namespace", "PRODUCTION")}}
 

@@ -84,7 +84,13 @@ def _latest_cases(*, include_full_payload: bool = True) -> list[dict[str, Any]]:
     # Detailed case work explicitly hydrates bounded case payloads; ordinary
     # scheduling and proactive-memory reads use compact projections.
     for row in state_v2.list_current(kinds=("RESEARCH_CASE", "PROACTIVE_RESEARCH_CASE"),
-                                     limit=100, include_payload=True):
+                                     limit=100, include_payload=include_full_payload,
+                                     fields=None if include_full_payload else (
+                                         "memory_id", "memory_kind", "recorded_at",
+                                         "case_id:payload->>case_id",
+                                         "objective_key:payload->>objective_key",
+                                         "status:payload->>status",
+                                         "case_schema_version:payload->>case_schema_version")):
         kind = row.get("memory_kind")
         if kind not in {"RESEARCH_CASE", "PROACTIVE_RESEARCH_CASE"}:
             continue
@@ -1494,6 +1500,44 @@ def record_finding(case_id: str, finding: dict[str, Any]) -> dict[str, Any]:
     saved = _save(case, "FINDING_ADDED", findings=_add_unique(list(case.get("findings") or []), row, "finding_id"),
                   status="SYNTHESIZING", next_research_action="SYNTHESIZE_CASE")
     return {"ok": True, "case": saved, "finding": row}
+
+
+def record_research_only_result(case_id: str, *, question: str, answer: str,
+                                evidence_ids: list[str], finding: dict[str, Any]) -> dict[str, Any]:
+    """Persist a bounded Research-only answer and hold the case for review.
+
+    This explicit completion contract never schedules follow-up work. Ordinary
+    Research findings continue to use ``record_finding`` and retain their
+    existing parent workflow semantics.
+    """
+    case = get_case(case_id)
+    if not case:
+        return {"ok": False, "reason": "CASE_NOT_FOUND"}
+    normalize = lambda value: " ".join(str(value or "").split()).casefold()
+    opened = list(case.get("open_questions") or [])
+    target = next((row for row in opened if normalize(row.get("question")) == normalize(question)), None)
+    if not target:
+        return {"ok": False, "reason": "RESEARCH_ONLY_QUESTION_NOT_OPEN"}
+    bounded_answer = str(answer or "").strip()[:1200]
+    evidence = list(dict.fromkeys(str(ref)[:300] for ref in evidence_ids if str(ref).strip()))[:5]
+    answer_record = {**target, "answer_status": "ANSWERED", "answer": bounded_answer,
+        "evidence_ids": evidence, "confidence": 0.5,
+        "limitations": ["Bounded Research-only execution; no Advisor or Needle interpretation."],
+        "answered_at": _now()}
+    ident = str(finding.get("finding_id") or finding.get("id") or
+        hashlib.sha256(json.dumps(finding, sort_keys=True, default=str).encode()).hexdigest()[:18])
+    finding_row = {**finding, "finding_id": ident, "summary": bounded_answer,
+                   "evidence_ids": evidence, "recorded_at": finding.get("recorded_at") or _now()}
+    saved = _save(case, "RESEARCH_ONLY_RESULT_RECORDED",
+        findings=_add_unique(list(case.get("findings") or []), finding_row, "finding_id"),
+        open_questions=[row for row in opened if row.get("question_id") != target.get("question_id")],
+        answered_questions=list(case.get("answered_questions") or []) + [answer_record],
+        status="AWAITING_RAY_DECISION", continue_research=False,
+        next_action="RESEARCH_ONLY_RESULT_READY", next_research_action="AWAITING_BOUNDED_RESULT_REVIEW",
+        current_owner="RAY", current_directive="RESEARCH_ONLY_RESULT_READY",
+        last_case_advancement_trigger="RESEARCH_ONLY_RESULT")
+    return {"ok": True, "case": saved, "answer": answer_record, "finding": finding_row,
+            "continuation_scheduled": False}
 
 
 def record_synthesis(case_id: str, *, claims: list[dict[str, Any]], agreements: list[str],

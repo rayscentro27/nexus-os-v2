@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nexus.research-api</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node</string>
+    <string>/Users/raymonddavis/nexus-os-v2-canonical/scripts/api/research_api_origin.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2-canonical</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key><string>/Users/raymonddavis</string>
+    <key>PATH</key><string>/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/research_api_origin.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2-canonical/reports/runtime/research_api_origin_error.log</string>
+</dict>
+</plist>

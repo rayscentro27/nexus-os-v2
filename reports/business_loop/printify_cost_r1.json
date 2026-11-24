@@ -1,0 +1,406 @@
+{
+  "generated_at": "2026-11-15T23:20:53.371828+00:00",
+  "mode": "READ_ONLY",
+  "orders_placed": 0,
+  "products_created": 0,
+  "shops": [
+    {
+      "id": 29243395,
+      "title": "My new store",
+      "sales_channel": "custom_integration"
+    },
+    {
+      "id": 29249161,
+      "title": "Alpha",
+      "sales_channel": "custom_integration"
+    }
+  ],
+  "existing_mug_products": [],
+  "catalog_ceramic_mug_blueprints": [
+    {
+      "id": 68,
+      "title": "Mug 11oz",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 425,
+      "title": "Mug 15oz",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 441,
+      "title": "Ceramic Mug (EU)",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 478,
+      "title": "Ceramic Mug, (11oz, 15oz)",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 479,
+      "title": "Black Mug (11oz, 15oz)",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 503,
+      "title": "White Ceramic Mug, 11oz",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 535,
+      "title": "11oz White Mug",
+      "brand": "ORCA Coatings",
+      "model": ""
+    },
+    {
+      "id": 583,
+      "title": "11oz Accent Mug",
+      "brand": "ORCA Coatings",
+      "model": ""
+    },
+    {
+      "id": 612,
+      "title": "Metallic Mug (Silver\\Gold)",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 628,
+      "title": "Black Coffee Mug, 11oz",
+      "brand": "ORCA Coatings",
+      "model": ""
+    },
+    {
+      "id": 635,
+      "title": "Accent Coffee Mug (11, 15oz)",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 891,
+      "title": "Stein Mug",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 896,
+      "title": "Heart-Shaped Mug",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 930,
+      "title": "Magic Mug",
+      "brand": "Generic brand",
+      "model": ""
+    },
+    {
+      "id": 1016,
+      "title": "Standard Mug, 11oz",
+      "brand": "Generic brand",
+      "model": ""
+    }
+  ],
+  "chosen_blueprint": {
+    "id": 478,
+    "title": "Ceramic Mug, (11oz, 15oz)",
+    "description": "Warm-up with a nice cuppa out of this customized ceramic coffee mug. Personalize it with cool designs, photos or logos to make that \"aaahhh!\" moment even better. It\u2019s BPA and Lead-free, microwave & dishwasher-safe, and made of white, durable ceramic in 11-ounce and 15-ounce sizes. Thanks to the advanced printing tech, your designs come to life with incredibly vivid colors \u2013 the perfect gift for coffee, tea, and chocolate lovers. .:These mugs are made with durable white ceramic so that your prints can stand out.   .:Available in two sizes: 11oz (0.33 l) and 15oz (0.44 l)   .:All mugs feature a "
+  },
+  "providers": [
+    {
+      "id": 28,
+      "title": "District Photo",
+      "location": null,
+      "variants": [
+        {
+          "id": 65216,
+          "title": "11oz",
+          "options": {
+            "size": "11oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1155
+            }
+          ]
+        },
+        {
+          "id": 104692,
+          "title": "15oz",
+          "options": {
+            "size": "15oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1275
+            }
+          ]
+        }
+      ],
+      "shipping_handling_time": {
+        "value": 10,
+        "unit": "day"
+      },
+      "shipping_us": [
+        {
+          "variant_ids": [
+            104692
+          ],
+          "first_item_cents": 869,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            65216
+          ],
+          "first_item_cents": 669,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            65216
+          ],
+          "first_item_cents": 729,
+          "additional_item_cents": 309
+        }
+      ],
+      "shipping_countries_sample": [
+        "AT",
+        "AU",
+        "BE",
+        "BG",
+        "CA",
+        "CY",
+        "CZ",
+        "DE",
+        "DK",
+        "EE",
+        "ES",
+        "FI",
+        "FR",
+        "GR",
+        "HR",
+        "HU",
+        "IE",
+        "IT",
+        "LT",
+        "LU",
+        "LV",
+        "MT",
+        "NL",
+        "NZ",
+        "PL"
+      ]
+    },
+    {
+      "id": 1,
+      "title": "SPOKE Custom Products",
+      "location": null,
+      "variants": [
+        {
+          "id": 65216,
+          "title": "11oz",
+          "options": {
+            "size": "11oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1155
+            }
+          ]
+        },
+        {
+          "id": 104692,
+          "title": "15oz",
+          "options": {
+            "size": "15oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1275
+            }
+          ]
+        }
+      ],
+      "shipping_handling_time": {
+        "value": 10,
+        "unit": "day"
+      },
+      "shipping_us": [
+        {
+          "variant_ids": [
+            65216
+          ],
+          "first_item_cents": 669,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            104692
+          ],
+          "first_item_cents": 869,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            65216
+          ],
+          "first_item_cents": 729,
+          "additional_item_cents": 309
+        }
+      ],
+      "shipping_countries_sample": [
+        "US"
+      ]
+    },
+    {
+      "id": 410,
+      "title": "Printful",
+      "location": null,
+      "variants": [
+        {
+          "id": 65216,
+          "title": "11oz",
+          "options": {
+            "size": "11oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1155
+            }
+          ]
+        },
+        {
+          "id": 104692,
+          "title": "15oz",
+          "options": {
+            "size": "15oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1275
+            }
+          ]
+        }
+      ],
+      "shipping_handling_time": {
+        "value": 10,
+        "unit": "day"
+      },
+      "shipping_us": [
+        {
+          "variant_ids": [
+            65216
+          ],
+          "first_item_cents": 639,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            104692
+          ],
+          "first_item_cents": 829,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            104692
+          ],
+          "first_item_cents": 939,
+          "additional_item_cents": 399
+        }
+      ],
+      "shipping_countries_sample": [
+        "CA",
+        "REST_OF_THE_WORLD",
+        "US"
+      ]
+    },
+    {
+      "id": 99,
+      "title": "Printify Choice",
+      "location": null,
+      "variants": [
+        {
+          "id": 65216,
+          "title": "11oz",
+          "options": {
+            "size": "11oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1155
+            }
+          ]
+        },
+        {
+          "id": 104692,
+          "title": "15oz",
+          "options": {
+            "size": "15oz"
+          },
+          "placeholders": [
+            {
+              "position": "front",
+              "width": 2475,
+              "height": 1275
+            }
+          ]
+        }
+      ],
+      "shipping_handling_time": {
+        "value": 10,
+        "unit": "day"
+      },
+      "shipping_us": [
+        {
+          "variant_ids": [
+            65216
+          ],
+          "first_item_cents": 579,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            104692
+          ],
+          "first_item_cents": 709,
+          "additional_item_cents": 299
+        },
+        {
+          "variant_ids": [
+            104692
+          ],
+          "first_item_cents": 939,
+          "additional_item_cents": 399
+        }
+      ],
+      "shipping_countries_sample": [
+        "CA",
+        "REST_OF_THE_WORLD",
+        "US"
+      ]
+    }
+  ]
+}

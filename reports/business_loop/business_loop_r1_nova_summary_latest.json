@@ -1,0 +1,132 @@
+{
+  "PROJECT": {
+    "project_id": "proj_98ef515bccee4b58",
+    "venture_id": "vnt_holiday_commerce_pilot_2026",
+    "opportunity_id": "opp_holiday_ceramic_mug_2026",
+    "opportunity_name": "The 6:12 AM Quiet Ritual - holiday ceramic mug (Holiday Commerce Pilot)",
+    "status": "ACTIVE",
+    "cycle": 3
+  },
+  "CURRENT_STAGE": {
+    "department": "DISTRIBUTION",
+    "stage": "DISTRIBUTION_VARIANT"
+  },
+  "WHAT_RESEARCH_FOUND": {
+    "summary": "Execute a low-cost holiday commerce pilot validating consumer interest for a quiet morning ritual ceramic concept across owned storefront and print-on-demand/marketplace channels without paid advertising exposure or inventory risk.",
+    "evidence_sufficiency": "SUFFICIENT_FOR_NO_SPEND_VALIDATION",
+    "demand_evidence": "NONE_OBSERVED_YET",
+    "questions": [
+      "Does organic content produce landing-page clicks?",
+      "Which hook earns the most engagement per reach?",
+      "What is the real Printify COGS + ship time for a comparable mug?",
+      "Will anyone register intent at $48?"
+    ]
+  },
+  "MARKETING_PLAN": {
+    "positioning": "The counter-holiday gift: a calm, substantial ceramic mug for the quiet minutes before the house wakes.",
+    "hooks": [
+      "The only fifteen minutes of the holidays that belong entirely to you.",
+      "Zero snowflakes. Zero Santas. Just a quiet ceramic mug for slow winter mornings.",
+      "A gift for the person who is always up before everyone else."
+    ],
+    "cta": "See the studio preview",
+    "spend": {
+      "authorized": false,
+      "recommended": "$0 now; consider $20 boost test on best hook after 7 days of organic data"
+    }
+  },
+  "CREATIVE_ASSETS": [
+    {
+      "path": "dist/creative/business_loop/proj_98ef515bccee4b58/primary_square_1080.jpg",
+      "size": "1080x1080",
+      "hook": "H1"
+    },
+    {
+      "path": "dist/creative/business_loop/proj_98ef515bccee4b58/vertical_story_1080x1920.jpg",
+      "size": "1080x1920",
+      "hook": "H2"
+    },
+    {
+      "path": "dist/creative/business_loop/proj_98ef515bccee4b58/link_card_1200x628.jpg",
+      "size": "1200x628",
+      "hook": "H3"
+    },
+    {
+      "qa": "PASS"
+    }
+  ],
+  "COMMERCE_OFFER": {
+    "PRODUCT_NAME": "The 6:12 AM Ritual Ceramic Mug (Studio Preview)",
+    "PRICE": {
+      "amount_usd": 48.0,
+      "status": "PROPOSED_BUSINESS_DECISION"
+    },
+    "COST": {
+      "amount_usd": 16.5,
+      "status": "ESTIMATED_ONLY (no supplier quote)"
+    },
+    "MARGIN": {
+      "gross_margin_estimate": 0.656,
+      "status": "ESTIMATE"
+    },
+    "STATUS": "STAGED",
+    "PURCHASE_URL": "https://nexus-campaigns.pages.dev/holiday-commerce-pilot/holiday-ceramic-mug/"
+  },
+  "DISTRIBUTION_STATUS": {
+    "publication": "PAUSED_WAITING_FOR_RAY_APPROVAL",
+    "channels": [
+      "FACEBOOK",
+      "INSTAGRAM",
+      "TIKTOK"
+    ]
+  },
+  "METRICS": {
+    "CLICKS": 0,
+    "COMMENTS": 0,
+    "CTR": null,
+    "ENGAGEMENT": 0,
+    "IMPRESSIONS": null,
+    "REACH": null,
+    "VIEWS": null,
+    "store": {
+      "ADD_TO_CART": null,
+      "CHECKOUT": null,
+      "ORDERS": 0,
+      "PRODUCT_PAGE_VISITS": null,
+      "REVENUE": 0.0,
+      "basis": "no analytics on storefront; no checkout exists -> orders/revenue are structurally 0, visits unmeasured"
+    }
+  },
+  "BLOCKERS": [
+    "RESEARCH:NOT_ENOUGH_EVIDENCE"
+  ],
+  "APPROVALS_REQUIRED": [
+    {
+      "action": "Select Printify blueprint, create draft product, enable checkout on storefront",
+      "approval_kind": "COMMERCE_GO_LIVE",
+      "paused_action_only": true,
+      "status": "WAITING_FOR_RAY_APPROVAL",
+      "why": "Offer cannot take real orders until supplier, COGS and checkout are verified"
+    },
+    {
+      "approval_request_id": "apr_req_4fe6eb45cb6cc2fa",
+      "owner_command": "./bin/nexus distribution approve apr_req_4fe6eb45cb6cc2fa",
+      "platform": "FACEBOOK",
+      "then": "./bin/nexus distribution publish apr_req_4fe6eb45cb6cc2fa"
+    }
+  ],
+  "NEXT_ACTION": {
+    "owner": "DISTRIBUTION",
+    "action": "Queue H2 variant post behind its own approval card (paused)"
+  },
+  "COSTS": {
+    "ad_spend": 0.0,
+    "ai_model": 0.0,
+    "media": 0.0,
+    "other": 0.0,
+    "platform": 0.0,
+    "unauthorized": 0.0
+  },
+  "HANDOFFS": 23,
+  "generated_at": "2026-11-15T23:05:50.862035+00:00"
+}

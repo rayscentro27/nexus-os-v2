@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 log = logging.getLogger(__name__)
+ROOT = Path(__file__).resolve().parents[3]
 
 from nexus_agent_platform.capabilities.nexus_knowledge import (
     get_nexus_overview as _nk_get_nexus_overview,
@@ -80,6 +81,7 @@ NOVA_ALLOWED_READS = frozenset({
     "get_client_profile",
     "get_funding_readiness",
     "get_operational_summary",
+    "get_durable_jobs",
     # Nexus Knowledge Layer
     "get_nexus_overview",
     "get_agent_registry",
@@ -1389,11 +1391,8 @@ def _handle_research_operational_state(
     arguments: Optional[Dict[str, Any]] = None,
     trace_id: str = "",
 ) -> Dict[str, Any]:
-    """Return bounded current Research state for a department delegation."""
-    from nexus_agent_platform.research_operational_state import build_research_operational_state
-
+    """Return bounded read-only Research status for a department delegation."""
     generated_at = datetime.now(timezone.utc).isoformat()
-    state = build_research_operational_state()
     objective_id = str((arguments or {}).get("objective_id") or "").strip()
     if objective_id:
         from nexus_agent_platform.research_evidence_bridge import resolve_objective
@@ -1409,49 +1408,26 @@ def _handle_research_operational_state(
                 "handler": "research_evidence_bridge.resolve_objective", "objective_id": objective_id,
                 "freshness": "live", "historical_records_excluded": True,
                 "retrieved_at": generated_at}}
-    bounded = {
-        "generated_at": state.get("generated_at", generated_at),
-        "department": state.get("department", "RESEARCH"),
-        "research_health": state.get("research_health"),
-        "research_work_state": state.get("research_work_state"),
-        "research_effective_readiness": state.get("research_effective_readiness"),
-        "current_research_objective": state.get("current_research_objective"),
-        "current_work": state.get("current_work", {}),
-        "today_activity": state.get("today_activity", {}),
-        "mission_state": state.get("mission_state", {}),
-        "research_queue": state.get("research_queue", {}),
-        "project_portfolio": state.get("project_portfolio", {}),
-        "research_continuation": state.get("research_continuation", {}),
-        "queue_depth_by_class": state.get("queue_depth_by_class", {}),
-        "active_assigned_work": state.get("active_assigned_work", []),
-        "active_monitored_work": state.get("active_monitored_work", []),
-        "active_discovery_work": state.get("active_discovery_work", []),
-        "alpha_followups": state.get("alpha_followups", []),
-        "blocked_work_items": state.get("blocked_work_items", []),
-        "next_scheduled_work": state.get("next_scheduled_work"),
-        "recent_findings": (state.get("recent_findings") or [])[:8],
-        "scheduler": state.get("scheduler", {}),
-        "source": "research_operational_state.build_research_operational_state",
-    }
+    from nexus_agent_platform.research_read_status import read_research_status
+    status = read_research_status()
     return {
-        "status": "success",
+        "status": status["status"],
         "capability": "get_research_operational_state",
-        "source": "research_operational_state",
+        "source": "research_read_status",
         "source_type": "live_governed_read",
-        "freshness": "live",
+        "freshness": status.get("provenance", {}).get("freshness", "unknown"),
         "access_boundary": "approved read capability only",
-        "data": bounded,
-        "error": None,
+        "data": status["data"],
+        "error": status.get("error"),
         "provenance": {
             "capability": "get_research_operational_state",
-            "status": "success",
-            "source": "research_operational_state",
+            "status": status["status"],
+            "source": "research_read_status",
             "source_type": "live_governed_read",
             "retrieved_at": generated_at,
-            "generated_at": state.get("generated_at", generated_at),
-            "freshness": "live",
+            "freshness": status.get("provenance", {}).get("freshness", "unknown"),
             "trace_id": trace_id,
-            "handler": "research_operational_state.build_research_operational_state",
+            "handler": "research_read_status.read_research_status",
             "access_boundary": "approved read capability only",
         },
     }
@@ -3418,6 +3394,79 @@ def _handle_company_goal_portfolio(arguments=None, trace_id: str = "") -> Dict[s
             "retrieved_at": datetime.now(timezone.utc).isoformat(), "trace_id": trace_id}}
 
 
+def _handle_durable_jobs(arguments=None, trace_id: str = "") -> Dict[str, Any]:
+    """Read bounded production jobs, optionally by exact ID, without mutation."""
+    from nexus_agent_platform.durable_jobs import default_store, SupabaseJobStore
+
+    args = arguments if isinstance(arguments, dict) else {}
+    limit = max(1, min(100, int(args.get("limit", 30))))
+    state = str(args.get("state") or "").strip().upper()
+    job_id = str(args.get("job_id") or "").strip()
+    if job_id and not re.fullmatch(r"job_[A-Za-z0-9][A-Za-z0-9_-]{2,}", job_id):
+        return {"status": "rejected", "error": "invalid_job_id", "data": {"jobs": []}}
+    allowed_states = {"QUEUED", "READY", "CLAIMED", "RUNNING", "WAITING", "COMPLETED", "FAILED_RETRYABLE", "BLOCKED", "CANCELLED"}
+    if state and state not in allowed_states:
+        return {"status": "rejected", "error": "unsupported_state_filter", "data": {"jobs": []}}
+    store = default_store()
+    if not isinstance(store, SupabaseJobStore):
+        return {"status": "unavailable", "error": "production_durable_queue_not_selected", "data": {"jobs": []}}
+    cols = "job_id,department,job_type,priority,state,scheduled_at,claimed_at,lease_until,attempt_count,max_attempts,payload_ref,parent_job_id,correlation_id,created_at,started_at,completed_at,last_error_code,last_error_summary,receipt_ref,claimed_by,governance_context"
+    filt = f"job_id=eq.{job_id}&" if job_id else (f"state=eq.{state}&" if state else "")
+    rows = store._request(f"nexus_durable_jobs?{filt}select={cols}&order=created_at.desc&limit={1 if job_id else limit}")
+    jobs = []
+    for row in (rows or []):
+        if not isinstance(row, dict):
+            continue
+        item = {key: row.get(key) for key in cols.split(",") if key != "governance_context"}
+        context = row.get("governance_context") if isinstance(row.get("governance_context"), dict) else {}
+        # Expose only the worker's bounded, curated projection. Never return
+        # arbitrary governance metadata or the raw result/source payload.
+        projection = context.get("result_summary")
+        if isinstance(projection, dict):
+            item["result_summary"] = {key: projection.get(key) for key in
+                ("answer", "evidence", "artifact_ref", "department_receipt_id", "completed_at")
+                if projection.get(key) is not None}
+        jobs.append(item)
+    work_item = None
+    if job_id and jobs and str(jobs[0].get("department") or "").upper() == "RESEARCH":
+        payload_ref = str(jobs[0].get("payload_ref") or "")
+        try:
+            queue = json.loads((ROOT / "data/runtime/research_work_queue.json").read_text(encoding="utf-8"))
+            item = next((row for row in queue.get("items", []) if isinstance(row, dict)
+                         and str(row.get("work_id") or "") == payload_ref), None)
+            if item:
+                result = item.get("last_result") if isinstance(item.get("last_result"), dict) else {}
+                fulfillment = result.get("task_fulfillment") if isinstance(result.get("task_fulfillment"), dict) else {}
+                work_item = {key: item.get(key) for key in (
+                    "work_id", "requested_intent", "routed_intent", "execution_path", "status",
+                    "blocker", "last_error", "case_id", "opportunity_id", "notebook_id",
+                    "current_stage", "last_checkpoint", "attempt_count") if key in item}
+                for key in ("requested_intent", "routed_intent", "execution_path", "case_id",
+                            "opportunity_id", "notebook_id", "current_stage"):
+                    if not work_item.get(key) and result.get(key) is not None:
+                        work_item[key] = result[key]
+                if not work_item.get("blocker"):
+                    blocker = result.get("blocker") or fulfillment.get("routing_blocker")
+                    if blocker:
+                        work_item["blocker"] = blocker
+                summary = next((result.get(key) for key in ("summary", "executive_summary", "answer", "result_summary")
+                                if result.get(key)), None)
+                if summary is None and result:
+                    summary = json.dumps(result, ensure_ascii=False, default=str)[:3000]
+                if summary is not None:
+                    work_item["result"] = str(summary)[:3000]
+        except (OSError, ValueError, TypeError):
+            work_item = None
+    return {"status": "success", "capability": "get_durable_jobs", "query_type": "get_durable_jobs",
+            "source": "nexus_durable_jobs", "source_type": "supabase_durable_queue", "freshness": "live",
+            "data": {"jobs": jobs, "count": len(jobs), "limit": 1 if job_id else limit,
+                     "state_filter": state or None, "exact_job_id": job_id or None,
+                     "research_work_item": work_item},
+            "error": None, "provenance": {"capability": "get_durable_jobs", "status": "success",
+            "source": "nexus_durable_jobs", "source_type": "supabase_durable_queue",
+            "retrieved_at": datetime.now(timezone.utc).isoformat(), "trace_id": trace_id}}
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -3459,6 +3508,7 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_nexus_datetime": lambda args, tid: _handle_nexus_datetime(args, tid),
     "get_incomplete_areas": lambda args, tid: _handle_incomplete_areas(args, tid),
     "get_company_goal_portfolio": lambda args, tid: _handle_company_goal_portfolio(args, tid),
+    "get_durable_jobs": lambda args, tid: _governed_envelope("get_durable_jobs", lambda: _handle_durable_jobs(args, tid), tid),
     # Nexus Study Layer
     **{
         cap: _make_study_handler(cap, reader)

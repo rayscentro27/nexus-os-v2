@@ -1,0 +1,11 @@
+# Generated projection from the Nexus GitHub Remote SQLite source registry.
+# Do not maintain a second independent source inventory here.
+sources:
+  - repository: jeeiee/best-affiliate-programs-list
+    owner_engine: RESEARCH
+    routing_target: RESEARCH_THEN_OPPORTUNITIES
+    tracked_paths: []
+  - repository: PyneSys/pynecore
+    owner_engine: TRADING
+    routing_target: RESEARCH_THEN_TRADING
+    tracked_paths: []

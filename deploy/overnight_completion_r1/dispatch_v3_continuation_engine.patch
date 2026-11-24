@@ -1,0 +1,14 @@
+--- /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-directive-continuation-v2/scripts/nexus_agent_platform/continuation_engine.py	2026-11-14 12:14:04.000000000 -0700
++++ /Users/raymonddavis/.nexus/releases/nexus-capability-actions-20261116-overnight-dispatch-v3/scripts/nexus_agent_platform/continuation_engine.py	2026-11-16 00:38:21.000000000 -0700
+@@ -432,6 +432,11 @@
+         summary["automated_research"] = automated_research(store, policy, state, now=now) if automated else []
+     except Exception as exc:
+         summary["automated_research_error"] = type(exc).__name__
++    try:  # deterministic directive continuation (REA completion, approval resume, exhausted-failure block)
++        from nexus_agent_platform import department_directive as _dd
++        summary["directive_continuation"] = _dd.continue_directives(store)
++    except Exception as exc:
++        summary["directive_continuation_error"] = type(exc).__name__ + ":" + str(exc)[:80]
+     rows = governed_rows(store, policy)
+     send, counts = snapshot(rows, policy, now=now)
+     summary["counts"] = counts

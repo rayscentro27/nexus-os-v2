@@ -92,40 +92,52 @@ def _normalize_need(judgment: dict[str, Any], package: dict[str, Any], source_re
 
 
 def _oracle_model_review(prompt: dict[str, Any], request_id: str) -> dict[str, Any]:
-    """Use the already-governed Oracle Hermes transport when OpenRouter is absent.
+    """Use the existing zero-token-charge Oracle Gemma route under job governance."""
+    from nexus_agent_platform.oracle_gemma_provider import generate_json
 
-    The transport owns authentication and remote execution. Alpha only sends a
-    bounded evidence-review prompt and accepts structured JSON back; it never
-    receives credentials or gains arbitrary tool authority.
-    """
-    from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
-
-    message = (
-        "Perform a governed Nexus Alpha review of the supplied public Research evidence. "
-        "Return ONLY one compact JSON object with the required keys. Separate observed "
-        "evidence from inference, do not invent demand or eligibility, and choose one "
-        "allowed decision."
-    )
-    result = run_oracle_hermes(
-        message,
-        f"alpha-review-{request_id}",
-        timeout_seconds=180.0,
-        request_id=request_id,
-        pre_context=json.dumps(prompt, ensure_ascii=True),
-    )
+    compact_task = {
+        "request_id": prompt.get("request_id"),
+        "customer_need_question": prompt.get("customer_need_question"),
+        "fresh_research_summary": str(prompt.get("fresh_research_summary") or "")[:800],
+        "research_analysis": {
+            "findings": (prompt.get("research_analysis") or {}).get("findings", [])[:2],
+            "unknowns": (prompt.get("research_analysis") or {}).get("unknowns", [])[:2],
+            "pricing_evidence": (prompt.get("research_analysis") or {}).get("pricing_evidence", [])[:2],
+        },
+        "sources": [{**row, "snippet": str(row.get("snippet") or "")[:160]}
+                    for row in prompt.get("sources", [])[:3]],
+        "source_refs": prompt.get("source_refs", [])[:3],
+        "allowed_decisions": prompt.get("allowed_decisions", []),
+        "required_json_keys": ["decision", "confidence", "reasoning_summary", "evidence_strength",
+            "evidence_for", "evidence_against", "unknowns", "strengths", "weaknesses",
+            "strongest_assumption", "weakest_assumption", "one_improvement", "why_interesting"],
+        "review_scope": {"required": (prompt.get("review_scope") or {}).get("required", []),
+                         "source_limitations": (prompt.get("review_scope") or {}).get("source_limitations", [])[:3]},
+    }
+    bounded_prompt = {
+        "role": "Nexus Alpha evidence reviewer",
+        "instructions": (
+            "Review only supplied evidence. Do not invent demand, customers, revenue, or pricing. Return compact JSON "
+            "with every listed key. Keep each finding brief. strengths and weaknesses must each have exactly 3 items. "
+            "Include strongest_assumption, weakest_assumption, one_improvement, why_interesting, and an allowed decision."
+        ),
+        "task": compact_task,
+    }
+    result = generate_json(bounded_prompt, timeout=180)
     return {
-        "provider": "oracle_hermes",
-        "model": result.model,
-        "model_calls": 1 if result.response else 0,
+        "provider": result["provider"],
+        "model": result["model"],
+        "model_calls": 1 if result.get("judgment") else 0,
         "http_status": None,
-        "error": result.error,
-        "latency_ms": result.latency_ms,
-        "judgment": _json_object(result.response or ""),
-        "transport_status": result.status,
+        "error": result.get("error"),
+        "latency_ms": result.get("latency_ms"),
+        "judgment": result.get("judgment"),
+        "transport_status": result.get("status"),
     }
 
 
-def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None = None) -> dict[str, Any]:
+def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None = None,
+                         force_oracle: bool = False) -> dict[str, Any]:
     """Review one fresh demand package through the configured real provider."""
     from alpha.alpha_live_research import http_json, load_runtime_env, ssl_context  # noqa: F401
 
@@ -158,7 +170,10 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
             "can_this_be_tested_safely", "can_this_be_tested_cheaply",
             "can_this_be_tested_reversibly", "can_this_teach_nexus_something",
             "hard_blocker_present", "why_certification_test_not_used",
+            "strengths", "weaknesses", "strongest_assumption", "weakest_assumption",
+            "one_improvement", "why_interesting",
         ],
+        "review_scope": package.get("review_scope") or {},
     }
     payload = {
         "model": model,
@@ -170,12 +185,20 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
                 "is incomplete: identify whether a low-cost reversible internal TEST can "
                 "resolve the uncertainty. Reserve rejection for hard safety/compliance, "
                 "clear irrelevance, disproven claims, impossible dependencies, or no "
-                "meaningful hypothesis. During BUILD_CERTIFICATION mode, include an explicit testability review; do not treat low confidence alone as a hard stop. Return one compact JSON object only."
+                "meaningful hypothesis. During BUILD_CERTIFICATION mode, include an explicit testability review; do not treat low confidence alone as a hard stop. "
+                "When review_scope requests a business-model evaluation, provide exactly three evidence-grounded strengths and three weaknesses, "
+                "the strongest and weakest assumptions, one improvement, and why the model is interesting. State evidence gaps plainly. "
+                "Keep every string under 18 words, avoid repeating source summaries, and complete the required fields before adding detail. Return one compact JSON object only."
             )},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)},
         ],
         "temperature": 0.2,
         "max_tokens": 1400,
+        # Use JSON mode rather than a large constrained schema. The latter
+        # caused the currently available zero-cost production model to spend
+        # its whole completion window on hidden reasoning and return no body.
+        # Required fields remain validated below and by the receipt contract.
+        "response_format": {"type": "json_object"},
     }
     key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     model_calls = 0
@@ -183,20 +206,11 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
     error = None
     latency_ms = None
     judgment = None
-    if key:
-        ok, status, data, error, latency_ms = http_json(
-            "POST", "https://openrouter.ai/api/v1/chat/completions",
-            {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Alpha Governed Review"},
-            payload, timeout=60,
-        )
-        model_calls = 1 if ok else 0
-        text = ""
-        try:
-            text = str(data["choices"][0]["message"]["content"] or "")
-        except Exception:
-            text = ""
-        judgment = _json_object(text) if ok else None
-    else:
+    response_diagnostic: dict[str, Any] = {}
+    if force_oracle and os.environ.get("NEXUS_REASONING_CLASS") != "OFFLINE_EXPERIMENT":
+        return {"status": "FAILED", "request_id": request_id, "provider": "oracle_ollama_gemma",
+            "model": "gemma3:4b", "model_calls": 0, "error": "ORACLE_GEMMA_OFFLINE_EXPERIMENT_ONLY"}
+    if force_oracle:
         oracle = _oracle_model_review(prompt, request_id)
         provider = oracle["provider"]
         model = oracle["model"]
@@ -205,12 +219,73 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         error = oracle["error"]
         latency_ms = oracle["latency_ms"]
         judgment = oracle["judgment"]
-    if not judgment or str(judgment.get("decision") or "").upper() not in {"QUALIFY", "TEST", "CERTIFICATION_TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"}:
-        return {
+    else:
+        # All Alpha judgment calls go through the existing policy-gated model
+        # router. Free-tier models are selected from the existing model_routes
+        # registry, checked against OpenRouter's live quota/catalog, and invoked
+        # under the durable provider governor with paid fallback disabled.
+        try:
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+            import model_router
+            from alpha.alpha_live_research import _http_json_unchecked
+
+            def invoke(routed_payload, token):
+                ok, http_status, data, request_error, elapsed = _http_json_unchecked(
+                    "POST", "https://openrouter.ai/api/v1/chat/completions",
+                    {"Authorization": f"Bearer {token}", "Content-Type": "application/json",
+                     "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Alpha Governed Review"},
+                    routed_payload, timeout=75)
+                if not ok:
+                    raise RuntimeError(f"OPENROUTER_HTTP_{http_status or 'ERROR'}:{request_error or 'request_failed'}")
+                return data
+
+            route_result = model_router.execute_reasoning(agent_key="nexus_alpha", task_type="research",
+                sensitivity="public_research", reasoning_class="STRONG_REASONING", payload=payload,
+                operation=invoke, max_tokens=1600, purpose=f"alpha-review:{request_id}")
+            data = route_result["result"]
+            provider, model = route_result["provider"], route_result["model"]
+            status, error, latency_ms, model_calls = 200, None, route_result["latency_ms"], 1
+            try:
+                message = data["choices"][0]["message"]
+                text = str(message.get("content") or "")
+                usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
+                details = usage.get("completion_tokens_details") if isinstance(usage.get("completion_tokens_details"), dict) else {}
+                response_diagnostic = {"finish_reason": (data.get("choices") or [{}])[0].get("finish_reason"),
+                    "refusal": str(message.get("refusal") or "")[:240],
+                    "content_length": len(text), "message_keys": sorted(message.keys()),
+                    "reasoning_chars": len(str(message.get("reasoning") or "")),
+                    "prompt_tokens": usage.get("prompt_tokens"), "completion_tokens": usage.get("completion_tokens"),
+                    "reasoning_tokens": details.get("reasoning_tokens"), "content_excerpt": text[:1600]}
+            except Exception:
+                text = ""
+            judgment = _json_object(text)
+            if isinstance(judgment, dict) and isinstance(judgment.get("decision"), str):
+                judgment["decision"] = judgment["decision"].strip().upper()
+        except Exception as exc:
+            provider = "openrouter"
+            error = f"{type(exc).__name__}:{str(exc)[:180]}"
+            status = None
+            model_calls = 0
+            judgment = None
+    if not judgment or str(judgment.get("decision") or "").strip().upper() not in {"QUALIFY", "TEST", "CERTIFICATION_TEST", "RESEARCH_MORE", "MONITOR", "REJECT", "NO_ACTION"}:
+        failure = {
             "status": "FAILED", "request_id": request_id, "provider": provider, "model": model,
             "model_calls": model_calls, "http_status": status, "error": error or "invalid_structured_review",
             "latency_ms": latency_ms,
         }
+        if response_diagnostic:
+            failure["response_diagnostic"] = response_diagnostic
+            job_id = os.environ.get("NEXUS_DURABLE_JOB_ID")
+            if job_id:
+                failure_dir = Path(__file__).resolve().parents[2] / "data/runtime/alpha_model_failures"
+                failure_dir.mkdir(parents=True, exist_ok=True)
+                (failure_dir / f"{job_id}.json").write_text(json.dumps({
+                    "job_id": job_id, "request_id": request_id, "provider": provider, "model": model,
+                    "error": failure["error"], "diagnostic": response_diagnostic,
+                }, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+        return failure
 
     policy = apply_policy(package, judgment)
     decision = policy["decision"]
@@ -289,6 +364,12 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
         "why_certification_test_not_used": policy["why_certification_test_not_used"],
         "next_owner": policy["next_owner"], "ray_policy_rules_applied": policy["ray_policy_rules_applied"],
         "evidence_refs": source_refs, "source_refs": source_refs,
+        "strengths": judgment.get("strengths") or [],
+        "weaknesses": judgment.get("weaknesses") or [],
+        "strongest_assumption": judgment.get("strongest_assumption"),
+        "weakest_assumption": judgment.get("weakest_assumption"),
+        "one_improvement": judgment.get("one_improvement"),
+        "why_interesting": judgment.get("why_interesting"),
         "evaluated_at": completed_at, "no_external_action": True,
     }
     persistence.append_record("alpha_evaluations", evaluation)
@@ -375,3 +456,51 @@ def review_demand_package(package: dict[str, Any], *, runtime_root: Path | None 
     root.mkdir(parents=True, exist_ok=True)
     (root / f"{receipt_id}.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return {"status": "COMPLETE", "request_id": request_id, "receipt": receipt, "evaluation": evaluation, "need": need, "provider": provider, "model": model, "model_calls": 1}
+
+
+def review_existing_research_artifact(*, artifact_path: Path, source_job_id: str,
+                                      source_receipt_id: str, request: str,
+                                      runtime_root: Path | None = None) -> dict[str, Any]:
+    """Run the real Alpha model review over one completed Research receipt."""
+    path = Path(artifact_path).resolve()
+    root = Path(__file__).resolve().parents[2].resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        return {"status": "FAILED", "error": "source_research_artifact_invalid"}
+    try:
+        artifact = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"status": "FAILED", "error": "source_research_artifact_unreadable"}
+    output = artifact.get("output_artifact") if isinstance(artifact.get("output_artifact"), dict) else {}
+    findings = output.get("findings") if isinstance(output.get("findings"), list) else []
+    official = output.get("official_source_page") if isinstance(output.get("official_source_page"), dict) else {}
+    sources = [{"title": row.get("title"), "url": row.get("url"), "snippet": row.get("snippet"),
+                "source_type": row.get("engine"), "retrieved_at": artifact.get("completed_at")}
+               for row in findings if isinstance(row, dict)]
+    if official:
+        sources.append({"title": official.get("title"), "url": official.get("url"),
+                        "snippet": "; ".join(str(value) for value in (official.get("pricing_evidence") or []) if value),
+                        "source_type": "NEXUS_RESEARCH_WEB_RETRIEVAL", "retrieved_at": official.get("retrieved_at")})
+    if not sources:
+        return {"status": "FAILED", "error": "source_research_artifact_has_no_evidence"}
+    summary = str(output.get("executive_summary") or "")[:3000]
+    package = {
+        "research_id": source_job_id, "finding_id": source_job_id,
+        "investigation_id": str(artifact.get("objective_id") or source_job_id),
+        "query": "Microsoft Project project and resource management software business model",
+        "title": "Microsoft Project business example", "summary": summary,
+        "analysis": {"summary": summary, "findings": output.get("key_findings") or [],
+                     "unknowns": output.get("uncertainties") or [],
+                     "pricing_evidence": official.get("pricing_evidence") or []},
+        "sources": sources,
+        "review_scope": {"task": str(request)[:1600],
+            "required": ["exactly 3 strengths", "exactly 3 weaknesses", "strongest assumption",
+                         "weakest assumption", "one improvement", "one reason this model is interesting"],
+            "source_research_job_id": source_job_id,
+            "source_research_receipt_id": source_receipt_id,
+            "source_limitations": output.get("uncertainties") or []},
+    }
+    result = review_demand_package(package, runtime_root=runtime_root)
+    result["source_research_job_id"] = source_job_id
+    result["source_research_receipt_id"] = source_receipt_id
+    result["source_artifact_path"] = str(path.relative_to(root))
+    return result

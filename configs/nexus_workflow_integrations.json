@@ -1,0 +1,24 @@
+{
+  "schema_version": "nexus.workflow_integrations.v1",
+  "research_room": {
+    "workflow_reference_fields": ["research_room_id", "research_request_id"],
+    "event_types": ["PLAN_CREATED", "SOURCE_FOUND", "BROWSER_TASK_STARTED", "FINDING_ADDED", "FACT_CHECK_COMPLETED", "SYNTHESIS_READY", "HANDOFF_READY"],
+    "event_authority": "Research R10 / Research MCP; Workflow Fabric stores only references and bounded event summaries"
+  },
+  "marketing_measurement": {
+    "connectors": ["META_INSIGHTS", "METRICOOL", "GOOGLE_ANALYTICS", "TIKTOK_BUSINESS"],
+    "workers": ["AD_METRICS_COLLECTOR", "SOCIAL_METRICS_COLLECTOR", "WEB_ANALYTICS_COLLECTOR", "FUNNEL_MEASUREMENT", "ATTRIBUTION_ANALYST"],
+    "metrics": ["spend", "impressions", "clicks", "ctr", "cpc", "leads", "cpl", "applications_started", "applications_completed", "documents_received", "consultations", "conversions", "cpa"],
+    "policy": "Uncertified sources return CONNECTOR_UNAVAILABLE; never fabricate measurements"
+  },
+  "competitive_intelligence": {
+    "worker": "COMPETITIVE_CREATIVE_INTELLIGENCE",
+    "source_connectors": ["META_AD_LIBRARY_BROWSER", "TIKTOK_CREATIVE_CENTER_BROWSER", "GOOGLE_ADS_TRANSPARENCY_BROWSER", "YOUTUBE_DATA", "HERMES_WEB_SEARCH", "HERMES_WEB_EXTRACT"],
+    "policy": "Each source is independently permissioned and health-checked; no metrics are inferred from inaccessible sources"
+  },
+  "creative_production": {
+    "chain": ["MARKETING_STRATEGY", "CREATIVE_BRIEF", "CREATIVE_INTENT", "PROMPT_SPECIALIST", "CREATIVE_EXECUTION_ROUTER", "EXECUTION_ENVIRONMENT", "ASSET_PERSISTENCE", "CLOUDFLARE_R2", "SUPABASE_METADATA", "CAMPAIGN_ATTACHMENT"],
+    "completion_requires": ["generation_success", "canonical_r2_object_verified", "canonical_asset_id", "supabase_metadata", "campaign_link", "generation_receipt"],
+    "temporary_output_is_final": false
+  }
+}

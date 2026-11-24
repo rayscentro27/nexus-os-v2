@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-REGISTRY = ROOT / "data/governed/research_worker_capability_certifications.jsonl"
-RECEIPT_ROOT = ROOT / "data/runtime/research_ai_orchestration"
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
+
+REGISTRY = nexus_research_state_path("governed", "research_worker_capability_certifications.jsonl")
+RECEIPT_ROOT = nexus_research_state_path("runtime", "research_ai_orchestration")
 
 
 def now() -> str:
@@ -99,32 +101,27 @@ def _json(text: str) -> dict[str, Any] | None:
 
 
 def _call(prompt: dict[str, Any], system: str) -> tuple[dict[str, Any] | None, dict[str, Any]]:
-    from alpha.alpha_live_research import http_json, load_runtime_env
-    load_runtime_env()
-    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    model = _model()
-    meta = {"provider": "openrouter", "model": model, "model_calls": 0}
-    if not key:
-        return None, {**meta, "error": "missing_credential"}
-    ok, status, data, error, latency = http_json(
-        "POST", "https://openrouter.ai/api/v1/chat/completions",
-        {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://goclearonline.cc", "X-Title": "Nexus Research Investigator"},
-        {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)}], "temperature": 0.1, "max_tokens": 1200},
-        timeout=60,
-    )
-    text = ""
-    try:
-        text = str(data["choices"][0]["message"]["content"] or "")
-    except Exception:
-        pass
-    return _json(text), {**meta, "model_calls": 1 if ok else 0, "http_status": status, "latency_ms": latency, "error": error}
+    from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+    import asyncio
+    response = asyncio.run(LlmGatewayAdapter("nexus_research").completion(
+        model=_model(), messages=[{"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(prompt, ensure_ascii=True)}],
+        temperature=0.1, max_tokens=1200, timeout=60, sensitivity="public_research",
+        reasoning_class="STRONG_REASONING", task_type="research"))
+    text = str(response.get("content") or "")
+    result = _json(text)
+    meta = {"provider": response.get("provider"), "model": response.get("model") or _model(),
+        "model_calls": 0 if response.get("error") else 1,
+        "latency_ms": (response.get("execution_metadata") or {}).get("latency_ms"),
+        "route_key": response.get("route_key"), "error": response.get("error_detail") or response.get("error")}
+    return result, meta
 
 
 def _persist(kind: str, payload: dict[str, Any]) -> str:
     RECEIPT_ROOT.mkdir(parents=True, exist_ok=True)
     path = RECEIPT_ROOT / f"{kind}_{payload['receipt_id']}.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return str(path.relative_to(ROOT))
+    return str(path)
 
 
 def write_monitor_snapshot(*, item: dict[str, Any], stage: str, plan: dict[str, Any] | None = None,
@@ -151,7 +148,7 @@ def write_monitor_snapshot(*, item: dict[str, Any], stage: str, plan: dict[str, 
     path = RECEIPT_ROOT / "monitor_latest.json"
     RECEIPT_ROOT.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return str(path.relative_to(ROOT))
+    return str(path)
 
 
 def investigate(item: dict[str, Any], *, evidence: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -216,6 +213,32 @@ def route(item: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
     candidates.sort(key=fit)
     selected = candidates[0] if candidates else None
     return {"status": "PASS_REAL" if selected else "FAILED_REAL", "work_id": item.get("work_id"), "objective_id": item.get("objective_id"), "required_capabilities": sorted(required), "candidates_considered": candidates, "selected_executor": selected, "why_selected": f"certified executor matches preferred capability {preferred}" if selected else "no certified executor matches plan", "plan_id": plan.get("plan_id")}
+
+
+def plan_assigned_work(item: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Build the plan and executor route from a durable, already-selected assignment."""
+    required_tool = item.get("required_tool") or item.get("required_capability") or item.get("source_type")
+    capabilities = [_normalize_capability(required_tool)] if required_tool else []
+    plan = {"status": "DETERMINISTIC_ASSIGNMENT", "plan_id": None, "model_calls": 0,
+            "plan": {"required_tool": required_tool, "source_locked": True},
+            "execution_class": "DETERMINISTIC"}
+    route_result = {"status": "DETERMINISTIC_ASSIGNMENT", "required_capabilities": capabilities,
+        "selected_executor": {"executor_id": required_tool or "assigned_processor"},
+        "why_selected": "durable_assignment_contract", "execution_class": "DETERMINISTIC"}
+    return plan, route_result
+
+
+def apply_research_handoff_contract(item: dict[str, Any], interpretation: dict[str, Any]) -> dict[str, Any]:
+    """Let workflow data determine the next department, never model prose."""
+    result = dict(interpretation)
+    target = str(item.get("return_to_department") or item.get("department_target") or "").upper()
+    eligible = bool(item.get("alpha_eligible"))
+    result.update({"next_capability": target or None,
+        "ready_for_alpha": eligible,
+        "action_statement": str(item.get("action_statement") or item.get("next_action") or
+                                 (f"Return the evidence package to {target}." if target else "Continue the assigned Research workflow.")),
+        "handoff_source": "WORKFLOW_CONTRACT"})
+    return result
 
 
 def interpret(item: dict[str, Any], plan: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:

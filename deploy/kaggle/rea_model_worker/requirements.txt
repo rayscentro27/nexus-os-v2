@@ -1,0 +1,8 @@
+# Kaggle REA model worker — minimum inference stack (installed by Cell 3 only if missing)
+fastapi==0.115.12
+uvicorn==0.34.2
+httpx==0.28.1
+# preinstalled in the Kaggle image: huggingface_hub, requests, pydantic v2
+# built from source in Cell 3 (CUDA sm_75, GGML_CUDA_NO_VMM): llama.cpp tag b11002 (83078fec0db8)
+# downloaded + sha256-verified in Cell 6: cloudflared 2026.10.7
+# model (Cell 1): Qwen/Qwen3-30B-A3B-GGUF Qwen3-30B-A3B-Q4_K_M.gguf (Apache-2.0, ungated, sha256 0d003f66...)

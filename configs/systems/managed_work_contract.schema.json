@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "nexus.systems-managed-work.v1",
+  "title": "Bounded Systems managed work order",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["systems_job_id", "requested_by", "objective", "component", "environment", "change_class", "approval_requirement", "authoritative_target", "allowed_paths", "prohibited_paths", "do_not_patch_paths", "expected_service", "expected_database", "post_change_validation", "execution_agent", "validation", "rollback", "status", "result", "manifest_update_required"],
+  "properties": {
+    "systems_job_id": {"type": "string", "pattern": "^sysjob_[a-f0-9]{24}$"},
+    "requested_by": {"type": "string", "minLength": 1, "maxLength": 120},
+    "objective": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "component": {"type": "string"},
+    "environment": {"type": "string"},
+    "change_class": {"enum": ["CLASS_1_SMALL_PATCH", "CLASS_2_COMPONENT_UPGRADE", "CLASS_3_MAJOR_MIGRATION", "READ_ONLY_REVIEW"]},
+    "approval_requirement": {"type": "string"},
+    "authoritative_target": {"type": "object"},
+    "allowed_paths": {"type": "array", "items": {"type": "string"}},
+    "prohibited_paths": {"type": "array", "items": {"type": "string"}},
+    "do_not_patch_paths": {"type": "array", "items": {"type": "string"}},
+    "expected_service": {"type": ["string", "null"]},
+    "expected_database": {"type": ["string", "null"]},
+    "post_change_validation": {"type": "object"},
+    "execution_agent": {"enum": ["CODEX", "OPENCODE", "SYSTEMS_LOCAL", "NONE"]},
+    "validation": {"type": ["object", "array", "string"]},
+    "rollback": {"type": ["object", "array", "string"]},
+    "status": {"enum": ["TARGET_UNRESOLVED", "READY_FOR_AGENT", "INTENT_REJECTED", "EXECUTING", "VALIDATING", "COMPLETED", "FAILED", "ROLLED_BACK"]},
+    "result": {"type": ["object", "null"]},
+    "manifest_update_required": {"type": "boolean"}
+  }
+}

@@ -7,6 +7,7 @@ Human-gate messages are handled by the separate TruthKernel route first.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Mapping
@@ -24,6 +25,7 @@ INTENT_MAP: dict[str, dict[str, str]] = {
     "STATUS": {"department": "OPERATIONS", "loop": "NEXUS_DAILY_SYSTEM_OPERATIONS", "skill": "system-operations", "worker": "NEXUS_OPERATIONS_WORKER", "authority": "internal_read_only"},
     "SYSTEM_OPERATIONS": {"department": "OPERATIONS", "loop": "NEXUS_DAILY_SYSTEM_OPERATIONS", "skill": "system-operations", "worker": "NEXUS_OPERATIONS_WORKER", "authority": "internal_read_only"},
     "SYSTEM_HEALTH": {"department": "OPERATIONS", "loop": "NEXUS_SYSTEM_HEALTH_RECOVERY", "skill": "system-recovery", "worker": "NEXUS_OPERATIONS_WORKER", "authority": "internal_read_only"},
+    "RESOURCE_GOVERNANCE_DIAGNOSIS": {"department": "OPERATIONS", "loop": "NEXUS_RESOURCE_GOVERNANCE_DIAGNOSIS", "skill": "system-recovery", "worker": "NEXUS_OPERATIONS_WORKER", "authority": "internal_read_only"},
     "RESEARCH": {"department": "RESEARCH_ALPHA", "loop": "NEXUS_RESEARCH_INTELLIGENCE", "skill": "research-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "read_only"},
     "REPO_INTELLIGENCE": {"department": "SYSTEM_ENGINEERING", "loop": "NEXUS_REPO_INTELLIGENCE", "skill": "repo-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "internal_read_only"},
     "OPPORTUNITY_INTAKE": {"department": "RESEARCH_ALPHA", "loop": "NEXUS_RESEARCH_INTELLIGENCE", "skill": "research-intelligence", "worker": "NEXUS_RESEARCH_WORKER", "authority": "read_only", "specialist_target": "OPPORTUNITY_ENGINE"},
@@ -44,16 +46,80 @@ def _load(path: Path) -> Mapping[str, Any]:
 
 def classify_intent(text: str) -> str:
     value = re.sub(r"[?.!]+$", "", text.strip().lower())
+    command_head = next((line.strip() for line in value.splitlines() if line.strip()), value)
+    command_head = re.sub(r"^(?:nova[, :]\s*)", "", command_head)
+    # Imperative command routing must win before read keywords anywhere else in
+    # a long request (for example, "what it sells" inside a Research task).
+    if re.search(r"\b(create|assign|queue|start)\b", command_head) and re.search(
+        r"\b(research|department|task|assignment|objective|job)\b", command_head
+    ):
+        if re.search(r"\b(owner\s+objective|company\s+objective)\b", command_head):
+            return "CREATE_OWNER_OBJECTIVE"
+        # Specialist assignment may be explicit in the command head while its
+        # evidence source is named later in the body (e.g. "assign Alpha this
+        # task: review the Research result"). Preserve the assignment intent.
+        if re.search(r"\balpha\b", command_head) or re.search(r"\b(research|department)\b", command_head):
+            return "ASSIGN_DEPARTMENT_TASK"
+        return "CREATE_TASK"
+    if re.match(r"^(?:please\s+)?research\s+(?:this|the following|:)", command_head):
+        return "ASSIGN_DEPARTMENT_TASK"
+    if re.search(r"\b(follow\s*up|continue|more\s+on)\b", command_head) and re.search(
+        r"\b(task|job|assignment|that|it)\b", command_head
+    ):
+        return "FOLLOWUP_QUERY"
+    # Retrieval questions about completed work are read-only. They must run
+    # before specialist assignment matchers, especially for phrasing like
+    # "what did Alpha think".
+    if re.search(r"\b(what did|what was|what were|what happened with|what was the result of)\b", command_head):
+        if re.search(r"\b(alpha|research|systems?|health|campaign|finance|creative|marketing)\b", command_head):
+            return "PRIOR_WORK_QUERY"
+    if re.search(r"\b(what happened|status|result|update)\b", command_head) and re.search(
+        r"\b(task|job|assignment)\b", command_head
+    ):
+        return "STATUS_OF_EXISTING_TASK"
+    if re.search(r"\b(show|list|display|read)\b", command_head) and re.search(
+        r"\b(jobs?|queue)\b", command_head
+    ):
+        return "LIST_JOBS"
+    # Direct health checks are bounded Systems assignments. Resolve them
+    # before the broad system-command matcher so Nova can use the durable MCP
+    # department-query action.
+    if (re.search(r"\b(run|perform|execute|check|make sure)\b", command_head)
+            and re.search(r"\b(system|systems|nexus)\b", command_head)
+            and re.search(r"\b(health check|system health|health|healthy)\b", command_head)):
+        return "SYSTEM_HEALTH"
+    if (re.search(r"\b(run|perform|execute|check)\b", command_head)
+            and re.search(r"\b(system|systems|nexus)\b", command_head)
+            and re.search(r"\b(system operations|daily operations|operations check|system check)\b", command_head)):
+        return "SYSTEM_OPERATIONS"
+    if re.search(r"\b(run|restart|pause|resume|check)\b", command_head) and re.search(
+        r"\b(system|supervisor|worker|service|health)\b", command_head
+    ):
+        return "SYSTEM_COMMAND"
+    if re.search(r"\b(nexus|research|notebooklm|mcp|system|supervisor|worker)\b", command_head) and re.search(
+        r"\b(status|state|doing|available|connected|running|health)\b", command_head
+    ):
+        return "STATE_QUERY"
     if re.fullmatch(r"(?:hello|hi|hey)(?: nexus)?(?:[, :\-].*)?", value) or re.fullmatch(r"(?:good morning|good afternoon|good evening)(?: nexus)?", value) or re.search(r"\bhow are you(?: today)?\b", value):
         return "CONVERSATION"
     if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now", "what is the current status of nexus", "what's working right now", "what is blocked", "what needs my attention", "is active operator running", "what happened with the last loop", "what is the health of hermes"} or re.fullmatch(r"(?:what is|what's) (?:the )?(?:current )?status of nexus", value):
         return "STATE_QUERY"
+    if re.search(r"\b(show|list|display|what are|what is)\b", value) and re.search(r"\b(current )?(durable )?jobs?\b", value):
+        return "STATE_QUERY"
+    if re.search(r"\b(current )?(nexus )?status\b", value) and re.search(r"\b(what is|what's|show|nexus)\b", value):
+        return "STATE_QUERY"
+    if re.search(r"\bwhat (?:is|are)\b", value) and re.search(r"\b(research|systems|supervisor|worker|mcp)\b", value) and re.search(r"\b(doing|running|status|state|health)\b", value):
+        return "STATE_QUERY"
     if value in {"who are you", "what can you do", "/help", "help"}:
         return "CONVERSATION"
+    if "notebooklm" in value and re.search(r"\b(resource|budget|quota|circuit|limit)\b",value):
+        return "RESOURCE_GOVERNANCE_DIAGNOSIS"
     if value == "/run system_health" or re.search(r"\b(system health|health check|health recovery|degraded|unhealthy|failed service|recovery needs)\b", value):
         return "SYSTEM_HEALTH"
     if re.search(r"\b(system operations|daily operations|operations check|system check|today'?s operations)\b", value) or value in {"/run system_operations", "/run daily_operations"}:
         return "SYSTEM_OPERATIONS"
+    if re.search(r"\b(find|search|identify)\b", value) and re.search(r"\b(online business|pricing|publicly visible|current business)\b", value):
+        return "RESEARCH"
     if re.search(r"\b(research|look up|investigate)\b", value) and not re.search(r"\brepo", value):
         return "RESEARCH"
     if re.search(r"\b(repo|repository|git status|codebase)\b", value):
@@ -112,8 +178,14 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
         if intent == "SYSTEM_HEALTH":
             health = payload.get("health", {})
             services = payload.get("services", {})
+            owner_status = payload.get("owner_status", {})
             service_lines = ", ".join(f"{name}: {value}" for name, value in services.items()) or "No named service evidence was available."
             return ("Nexus system health\n\n"
+                    f"MAC_HOST_STATUS={owner_status.get('MAC_HOST_STATUS', 'UNKNOWN')}\n"
+                    f"SUPABASE_STATUS={owner_status.get('SUPABASE_STATUS', 'UNKNOWN')}\n"
+                    f"ORACLE_STATUS={owner_status.get('ORACLE_STATUS', 'UNKNOWN')}\n"
+                    f"DURABLE_QUEUE_STATUS={owner_status.get('DURABLE_QUEUE_STATUS', 'UNKNOWN')}\n"
+                    f"RESOURCE_GUARD_STATUS={owner_status.get('RESOURCE_GUARD_STATUS', 'UNKNOWN')}\n\n"
                     f"OVERALL STATUS\n{payload.get('overall_status', health.get('overall_status', 'UNKNOWN'))}\n\n"
                     f"CURRENT FINDINGS\n• Named services: {service_lines}\n• Supporting telemetry: active {health.get('active_services', 0)}, degraded {health.get('degraded_services', 0)}, failed {health.get('failed_services', 0)}, unknown {health.get('unknown_services', 0)}\n\n"
                     f"WHAT THIS MEANS\n{payload.get('summary', 'Health evidence was collected.')} Recovery was {'not needed because the observed state is healthy.' if payload.get('recovery', {}).get('execution') == 'NOT_NEEDED' else 'not automatically executed.'}\n\n"
@@ -134,6 +206,15 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
                 f"WHAT THIS MEANS\n{payload.get('summary', 'Fresh operational evidence was collected.')} The service classifications above are based on current telemetry; stale reports are not treated as live service health.\n\n"
                 f"NEXT ACTION\n{'; '.join(findings.get('next_actions', [])[:2]) if findings.get('next_actions') else 'Continue monitoring fresh evidence.'}\n\n"
                 f"DO YOU NEED RAY? {'Yes for any consequential action.' if ray_required else 'No for this bounded check.'}\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+    if intent == "RESOURCE_GOVERNANCE_DIAGNOSIS":
+        data=payload.get("resource_diagnosis",{})
+        return ("Systems resource-governor diagnosis\n\n"
+                f"POLICY\n{data.get('classification','UNKNOWN')}; {data.get('provider','UNKNOWN')}/{data.get('capability','UNKNOWN')}; state {data.get('policy_state','UNKNOWN')}; limit {data.get('limit_bytes','UNKNOWN')} bytes per {data.get('reset_period','UNKNOWN')}.\n\n"
+                f"OBSERVED USE\n{data.get('reconciled_estimated_bytes','UNKNOWN')} estimated bytes across {data.get('reconciled_operation_count','UNKNOWN')} reconciled operations. Provider-measured response bytes: {data.get('provider_measured_bytes','UNKNOWN')}. Incident observed amount: {data.get('incident_observed_bytes','UNKNOWN')}.\n\n"
+                f"ASSESSMENT\n{data.get('assessment','Insufficient evidence to classify the event.')}\n\n"
+                f"EFFICIENCY\n{data.get('efficiency_findings','No additional finding.')}\n\n"
+                f"SAFE NEXT STEP\n{data.get('safe_next_step','Keep the resource-scoped wait and continue independent work.')}\n\n"
+                "No policy limit was changed. Verified Systems receipt recorded.")
     if intent == "RESEARCH":
         findings = payload.get("findings", [])
         key_findings = payload.get("key_findings") or [item.get("snippet") or item.get("title") for item in findings[:3]]
@@ -185,8 +266,14 @@ def resolve(text: str) -> dict[str, Any]:
     # Unknown text remains an unknown intent.  A model fallback must not turn
     # an unavailable/ambiguous classification into a conversational answer or
     # an operator route; Nova can submit an explicit governed objective later.
-    if intent in {"CONVERSATION", "UNKNOWN", "STATE_QUERY"}:
-        return {"intent_class": intent, "status": "NO_EXECUTION" if intent == "CONVERSATION" else "READ_ONLY_STATE" if intent == "STATE_QUERY" else "UNKNOWN_INTENT"}
+    if intent in {"CONVERSATION", "UNKNOWN", "STATE_QUERY", "LIST_JOBS"}:
+        return {"intent_class": intent, "status": "NO_EXECUTION" if intent == "CONVERSATION" else "READ_ONLY_STATE" if intent in {"STATE_QUERY", "LIST_JOBS"} else "UNKNOWN_INTENT"}
+    # Durable task assignments are routed by Nova's explicit MCP action, not
+    # this department-loop table. Keep them out of the index below so a valid
+    # assignment intent cannot escape as KeyError('ASSIGN_DEPARTMENT_TASK').
+    if intent in {"ASSIGN_DEPARTMENT_TASK", "CREATE_TASK", "CREATE_OWNER_OBJECTIVE"}:
+        return {"intent_class": intent, "status": "GOVERNED_MCP_ASSIGNMENT_REQUIRED",
+                "reason": "use the matching durable MCP write action"}
     if intent == "SEMANTIC_ADVISORY":
         return {"intent_class": intent, "status": "NO_EXECUTION", "reason": "front_brain_advisory"}
     route = INTENT_MAP[intent]
@@ -197,12 +284,24 @@ def resolve(text: str) -> dict[str, Any]:
 
 def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str, Any]] | None:
     try:
-        from research.natural_language_source_intake import handle as handle_source_intake, render as render_source_intake
-        source_result = handle_source_intake(text)
-        if source_result:
-            return render_source_intake(source_result), {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"ANSWERED","intent":source_result.get("intent"),"canonical_intake_called":source_result.get("canonical_intake_called",False),"receipt_path":(source_result.get("receipt") or {}).get("receipt_path")}
+        import importlib
+        intake = importlib.import_module("research.natural_language_source_intake")
+        handle_source_intake, render_source_intake = intake.handle, intake.render
+    except ModuleNotFoundError as exc:
+        # Source intake is an optional front-door adapter. Its absence must not
+        # prevent unrelated intents from reaching their registered departments.
+        if exc.name != "research.natural_language_source_intake":
+            return "The source-intake request could not be safely resolved; no source state was changed.", {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"BLOCKED","error":type(exc).__name__}
+        handle_source_intake = render_source_intake = None
     except (ImportError, OSError, ValueError) as exc:
         return "The source-intake request could not be safely resolved; no source state was changed.", {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"BLOCKED","error":type(exc).__name__}
+    if handle_source_intake is not None:
+        try:
+            source_result = handle_source_intake(text)
+            if source_result:
+                return render_source_intake(source_result), {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"ANSWERED","intent":source_result.get("intent"),"canonical_intake_called":source_result.get("canonical_intake_called",False),"receipt_path":(source_result.get("receipt") or {}).get("receipt_path")}
+        except (OSError, ValueError) as exc:
+            return "The source-intake request could not be safely resolved; no source state was changed.", {"route":"NEXUS_CANONICAL_SOURCE_INTAKE","outcome":"BLOCKED","error":type(exc).__name__}
     # Preserve the older, separately certified system-health process handler
     # for its exact command while natural-language health requests use WP5
     # registry routing.
@@ -214,6 +313,9 @@ def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str
     # the Operations department.
     if resolved.get("intent_class") == "STATE_QUERY":
         return state_query_response(text), {"route": "NEXUS_READ_ONLY_STATE", "outcome": "ANSWERED", "lane": "READ_ONLY_STATE_LANE", **resolved}
+    if resolved.get("intent_class") == "LIST_JOBS":
+        return ("This is a read-only durable-job request. Use the live Nexus MCP durable-job reader for current records; no objective or job was created.",
+                {"route": "NEXUS_READ_ONLY_STATE", "outcome": "ANSWERED", "lane": "READ_ONLY_STATE_LANE", **resolved})
     if resolved.get("intent_class") == "CONVERSATION":
         return "Nexus is here. I’m doing well and ready to help. I can explain verified state, answer questions, or run a bounded internal check when you explicitly ask me to.", {"route": "NEXUS_CONVERSATION", "outcome": "ANSWERED", "lane": "CONVERSATIONAL_LANE", **resolved}
     if resolved["status"] == "NO_EXECUTION":
@@ -228,7 +330,13 @@ def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str
     if resolved["intent_class"] in {"RESEARCH", "REPO_INTELLIGENCE"}:
         context["question"] = re.sub(r"\s+", " ", text).strip()[:240]
     if resolved["intent_class"] == "RESEARCH":
-        context["live_private_searxng"] = input_source == "telegram"
+        # Owner-assigned durable jobs also use the governed live Research path.
+        # Ordinary internal diagnostics retain the bounded fixture behavior.
+        context["live_private_searxng"] = input_source in {"telegram", "owner_campaign"}
+        context["v5_owner_campaign"]=(input_source=="owner_campaign" and
+            os.environ.get("NEXUS_OWNER_OBJECTIVE_ID")=="ownerobj_nexus_full_owner_real_world_v5_6fb82fd9")
+        context["v6_owner_campaign"]=(input_source=="owner_campaign" and
+            os.environ.get("NEXUS_OWNER_OBJECTIVE_ID")=="ownerobj_nexus_real_world_owner_v6_20261010")
     if resolved["intent_class"] == "RAY_REVIEW":
         context.update({"what_happened": "Telegram requested a bounded internal review item", "what_is_true_now": "No external action was performed", "what_happens_next": "Review item remains governed", "do_you_need_ray": True})
     if resolved["intent_class"] == "FUNDING_READINESS":
@@ -241,6 +349,7 @@ def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str
     capability_by_loop = {
         "NEXUS_DAILY_SYSTEM_OPERATIONS": "python.daily_system_operations",
         "NEXUS_SYSTEM_HEALTH_RECOVERY": "python.daily_system_operations",
+        "NEXUS_RESOURCE_GOVERNANCE_DIAGNOSIS": "nexus.resource_governor_readonly",
         "NEXUS_RESEARCH_INTELLIGENCE": "searxng.research",
         "NEXUS_REPO_INTELLIGENCE": "truthkernel.authority",
         "NEXUS_CREDIT_BUSINESS_FUNDING": "truthkernel.authority",

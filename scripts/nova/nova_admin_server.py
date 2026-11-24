@@ -29,7 +29,9 @@ def _runtime_env():
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 key, value = line.split("=", 1)
-                values[key.strip().removeprefix("export ")] = value.strip().strip("'\"")
+                key = key.strip().removeprefix("export ")
+                if key in {"SUPABASE_URL", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"}:
+                    values[key] = value.strip().strip("'\"")
     except OSError:
         pass
     return values
@@ -70,55 +72,13 @@ def _require_admin(headers):
     return bool(role)
 
 def _supabase_request(method, path, payload=None):
-    base = _env_value("SUPABASE_URL", "VITE_SUPABASE_URL").rstrip("/")
-    service_key = _env_value("SUPABASE_SERVICE_ROLE_KEY")
-    if not base or not service_key:
-        return 0, None
-    headers = {"apikey": service_key, "authorization": f"Bearer {service_key}", "content-type": "application/json"}
-    data = None if payload is None else json.dumps(payload).encode("utf-8")
-    try:
-        request = urllib.request.Request(f"{base}{path}", data=data, headers=headers, method=method)
-        try:
-            import certifi
-            context = ssl.create_default_context(cafile=certifi.where())
-        except ImportError:
-            context = ssl.create_default_context()
-        with urllib.request.urlopen(request, timeout=10, context=context) as response:
-            raw = response.read().decode("utf-8")
-            return response.getcode(), json.loads(raw) if raw else None
-    except (OSError, ValueError, urllib.error.URLError):
-        return 0, None
+    # This legacy endpoint used the service-role key for an autonomous queue
+    # poller. Durable dispatcher owns queue reads and writes.
+    return 503, {"error": "legacy_admin_supabase_executor_disabled"}
 
 def _remote_command_worker():
-    """Consume new Admin user messages and return replies through existing tables."""
-    started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    while True:
-        try:
-            status, rows = _supabase_request("GET", f"/rest/v1/admin_ai_messages?role=eq.user&created_at=gte.{urllib.parse.quote(started_at, safe='')}&select=id,conversation_id,user_id,content,created_at&order=created_at.asc&limit=20")
-            pending = None
-            for row in rows if status == 200 and isinstance(rows, list) else []:
-                conversation_id = urllib.parse.quote(str(row.get("conversation_id", "")), safe="")
-                c_status, conversations = _supabase_request("GET", f"/rest/v1/admin_ai_conversations?id=eq.{conversation_id}&agent=eq.nova&select=id&limit=1")
-                if c_status != 200 or not conversations:
-                    continue
-                a_status, assistants = _supabase_request("GET", f"/rest/v1/admin_ai_messages?conversation_id=eq.{conversation_id}&role=eq.assistant&created_at=gt.{urllib.parse.quote(str(row.get('created_at')), safe='')}&select=id&limit=1")
-                if a_status == 200 and not assistants:
-                    pending = row
-                    break
-            if not pending:
-                time.sleep(2)
-                continue
-            try:
-                result = invoke_nova(str(pending.get("content", "")), str(pending.get("conversation_id", "")), [])
-                completed = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                _supabase_request("POST", "/rest/v1/admin_ai_messages", {"conversation_id": pending.get("conversation_id"), "user_id": pending.get("user_id"), "role": "assistant", "content": result.get("text", "")})
-                _supabase_request("PATCH", f"/rest/v1/admin_ai_conversations?id=eq.{urllib.parse.quote(str(pending.get('conversation_id')), safe='')}", {"updated_at": completed})
-            except Exception as exc:
-                # Persist an auditable bounded failure in the existing Admin
-                # conversation rather than silently dropping the request.
-                _supabase_request("POST", "/rest/v1/admin_ai_messages", {"conversation_id": pending.get("conversation_id"), "user_id": pending.get("user_id"), "role": "error", "content": f"Nova unavailable: {type(exc).__name__}"})
-        except Exception:
-            time.sleep(2)
+    """Legacy poller disabled; durable dispatcher owns queue work."""
+    raise RuntimeError("legacy_admin_remote_command_worker_disabled")
 
 class NovaAdminLimiter:
     def __init__(self, requests_per_minute=12):
@@ -192,37 +152,7 @@ def _hermes_context(message, recent_history, conversation_id=""):
 
 
 def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
-    """Invoke the one canonical Hermes runtime; reject legacy graph mode."""
-    if SENSITIVE_CLIENT_INPUT.search(message):
-        raise ValueError("client-sensitive-input-not-available-in-nova-browser")
-    runtime = os.environ.get("NEXUS_ADMIN_NOVA_RUNTIME", "hermes").strip().lower()
-    if runtime != "hermes":
-        raise RuntimeError("legacy_direct_nova_disabled")
-    result = run_oracle_hermes(
-        message,
-        str(conversation_id),
-        timeout_seconds=180.0,
-        pre_context=_hermes_context(message, recent_history, conversation_id),
-    )
-    if result.status != "SUCCEEDED" or not result.response:
-        raise RuntimeError(result.error or "hermes-nova-unavailable")
-    return {
-        "schema_version": "nexus.nova-response.v1",
-        "text": result.response,
-        "provider": result.provider,
-        "model": result.model,
-        "executor": "hermes_agent_0.20.6",
-        "runtime": "hermes",
-        "runtime_host": result.runtime_host,
-        "profile": result.profile,
-        "toolset": result.toolset,
-        "latency_ms": result.latency_ms,
-        "execution_authority": "NONE",
-        "conversation_scope": "admin_browser",
-        "memory_scope": "nova_admin_channel",
-        "session_id": str(conversation_id),
-        "hermes_session_id": result.hermes_session_id,
-    }
+    raise RuntimeError("legacy_direct_nova_execution_disabled; submit a durable job")
 
 class NovaAdminHandler(BaseHTTPRequestHandler):
     server_version = "NexusNovaAdminLocal/1"
@@ -271,10 +201,7 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
     def log_message(self, *_args): return
 
 def main():
-    parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8790); args = parser.parse_args()
-    if args.host != "127.0.0.1": raise SystemExit("Nova Admin server must remain bound to 127.0.0.1")
-    server = ThreadingHTTPServer((args.host, args.port), NovaAdminHandler); server.limiter = NovaAdminLimiter()
-    threading.Thread(target=_remote_command_worker, name="admin-nova-remote-queue", daemon=True).start()
-    server.serve_forever(); return 0
+    parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8790); parser.parse_args()
+    raise SystemExit("legacy_nova_admin_server_disabled; use the durable Nexus job route")
 
 if __name__ == "__main__": raise SystemExit(main())

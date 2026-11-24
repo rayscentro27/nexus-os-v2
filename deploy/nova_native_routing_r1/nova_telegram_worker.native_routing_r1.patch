@@ -1,0 +1,22 @@
+--- oracle_nova_release/scripts/nova/nova_telegram_worker.py	2026-11-09 07:20:58.000000000 -0700
++++ nova_patched/scripts/nova/nova_telegram_worker.py	2026-11-15 17:55:30.000000000 -0700
+@@ -4050,6 +4050,19 @@
+         return None
+     if re.search(r"\b(?:fresh|independent)\b.{0,40}\bresearch\b|\bresearch\b.{0,40}\b(?:fresh|independent)\b", folded):
+         return None
++    # NOVA_OBJECTIVE_INTAKE_AND_NATIVE_ROUTING_REPAIR_R1: this pre-read answers only explicit
++    # opportunity-discovery READS. Requests naming a project, resuming existing work, negating
++    # opportunity selection, or instructing work must reach Hermes native reasoning instead.
++    if re.search(r"\bproj_[0-9a-z]{6,}\b", folded):
++        return None
++    if re.search(r"\b(?:do\s+not|don't|dont|never|no|without|stop)\b.{0,40}\b(?:select|choose|pick|start|find|new|another)\b.{0,40}\bopportunit", folded):
++        return None
++    if re.search(r"\b(?:resume|continue|existing)\s+(?:the\s+|this\s+|that\s+|my\s+|our\s+)?project\b|\bproject\s+(?:id|status|state)\b", folded):
++        return None
++    if re.match(r"^(?:please\s+)?(?:take|move|run|resume|continue|start|execute|proceed|build|drive|advance|work|keep|go|make|do)\b", folded):
++        return None
++    if not re.search(r"\?|\b(?:show|list|what|which|top|latest|current|tell\s+me|give\s+me|rank\w*|best|evaluat\w*|compare|how\s+many|summar\w*|mobile\s+dna|needs?\s+(?:more\s+)?research)\b", folded):
++        return None
+     has_opportunity = bool(re.search(r"\b(?:opportunit(?:y|ies)|commercial\s+prospects?)\b", folded))
+     has_revenue_horizon = bool(re.search(r"\b(?:revenue.{0,35}\b90\s+days?\b|\b90\s+days?.{0,35}revenue)\b", folded))
+     if not (has_opportunity or has_revenue_horizon):

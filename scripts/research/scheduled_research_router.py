@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
-from research_document_pipeline import fetch, process_document
+from research_document_pipeline import fetch, process_document, web_page
 from research_v2 import integrate_scheduled_result
 from research_v2_control_plane import classify_completion, stage_receipts
 from nexus_agent_platform.governed.persistence import append_record
@@ -63,7 +63,11 @@ def _web_item(item: dict[str, Any], source_type: str) -> dict[str, Any]:
                 continue
         raw = json.dumps({"repository": repo, "cutoff_utc": cutoff.isoformat(), "date_filter": "committer.date >= cutoff", "recent_items": recent}, indent=2)
     else:
-        raw, headers = fetch(url)
+        # Keep ordinary web/SEO acquisition on the canonical Research
+        # document adapter so it can reuse recently acquired bytes after a
+        # canonical persistence retry without repeating a provider request.
+        return web_page(url, item.get("source_id", url),
+                        max_bytes=int(item.get("max_source_bytes", 750_000) or 750_000))
     extra = {"provider": "urllib", "provider_content_type": headers.get("content_type"), "raw_source_truncated": False}
     if "LAST_30" in source_type.upper():
         cutoff = datetime.now(timezone.utc) - timedelta(days=30)
@@ -84,9 +88,10 @@ def resolve_feeder_gap_source(item: dict[str, Any], search_fn=None) -> tuple[dic
     context=str(item.get("search_context") or item.get("title") or "").lower()
     context=re.sub(r"\b(goclear|gap closure|scheduler canary|bounded|fixture|certification)\b"," ",context)
     context=" ".join(re.findall(r"[a-z0-9]+",context))
-    stop={"what","which","who","where","when","why","how","are","is","the","a","an","this","that","for","with","from","and","or","to","of","in","on","supports","support","establishes","evidence","verified","actually"}
+    stop={"what","which","who","where","when","why","how","are","is","the","a","an","this","that","for","with","from","and","or","to","of","in","on","supports","support","establishes","evidence","verified","actually","find","one","current"}
     terms=[word for word in re.findall(r"[a-z0-9]+",question.lower()) if word not in stop]
-    search_query=" ".join([*context.split()[:4],*terms[:5],"evidence"][:10]) or question
+    query_terms=list(dict.fromkeys([*context.split(),*terms]))
+    search_query=" ".join([*query_terms[:7],"evidence"][:10]) or question
     if search_fn is None:
         from nexus_agent_platform.proactive_discovery import web_search
         search_fn=web_search
@@ -105,7 +110,22 @@ def resolve_feeder_gap_source(item: dict[str, Any], search_fn=None) -> tuple[dic
                 "selection_reason": "feeder_gap_bounded_public_search"}
     return resolved, {**discovery,"query":search_query,"exact_question":question,"candidate_count":len(results),"selected_url":selected["url"]}
 
+def _prepare_assigned_objective_source(item: dict[str, Any]) -> dict[str, Any]:
+    """Send source-less Nova assignments through Research's live public discovery route."""
+    if (str(item.get("source_type") or "").upper() != "NOVA_OBJECTIVE"
+            or str(item.get("work_class") or "").upper() != "ASSIGNED"
+            or str(item.get("source_url") or "").strip()):
+        return item
+    objective = str(item.get("objective") or item.get("title") or item.get("question") or "").strip()
+    if not objective:
+        raise ValueError("ASSIGNED_RESEARCH_OBJECTIVE_MISSING")
+    return {**item, "request_type": "FEEDER_GAP_CLOSURE",
+            "research_question": objective, "question": objective,
+            "search_context": objective, "source_type": "RESEARCH_OBJECTIVE",
+            "max_source_bytes": 600_000}
+
 def process_scheduled_item(item: dict[str, Any]) -> dict[str, Any]:
+    item = _prepare_assigned_objective_source(item)
     item, search_discovery = resolve_feeder_gap_source(item)
     source_type = str(item.get("source_type", "WEB_PAGE")).upper()
     category = str(item.get("category", ""))

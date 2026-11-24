@@ -225,6 +225,7 @@ class TestLlmGatewayAdapter:
         result = await adapter.completion(
             model="openai/gpt-4o",
             messages=[{"role": "user", "content": "test"}],
+            sensitivity="public_research", reasoning_class="LIGHT_REASONING", task_type="reasoning",
         )
         assert "content" in result
         assert "model" in result

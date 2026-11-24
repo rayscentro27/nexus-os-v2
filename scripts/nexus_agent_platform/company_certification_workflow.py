@@ -39,7 +39,8 @@ def _write(kind: str, job: Any, payload: dict[str, Any]) -> str:
     digest = hashlib.sha256(f"{job.job_id}:{kind}".encode()).hexdigest()[:24]
     path = ARTIFACT_DIR / f"{kind}_{digest}.json"
     record = {**payload, "artifact_id": f"{kind}_{digest}", "job_id": job.job_id,
-              "correlation_id": job.correlation_id, "project_id": "goclear-readiness",
+              "correlation_id": job.correlation_id,
+              "project_id": job.governance_context.get("project_id") or "goclear-readiness",
               "campaign_id": job.governance_context.get("campaign_id"),
               "department": job.department, "created_at": _now(),
               "receipt_id": f"receipt-pending:{job.job_id}"}
@@ -53,7 +54,8 @@ def _handoff(kind: str, job: Any, source_ref: str, target: str,
     handoff_id = "handoff_" + hashlib.sha256(f"{job.job_id}:{kind}:{target}".encode()).hexdigest()[:24]
     path = ARTIFACT_DIR / f"{handoff_id}.json"
     path.write_text(json.dumps({
-        "handoff_id": handoff_id, "project_id": "goclear-readiness",
+        "handoff_id": handoff_id,
+        "project_id": job.governance_context.get("project_id") or "goclear-readiness",
         "campaign_id": job.governance_context.get("campaign_id"), "job_id": job.job_id,
         "correlation_id": job.correlation_id, "from_department": from_department or job.department,
         "to_department": target, "workflow_stage": kind, "input_artifact_ref": source_ref,
@@ -176,8 +178,15 @@ def handle_job(job: Any, store: Any) -> dict[str, Any]:
         from nexus_agent_platform.marketing_creative_workflow import campaign as get_campaign
         from nexus_agent_platform.marketing_creative_workflow import load_payload
         state = get_campaign(campaign_id)
-        if not state or state.get("approval_state") != "PENDING_RAY_APPROVAL":
-            raise ValueError("NOVA_SUMMARY_REQUIRES_PENDING_MARKETING_APPROVAL")
+        # An executive summary is read-only and must be available while a
+        # campaign awaits Ray review. It cannot grant approval or publication
+        # authority. Continue to reject campaigns in unrelated/closed states.
+        allowed_review_states = {
+            ("PENDING_RAY_APPROVAL", "PENDING_RAY_APPROVAL"),
+            ("RAY_REVIEW_REQUIRED", "READY_FOR_RAY_REVIEW"),
+        }
+        if not state or (state.get("state"), state.get("approval_state")) not in allowed_review_states:
+            raise ValueError("NOVA_SUMMARY_REQUIRES_RAY_REVIEW_STATE")
         evidence_records = []
         for ref in payload.get("source_artifacts", [])[:8]:
             try:
@@ -192,12 +201,16 @@ def handle_job(job: Any, store: Any) -> dict[str, Any]:
                                      "approval_state": record.get("approval_state")})
         if not evidence_records or any(not row.get("artifact_ref") for row in evidence_records):
             raise ValueError("NOVA_DURABLE_EVIDENCE_READ_REQUIRED")
+        executive_summary = payload.get("executive_summary")
+        if not isinstance(executive_summary, dict) or not executive_summary.get("category_decisions"):
+            raise ValueError("NOVA_EXECUTIVE_SUMMARY_CONTEXT_REQUIRED")
         summary = {
             "schema_version": "nexus.company-certification-nova-summary.v1",
             "source_artifacts": evidence_records,
             "marketing_campaign_state": state.get("state"),
             "marketing_stage": state.get("workflow_stage"),
             "approval_state": state.get("approval_state"),
+            "executive_summary": executive_summary,
             "recommendation": "Hold for Ray review; audience demand is unvalidated and financing eligibility is unknown.",
             "evidence_summary": "Official SBA source describes funding paths; it does not demonstrate customer demand or establish a specific borrower's eligibility.",
             "external_actions": {"publication": "BLOCKED_BY_APPROVAL", "email": "NOT_AUTHORIZED", "social": "NOT_AUTHORIZED", "spend": "NOT_AUTHORIZED", "trading": "NOT_AUTHORIZED"},

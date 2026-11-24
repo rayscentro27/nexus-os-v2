@@ -1,0 +1,22 @@
+{
+  "policy_version": "trading-risk-policy-r1.0",
+  "mode": "PAPER",
+  "live_trading_enabled": false,
+  "allowed_broker": "OANDA_PRACTICE",
+  "allowed_broker_host": "https://api-fxpractice.oanda.com",
+  "authorized_strategy_versions": ["wsb-eurusd-h1-v1-75177e50d316"],
+  "authorized_instruments": ["EUR_USD"],
+  "allowed_signal_origins": ["DETERMINISTIC_STRATEGY"],
+  "certification_fixture_allowed": false,
+  "max_order_units": 1,
+  "max_risk_per_trade_quote_ccy": 1.0,
+  "max_open_trading_positions": 1,
+  "max_positions_per_instrument": 1,
+  "max_trades_per_day": 3,
+  "max_daily_paper_loss_usd": 5.0,
+  "max_strategy_drawdown_usd": 10.0,
+  "stale_market_seconds": 120,
+  "max_spread_price": 0.0015,
+  "kill_switch_path": "data/runtime/oanda_practice_kill_switch.json",
+  "source_note": "Limits inherit the conservative existing config/oanda_practice_risk_limits.json values (1 unit, 1 open position, 3 trades/day, $5 daily paper loss, $10 drawdown, 120s staleness, 0.0015 spread). max_risk_per_trade_quote_ccy is new and certification-safe. authorized_strategy_versions is filled only by an explicit certification step."
+}

@@ -1,0 +1,114 @@
+{
+  "playbook_id": "nexus.notebook.business_opportunity",
+  "case_type": "BUSINESS_OPPORTUNITY",
+  "version": "1.0.0",
+  "objective_description": "Develop a customer problem into evidence-backed possible business routes.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What customer problem exists, who experiences it, how frequently, and what time/financial/emotional cost is evidenced?",
+    "What do customers do today, what do they dislike, and what products/services already exist?",
+    "What current prices, reviews, complaints, alternatives, and evidence of willingness to pay can be verified?",
+    "What unresolved gap remains and what evidence supports it across independent source classes?",
+    "Could Nexus build, provide service/consulting/education, affiliate, refer, partner, integrate, white-label, or monitor?",
+    "What delivery costs, competition, operating constraints, and economic gaps remain?",
+    "What recommendation and next evidence/action are warranted?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "CUSTOMER_DISCUSSIONS",
+    "REVIEWS",
+    "OFFICIAL_PRODUCT_PAGES",
+    "MARKETPLACE",
+    "AFFILIATE",
+    "SEARCH_DEMAND"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "complaint",
+        "customer",
+        "unmet",
+        "pain",
+        "demand"
+      ],
+      "source_classes": [
+        "CUSTOMER_DISCUSSIONS",
+        "REVIEWS",
+        "YOUTUBE_COMMENTS"
+      ]
+    },
+    {
+      "match_any": [
+        "price",
+        "pricing",
+        "cost",
+        "pay",
+        "competitor",
+        "alternative"
+      ],
+      "source_classes": [
+        "OFFICIAL_PRODUCT_PAGES",
+        "REVIEWS",
+        "LOCAL_MARKETPLACE"
+      ]
+    },
+    {
+      "match_any": [
+        "affiliate",
+        "referral",
+        "partner",
+        "resell"
+      ],
+      "source_classes": [
+        "PARTNERSTACK",
+        "AFFILIATE_WATCH",
+        "CLICKBANK",
+        "OFFICIAL_PARTNER_PAGES"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "case_id": "",
+    "customer_problem": "",
+    "segment": "",
+    "evidence": [],
+    "solution_gap": "",
+    "monetization_options": [],
+    "competitor_evidence": [],
+    "economic_gaps": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "handoff_destination": "ATLAS_OPPORTUNITY",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": "",
+    "customer_problem": "",
+    "segment": "",
+    "evidence": [],
+    "solution_gap": "",
+    "monetization_options": [],
+    "competitor_evidence": [],
+    "economic_gaps": []
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

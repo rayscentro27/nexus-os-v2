@@ -60,9 +60,9 @@ describe('Executive Command Center adapter', () => {
 
   it('classifies departments truthfully without creating autonomous agents', () => {
     const departments = buildDepartmentStatuses([], []);
-    expect(departments.map((item) => item.departmentId)).toEqual(['operations', 'engineering', 'research', 'knowledge', 'credit_funding']);
-    expect(departments.find((item) => item.departmentId === 'trading')).toBeUndefined();
-    expect(departments.every((item) => item.owner && item.activeCapabilities.length > 0 && /READ_ONLY|ADVISORY|DRAFT_ONLY/.test(item.activationState))).toBe(true);
+    expect(departments.map((item) => item.departmentId)).toEqual(['research', 'opportunities', 'finance', 'trading', 'marketing', 'creative', 'labs', 'upgrade_control', 'systems']);
+    expect(departments.find((item) => item.departmentId === 'finance')?.displayName).toBe('Finance');
+    expect(departments.every((item) => item.owner && item.currentStatus === 'NOT_PROVEN')).toBe(true);
   });
 
   it('marks live Stripe and live trading as deferred or policy-blocked health items', () => {
@@ -89,6 +89,7 @@ describe('Executive Command Center adapter', () => {
 
   it('keeps deterministic lifecycle mapping', () => {
     expect(normalizeWorkLifecycle('requested', 'PENDING')).toBe('AWAITING_APPROVAL');
+    expect(normalizeWorkLifecycle('requested', 'NOT_REQUIRED')).toBe('QUEUED');
     expect(normalizeWorkLifecycle('done', 'APPROVED')).toBe('COMPLETED');
     expect(normalizeWorkLifecycle('requested', 'REVISION_REQUESTED')).toBe('NEEDS_REVIEW');
   });

@@ -649,6 +649,7 @@ async def _call_llm(system_prompt: str, user_message: str) -> str:
         ],
         temperature=MODEL_TEMPERATURE,
         max_tokens=MODEL_MAX_TOKENS,
+            sensitivity="unknown_sensitive", reasoning_class="LIGHT_REASONING", task_type="reasoning",
     )
     return result.get("content", "")
 

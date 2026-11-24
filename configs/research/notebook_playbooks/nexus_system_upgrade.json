@@ -1,0 +1,90 @@
+{
+  "playbook_id": "nexus.notebook.nexus_system_upgrade",
+  "case_type": "NEXUS_SYSTEM_UPGRADE",
+  "version": "1.0.0",
+  "objective_description": "Investigate and safely improve an evidenced Nexus system issue.",
+  "initial_prompt": "Analyze the case objective rather than treating sources as isolated decisions. Use evidence from all sources in this case notebook; cite source identity for each claim. Mark each answer ANSWERED, PARTIALLY_ANSWERED, UNANSWERED, or CONTRADICTORY. Separate source-supported facts/claims from Nexus assumptions. Identify missing evidence, best next source class, a useful recommendation, and next action. Never infer absent details.",
+  "required_questions": [
+    "What problem does the upgrade solve and what runtime/log/report evidence demonstrates it?",
+    "What is the root cause and which service/components are affected?",
+    "What candidate fixes and alternatives exist, and what is the smallest safe change?",
+    "What test, pass criteria, rollback, security/cost/performance effect, and dependencies apply?",
+    "Does Labs testing or Upgrade Control approval apply, and who owns deployment?",
+    "What recommendation and next action are justified?"
+  ],
+  "optional_questions": [
+    "Where do sources agree and disagree?",
+    "What evidence would change this conclusion?",
+    "What claims need independent verification?"
+  ],
+  "source_classes": [
+    "SYSTEM_LOGS",
+    "RUNTIME_RECEIPTS",
+    "INCIDENT_HISTORY",
+    "OFFICIAL_DOCS",
+    "GITHUB",
+    "LABS_RESULTS",
+    "CURRENT_CONFIG"
+  ],
+  "gap_to_source_rules": [
+    {
+      "match_any": [
+        "root cause",
+        "failure",
+        "error",
+        "logs"
+      ],
+      "source_classes": [
+        "SYSTEM_LOGS",
+        "RUNTIME_RECEIPTS",
+        "INCIDENT_HISTORY"
+      ]
+    },
+    {
+      "match_any": [
+        "fix",
+        "upgrade",
+        "dependency",
+        "configuration"
+      ],
+      "source_classes": [
+        "OFFICIAL_DOCS",
+        "GITHUB",
+        "CURRENT_CONFIG"
+      ]
+    }
+  ],
+  "followup_templates": [
+    {
+      "template": "What specific evidence can answer: {question}?",
+      "why_it_matters": "Resolve an important case unknown without rejecting the objective.",
+      "source_classes": "{best_source_classes}"
+    }
+  ],
+  "expected_output_schema": {
+    "problem": "",
+    "root_cause": "",
+    "candidate_fix": "",
+    "alternatives": [],
+    "test": "",
+    "pass_criteria": [],
+    "rollback": "",
+    "risk": "",
+    "next_owner": "",
+    "recommendation": ""
+  },
+  "handoff_destination": "SYSTEMS",
+  "handoff_contract": {
+    "case_id": "",
+    "case_objective": "",
+    "evidence_and_source_refs": [],
+    "uncertainties": [],
+    "recommendation": "",
+    "next_action": ""
+  },
+  "completion_criteria": [
+    "recommendation or testable hypothesis or evidence-backed park decision or true external blocker",
+    "remaining assumptions and unknowns explicitly separated",
+    "next action and receiving owner specified"
+  ]
+}

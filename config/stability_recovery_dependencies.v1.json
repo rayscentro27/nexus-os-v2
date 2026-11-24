@@ -1,0 +1,35 @@
+{
+  "schema_version": "nexus.stability-recovery-dependencies.v1",
+  "execution_enabled": false,
+  "dependencies": [
+    {
+      "dependency_id": "research-state-architecture-v2",
+      "title": "Research State Architecture v2",
+      "department": "SYSTEMS",
+      "state": "PLANNED",
+      "execution_state": "BLOCKED_FOR_EXECUTION",
+      "blocking_incident_id": "sys_host_io_degraded_20261022_r50_001",
+      "recovery_job_title": "Research State Architecture v2 / Host I/O Stabilization",
+      "trigger_failure_domains": [
+        "SYSTEMS_HOST",
+        "RESEARCH_STATE"
+      ],
+      "objective_preservation": "BLOCKED_BY_RECOVERY_EVENT; original objective id and lineage remain authoritative",
+      "problem_evidence": [
+        "production Research history ledger is approximately 4.87 GiB",
+        "get_case_control offline fallback can scan the full ledger",
+        "certification records share production Research state",
+        "historical archive partitioning and bounded current-state lookup are absent"
+      ],
+      "target": [
+        "INDEXED_HOT_CURRENT_STATE",
+        "PARTITIONED_AUDIT_ARCHIVE",
+        "SEPARATE_CERTIFICATION_STATE",
+        "NO_FULL_ARCHIVE_SCAN_IN_LIVE_PATH"
+      ],
+      "production_migration_enabled": false,
+      "requires_ray_approval_for_cutover": true,
+      "recovery_job_id": "sysjob_5a4c011f291d6388eae93d8c"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "contract_version": "nexus.trading.nova_summary.v1",
+  "core_version": "trading-core-r1",
+  "generated_at": "2026-11-15T22:08:15.404374+00:00",
+  "TRADING_MODE": "PAPER",
+  "LIVE_TRADING_ENABLED": false,
+  "ENGINE_HEALTH": "OK",
+  "BROKER_HEALTH": {
+    "broker": "OANDA_PRACTICE",
+    "healthy": true,
+    "reason": "ok"
+  },
+  "ACTIVE_STRATEGY": {
+    "strategy_id": "strat_wick_sequence_breakout",
+    "strategy_version_id": "wsb-eurusd-h1-v1-75177e50d316",
+    "name": "Wick Sequence Breakout v1 (EUR_USD H1 baseline)",
+    "instrument": "EUR_USD",
+    "timeframe": "H1",
+    "status": "CERTIFICATION"
+  },
+  "OPEN_POSITIONS": [],
+  "TRADES_TODAY": [
+    {
+      "trade_id": "trd_01967cc1a3be42db96f7",
+      "instrument": "EUR_USD",
+      "direction": "LONG",
+      "realized_pnl": -0.0006,
+      "r_multiple": -0.25910931174088303,
+      "exit_reason": "CERTIFICATION_CLOSE",
+      "origin": "CERTIFICATION_FIXTURE",
+      "why_entered": {
+        "atr": 0.001099589122590226,
+        "bars_evaluated": 499,
+        "last_bar_time": "2026-11-13T21:00:00.000000000Z",
+        "reason": "no breakout on latest completed bar; controlled certification fixture"
+      },
+      "risk_event_id": "risk_cc596200c61e473280a6"
+    }
+  ],
+  "PAPER_PNL_TODAY": -0.0006,
+  "RISK_EVENTS": {
+    "today_total": 3,
+    "approved": 3,
+    "rejected": []
+  },
+  "RISK_LIMITS_BREACHED": false,
+  "STRATEGY_PERFORMANCE": {
+    "total_trades": 1,
+    "wins": 0,
+    "losses": 1,
+    "win_rate": 0.0,
+    "net_pnl": -0.0006,
+    "profit_factor": 0.0,
+    "expectancy": -0.0006,
+    "max_drawdown": 0.0006,
+    "statistical_edge_claim": "NONE",
+    "sample_note": "n=1 < 30: no edge claim"
+  },
+  "ATTENTION_ITEMS": [],
+  "NEXT_RECOMMENDATION": "Continue monitoring the frozen strategy on completed bars; no edge claim until sample >= 30 trades."
+}

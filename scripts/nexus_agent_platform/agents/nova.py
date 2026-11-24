@@ -2786,6 +2786,9 @@ async def _call_model(
                 max_tokens=DEFAULT_MAX_TOKENS,
                 timeout=GENERATION_TIMEOUT_SECONDS,
                 request_timeout=GENERATION_TIMEOUT_SECONDS,
+                sensitivity="unknown_sensitive",
+                reasoning_class="LIGHT_REASONING" if purpose == "capability_followup" else "STRONG_REASONING",
+                task_type="reasoning",
             ),
             timeout=GENERATION_TIMEOUT_SECONDS + 5,
         )
@@ -2825,6 +2828,7 @@ def _planner_model_call(messages: List[Dict[str, str]]) -> Dict[str, Any]:
                     max_tokens=PLANNER_MAX_TOKENS,
                     timeout=PLANNER_TIMEOUT_SECONDS,
                     request_timeout=PLANNER_TIMEOUT_SECONDS,
+                    sensitivity="unknown_sensitive", reasoning_class="LIGHT_REASONING", task_type="reasoning",
                 ),
                 timeout=PLANNER_TIMEOUT_SECONDS + 5,
             )

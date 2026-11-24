@@ -4,7 +4,7 @@ The caller owns deterministic execution. This module only observes completed
 evidence and never makes provider availability a prerequisite for the loop.
 """
 from __future__ import annotations
-import json, time, urllib.request
+import json, os, time, urllib.request
 from typing import Any
 
 def ollama_health(base_url: str = "http://127.0.0.1:11434") -> dict[str, Any]:
@@ -19,12 +19,17 @@ def ollama_health(base_url: str = "http://127.0.0.1:11434") -> dict[str, Any]:
         return {"provider": "ollama", "local": True, "status": "UNAVAILABLE", "models": [], "latency_ms": round((time.monotonic()-started)*1000, 2), "error": exc.__class__.__name__, "network_api": False, "cost_bearing": False}
 
 def select_review_provider() -> dict[str, Any]:
-    try:
-        from nexus_agent_platform.oracle_gemma_provider import health as oracle_health
-        oracle = oracle_health()
-        if oracle["status"] == "ORACLE_AI_READY": return oracle
-    except Exception:
-        oracle = {"status": "ORACLE_TUNNEL_UNAVAILABLE"}
+    oracle = {"status": "OFFLINE_EXPERIMENT_ONLY", "provider": "oracle_ollama_gemma",
+              "production_eligible": False}
+    if os.environ.get("NEXUS_REASONING_CLASS") == "OFFLINE_EXPERIMENT":
+        try:
+            from nexus_agent_platform.oracle_gemma_provider import health as oracle_health
+            value = oracle_health()
+            if value["status"] == "ORACLE_AI_READY":
+                return {**value, "reasoning_class": "OFFLINE_EXPERIMENT", "production_eligible": False}
+            oracle = value
+        except Exception:
+            oracle = {"status": "ORACLE_TUNNEL_UNAVAILABLE", "production_eligible": False}
     local = ollama_health()
     if local["status"] == "AVAILABLE": return local
-    return {"provider": "deterministic_fallback", "status": "DETERMINISTIC_FALLBACK_USED", "fallback_status": local["status"], "network_api": False, "cost_bearing": False, "oracle": oracle, "ollama": local}
+    return {"provider": "deterministic_fallback", "status": "DETERMINISTIC_FALLBACK_USED", "fallback_status": local["status"], "network_api": False, "cost_bearing": False, "oracle": oracle, "ollama": local, "reasoning_class": "DETERMINISTIC"}

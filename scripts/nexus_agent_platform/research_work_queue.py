@@ -13,9 +13,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from nexus_agent_platform.runtime.paths import nexus_research_state_path
+
 ROOT = Path(__file__).resolve().parents[2]
-QUEUE_PATH = ROOT / "data/runtime/research_work_queue.json"
-NEEDS_PATH = ROOT / "data/governed/research_needs.jsonl"
+QUEUE_PATH = nexus_research_state_path("runtime", "research_work_queue.json")
+NEEDS_PATH = nexus_research_state_path("governed", "research_needs.jsonl")
 
 WORK_CLASSES = ("ASSIGNED", "MONITORED", "DEMAND_DISCOVERY", "GENERAL_DISCOVERY")
 STATUS = ("QUEUED", "IN_PROGRESS", "WAITING", "COMPLETE", "BLOCKED_EXTERNAL",
@@ -77,6 +79,17 @@ def is_historical_backlog(item: dict[str, Any]) -> bool:
     return any(str(marker).upper().replace("_", " ") in details
                for marker in PRIORITY_POLICY.get("historical_markers", []))
 
+
+def is_claimable(item: dict[str, Any]) -> bool:
+    """Exhausted same-route failures wait for an explicit reroute/recovery."""
+    status = str(item.get("status") or "").upper()
+    exhausted = bool(item.get("retry_exhausted"))
+    if status == "FAILED_RETRYABLE":
+        exhausted = exhausted or int(item.get("attempt_count", 0) or 0) >= int(item.get("max_attempts", 3) or 3)
+    if status == "QUEUED":
+        exhausted = exhausted or int(item.get("attempt_count", 0) or 0) >= int(item.get("max_attempts", 3) or 3)
+    return status in CLAIMABLE_STATUSES and not exhausted
+
 PERMANENT_FAILURE_MARKERS = (
     "unknown url type",
     "http error 404",
@@ -111,7 +124,9 @@ def permanence_evidence(result: Any = None, blocker_type: str | None = None) -> 
 def concurrency_limits() -> dict[str, int]:
     """Return conservative worker caps without requiring a new supervisor."""
     return {
-        "total": max(1, int(os.environ.get("NEXUS_RESEARCH_MAX_TOTAL_CONCURRENCY", "3"))),
+        # V2 research expansion must honor the owner safety ceiling even when
+        # an inherited environment variable contains the former value of 3.
+        "total": min(2, max(1, int(os.environ.get("NEXUS_RESEARCH_MAX_TOTAL_CONCURRENCY", "2")))),
         "youtube": max(1, int(os.environ.get("NEXUS_RESEARCH_MAX_YOUTUBE_CONCURRENCY", "1"))),
         "web": max(1, int(os.environ.get("NEXUS_RESEARCH_MAX_WEB_CONCURRENCY", "1"))),
         "discovery": max(1, int(os.environ.get("NEXUS_RESEARCH_MAX_DISCOVERY_CONCURRENCY", "1"))),
@@ -169,8 +184,9 @@ def _default_store() -> dict[str, Any]:
 class ResearchWorkQueue:
     """Small JSON-backed queue with restart-safe leases for bounded workers."""
 
-    def __init__(self, path: Path | str = QUEUE_PATH, *, now_fn=utcnow) -> None:
-        self.path = Path(path)
+    def __init__(self, path: Path | str | None = None, *, now_fn=utcnow) -> None:
+        self.path = Path(path) if path is not None else nexus_research_state_path(
+            "runtime", "research_work_queue.json")
         self.now_fn = now_fn
 
     def _now(self) -> datetime:
@@ -236,7 +252,22 @@ class ResearchWorkQueue:
             "lane_id": item.get("lane_id"),
             "title": item.get("title"),
             "question": item.get("question"),
+            # Nova assignments carry a semantic route contract. Preserve it
+            # through the durable Research FIFO so operational requests can
+            # never be downgraded to untyped search text by normalization.
+            "requested_intent": item.get("requested_intent"),
+            "routed_intent": item.get("routed_intent"),
+            "execution_path": item.get("execution_path"),
+            "objective_type": item.get("objective_type"),
+            "research_scope": item.get("research_scope"),
+            "notebook_operation": item.get("notebook_operation"),
+            "notebook_prompt": item.get("notebook_prompt"),
             "objective": item.get("objective") or item.get("title") or item.get("objective_id"),
+            "original_objective": item.get("original_objective") or item.get("objective") or item.get("title"),
+            "original_source_url": item.get("original_source_url") or item.get("source_url"),
+            "original_source_type": item.get("original_source_type"),
+            "source_type": item.get("source_type"),
+            "current_research_context": item.get("current_research_context") or {},
             "research_question": item.get("research_question") or item.get("question"),
             "research_instructions": item.get("research_instructions") or item.get("why_this_research"),
             "required_tool": item.get("required_tool") or item.get("required_capabilities", [None])[0] if item.get("required_capabilities") else item.get("required_tool"),
@@ -304,6 +335,8 @@ class ResearchWorkQueue:
             "PROJECT": item.get("PROJECT") or item.get("project_id"), "QUESTION": item.get("QUESTION") or item.get("question"),
             "EXPECTED_VALUE": item.get("EXPECTED_VALUE"), "SOURCE_PLAN": list(item.get("SOURCE_PLAN", []) or []),
             "alpha_eligible": bool(item.get("alpha_eligible", False)), "alpha_review_required": bool(item.get("alpha_review_required", False)),
+            "followup_department": str(item.get("followup_department") or "").upper() or None,
+            "alpha_followup_required": bool(item.get("alpha_followup_required", False)),
             "parent_finding_id": item.get("parent_finding_id"), "parent_alpha_receipt_id": item.get("parent_alpha_receipt_id"),
             "parent_alpha_request_id": item.get("parent_alpha_request_id"), "parent_handoff_id": item.get("parent_handoff_id"),
             "owner": item.get("owner"), "mission": item.get("mission"), "why_this_research": item.get("why_this_research"),
@@ -315,6 +348,22 @@ class ResearchWorkQueue:
             "historical_archive": item.get("historical_archive"),
             "historical_reactivated_at": item.get("historical_reactivated_at"),
             "historical_reactivation": item.get("historical_reactivation"),
+            # Business Opportunity Research V2 intake and adaptive loop state
+            # live on the existing queue item; the queue remains authoritative.
+            "opportunity_id": item.get("opportunity_id"),
+            "opportunity_intake_id": item.get("opportunity_intake_id"),
+            "entry_type": item.get("entry_type"),
+            "source_role": item.get("source_role"),
+            "opportunity_relationship": item.get("opportunity_relationship"),
+            "promotion_status": item.get("promotion_status"),
+            "director_mode": item.get("director_mode"),
+            "discovery_questions": list(item.get("discovery_questions", []) or []),
+            "notebook_role": item.get("notebook_role"),
+            "research_checkpoint": item.get("research_checkpoint"),
+            "selected_provider": item.get("selected_provider"),
+            "selected_route_id": item.get("selected_route_id"),
+            "route_history": list(item.get("route_history", []) or []),
+            "retry_exhausted": bool(item.get("retry_exhausted", False)),
         }
         return result
 
@@ -398,6 +447,14 @@ class ResearchWorkQueue:
                 "total_items": len(store["items"]), "fifo_mode": True}
 
     def enqueue(self, **fields: Any) -> dict[str, Any]:
+        """Create once by stable work_id; duplicate intake never resets progress."""
+        work_id = str(fields.get("work_id") or "")
+        if not work_id:
+            raise ValueError("work_id_required")
+        existing = next((row for row in self.load().get("items", [])
+                         if str(row.get("work_id") or "") == work_id), None)
+        if existing:
+            return existing
         return self.upsert(fields)
 
     def recover_expired_leases(self) -> int:
@@ -425,7 +482,7 @@ class ResearchWorkQueue:
         blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
         candidates = []
         for index, item in enumerate(store["items"]):
-            if is_historical_backlog(item) or item.get("status") not in CLAIMABLE_STATUSES or item.get("work_class") not in allowed:
+            if is_historical_backlog(item) or not is_claimable(item) or item.get("work_class") not in allowed:
                 continue
             if blocked and worker_bucket(item) in blocked:
                 continue
@@ -456,7 +513,7 @@ class ResearchWorkQueue:
         for item in store["items"]:
             if item.get("work_id") != work_id:
                 continue
-            if is_historical_backlog(item) or item.get("status") not in CLAIMABLE_STATUSES:
+            if is_historical_backlog(item) or not is_claimable(item):
                 return None
             due = parse_time(item.get("next_eligible_at"))
             if due and due > now:
@@ -481,7 +538,7 @@ class ResearchWorkQueue:
         blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
         groups: dict[str, list[dict[str, Any]]] = {}
         for item in store.get("items", []):
-            if is_historical_backlog(item) or item.get("status") not in CLAIMABLE_STATUSES or item.get("work_class") not in allowed:
+            if is_historical_backlog(item) or not is_claimable(item) or item.get("work_class") not in allowed:
                 continue
             if blocked and worker_bucket(item) in blocked:
                 continue
@@ -543,7 +600,7 @@ class ResearchWorkQueue:
             if item.get("work_class") not in allowed or item.get("status") not in pending_statuses:
                 continue
             pending = True
-            if item.get("status") not in CLAIMABLE_STATUSES:
+            if not is_claimable(item):
                 continue
             due = parse_time(item.get("next_eligible_at"))
             if due and due > now:
@@ -568,7 +625,7 @@ class ResearchWorkQueue:
         blocked = {str(value).lower() for value in blocked_buckets} if blocked_buckets else set()
         candidates = []
         for item in store.get("items", []):
-            if is_historical_backlog(item) or objective_key(item) != objective_id or item.get("status") not in CLAIMABLE_STATUSES:
+            if is_historical_backlog(item) or objective_key(item) != objective_id or not is_claimable(item):
                 continue
             if item.get("work_class") not in allowed or (blocked and worker_bucket(item) in blocked):
                 continue
@@ -670,6 +727,45 @@ class ResearchWorkQueue:
             return dict(item)
         return None
 
+    def reroute_recoverable(self, work_id: str, *, provider: str, reason: str,
+                            route_id: str | None = None, max_reroutes: int = 2) -> dict[str, Any] | None:
+        """Resume an exhausted recoverable item on a different approved route.
+
+        Same-route retries remain bounded by ``max_attempts``.  A provider
+        change is explicit, recorded, and bounded separately; it never clears
+        permanent-failure evidence or creates another queue item.
+        """
+        if not str(provider).strip() or not str(reason).strip():
+            raise ValueError("reroute_requires_provider_and_reason")
+        store = self.load()
+        for item in store["items"]:
+            if item.get("work_id") != work_id:
+                continue
+            if item.get("status") not in {"FAILED_RETRYABLE", "WAITING", "BLOCKED_EXTERNAL"}:
+                return None
+            if item.get("finality_evidence") or permanence_evidence(item.get("last_result"), item.get("blocker_type")):
+                return None
+            history = list(item.get("route_history") or [])
+            reroutes = [row for row in history if row.get("event") == "REROUTE"]
+            if len(reroutes) >= max(0, int(max_reroutes)):
+                return None
+            current = str(item.get("selected_provider") or item.get("provider") or "").strip()
+            if current and current.casefold() == provider.strip().casefold():
+                return None
+            history.append({"event": "REROUTE", "from_provider": current or None,
+                "to_provider": provider.strip(), "route_id": route_id,
+                "reason": reason[:500], "at": iso(self._now())})
+            item.update({"status": "WAITING", "attempt_count": 0,
+                "retry_exhausted": False, "next_eligible_at": iso(self._now()),
+                "selected_provider": provider.strip(), "selected_route_id": route_id,
+                "route_history": history[-20:], "claimed_by": None,
+                "claimed_at": None, "lease_expires_at": None, "attempt_id": None,
+                "completed_at": None,
+                "last_result": {"rerouted": True, "provider": provider.strip(), "reason": reason[:500]}})
+            self._save(store)
+            return dict(item)
+        return None
+
     def release(self, work_id: str, *, reason: str = "worker_cap") -> dict[str, Any] | None:
         """Return a claim to the queue when a bounded worker slot is full."""
         store = self.load()
@@ -705,8 +801,8 @@ class ResearchWorkQueue:
 
     def summary(self) -> dict[str, Any]:
         items = self.load().get("items", [])
-        return {"queue_depth": len([x for x in items if x.get("status") in CLAIMABLE_STATUSES | {"IN_PROGRESS"}]),
-                "by_class": {work_class: sum(1 for x in items if x.get("work_class") == work_class and x.get("status") in CLAIMABLE_STATUSES | {"IN_PROGRESS"}) for work_class in WORK_CLASSES},
+        return {"queue_depth": len([x for x in items if (is_claimable(x) or x.get("status") == "IN_PROGRESS")]),
+                "by_class": {work_class: sum(1 for x in items if x.get("work_class") == work_class and (is_claimable(x) or x.get("status") == "IN_PROGRESS")) for work_class in WORK_CLASSES},
                 "by_status": {status: sum(1 for x in items if x.get("status") == status) for status in STATUS},
                 "active": [dict(x) for x in items if x.get("status") == "IN_PROGRESS"],
                 "blocked": [dict(x) for x in items if x.get("status") in {"BLOCKED_EXTERNAL", "FAILED_FINAL"}],
@@ -715,7 +811,7 @@ class ResearchWorkQueue:
                     key=lambda x: str(x.get("completed_at") or ""), reverse=True,
                 )[:10],
                 "next_queued": sorted(
-                    [dict(x) for x in items if x.get("status") in CLAIMABLE_STATUSES],
+                    [dict(x) for x in items if is_claimable(x)],
                     key=lambda x: (priority_rank(x), int(x.get("priority", 50)), str(x.get("created_at", ""))),
                 )[:10]}
 
@@ -756,7 +852,7 @@ class ResearchWorkQueue:
 
 
 def default_queue() -> ResearchWorkQueue:
-    return ResearchWorkQueue()
+    return ResearchWorkQueue(nexus_research_state_path("runtime", "research_work_queue.json"))
 
 
 def priority_contract() -> list[str]:

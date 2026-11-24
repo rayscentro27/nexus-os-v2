@@ -1,0 +1,51 @@
+{
+  "provider": "CLOUDFLARE_R2",
+  "service": "creative_canonical_storage",
+  "allowed_operations": [
+    "creative.asset.persist",
+    "r2.object.read",
+    "r2.object.write",
+    "r2.signed_read",
+    "r2.object.head",
+    "r2.object.delete_certification_only"
+  ],
+  "denied_capabilities": [
+    "bucket.create",
+    "bucket.delete",
+    "bucket.configure_public_access",
+    "account.mutate",
+    "credential.create",
+    "arbitrary_bucket_administration"
+  ],
+  "estimate_mode": "BOUNDED_ADVISORY",
+  "free_tier_remaining": "UNKNOWN_DO_NOT_ASSUME_ZERO_COST",
+  "certification_cost_ceiling_usd": 0.1,
+  "signed_url_ttl_default_seconds": 900,
+  "signed_url_ttl_max_seconds": 3600,
+  "certification_limits": {
+    "max_objects_per_run": 10,
+    "max_total_upload_bytes_per_run": 104857600,
+    "max_single_object_bytes": 52428800,
+    "max_class_a_operations_per_run": 50,
+    "max_class_b_operations_per_run": 100,
+    "max_delete_operations_per_run": 20,
+    "max_runtime_seconds": 300,
+    "max_retries": 3,
+    "max_signed_url_ttl_seconds": 3600
+  },
+  "production_limits": {
+    "production_max_objects_per_job": 100,
+    "production_max_bytes_per_job": 1073741824,
+    "production_max_operations_per_job": 500,
+    "production_max_runtime_seconds": 1800,
+    "production_max_estimated_cost_usd_per_job": 0.0,
+    "autonomous_usage_allowed": false,
+    "autonomous_spend_allowed": false,
+    "approval_required": true,
+    "state": "HUMAN_APPROVAL_REQUIRED"
+  },
+  "delete_policy": {
+    "production_allowed": false,
+    "certification_requires_existing_approval_authority": true
+  }
+}

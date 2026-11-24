@@ -21,14 +21,14 @@ function useLiveAdminState() {
   const [live, setLive] = useState(false)
   useEffect(() => {
     let cancelled = false
-    const load = () => supabase?.auth.getSession().then(({ data }) => {
+    const load = () => { if (document.visibilityState === 'hidden') return; return supabase?.auth.getSession().then(({ data }) => {
       const token = data.session?.access_token
       return token ? fetch('/.netlify/functions/admin-live-state', { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }) : null
     }).then(response => response?.ok ? response.json() : null).then(next => {
       if (!cancelled && next?.provenance) { setState(next); setLive(true) }
-    }).catch(() => {})
+    }).catch(() => {}) }
     load()
-    const timer = window.setInterval(load, 30000)
+    const timer = window.setInterval(load, 120000)
     return () => { cancelled = true; window.clearInterval(timer) }
   }, [])
   return { state, live }

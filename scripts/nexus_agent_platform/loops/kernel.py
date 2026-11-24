@@ -134,8 +134,15 @@ def run_loop(
             raise ValueError("WORKER_NOT_ALLOWED")
         _assert_context(context)
         result = executor(context)
-        if not isinstance(result, Mapping) or result.get("status") != "PASS":
-            raise ValueError("executor_result_not_verified")
+        if not isinstance(result, Mapping):
+            raise ValueError("executor_result_not_verified:NON_MAPPING_RESULT")
+        if result.get("status") != "PASS":
+            # Preserve a compact, non-secret failure reason so department
+            # routing can repair the actual adapter failure instead of losing
+            # it behind a generic verification error.
+            reason = str(result.get("reason") or result.get("status") or "UNKNOWN")[:240]
+            detail = str(result.get("error_summary") or "").replace("\n", " ")[:240]
+            raise ValueError("executor_result_not_verified:" + reason + (":" + detail if detail else ""))
         receipt["python_entrypoint"] = result.get("entrypoint")
         receipt["output_artifact"] = result.get("artifact")
         receipt["output_hash"] = result.get("output_hash") or _hash_payload(result)

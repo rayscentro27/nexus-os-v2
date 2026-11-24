@@ -26,6 +26,7 @@ from typing import Any
 
 from common import ROOT
 from research_scoring import scoring_profile
+from asr_worker_router import dispatch_oracle
 
 CANONICAL_ROOT = ROOT / "reports" / "runtime" / "youtube_artifacts"
 YT_DLP_MAX_ATTEMPTS = 1
@@ -33,8 +34,18 @@ YT_DLP_MAX_ATTEMPTS = 1
 # this is deliberately not a mass ASR fanout on the Mac mini.
 YT_DLP_TIMEOUT_SECONDS = 35
 YOUTUBE_ASR_TIMEOUT_SECONDS = 120
+YOUTUBE_ASR_CHUNK_SECONDS = 240
+# A 535-second captionless sample exhausted three 90-second chunk budgets
+# while the worker was still in the bounded ASR ladder.  Keep the fallback
+# bounded, but give each chunk enough CPU time and the whole sample enough
+# budget to complete ordinary short/medium videos.
+YOUTUBE_ASR_CHUNK_TIMEOUT_SECONDS = 180
+YOUTUBE_ASR_TOTAL_TIMEOUT_SECONDS = 900
+YOUTUBE_ASR_THREADS = 8
 WHISPER_CPP_BINARY = ROOT / ".runtime" / "whisper.cpp" / "build-native" / "bin" / "whisper-cli"
 WHISPER_CPP_MODEL = ROOT / ".runtime" / "whisper.cpp" / "models" / "ggml-tiny.en.bin"
+FASTER_WHISPER_PYTHON = Path(os.environ.get("NEXUS_FASTER_WHISPER_PYTHON", str(ROOT / ".runtime" / "faster-whisper-venv" / "bin" / "python")))
+FASTER_WHISPER_HELPER = Path(__file__).with_name("faster_whisper_worker.py")
 
 
 def _runtime_binary(name: str) -> str:
@@ -228,6 +239,15 @@ def _write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
 
 
+def _artifact_ref(path: Path) -> str:
+    """Return a stable repo-relative path, or an absolute isolated-test path."""
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
 def _metadata(url: str, provided: dict[str, Any] | None = None) -> dict[str, Any]:
     if provided and provided.get("discovery_method") == "YOUTUBE_RSS":
         return {"id": provided.get("video_id"), "title": provided.get("title"),
@@ -259,7 +279,15 @@ def _acquire_audio_wav(url: str, video_id: str, temp: str) -> tuple[Path, Path]:
     temp_path = Path(temp)
     source = temp_path / f"{video_id}.source"
     audio = temp_path / f"{video_id}.wav"
-    download = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "-f", "bestaudio/best", "-o", str(source), url])
+    # The default YouTube web client can expose metadata/captions while
+    # rejecting the media URL with HTTP 403.  Android client format URLs are
+    # available for the same public video and keep this fallback within the
+    # existing yt-dlp path; do not introduce a second downloader.
+    download = _run_ytdlp([
+        "yt-dlp", "--no-update", "--no-warnings",
+        "--extractor-args", "youtube:player_client=android",
+        "-f", "bestaudio/best", "-o", str(source), url,
+    ])
     source_files = [p for p in temp_path.glob(f"{video_id}.source*") if p.is_file()]
     if download.returncode != 0 or not source_files:
         raise RuntimeError(f"audio acquisition failed: {(download.stderr or download.stdout)[-700:].strip()}")
@@ -269,39 +297,154 @@ def _acquire_audio_wav(url: str, video_id: str, temp: str) -> tuple[Path, Path]:
     return audio, source_files[0]
 
 
-def _acquire_audio_whisper_cpp(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str]:
+def _split_audio_chunks(audio: Path, temp: Path, chunk_seconds: int) -> list[Path]:
+    chunk_dir = temp / "chunks"
+    chunk_dir.mkdir(parents=True, exist_ok=True)
+    result = _run([
+        _runtime_binary("ffmpeg"), "-y", "-i", str(audio), "-f", "segment",
+        "-segment_time", str(chunk_seconds), "-reset_timestamps", "1",
+        "-c", "copy", str(chunk_dir / "chunk_%03d.wav"),
+    ], timeout=30)
+    chunks = sorted(chunk_dir.glob("chunk_*.wav"))
+    if result.returncode != 0 or not chunks:
+        raise RuntimeError(f"audio chunking failed (exit {result.returncode}): {result.stderr[-900:].strip()}")
+    return chunks
+
+
+def _acquire_audio_faster_whisper(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str, dict[str, Any]]:
+    """Run the faster-whisper backend in its compatible Python environment."""
+    if not FASTER_WHISPER_PYTHON.is_file() or not FASTER_WHISPER_HELPER.is_file():
+        raise RuntimeError("faster-whisper unavailable: compatible Python environment or helper is missing")
+    with tempfile.TemporaryDirectory(prefix="nexus-youtube-faster-whisper-") as temp:
+        audio, _source = _acquire_audio_wav(url, video_id, temp)
+        oracle_error = None
+        if os.environ.get("NEXUS_DISABLE_ORACLE_ASR", "0") != "1":
+            try:
+                transcript, diagnostics = dispatch_oracle(audio, job_id=f"youtube-{video_id}-{int(time.time())}", video_id=video_id)
+                return transcript, [], "oracle_faster_whisper", "oracle_faster_whisper", diagnostics
+            except Exception as exc:  # Oracle is a worker preference; Mac remains the certified fallback.
+                oracle_error = str(exc)
+        transcript_path = Path(temp) / "transcript.txt"
+        progress_path = Path(temp) / "progress.json"
+        result_path = Path(temp) / "result.json"
+        started_at = _now()
+        started = time.monotonic()
+        model_name = os.environ.get("NEXUS_WHISPER_MODEL", "tiny.en")
+        process = subprocess.Popen(
+            [str(FASTER_WHISPER_PYTHON), str(FASTER_WHISPER_HELPER), str(audio), str(transcript_path), str(progress_path), str(result_path), model_name],
+            cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True,
+        )
+        last_progress: dict[str, Any] = {"words_written": 0, "current_chunk": 1, "total_chunks": 1}
+        while process.poll() is None:
+            if progress_path.exists():
+                try:
+                    last_progress = json.loads(progress_path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    pass
+            if time.monotonic() - started >= YOUTUBE_ASR_TOTAL_TIMEOUT_SECONDS:
+                os.killpg(process.pid, signal.SIGTERM)
+                stdout, stderr = process.communicate(timeout=5)
+                raise RuntimeError(json.dumps({"error": "faster-whisper timeout", "asr_started_at": started_at,
+                                               "last_progress": last_progress, "stderr": stderr[-500:]}))
+            time.sleep(1)
+        stdout, stderr = process.communicate()
+        if process.returncode != 0 or not result_path.exists() or not transcript_path.exists():
+            raise RuntimeError(json.dumps({"error": "faster-whisper failed", "returncode": process.returncode,
+                                           "last_progress": last_progress, "stderr": stderr[-700:], "stdout": stdout[-300:]}))
+        payload = json.loads(result_path.read_text(encoding="utf-8"))
+        transcript = re.sub(r"\s+", " ", str(payload.get("transcript", ""))).strip()
+        if not transcript:
+            raise RuntimeError("faster-whisper returned an empty transcript")
+        diagnostics = {
+            "status": "FULL_TRANSCRIPT", "audio_duration_seconds": payload.get("audio_duration_seconds"),
+            "asr_started_at": started_at, "model": model_name, "current_chunk": 1, "total_chunks": 1,
+            "words_written": len(transcript.split()), "last_progress_at": last_progress.get("last_progress_at", _now()),
+            "runtime_seconds": round(time.monotonic() - started, 3), "engine": "faster-whisper",
+            "cpu_threads": 4, "compute_type": "int8",
+            "cpu_percent_estimate": payload.get("cpu_percent_estimate"),
+            "cpu_user_seconds": payload.get("cpu_user_seconds"),
+            "cpu_system_seconds": payload.get("cpu_system_seconds"),
+            "ram_peak_bytes": payload.get("ram_peak_bytes"),
+            "stderr": stderr[-300:],
+            "routing": {"primary_worker": "oracle", "fallback_worker": "mac", "final_worker": "mac",
+                         "reason": "Oracle unavailable or retryable technical failure", "oracle_error": oracle_error},
+        }
+        return transcript, payload.get("segments", []), "local_faster_whisper", "local_faster_whisper", diagnostics
+
+
+def _acquire_audio_whisper_cpp(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str, dict[str, Any]]:
     """Use only the durable native backend when its binary and model exist."""
     if not WHISPER_CPP_BINARY.is_file() or not WHISPER_CPP_MODEL.is_file():
         raise RuntimeError("whisper.cpp unavailable: durable binary or tiny.en model is missing")
     with tempfile.TemporaryDirectory(prefix="nexus-youtube-asr-") as temp:
         audio, _source = _acquire_audio_wav(url, video_id, temp)
-        output_base = Path(temp) / video_id
-        result = _run([str(WHISPER_CPP_BINARY), "-m", str(WHISPER_CPP_MODEL), "-f", str(audio), "-l", "en", "-otxt", "-oj", "-of", str(output_base), "-np", "-nt"], timeout=YOUTUBE_ASR_TIMEOUT_SECONDS)
-        txt_path = output_base.with_suffix(".txt")
-        json_path = output_base.with_suffix(".json")
-        if result.returncode != 0 or not txt_path.exists():
-            raise RuntimeError(f"whisper.cpp failed (exit {result.returncode}): {(result.stderr or result.stdout)[-900:].strip()}")
-        transcript = re.sub(r"\s+", " ", txt_path.read_text(errors="ignore")).strip()
-        segments: list[dict[str, str]] = []
-        if json_path.exists():
-            try:
-                payload = json.loads(json_path.read_text(errors="ignore"))
-                for item in payload.get("transcription", []):
-                    text = re.sub(r"\s+", " ", str(item.get("text", ""))).strip()
-                    offsets = item.get("offsets", {})
-                    if text:
-                        segments.append({"timestamp": f"{int(offsets.get('from', 0)) / 1000:.2f}-{int(offsets.get('to', 0)) / 1000:.2f}", "text": text})
-            except (ValueError, TypeError):
-                segments = []
-        if not transcript:
-            raise RuntimeError("whisper.cpp returned an empty transcript")
-        return transcript, segments, "local_whisper_cpp", "tiny.en"
+        chunks = _split_audio_chunks(audio, Path(temp), YOUTUBE_ASR_CHUNK_SECONDS)
+        started = time.monotonic()
+        successful: list[tuple[int, str, list[dict[str, str]]]] = []
+        failed: list[dict[str, Any]] = []
+        for index, chunk in enumerate(chunks):
+            elapsed = time.monotonic() - started
+            if elapsed >= YOUTUBE_ASR_TOTAL_TIMEOUT_SECONDS:
+                failed.append({"index": index, "start_seconds": index * YOUTUBE_ASR_CHUNK_SECONDS,
+                               "end_seconds": (index + 1) * YOUTUBE_ASR_CHUNK_SECONDS,
+                               "error": "total ASR budget exhausted"})
+                continue
+            output_base = Path(temp) / f"chunk_{index:03d}"
+            result = _run([str(WHISPER_CPP_BINARY), "-m", str(WHISPER_CPP_MODEL), "-t", str(YOUTUBE_ASR_THREADS), "-f", str(chunk), "-l", "en", "-otxt", "-oj", "-of", str(output_base), "-np", "-nt"], timeout=min(YOUTUBE_ASR_CHUNK_TIMEOUT_SECONDS, max(1, int(YOUTUBE_ASR_TOTAL_TIMEOUT_SECONDS - elapsed))))
+            txt_path = output_base.with_suffix(".txt")
+            json_path = output_base.with_suffix(".json")
+            if result.returncode != 0 or not txt_path.exists():
+                failed.append({"index": index, "start_seconds": index * YOUTUBE_ASR_CHUNK_SECONDS,
+                               "end_seconds": (index + 1) * YOUTUBE_ASR_CHUNK_SECONDS,
+                               "error": (result.stderr or result.stdout or f"exit {result.returncode}")[-900:]})
+                continue
+            text = re.sub(r"\s+", " ", txt_path.read_text(errors="ignore")).strip()
+            if not text:
+                failed.append({"index": index, "start_seconds": index * YOUTUBE_ASR_CHUNK_SECONDS,
+                               "end_seconds": (index + 1) * YOUTUBE_ASR_CHUNK_SECONDS,
+                               "error": "whisper.cpp returned an empty transcript"})
+                continue
+            chunk_segments: list[dict[str, str]] = []
+            if json_path.exists():
+                try:
+                    payload = json.loads(json_path.read_text(errors="ignore"))
+                    for item in payload.get("transcription", []):
+                        segment_text = re.sub(r"\s+", " ", str(item.get("text", ""))).strip()
+                        offsets = item.get("offsets", {})
+                        if segment_text:
+                            start = index * YOUTUBE_ASR_CHUNK_SECONDS + int(offsets.get("from", 0)) / 1000
+                            end = index * YOUTUBE_ASR_CHUNK_SECONDS + int(offsets.get("to", 0)) / 1000
+                            chunk_segments.append({"timestamp": f"{start:.2f}-{end:.2f}", "text": segment_text})
+                except (ValueError, TypeError):
+                    chunk_segments = []
+            successful.append((index, text, chunk_segments or [{"timestamp": f"{index * YOUTUBE_ASR_CHUNK_SECONDS:.2f}", "text": text}]))
+        if not successful:
+            raise RuntimeError(json.dumps({"error": "all ASR chunks failed", "failed_chunks": failed}))
+        successful.sort(key=lambda row: row[0])
+        transcript = re.sub(r"\s+", " ", " ".join(row[1] for row in successful)).strip()
+        segments = [segment for row in successful for segment in row[2]]
+        diagnostics = {"status": "FULL_TRANSCRIPT" if not failed else "PARTIAL_TRANSCRIPT",
+                       "chunk_duration_seconds": YOUTUBE_ASR_CHUNK_SECONDS,
+                       "chunk_timeout_seconds": YOUTUBE_ASR_CHUNK_TIMEOUT_SECONDS,
+                       "total_timeout_seconds": YOUTUBE_ASR_TOTAL_TIMEOUT_SECONDS,
+                       "threads": YOUTUBE_ASR_THREADS,
+                       "chunk_count": len(chunks), "completed_chunks": len(successful),
+                       "failed_chunks": failed}
+        return transcript, segments, "local_whisper_cpp_chunked", "local_whisper_cpp_chunked", diagnostics
 
 
-def acquire_audio_asr(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str]:
+def acquire_audio_asr(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str, dict[str, Any]]:
     """Acquire audio and choose the first independently available local backend."""
+    faster_error = None
+    try:
+        return _acquire_audio_faster_whisper(url, video_id)
+    except Exception as exc:
+        faster_error = str(exc)
     if WHISPER_CPP_BINARY.is_file() and WHISPER_CPP_MODEL.is_file():
-        return _acquire_audio_whisper_cpp(url, video_id)
+        try:
+            return _acquire_audio_whisper_cpp(url, video_id)
+        except Exception as exc:
+            raise RuntimeError(json.dumps({"primary_faster_whisper": faster_error, "secondary_whisper_cpp": str(exc)})) from exc
     try:
         from faster_whisper import WhisperModel
     except ImportError as exc:
@@ -315,7 +458,7 @@ def acquire_audio_asr(url: str, video_id: str) -> tuple[str, list[dict[str, str]
         transcript = re.sub(r"\s+", " ", " ".join(segment["text"] for segment in segments)).strip()
         if not transcript:
             raise RuntimeError("local ASR returned an empty transcript")
-        return transcript, segments, "local_faster_whisper", model_name
+        return transcript, segments, "local_faster_whisper", model_name, {"status": "FULL_TRANSCRIPT", "chunk_count": 1, "completed_chunks": 1, "failed_chunks": []}
 
 
 def _topic(metadata: dict[str, Any], transcript: str) -> str:
@@ -328,6 +471,7 @@ def _topic(metadata: dict[str, Any], transcript: str) -> str:
 
 
 def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL_ROOT, force_asr: bool = False, metadata_override: dict[str, Any] | None = None) -> dict[str, Any]:
+    artifact_root = Path(artifact_root).resolve()
     artifact_root.mkdir(parents=True, exist_ok=True)
     url = video["url"]
     video_id = video["video_id"]
@@ -337,12 +481,31 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
     channel = metadata.get("channel") or metadata.get("uploader") or video.get("channel") or "UNKNOWN"
     content_hash = hashlib.sha256(json.dumps({k: metadata.get(k) for k in ("id", "title", "description", "duration", "upload_date")}, sort_keys=True, default=str).encode()).hexdigest()
     existing = base.with_suffix(".metadata.json")
+    research_question = str(video.get("research_question") or video.get("question") or "default_content_review")
+    channel_id = video.get("channel_id") or metadata.get("channel_id")
+    first_seen_at = (json.loads(existing.read_text()).get("first_seen_at") if existing.exists() else None)
+    if existing.exists():
+        prior = json.loads(existing.read_text())
+        # A YouTube video ID is the concrete source identity.  If the video
+        # already has a verified local transcript artifact, metadata drift on
+        # a later page fetch must not force a second acquisition attempt.
+        same_content = prior.get("processing_status") == "FULLY_PROCESSED" and base.with_suffix(".transcript.txt").exists()
+        same_question = prior.get("last_research_question") in {None, research_question}
+        if same_content and same_question and not force_asr:
+            return {"video_id": video_id, "url": url, "title": title, "channel": channel, "channel_id": channel_id,
+                    "duplicate_unchanged": True, "duplicate_status": "DUPLICATE_SKIPPED",
+                    "novelty_status": "PREVIOUSLY_PROCESSED", "new_artifact_set_created": False,
+                    "processing_status": "DUPLICATE_UNCHANGED", "artifact_root": _artifact_ref(artifact_root),
+                    "transcript_path": _artifact_ref(base.with_suffix(".transcript.txt")),
+                    "content_hash": content_hash, "transcript_hash": prior.get("transcript_hash"),
+                    "research_count": int(prior.get("research_count", 1) or 1), "last_researched_at": prior.get("last_researched_at")}
     asr_backend = "NONE"
+    asr_diagnostics: dict[str, Any] = {}
     audio_acquired = False
     ffmpeg_normalized = False
     try:
         if force_asr:
-            transcript, segments, transcript_source, asr_backend = acquire_audio_asr(url, video_id)
+            transcript, segments, transcript_source, asr_backend, asr_diagnostics = acquire_audio_asr(url, video_id)
             audio_acquired = True
             ffmpeg_normalized = True
         else:
@@ -352,7 +515,7 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
                 transcript, segments, transcript_source = acquire_captions(url, video_id)
     except Exception as caption_error:
         try:
-            transcript, segments, transcript_source, asr_backend = acquire_audio_asr(url, video_id)
+            transcript, segments, transcript_source, asr_backend, asr_diagnostics = acquire_audio_asr(url, video_id)
             audio_acquired = True
             ffmpeg_normalized = True
         except Exception as asr_error:
@@ -378,8 +541,8 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
             _write_json(partial_path, partial)
             _write_json(existing, partial)
             return {**partial, "new_artifact_set_created": True,
-                    "artifact_root": str(artifact_root.relative_to(ROOT)),
-                    "partial_evidence_path": str(partial_path.relative_to(ROOT)),
+                    "artifact_root": _artifact_ref(artifact_root),
+                    "partial_evidence_path": _artifact_ref(partial_path),
                     "executive_summary": partial["key_findings"][0],
                     "structured_data": {"description": description[:5000], "transcript_available": False},
                     "summary_created": True, "extraction_created": True,
@@ -387,10 +550,8 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
     if not transcript:
         raise RuntimeError("caption acquisition returned empty transcript")
     transcript_hash = hashlib.sha256(transcript.encode()).hexdigest()
-    if existing.exists():
-        prior = json.loads(existing.read_text())
-        if prior.get("content_hash") == content_hash and prior.get("transcript_hash") == transcript_hash and prior.get("processing_status") == "FULLY_PROCESSED":
-            return {"video_id": video_id, "title": title, "duplicate_unchanged": True, "new_artifact_set_created": False, "processing_status": "FULLY_PROCESSED", "artifact_root": str(artifact_root.relative_to(ROOT)), "content_hash": content_hash, "transcript_hash": transcript_hash}
+    novelty_status = "SAME_SOURCE_NEW_QUESTION" if existing.exists() else "NEW"
+    prior_count = int(json.loads(existing.read_text()).get("research_count", 0) or 0) if existing.exists() else 0
     topic = _topic(metadata, transcript)
     sentences = _sentences(transcript)
     summary = {
@@ -408,14 +569,17 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
     score_record = {"existing_profile": scores, "category": topic, "priority": "HIGH" if scores.get("overall_score", 0) >= 75 else "MEDIUM" if scores.get("overall_score", 0) >= 50 else "LOW", "recommended_disposition": "HIGH_VALUE_REVIEW" if scores.get("overall_score", 0) >= 75 else "FOLLOW_UP_RESEARCH" if scores.get("overall_score", 0) >= 50 else "MONITOR", "alpha_invoked": False}
     transcript_path = base.with_suffix(".transcript.txt")
     transcript_path.write_text(transcript + "\n")
-    provenance = [{"source_video_id": video_id, "transcript_reference": str(transcript_path.relative_to(ROOT)), "timestamp_or_segment": segment["timestamp"], "extracted_text_or_paraphrase": segment["text"][:500]} for segment in segments[:8]]
-    metadata_record = {"video_id": video_id, "url": url, "channel": channel, "title": title, "source": "yt-dlp public captions" if transcript_source == "public_youtube_captions" else "yt-dlp temporary audio + local ASR", "content_hash": content_hash, "transcript_status": "ACQUIRED", "transcript_source": transcript_source, "transcript_hash": transcript_hash, "summary_status": "CREATED", "extraction_status": "CREATED", "scoring_status": "SCORED", "processing_status": "FULLY_PROCESSED", "last_processed_at": _now(), "audio_acquired": audio_acquired, "ffmpeg_normalized": ffmpeg_normalized, "asr_backend": asr_backend, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+    transcript_reference = _artifact_ref(transcript_path)
+    provenance = [{"source_video_id": video_id, "transcript_reference": transcript_reference, "timestamp_or_segment": segment["timestamp"], "extracted_text_or_paraphrase": segment["text"][:500]} for segment in segments[:8]]
+    timestamp = _now()
+    processing_status = "PARTIAL_EVIDENCE" if asr_diagnostics.get("status") == "PARTIAL_TRANSCRIPT" else "FULLY_PROCESSED"
+    metadata_record = {"video_id": video_id, "channel_id": channel_id, "url": url, "channel": channel, "title": title, "source": "yt-dlp public captions" if transcript_source == "public_youtube_captions" else "yt-dlp temporary audio + local ASR", "content_hash": content_hash, "previous_content_hash": (json.loads(existing.read_text()).get("content_hash") if existing.exists() else None), "content_changed": bool(existing.exists() and json.loads(existing.read_text()).get("content_hash") != content_hash), "transcript_status": "ACQUIRED", "transcript_source": transcript_source, "transcript_hash": transcript_hash, "summary_status": "CREATED", "extraction_status": "CREATED", "scoring_status": "SCORED", "processing_status": processing_status, "novelty_status": novelty_status, "duplicate_status": "NEW_OR_UPDATED", "first_seen_at": first_seen_at or timestamp, "first_researched_at": (json.loads(existing.read_text()).get("first_researched_at") if existing.exists() else timestamp), "last_researched_at": timestamp, "last_processed_at": timestamp, "research_count": prior_count + 1, "last_research_question": research_question, "audio_acquired": audio_acquired, "ffmpeg_normalized": ffmpeg_normalized, "asr_backend": asr_backend, "asr_diagnostics": asr_diagnostics, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
     _write_json(existing, metadata_record)
     (base.with_suffix(".summary.md")).write_text("\n".join([f"# {title}", "", f"Executive summary: {summary['executive_summary']}", f"Main topic: {summary['main_topic']}", f"Key themes: {', '.join(summary['key_themes'])}", "", "Key points:", *[f"- {x}" for x in summary["key_points"]], "", "Risks or caveats:", *[f"- {x}" for x in summary["risks_or_caveats"]], "", "Unanswered questions:", *[f"- {x}" for x in summary["unanswered_questions"]]]) + "\n")
     _write_json(base.with_suffix(".structured-extraction.json"), extraction)
     _write_json(base.with_suffix(".provenance.json"), {"items": provenance})
     _write_json(base.with_suffix(".scores.json"), score_record)
-    return {"video_id": video_id, "title": title, "channel": channel, "duplicate_unchanged": False, "new_artifact_set_created": True, "transcript_acquired": True, "transcript_word_count": len(transcript.split()), "transcript_source": transcript_source, "summary_created": True, "structured_extraction_created": True, "scored": True, "audio_acquired": audio_acquired, "ffmpeg_normalized": ffmpeg_normalized, "asr_backend": asr_backend, "processing_status": "FULLY_PROCESSED", "artifact_root": str(artifact_root.relative_to(ROOT)), "transcript_path": str(transcript_path.relative_to(ROOT)), "summary_path": str(base.with_suffix('.summary.md').relative_to(ROOT)), "structured_extraction_path": str(base.with_suffix('.structured-extraction.json').relative_to(ROOT)), "scores_path": str(base.with_suffix('.scores.json').relative_to(ROOT)), "content_hash": content_hash, "transcript_hash": transcript_hash, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+    return {"video_id": video_id, "channel_id": channel_id, "title": title, "duplicate_unchanged": False, "duplicate_status": "NEW_OR_UPDATED", "novelty_status": novelty_status, "content_changed": bool(existing.exists() and json.loads(existing.read_text()).get("content_hash") != content_hash), "new_artifact_set_created": True, "transcript_acquired": True, "transcript_word_count": len(transcript.split()), "transcript_source": transcript_source, "summary_created": True, "structured_extraction_created": True, "scored": True, "audio_acquired": audio_acquired, "ffmpeg_normalized": ffmpeg_normalized, "asr_backend": asr_backend, "asr_diagnostics": asr_diagnostics, "processing_status": processing_status, "artifact_root": _artifact_ref(artifact_root), "transcript_path": _artifact_ref(transcript_path), "summary_path": _artifact_ref(base.with_suffix('.summary.md')), "structured_extraction_path": _artifact_ref(base.with_suffix('.structured-extraction.json')), "scores_path": _artifact_ref(base.with_suffix('.scores.json')), "content_hash": content_hash, "transcript_hash": transcript_hash, "research_count": prior_count + 1, "last_researched_at": timestamp, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
 
 
 def select_channel_videos(channel_url: str, limit: int) -> list[dict[str, str]]:

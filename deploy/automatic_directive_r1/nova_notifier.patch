@@ -1,0 +1,36 @@
+--- nova_patched/scripts/nova/proactive_communications.py	2026-11-13 20:28:52.000000000 -0700
++++ nova_directive/proactive_communications.py	2026-11-15 23:01:48.000000000 -0700
+@@ -278,6 +278,17 @@
+     except Exception:
+         # A transient Research MCP outage must not suppress other Nova events.
+         pass
++    # NEXUS_AUTOMATIC_DIRECTIVE_AND_CONTINUATION_R1: department-directive lifecycle events
++    # (created/started/completed/failed/approval/blocked/continued) read through the existing
++    # Nexus MCP tunnel; each event carries PROJECT_ID, DIRECTIVE_ID, DEPARTMENT, STATUS, NEXT_ACTION.
++    try:
++        from directive_notifications import NOTIFY_SINCE, events_from_rows
++        from nexus_mcp_status import call_mcp_tool
++        directive_payload, _ = call_mcp_tool("nexus_get_directive_events", {"since": NOTIFY_SINCE, "limit": 20}, timeout=45)
++        if isinstance(directive_payload, dict):
++            events.extend(events_from_rows(directive_payload.get("rows") or [], since=NOTIFY_SINCE))
++    except Exception:
++        pass
+     # Resource alarms are sourced from the canonical governed incident ledger,
+     # never reconstructed from conversational state.
+     try:
+--- nova_patched/scripts/nova/notification_policy.py	2026-11-03 15:47:15.000000000 -0700
++++ nova_directive/notification_policy.py	2026-11-15 23:01:48.000000000 -0700
+@@ -58,6 +58,13 @@
+                 "RAY_REQUIRED", "APPROVAL_REQUIRED", "SAFETY_EVENT", "RECOVERY",
+                 "PRODUCTIVITY_STALL", "CRITICAL_FAILURE", "RESOURCE_ALARM"}:
+         return "CRITICAL"
++    try:
++        from directive_notifications import classify as _directive_classify
++        directive_class = _directive_classify(kind)
++        if directive_class:
++            return directive_class
++    except Exception:
++        pass
+     if kind == "RAY_ACTION_REQUIRED":
+         return "CRITICAL"
+     if kind in {"TERMINAL_CERTIFICATION", "GOAL_ADVANCED", "GOAL_COMPLETED",

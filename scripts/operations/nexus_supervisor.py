@@ -22,15 +22,12 @@ HEARTBEAT = ROOT / "reports/runtime/nexus_supervisor_heartbeat.json"
 INTERVAL = max(30, int(os.environ.get("NEXUS_SUPERVISOR_INTERVAL", "60")))
 
 WORKERS = [
-    {"name": "Research Worker", "labels": ["com.nexus.continuous-loop"], "patterns": ["run_continuous_operating_kernel"], "heartbeat": "data/runtime/research_heartbeat.json", "queue": "data/governed/research_questions.jsonl"},
-    {"name": "YouTube Research Worker", "labels": ["com.nexus.continuous-loop"], "patterns": ["run_continuous_operating_kernel"], "heartbeat": "data/runtime/youtube_research_playbook.json", "queue": "data/runtime/youtube_backfill_queue.json"},
-    {"name": "YouTube Follow-up Worker", "labels": ["com.nexus.youtube-followup-worker"], "patterns": ["run_youtube_followup_worker"], "heartbeat": "reports/runtime/youtube_followup_worker_heartbeat.json", "queue": "data/governed/youtube_follow_ups.jsonl"},
-    {"name": "Alpha / Validation Worker", "labels": ["com.nexus.continuous-loop"], "patterns": ["run_continuous_operating_kernel", "alpha_heartbeat"], "heartbeat": "reports/runtime/nexus_alpha_research_heartbeat_latest.json", "queue": "data/governed/youtube_claim_validations.jsonl"},
-    {"name": "Department Work Consumer", "labels": ["com.nexus.department-work-consumer"], "patterns": ["department_work_consumer"], "heartbeat": "reports/runtime/department_work_consumer_heartbeat.json", "queue": "data/runtime/active_operator_work_orders.json"},
-    {"name": "Notification Worker", "labels": ["com.nexus.telegram-hermes-v2", "com.nexus.telegram-hermes-nova"], "patterns": ["nova_telegram_worker", "nexus_hermes_telegram_worker"], "heartbeat": "reports/runtime/nexus_hermes_telegram_heartbeat_latest.json", "queue": "data/governed/notifications.jsonl"},
-    {"name": "Creative Worker", "labels": [], "patterns": ["creative_design_worker", "penpot"], "heartbeat": "reports/runtime/creative_worker_heartbeat.json", "queue": "data/governed/creative_jobs.jsonl"},
-    {"name": "Trading Research Worker", "labels": ["com.nexus.forex-scanner"], "patterns": ["forex_research_scanner"], "heartbeat": "reports/runtime/forex_scanner_heartbeat.json", "queue": "data/governed/trading_experiments.jsonl"},
-    {"name": "Recovery Worker", "labels": ["com.nexus.recovery-check-v2"], "patterns": ["nexus_recovery_check"], "heartbeat": "reports/runtime/nexus_recovery_check_heartbeat_latest.json", "queue": "data/governed/work_orders.jsonl"},
+    {"name": "Nexus MCP Bridge", "labels": ["com.nexus.nexus-mcp-bridge"], "patterns": ["uvicorn services.nexus_mcp.http_server:app"], "heartbeat": "reports/runtime/nexus_mcp_bridge_health.json", "queue": "data/runtime/nexus_mcp_receipts"},
+    {"name": "Oracle Hermes Tunnel", "labels": ["com.nexus.oracle-hermes-tunnel"], "patterns": ["-R 127.0.0.1:18765"], "heartbeat": "reports/runtime/oracle_hermes_tunnel_health.json", "queue": ""},
+    {"name": "Nova Telegram Worker", "labels": ["com.nexus.telegram-hermes-nova"], "patterns": ["scripts/nova/nova_telegram_worker.py"], "heartbeat": "reports/runtime/nova_telegram_worker_heartbeat.json", "queue": "data/runtime/nova_telegram_delivery"},
+    {"name": "Durable Department Worker", "labels": ["com.nexus.durable-dispatcher"], "patterns": ["scripts/nexus_agent_platform/job_worker_once.py"], "heartbeat": "reports/runtime/durable_job_health_latest.json", "queue": "reports/runtime/durable_job_health_latest.json"},
+    {"name": "Research Worker", "labels": ["com.nexus.durable-dispatcher"], "patterns": ["scripts/nexus_agent_platform/job_worker_once.py"], "heartbeat": "reports/runtime/durable_job_health_latest.json", "queue": "data/runtime/research_work_queue.json"},
+    {"name": "Systems Worker", "labels": ["com.nexus.durable-dispatcher"], "patterns": ["scripts/nexus_agent_platform/job_worker_once.py"], "heartbeat": "reports/runtime/durable_job_health_latest.json", "queue": "reports/runtime/durable_job_health_latest.json"},
 ]
 
 
@@ -166,7 +163,7 @@ def snapshot() -> dict:
             process_status = research_eval["process_health"]
         elif spec["name"] == "Creative Worker" and not running:
             status = "EXTERNAL_GATED"
-        elif running and (hb is not None or spec["name"] in {"Research Worker", "YouTube Research Worker", "Alpha / Validation Worker"}):
+        elif running and (hb is not None or spec["name"] in {"Nexus MCP Bridge", "Oracle Hermes Tunnel", "Durable Department Worker", "Research Worker", "Systems Worker"}):
             status = "ACTIVE"
         elif running:
             status = "RUNNING_NO_PRODUCTIVITY_PROOF"

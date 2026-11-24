@@ -192,9 +192,75 @@ function DepartmentPanel({ departments }) {
               <div><strong>{department.pendingApprovals}</strong><small>Approvals</small></div>
               <div><strong>{department.blockers.length}</strong><small>Blockers</small></div>
             </div>
-            <small>{department.activationState}</small>
+            <small>Active goals: {department.activeGoals} · current goal: {department.currentGoal}</small>
+            <small>Current work: {department.currentWork}</small>
+            <small>Work item / stage: {department.currentWorkItem} · {department.currentStage}</small>
+            <small>Current / next action: {department.currentAction} · {department.nextAction}</small>
+            <small>Evidence request: {department.evidenceRequest}</small>
+            <small>Last action: {department.lastAction}</small>
+            <small>Last result: {department.lastResult}</small>
+            <small>Value / output: {department.valueOutput}</small>
+            <small>24h completed: {department.completedLast24h} · handoffs in/out: {department.handoffsIn}/{department.handoffsOut} · waiting human: {department.waitingHuman}</small>
+            <small>Last activity: {department.lastActivityAt || 'Not recorded'} · blockers: {department.blockers.join(', ') || 'None evidenced'}</small>
+            <small>{department.activationState} · {department.evidence.state}</small>
           </article>
         ))}
+      </div>
+    </ExecutiveSection>
+  )
+}
+
+function CompanyHandoffPanel({ handoffs, evidenceStatus }) {
+  return (
+    <ExecutiveSection title="Company Handoff Flow" subtitle="Supabase department handoffs with current ownership and execution fields." badge={evidenceStatus === 'connected_with_records' || evidenceStatus === 'no_records' ? 'LIVE READ' : 'NOT PROVEN'}>
+      <div className="exec-work-list" data-testid="executive-company-handoffs">
+        {handoffs.length ? handoffs.slice(0, 20).map((item) => (
+          <article className="glass2 exec-work-card" key={item.handoffId}>
+            <div className="between"><strong>{item.subject}</strong><Pill tone={toneForStatus(item.status)}>{item.status}</Pill></div>
+            <p>{item.sourceDepartment} → {item.targetDepartment} · owner {item.currentOwner}</p>
+            <small>Goal: {item.currentGoal} · action: {item.currentAction}</small>
+            <small>Created: {item.createdAt || 'unknown'} · acknowledged: {item.acknowledgedAt || 'not recorded'} · outcome: {item.outcome}</small>
+            {item.rejection && <details className="exec-handoff-rejection"><summary>Rejection details · parent goal {item.rejection.parentGoalStatus}</summary><small>Reason: {item.rejection.reason}</small><small>Evidence: {JSON.stringify(item.rejection.evidence)}</small><small>Failed criteria: {item.rejection.failedCriteria.join(', ') || 'not recorded'}</small><small>Tested: {item.rejection.whatWasTested}</small><small>Observed: {JSON.stringify(item.rejection.whatWasObserved)}</small><small>Decision changes if: {item.rejection.whatWouldChangeTheDecision}</small><small>Next: {item.rejection.nextAction} · owner: {item.rejection.nextActionOwner}</small></details>}
+          </article>
+        )) : <div className="exec-empty">No handoff rows are visible. Evidence status: {evidenceStatus}; an empty or inaccessible read is not treated as proof that no handoffs exist.</div>}
+      </div>
+    </ExecutiveSection>
+  )
+}
+
+function ResearchObservabilityPanel({ data }) {
+  const metrics = [
+    ['Monitored items, 24h', data.monitoredItems24h], ['Open Research cases', data.casesOpen],
+    ['Findings, 24h', data.findings24h], ['Research handoffs, 24h', data.handoffs24h],
+    ['Active proactive objectives', data.proactiveObjectives], ['Queries / query families, 24h', `${data.queries24h} / ${data.queryFamilies24h}`],
+    ['Repeat skips / novel results / duplicates', `${data.repeatSkips24h} / ${data.novelResults24h} / ${data.duplicates24h}`],
+    ['Saturated families / open branches', `${data.saturatedFamilies} / ${data.openBranches}`],
+    ['Notebook workspaces', data.notebookWorkspaces],
+  ]
+  return (
+    <ExecutiveSection title="Research Sources and Discovery" subtitle={`Runtime evidence by Supabase table: ${data.evidenceStatus}`} badge="LIVE DATA LABELS">
+      <div className="exec-summary-grid" data-testid="executive-research-observability">
+        {metrics.map(([label, value]) => <article className="glass2 exec-summary-card" key={label}><strong>{label}</strong><b>{value}</b></article>)}
+      </div>
+      <p><strong>Current processing:</strong> {data.currentlyProcessing}</p>
+      <p><strong>Current Research case:</strong> {data.currentCaseId} · {data.currentCaseTopic} · {data.currentCaseStatus} · next: {data.currentCaseNextAction}</p>
+      <p><strong>Current query family:</strong> {data.currentFamily} · <strong>Next query direction:</strong> {data.nextQueryDirection}</p>
+      <div className="exec-work-list">
+        <strong>Designated monitors</strong>
+        {data.designatedSources.length ? data.designatedSources.slice(0, 12).map((source) => <article className="glass2 exec-work-card" key={`${source.name}-${source.type}`}><strong>{source.name}</strong><small>{source.type} · {source.category} · {source.targetDepartment} · priority {source.priority} · enabled {source.enabled} · {source.mode}</small></article>) : <div className="exec-empty">No designated source rows are available from the authenticated Research registry read.</div>}
+        <strong>Discovery providers</strong>
+        {data.providers.length ? data.providers.map((provider) => <article className="glass2 exec-work-card" key={provider.name}><strong>{provider.name} · enabled {provider.enabled}</strong><small>{provider.purpose} · {provider.liveStatus}</small></article>) : <div className="exec-empty">Provider inventory unavailable; status is not inferred from static UI data.</div>}
+        <strong>Department Research follow-ups</strong>
+        {Array.isArray(data.researchFollowups) && data.researchFollowups.length ? data.researchFollowups.slice(0, 12).map((request) => (
+          <article className="glass2 exec-work-card" key={request.requestId} data-testid="executive-research-followup">
+            <strong>{request.requestingDepartment} · {request.subject} · return goal {request.returnGoalId}</strong>
+            <small>Why: {request.reason}</small>
+            <small>Decision unlocked: {request.decisionUnlocked}</small>
+            {request.questions.map((item, index) => <small key={`${request.requestId}-q${index}`}>Question: {item.question} · status {item.status}</small>)}
+            <small>Answers received: {request.answersReceived} · remaining gaps: {request.remainingGaps.join('; ') || 'none recorded'}</small>
+            <small>Return department: {request.returnDepartment} · next: {request.nextAction}</small>
+          </article>
+        )) : Array.isArray(data.researchFollowups) ? <div className="exec-empty">No structured department Research follow-ups are open.</div> : <div className="exec-empty">Department Research follow-ups: {data.researchFollowups}</div>}
       </div>
     </ExecutiveSection>
   )
@@ -500,6 +566,8 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
           <ApprovalsPanel approvals={state.approvals} onNavigate={onNavigate} />
           <GovernedWorkPanel work={state.governedWork} onNavigate={onNavigate} />
           <DepartmentPanel departments={state.departments} />
+          <CompanyHandoffPanel handoffs={state.handoffs} evidenceStatus={state.handoffEvidenceStatus} />
+          <ResearchObservabilityPanel data={state.researchObservability} />
           <DepartmentOperationsWorkspace />
           <SummaryPanel title="Customer Operations" items={state.customerSummary} icon={Building2} testId="executive-customer-summary" />
           <SummaryPanel title="Revenue and Opportunities" items={state.revenueSummary} icon={BadgeDollarSign} testId="executive-revenue-summary" />
