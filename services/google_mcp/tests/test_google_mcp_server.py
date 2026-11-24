@@ -3,8 +3,10 @@ from services.google_mcp import server
 
 def test_google_surface_is_granular_and_read_only():
     names = {tool.name for tool in server.mcp._tool_manager.list_tools()}
-    assert names == set(server.TOOL_NAMES)
-    assert not names & {"gmail_send", "gmail_reply", "calendar_create_event", "calendar_update_event", "calendar_delete_event", "drive_upload", "drive_update", "drive_delete", "drive_share"}
+    # read tools + the existing governed (bounded, reversible) writes + read-only r1.2 tools; nothing else
+    assert set(server.TOOL_NAMES) <= names
+    assert names == set(server.TOOL_NAMES) | set(server.WRITE_TOOL_NAMES) | set(server.CORE_READ_TOOL_NAMES) | set(server.AUTHORITY_TOOL_NAMES)
+    assert not names & {"gmail_send", "gmail_reply", "calendar_create_event", "calendar_delete_event", "drive_upload", "drive_update", "drive_delete", "drive_share"}
 
 
 def test_message_summary_is_bounded_and_header_only():
