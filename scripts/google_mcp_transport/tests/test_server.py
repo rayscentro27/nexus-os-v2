@@ -10,8 +10,9 @@ from scripts.google_mcp_transport import server
 def test_imports_exact_pinned_google_server_and_exposes_its_tool_set():
     assert Path(server.google_server.__file__).resolve() == server.GOOGLE_SOURCE_MODULE.resolve()
     names = {row.name for row in server.mcp._tool_manager.list_tools()}
-    assert len(names) == 14
-    assert names == {
+    gs = server.google_server
+    assert len(names) == 27  # 14 (r1.1.1) + 13 read-only r1.2 tools
+    assert names - set(gs.CORE_READ_TOOL_NAMES) == {
         "google_get_authority",
         "gmail_search", "gmail_read_message", "gmail_read_thread",
         "calendar_search_events", "calendar_read_event", "calendar_get_availability",

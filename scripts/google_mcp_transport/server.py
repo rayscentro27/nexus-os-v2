@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-GOOGLE_SOURCE_RELEASE = Path.home() / ".nexus/releases/google-mcp-independent-r1-20261030"
+GOOGLE_SOURCE_RELEASE = Path(__file__).resolve().parents[2]  # the release (or checkout) this transport ships in
 GOOGLE_SOURCE_MODULE = GOOGLE_SOURCE_RELEASE / "services/google_mcp/server.py"
 GOOGLE_SOURCE_SCRIPTS = GOOGLE_SOURCE_RELEASE / "scripts"
 TRANSPORT_HOST = "127.0.0.1"
