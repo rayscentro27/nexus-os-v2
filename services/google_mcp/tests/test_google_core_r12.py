@@ -109,6 +109,12 @@ def test_ga4_properties_and_report(fake):
     fake["apis"]["analyticsdata"] = {"properties.runReport": {"rows": [{"dimensionValues": [{"value": "google / organic"}], "metricValues": [{"value": "42"}, {"value": "30"}]}]}}
     p = server.ga4_list_properties()
     assert p["items"][0]["property_id"] == "123456" and p["resource"] == "GOOGLE_ANALYTICS"
+    assert "data_streams" not in p["items"][0]
+    fake["apis"]["analyticsadmin"]["properties.dataStreams.list"] = {"dataStreams": [{"name": "properties/123456/dataStreams/1", "type": "WEB_DATA_STREAM", "displayName": "site", "webStreamData": {"defaultUri": "https://goclearonline.cc", "measurementId": "G-TEST"}}]}
+    ps = server.ga4_list_properties(include_streams=True)
+    assert ps["items"][0]["data_streams"][0]["default_uri"] == "https://goclearonline.cc"
+    h = server.ga4_run_report("123456", "2026-10-27", "2026-11-23", ["sessions"], ["hostName"])
+    assert h["status"] == "ok"
     r = server.ga4_run_report("properties/123456", "2026-10-27", "2026-11-23", ["sessions", "engagedSessions"], ["sessionSourceMedium"])
     assert r["items"] == [{"dimensions": {"sessionSourceMedium": "google / organic"}, "metrics": {"sessions": "42", "engagedSessions": "30"}}]
 

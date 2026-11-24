@@ -494,7 +494,7 @@ GA4_METRICS = {"totalUsers", "activeUsers", "newUsers", "sessions", "engagedSess
                "conversions", "screenPageViews", "averageSessionDuration", "bounceRate", "eventCount"}
 GA4_DIMENSIONS = {"date", "sessionSourceMedium", "sessionSource", "sessionMedium", "sessionCampaignName",
                   "sessionDefaultChannelGroup", "landingPage", "landingPagePlusQueryString", "pagePath", "pageTitle",
-                  "country", "deviceCategory", "firstUserSourceMedium", "eventName"}
+                  "country", "deviceCategory", "firstUserSourceMedium", "eventName", "hostName"}
 GBP_DAILY_METRICS = {"BUSINESS_IMPRESSIONS_DESKTOP_MAPS", "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH", "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
                      "BUSINESS_IMPRESSIONS_MOBILE_SEARCH", "BUSINESS_CONVERSATIONS", "BUSINESS_DIRECTION_REQUESTS",
                      "CALL_CLICKS", "WEBSITE_CLICKS", "BUSINESS_BOOKINGS", "BUSINESS_FOOD_ORDERS"}
@@ -589,19 +589,26 @@ def search_console_query(site_url: str, start_date: str, end_date: str, dimensio
     return _call("search_console_query", query, run, "searchconsole.searchanalytics.query", validate=check)
 
 
-@mcp.tool(description="READ ONLY GA4: list accessible Analytics accounts and their GA4 properties (property ids). Never creates or edits properties, streams or events.")
-def ga4_list_properties() -> dict[str, Any]:
+@mcp.tool(description="READ ONLY GA4: list accessible Analytics accounts and their GA4 properties (property ids); with include_streams=true also each property's data streams (type, web stream URL, measurement id). Never creates or edits properties, streams or events.")
+def ga4_list_properties(include_streams: bool = False) -> dict[str, Any]:
     def run(creds: Any) -> list[dict[str, Any]]:
         from googleapiclient.discovery import build
         api = build("analyticsadmin", "v1beta", credentials=creds, cache_discovery=False)
         out: list[dict[str, Any]] = []
         for a in api.accountSummaries().list(pageSize=200).execute().get("accountSummaries", []) or []:
             for p in a.get("propertySummaries") or []:
-                out.append({"property": p.get("property"), "property_id": str(p.get("property") or "").split("/")[-1],
-                            "display_name": p.get("displayName"), "property_type": p.get("propertyType"),
-                            "account": a.get("account"), "account_name": a.get("displayName"), "source": "analyticsadmin.accountSummaries"})
+                row = {"property": p.get("property"), "property_id": str(p.get("property") or "").split("/")[-1],
+                       "display_name": p.get("displayName"), "property_type": p.get("propertyType"),
+                       "account": a.get("account"), "account_name": a.get("displayName"), "source": "analyticsadmin.accountSummaries"}
+                if include_streams and p.get("property"):
+                    streams = api.properties().dataStreams().list(parent=p.get("property"), pageSize=50).execute().get("dataStreams", []) or []
+                    row["data_streams"] = [{"name": d.get("name"), "type": d.get("type"), "display_name": d.get("displayName"),
+                                            "default_uri": (d.get("webStreamData") or {}).get("defaultUri"),
+                                            "measurement_id": (d.get("webStreamData") or {}).get("measurementId"),
+                                            "create_time": d.get("createTime")} for d in streams][:20]
+                out.append(row)
         return out[:200]
-    return _call("ga4_list_properties", {}, run, "analyticsadmin.accountSummaries.list")
+    return _call("ga4_list_properties", {"include_streams": bool(include_streams)}, run, "analyticsadmin.accountSummaries.list" + ("+properties.dataStreams.list" if include_streams else ""))
 
 
 @mcp.tool(description="READ ONLY GA4 report (Data API runReport) for one property: allowlisted metrics (users, sessions, engagedSessions, keyEvents/conversions, ...) by allowlisted dimensions (date, source/medium, campaign, landing page, page path, ...). Never mutates GA4.")
