@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { trackEvent } from '../../lib/analytics/ga4';
 import { ShieldCheck, Building2, Landmark, TrendingUp, ClipboardCheck, BadgeCheck, Lock, Users, FileCheck, CreditCard, HelpCircle } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../../lib/supabaseClient";
 import { getPasswordResetRedirectUrl } from "../../lib/authHelpers";
@@ -412,6 +413,7 @@ export function GoClearSignupPage() {
       }
       setBusy(false);
     } else {
+      trackEvent('sign_up', { method: 'email' });
       setDone(true);
       setBusy(false);
     }
